@@ -1,0 +1,52 @@
+version: '3.5'
+
+networks:
+  darkpanda-network:
+    name: darkpanda-network
+
+services:
+  pg:
+    image: mdillon/postgis
+    container_name: postgres
+    restart: always
+    env_file:
+      - ./.docker.env
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_DB=${POSTGRES_DB}
+    ports:
+      - $POSTGRES_PORT:5432
+    volumes:
+      - ${POSTGRES_DATA_VOLUME}:/var/lib/postgresql/data
+    networks:
+      - darkpanda-network
+
+  pg_test:
+    image: mdillon/postgis
+    container_name: postgres_test
+    restart: always
+    env_file:
+      - ./.docker.env
+    environment:
+      - POSTGRES_PASSWORD=${TEST_POSTGRES_PASSWORD}
+      - POSTGRES_USER=${TEST_POSTGRES_USER}
+      - POSTGRES_DB=${TEST_POSTGRES_DB}
+    ports:
+      - $TEST_POSTGRES_PORT:5432
+    command: -c fsync=off
+    networks:
+      - darkpanda-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    env_file:
+      - ./.docker.env
+    ports:
+      - $REDIS_PORT:6379
+    volumes:
+      - $REDIS_DATA_VOLUME:/data
+    networks:
+      - darkpanda-network
+

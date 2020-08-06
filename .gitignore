@@ -1,0 +1,3 @@
+build/package/db-volume/*
+build/package/redis-data/*
+.env*

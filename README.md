@@ -11,5 +11,21 @@ Dark Panda backend API services. Please refer to [project description](https://g
 - Features for man and girl to rate each other and give comments.
 - Create / cancel / complete a service.
 
+# Spin up docker environment
 
+Docker compose environment consist of the following:
 
+- postgres for development
+- postgres for testing
+- redis
+
+run docker compose environment
+
+```
+docker-compose -f build/package/docker-compose.yaml --env-file build/package/.docker.env up -d
+```
+
+# TODOs
+
+- docker environment with postgres and redis
+- dotenv files

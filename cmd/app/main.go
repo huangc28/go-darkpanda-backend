@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -8,12 +9,17 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/auth"
 	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 )
 
 func main() {
+	// initialize config
+	config.InitConfig()
+
 	r := mux.NewRouter()
 	verRouter := r.PathPrefix("/v1").Subrouter()
 
@@ -23,7 +29,7 @@ func main() {
 
 	srv := &http.Server{
 		Handler: r,
-		Addr:    ":3000",
+		Addr:    fmt.Sprintf(":%d", viper.GetInt("port")),
 
 		// Good practice: enforce timeouts for servers created.
 		WriteTimeout: 15 * time.Second,
