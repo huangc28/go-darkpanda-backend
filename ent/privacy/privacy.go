@@ -210,6 +210,54 @@ func DenyMutationOperationRule(op ent.Op) MutationRule {
 	return OnMutationOperation(rule, op)
 }
 
+// The InquiryQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type InquiryQueryRuleFunc func(context.Context, *ent.InquiryQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f InquiryQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.InquiryQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.InquiryQuery", q)
+}
+
+// The InquiryMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type InquiryMutationRuleFunc func(context.Context, *ent.InquiryMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f InquiryMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.InquiryMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.InquiryMutation", m)
+}
+
+// The ServiceQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type ServiceQueryRuleFunc func(context.Context, *ent.ServiceQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f ServiceQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ServiceQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.ServiceQuery", q)
+}
+
+// The ServiceMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type ServiceMutationRuleFunc func(context.Context, *ent.ServiceMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f ServiceMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.ServiceMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.ServiceMutation", m)
+}
+
 // The UserQueryRuleFunc type is an adapter to allow the use of ordinary
 // functions as a query rule.
 type UserQueryRuleFunc func(context.Context, *ent.UserQuery) error
@@ -232,4 +280,28 @@ func (f UserMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) 
 		return f(ctx, m)
 	}
 	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserMutation", m)
+}
+
+// The UserRefCodesQueryRuleFunc type is an adapter to allow the use of ordinary
+// functions as a query rule.
+type UserRefCodesQueryRuleFunc func(context.Context, *ent.UserRefCodesQuery) error
+
+// EvalQuery return f(ctx, q).
+func (f UserRefCodesQueryRuleFunc) EvalQuery(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserRefCodesQuery); ok {
+		return f(ctx, q)
+	}
+	return Denyf("ent/privacy: unexpected query type %T, expect *ent.UserRefCodesQuery", q)
+}
+
+// The UserRefCodesMutationRuleFunc type is an adapter to allow the use of ordinary
+// functions as a mutation rule.
+type UserRefCodesMutationRuleFunc func(context.Context, *ent.UserRefCodesMutation) error
+
+// EvalMutation calls f(ctx, m).
+func (f UserRefCodesMutationRuleFunc) EvalMutation(ctx context.Context, m ent.Mutation) error {
+	if m, ok := m.(*ent.UserRefCodesMutation); ok {
+		return f(ctx, m)
+	}
+	return Denyf("ent/privacy: unexpected mutation type %T, expect *ent.UserRefCodesMutation", m)
 }

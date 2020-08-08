@@ -5,12 +5,16 @@ package ent
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
+	"github.com/huangc28/go-darkpanda-backend/ent/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/ent/predicate"
+	"github.com/huangc28/go-darkpanda-backend/ent/service"
 	"github.com/huangc28/go-darkpanda-backend/ent/user"
+	"github.com/huangc28/go-darkpanda-backend/ent/userrefcodes"
 )
 
 // UserUpdate is the builder for updating User entities.
@@ -27,45 +31,168 @@ func (uu *UserUpdate) Where(ps ...predicate.User) *UserUpdate {
 	return uu
 }
 
-// SetAge sets the age field.
-func (uu *UserUpdate) SetAge(i int) *UserUpdate {
-	uu.mutation.ResetAge()
-	uu.mutation.SetAge(i)
+// SetUsername sets the username field.
+func (uu *UserUpdate) SetUsername(s string) *UserUpdate {
+	uu.mutation.SetUsername(s)
 	return uu
 }
 
-// AddAge adds i to age.
-func (uu *UserUpdate) AddAge(i int) *UserUpdate {
-	uu.mutation.AddAge(i)
+// SetPhoneVerified sets the phone_verified field.
+func (uu *UserUpdate) SetPhoneVerified(b bool) *UserUpdate {
+	uu.mutation.SetPhoneVerified(b)
 	return uu
 }
 
-// SetName sets the name field.
-func (uu *UserUpdate) SetName(s string) *UserUpdate {
-	uu.mutation.SetName(s)
-	return uu
-}
-
-// SetNillableName sets the name field if the given value is not nil.
-func (uu *UserUpdate) SetNillableName(s *string) *UserUpdate {
-	if s != nil {
-		uu.SetName(*s)
-	}
-	return uu
-}
-
-// SetMaritalStatus sets the marital_status field.
-func (uu *UserUpdate) SetMaritalStatus(b bool) *UserUpdate {
-	uu.mutation.SetMaritalStatus(b)
-	return uu
-}
-
-// SetNillableMaritalStatus sets the marital_status field if the given value is not nil.
-func (uu *UserUpdate) SetNillableMaritalStatus(b *bool) *UserUpdate {
+// SetNillablePhoneVerified sets the phone_verified field if the given value is not nil.
+func (uu *UserUpdate) SetNillablePhoneVerified(b *bool) *UserUpdate {
 	if b != nil {
-		uu.SetMaritalStatus(*b)
+		uu.SetPhoneVerified(*b)
 	}
 	return uu
+}
+
+// SetAuthSmsCode sets the auth_sms_code field.
+func (uu *UserUpdate) SetAuthSmsCode(i int16) *UserUpdate {
+	uu.mutation.ResetAuthSmsCode()
+	uu.mutation.SetAuthSmsCode(i)
+	return uu
+}
+
+// SetNillableAuthSmsCode sets the auth_sms_code field if the given value is not nil.
+func (uu *UserUpdate) SetNillableAuthSmsCode(i *int16) *UserUpdate {
+	if i != nil {
+		uu.SetAuthSmsCode(*i)
+	}
+	return uu
+}
+
+// AddAuthSmsCode adds i to auth_sms_code.
+func (uu *UserUpdate) AddAuthSmsCode(i int16) *UserUpdate {
+	uu.mutation.AddAuthSmsCode(i)
+	return uu
+}
+
+// ClearAuthSmsCode clears the value of auth_sms_code.
+func (uu *UserUpdate) ClearAuthSmsCode() *UserUpdate {
+	uu.mutation.ClearAuthSmsCode()
+	return uu
+}
+
+// SetGender sets the gender field.
+func (uu *UserUpdate) SetGender(u user.Gender) *UserUpdate {
+	uu.mutation.SetGender(u)
+	return uu
+}
+
+// SetPremiumKind sets the premium_kind field.
+func (uu *UserUpdate) SetPremiumKind(uk user.PremiumKind) *UserUpdate {
+	uu.mutation.SetPremiumKind(uk)
+	return uu
+}
+
+// SetPremiumExpiryDate sets the premium_expiry_date field.
+func (uu *UserUpdate) SetPremiumExpiryDate(t time.Time) *UserUpdate {
+	uu.mutation.SetPremiumExpiryDate(t)
+	return uu
+}
+
+// SetCreatedAt sets the created_at field.
+func (uu *UserUpdate) SetCreatedAt(t time.Time) *UserUpdate {
+	uu.mutation.SetCreatedAt(t)
+	return uu
+}
+
+// SetNillableCreatedAt sets the created_at field if the given value is not nil.
+func (uu *UserUpdate) SetNillableCreatedAt(t *time.Time) *UserUpdate {
+	if t != nil {
+		uu.SetCreatedAt(*t)
+	}
+	return uu
+}
+
+// SetUpdatedAt sets the updated_at field.
+func (uu *UserUpdate) SetUpdatedAt(t time.Time) *UserUpdate {
+	uu.mutation.SetUpdatedAt(t)
+	return uu
+}
+
+// AddRefcodeInvitorIDs adds the refcode_invitor edge to UserRefCodes by ids.
+func (uu *UserUpdate) AddRefcodeInvitorIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddRefcodeInvitorIDs(ids...)
+	return uu
+}
+
+// AddRefcodeInvitor adds the refcode_invitor edges to UserRefCodes.
+func (uu *UserUpdate) AddRefcodeInvitor(u ...*UserRefCodes) *UserUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uu.AddRefcodeInvitorIDs(ids...)
+}
+
+// AddUserrefcodeIDs adds the userrefcodes edge to UserRefCodes by ids.
+func (uu *UserUpdate) AddUserrefcodeIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddUserrefcodeIDs(ids...)
+	return uu
+}
+
+// AddUserrefcodes adds the userrefcodes edges to UserRefCodes.
+func (uu *UserUpdate) AddUserrefcodes(u ...*UserRefCodes) *UserUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uu.AddUserrefcodeIDs(ids...)
+}
+
+// SetInquiryID sets the inquiry edge to Inquiry by id.
+func (uu *UserUpdate) SetInquiryID(id int) *UserUpdate {
+	uu.mutation.SetInquiryID(id)
+	return uu
+}
+
+// SetNillableInquiryID sets the inquiry edge to Inquiry by id if the given value is not nil.
+func (uu *UserUpdate) SetNillableInquiryID(id *int) *UserUpdate {
+	if id != nil {
+		uu = uu.SetInquiryID(*id)
+	}
+	return uu
+}
+
+// SetInquiry sets the inquiry edge to Inquiry.
+func (uu *UserUpdate) SetInquiry(i *Inquiry) *UserUpdate {
+	return uu.SetInquiryID(i.ID)
+}
+
+// AddServiceCustomerIDs adds the service_customer edge to Service by ids.
+func (uu *UserUpdate) AddServiceCustomerIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddServiceCustomerIDs(ids...)
+	return uu
+}
+
+// AddServiceCustomer adds the service_customer edges to Service.
+func (uu *UserUpdate) AddServiceCustomer(s ...*Service) *UserUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uu.AddServiceCustomerIDs(ids...)
+}
+
+// AddServiceProviderIDs adds the service_provider edge to Service by ids.
+func (uu *UserUpdate) AddServiceProviderIDs(ids ...int) *UserUpdate {
+	uu.mutation.AddServiceProviderIDs(ids...)
+	return uu
+}
+
+// AddServiceProvider adds the service_provider edges to Service.
+func (uu *UserUpdate) AddServiceProvider(s ...*Service) *UserUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uu.AddServiceProviderIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -73,13 +200,89 @@ func (uu *UserUpdate) Mutation() *UserMutation {
 	return uu.mutation
 }
 
+// RemoveRefcodeInvitorIDs removes the refcode_invitor edge to UserRefCodes by ids.
+func (uu *UserUpdate) RemoveRefcodeInvitorIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveRefcodeInvitorIDs(ids...)
+	return uu
+}
+
+// RemoveRefcodeInvitor removes refcode_invitor edges to UserRefCodes.
+func (uu *UserUpdate) RemoveRefcodeInvitor(u ...*UserRefCodes) *UserUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uu.RemoveRefcodeInvitorIDs(ids...)
+}
+
+// RemoveUserrefcodeIDs removes the userrefcodes edge to UserRefCodes by ids.
+func (uu *UserUpdate) RemoveUserrefcodeIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveUserrefcodeIDs(ids...)
+	return uu
+}
+
+// RemoveUserrefcodes removes userrefcodes edges to UserRefCodes.
+func (uu *UserUpdate) RemoveUserrefcodes(u ...*UserRefCodes) *UserUpdate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uu.RemoveUserrefcodeIDs(ids...)
+}
+
+// ClearInquiry clears the inquiry edge to Inquiry.
+func (uu *UserUpdate) ClearInquiry() *UserUpdate {
+	uu.mutation.ClearInquiry()
+	return uu
+}
+
+// RemoveServiceCustomerIDs removes the service_customer edge to Service by ids.
+func (uu *UserUpdate) RemoveServiceCustomerIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveServiceCustomerIDs(ids...)
+	return uu
+}
+
+// RemoveServiceCustomer removes service_customer edges to Service.
+func (uu *UserUpdate) RemoveServiceCustomer(s ...*Service) *UserUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uu.RemoveServiceCustomerIDs(ids...)
+}
+
+// RemoveServiceProviderIDs removes the service_provider edge to Service by ids.
+func (uu *UserUpdate) RemoveServiceProviderIDs(ids ...int) *UserUpdate {
+	uu.mutation.RemoveServiceProviderIDs(ids...)
+	return uu
+}
+
+// RemoveServiceProvider removes service_provider edges to Service.
+func (uu *UserUpdate) RemoveServiceProvider(s ...*Service) *UserUpdate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uu.RemoveServiceProviderIDs(ids...)
+}
+
 // Save executes the query and returns the number of rows/vertices matched by this operation.
 func (uu *UserUpdate) Save(ctx context.Context) (int, error) {
-	if v, ok := uu.mutation.Age(); ok {
-		if err := user.AgeValidator(v); err != nil {
-			return 0, &ValidationError{Name: "age", err: fmt.Errorf("ent: validator failed for field \"age\": %w", err)}
+	if v, ok := uu.mutation.Gender(); ok {
+		if err := user.GenderValidator(v); err != nil {
+			return 0, &ValidationError{Name: "gender", err: fmt.Errorf("ent: validator failed for field \"gender\": %w", err)}
 		}
 	}
+	if v, ok := uu.mutation.PremiumKind(); ok {
+		if err := user.PremiumKindValidator(v); err != nil {
+			return 0, &ValidationError{Name: "premium_kind", err: fmt.Errorf("ent: validator failed for field \"premium_kind\": %w", err)}
+		}
+	}
+	if _, ok := uu.mutation.UpdatedAt(); !ok {
+		v := user.UpdateDefaultUpdatedAt()
+		uu.mutation.SetUpdatedAt(v)
+	}
+
 	var (
 		err      error
 		affected int
@@ -147,33 +350,261 @@ func (uu *UserUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			}
 		}
 	}
-	if value, ok := uu.mutation.Age(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: user.FieldAge,
-		})
-	}
-	if value, ok := uu.mutation.AddedAge(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: user.FieldAge,
-		})
-	}
-	if value, ok := uu.mutation.Name(); ok {
+	if value, ok := uu.mutation.Username(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: user.FieldName,
+			Column: user.FieldUsername,
 		})
 	}
-	if value, ok := uu.mutation.MaritalStatus(); ok {
+	if value, ok := uu.mutation.PhoneVerified(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeBool,
 			Value:  value,
-			Column: user.FieldMaritalStatus,
+			Column: user.FieldPhoneVerified,
 		})
+	}
+	if value, ok := uu.mutation.AuthSmsCode(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt16,
+			Value:  value,
+			Column: user.FieldAuthSmsCode,
+		})
+	}
+	if value, ok := uu.mutation.AddedAuthSmsCode(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt16,
+			Value:  value,
+			Column: user.FieldAuthSmsCode,
+		})
+	}
+	if uu.mutation.AuthSmsCodeCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt16,
+			Column: user.FieldAuthSmsCode,
+		})
+	}
+	if value, ok := uu.mutation.Gender(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: user.FieldGender,
+		})
+	}
+	if value, ok := uu.mutation.PremiumKind(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: user.FieldPremiumKind,
+		})
+	}
+	if value, ok := uu.mutation.PremiumExpiryDate(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldPremiumExpiryDate,
+		})
+	}
+	if value, ok := uu.mutation.CreatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldCreatedAt,
+		})
+	}
+	if value, ok := uu.mutation.UpdatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldUpdatedAt,
+		})
+	}
+	if nodes := uu.mutation.RemovedRefcodeInvitorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RefcodeInvitorTable,
+			Columns: []string{user.RefcodeInvitorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.RefcodeInvitorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RefcodeInvitorTable,
+			Columns: []string{user.RefcodeInvitorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nodes := uu.mutation.RemovedUserrefcodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.UserrefcodesTable,
+			Columns: []string{user.UserrefcodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.UserrefcodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.UserrefcodesTable,
+			Columns: []string{user.UserrefcodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uu.mutation.InquiryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.InquiryTable,
+			Columns: []string{user.InquiryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: inquiry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.InquiryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.InquiryTable,
+			Columns: []string{user.InquiryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: inquiry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nodes := uu.mutation.RemovedServiceCustomerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceCustomerTable,
+			Columns: []string{user.ServiceCustomerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.ServiceCustomerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceCustomerTable,
+			Columns: []string{user.ServiceCustomerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nodes := uu.mutation.RemovedServiceProviderIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceProviderTable,
+			Columns: []string{user.ServiceProviderColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uu.mutation.ServiceProviderIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceProviderTable,
+			Columns: []string{user.ServiceProviderColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, uu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -193,45 +624,168 @@ type UserUpdateOne struct {
 	mutation *UserMutation
 }
 
-// SetAge sets the age field.
-func (uuo *UserUpdateOne) SetAge(i int) *UserUpdateOne {
-	uuo.mutation.ResetAge()
-	uuo.mutation.SetAge(i)
+// SetUsername sets the username field.
+func (uuo *UserUpdateOne) SetUsername(s string) *UserUpdateOne {
+	uuo.mutation.SetUsername(s)
 	return uuo
 }
 
-// AddAge adds i to age.
-func (uuo *UserUpdateOne) AddAge(i int) *UserUpdateOne {
-	uuo.mutation.AddAge(i)
+// SetPhoneVerified sets the phone_verified field.
+func (uuo *UserUpdateOne) SetPhoneVerified(b bool) *UserUpdateOne {
+	uuo.mutation.SetPhoneVerified(b)
 	return uuo
 }
 
-// SetName sets the name field.
-func (uuo *UserUpdateOne) SetName(s string) *UserUpdateOne {
-	uuo.mutation.SetName(s)
-	return uuo
-}
-
-// SetNillableName sets the name field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableName(s *string) *UserUpdateOne {
-	if s != nil {
-		uuo.SetName(*s)
-	}
-	return uuo
-}
-
-// SetMaritalStatus sets the marital_status field.
-func (uuo *UserUpdateOne) SetMaritalStatus(b bool) *UserUpdateOne {
-	uuo.mutation.SetMaritalStatus(b)
-	return uuo
-}
-
-// SetNillableMaritalStatus sets the marital_status field if the given value is not nil.
-func (uuo *UserUpdateOne) SetNillableMaritalStatus(b *bool) *UserUpdateOne {
+// SetNillablePhoneVerified sets the phone_verified field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillablePhoneVerified(b *bool) *UserUpdateOne {
 	if b != nil {
-		uuo.SetMaritalStatus(*b)
+		uuo.SetPhoneVerified(*b)
 	}
 	return uuo
+}
+
+// SetAuthSmsCode sets the auth_sms_code field.
+func (uuo *UserUpdateOne) SetAuthSmsCode(i int16) *UserUpdateOne {
+	uuo.mutation.ResetAuthSmsCode()
+	uuo.mutation.SetAuthSmsCode(i)
+	return uuo
+}
+
+// SetNillableAuthSmsCode sets the auth_sms_code field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableAuthSmsCode(i *int16) *UserUpdateOne {
+	if i != nil {
+		uuo.SetAuthSmsCode(*i)
+	}
+	return uuo
+}
+
+// AddAuthSmsCode adds i to auth_sms_code.
+func (uuo *UserUpdateOne) AddAuthSmsCode(i int16) *UserUpdateOne {
+	uuo.mutation.AddAuthSmsCode(i)
+	return uuo
+}
+
+// ClearAuthSmsCode clears the value of auth_sms_code.
+func (uuo *UserUpdateOne) ClearAuthSmsCode() *UserUpdateOne {
+	uuo.mutation.ClearAuthSmsCode()
+	return uuo
+}
+
+// SetGender sets the gender field.
+func (uuo *UserUpdateOne) SetGender(u user.Gender) *UserUpdateOne {
+	uuo.mutation.SetGender(u)
+	return uuo
+}
+
+// SetPremiumKind sets the premium_kind field.
+func (uuo *UserUpdateOne) SetPremiumKind(uk user.PremiumKind) *UserUpdateOne {
+	uuo.mutation.SetPremiumKind(uk)
+	return uuo
+}
+
+// SetPremiumExpiryDate sets the premium_expiry_date field.
+func (uuo *UserUpdateOne) SetPremiumExpiryDate(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetPremiumExpiryDate(t)
+	return uuo
+}
+
+// SetCreatedAt sets the created_at field.
+func (uuo *UserUpdateOne) SetCreatedAt(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetCreatedAt(t)
+	return uuo
+}
+
+// SetNillableCreatedAt sets the created_at field if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableCreatedAt(t *time.Time) *UserUpdateOne {
+	if t != nil {
+		uuo.SetCreatedAt(*t)
+	}
+	return uuo
+}
+
+// SetUpdatedAt sets the updated_at field.
+func (uuo *UserUpdateOne) SetUpdatedAt(t time.Time) *UserUpdateOne {
+	uuo.mutation.SetUpdatedAt(t)
+	return uuo
+}
+
+// AddRefcodeInvitorIDs adds the refcode_invitor edge to UserRefCodes by ids.
+func (uuo *UserUpdateOne) AddRefcodeInvitorIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddRefcodeInvitorIDs(ids...)
+	return uuo
+}
+
+// AddRefcodeInvitor adds the refcode_invitor edges to UserRefCodes.
+func (uuo *UserUpdateOne) AddRefcodeInvitor(u ...*UserRefCodes) *UserUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uuo.AddRefcodeInvitorIDs(ids...)
+}
+
+// AddUserrefcodeIDs adds the userrefcodes edge to UserRefCodes by ids.
+func (uuo *UserUpdateOne) AddUserrefcodeIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddUserrefcodeIDs(ids...)
+	return uuo
+}
+
+// AddUserrefcodes adds the userrefcodes edges to UserRefCodes.
+func (uuo *UserUpdateOne) AddUserrefcodes(u ...*UserRefCodes) *UserUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uuo.AddUserrefcodeIDs(ids...)
+}
+
+// SetInquiryID sets the inquiry edge to Inquiry by id.
+func (uuo *UserUpdateOne) SetInquiryID(id int) *UserUpdateOne {
+	uuo.mutation.SetInquiryID(id)
+	return uuo
+}
+
+// SetNillableInquiryID sets the inquiry edge to Inquiry by id if the given value is not nil.
+func (uuo *UserUpdateOne) SetNillableInquiryID(id *int) *UserUpdateOne {
+	if id != nil {
+		uuo = uuo.SetInquiryID(*id)
+	}
+	return uuo
+}
+
+// SetInquiry sets the inquiry edge to Inquiry.
+func (uuo *UserUpdateOne) SetInquiry(i *Inquiry) *UserUpdateOne {
+	return uuo.SetInquiryID(i.ID)
+}
+
+// AddServiceCustomerIDs adds the service_customer edge to Service by ids.
+func (uuo *UserUpdateOne) AddServiceCustomerIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddServiceCustomerIDs(ids...)
+	return uuo
+}
+
+// AddServiceCustomer adds the service_customer edges to Service.
+func (uuo *UserUpdateOne) AddServiceCustomer(s ...*Service) *UserUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uuo.AddServiceCustomerIDs(ids...)
+}
+
+// AddServiceProviderIDs adds the service_provider edge to Service by ids.
+func (uuo *UserUpdateOne) AddServiceProviderIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.AddServiceProviderIDs(ids...)
+	return uuo
+}
+
+// AddServiceProvider adds the service_provider edges to Service.
+func (uuo *UserUpdateOne) AddServiceProvider(s ...*Service) *UserUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uuo.AddServiceProviderIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -239,13 +793,89 @@ func (uuo *UserUpdateOne) Mutation() *UserMutation {
 	return uuo.mutation
 }
 
+// RemoveRefcodeInvitorIDs removes the refcode_invitor edge to UserRefCodes by ids.
+func (uuo *UserUpdateOne) RemoveRefcodeInvitorIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveRefcodeInvitorIDs(ids...)
+	return uuo
+}
+
+// RemoveRefcodeInvitor removes refcode_invitor edges to UserRefCodes.
+func (uuo *UserUpdateOne) RemoveRefcodeInvitor(u ...*UserRefCodes) *UserUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uuo.RemoveRefcodeInvitorIDs(ids...)
+}
+
+// RemoveUserrefcodeIDs removes the userrefcodes edge to UserRefCodes by ids.
+func (uuo *UserUpdateOne) RemoveUserrefcodeIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveUserrefcodeIDs(ids...)
+	return uuo
+}
+
+// RemoveUserrefcodes removes userrefcodes edges to UserRefCodes.
+func (uuo *UserUpdateOne) RemoveUserrefcodes(u ...*UserRefCodes) *UserUpdateOne {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uuo.RemoveUserrefcodeIDs(ids...)
+}
+
+// ClearInquiry clears the inquiry edge to Inquiry.
+func (uuo *UserUpdateOne) ClearInquiry() *UserUpdateOne {
+	uuo.mutation.ClearInquiry()
+	return uuo
+}
+
+// RemoveServiceCustomerIDs removes the service_customer edge to Service by ids.
+func (uuo *UserUpdateOne) RemoveServiceCustomerIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveServiceCustomerIDs(ids...)
+	return uuo
+}
+
+// RemoveServiceCustomer removes service_customer edges to Service.
+func (uuo *UserUpdateOne) RemoveServiceCustomer(s ...*Service) *UserUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uuo.RemoveServiceCustomerIDs(ids...)
+}
+
+// RemoveServiceProviderIDs removes the service_provider edge to Service by ids.
+func (uuo *UserUpdateOne) RemoveServiceProviderIDs(ids ...int) *UserUpdateOne {
+	uuo.mutation.RemoveServiceProviderIDs(ids...)
+	return uuo
+}
+
+// RemoveServiceProvider removes service_provider edges to Service.
+func (uuo *UserUpdateOne) RemoveServiceProvider(s ...*Service) *UserUpdateOne {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uuo.RemoveServiceProviderIDs(ids...)
+}
+
 // Save executes the query and returns the updated entity.
 func (uuo *UserUpdateOne) Save(ctx context.Context) (*User, error) {
-	if v, ok := uuo.mutation.Age(); ok {
-		if err := user.AgeValidator(v); err != nil {
-			return nil, &ValidationError{Name: "age", err: fmt.Errorf("ent: validator failed for field \"age\": %w", err)}
+	if v, ok := uuo.mutation.Gender(); ok {
+		if err := user.GenderValidator(v); err != nil {
+			return nil, &ValidationError{Name: "gender", err: fmt.Errorf("ent: validator failed for field \"gender\": %w", err)}
 		}
 	}
+	if v, ok := uuo.mutation.PremiumKind(); ok {
+		if err := user.PremiumKindValidator(v); err != nil {
+			return nil, &ValidationError{Name: "premium_kind", err: fmt.Errorf("ent: validator failed for field \"premium_kind\": %w", err)}
+		}
+	}
+	if _, ok := uuo.mutation.UpdatedAt(); !ok {
+		v := user.UpdateDefaultUpdatedAt()
+		uuo.mutation.SetUpdatedAt(v)
+	}
+
 	var (
 		err  error
 		node *User
@@ -311,33 +941,261 @@ func (uuo *UserUpdateOne) sqlSave(ctx context.Context) (u *User, err error) {
 		return nil, &ValidationError{Name: "ID", err: fmt.Errorf("missing User.ID for update")}
 	}
 	_spec.Node.ID.Value = id
-	if value, ok := uuo.mutation.Age(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: user.FieldAge,
-		})
-	}
-	if value, ok := uuo.mutation.AddedAge(); ok {
-		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: user.FieldAge,
-		})
-	}
-	if value, ok := uuo.mutation.Name(); ok {
+	if value, ok := uuo.mutation.Username(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: user.FieldName,
+			Column: user.FieldUsername,
 		})
 	}
-	if value, ok := uuo.mutation.MaritalStatus(); ok {
+	if value, ok := uuo.mutation.PhoneVerified(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeBool,
 			Value:  value,
-			Column: user.FieldMaritalStatus,
+			Column: user.FieldPhoneVerified,
 		})
+	}
+	if value, ok := uuo.mutation.AuthSmsCode(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt16,
+			Value:  value,
+			Column: user.FieldAuthSmsCode,
+		})
+	}
+	if value, ok := uuo.mutation.AddedAuthSmsCode(); ok {
+		_spec.Fields.Add = append(_spec.Fields.Add, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt16,
+			Value:  value,
+			Column: user.FieldAuthSmsCode,
+		})
+	}
+	if uuo.mutation.AuthSmsCodeCleared() {
+		_spec.Fields.Clear = append(_spec.Fields.Clear, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt16,
+			Column: user.FieldAuthSmsCode,
+		})
+	}
+	if value, ok := uuo.mutation.Gender(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: user.FieldGender,
+		})
+	}
+	if value, ok := uuo.mutation.PremiumKind(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: user.FieldPremiumKind,
+		})
+	}
+	if value, ok := uuo.mutation.PremiumExpiryDate(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldPremiumExpiryDate,
+		})
+	}
+	if value, ok := uuo.mutation.CreatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldCreatedAt,
+		})
+	}
+	if value, ok := uuo.mutation.UpdatedAt(); ok {
+		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldUpdatedAt,
+		})
+	}
+	if nodes := uuo.mutation.RemovedRefcodeInvitorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RefcodeInvitorTable,
+			Columns: []string{user.RefcodeInvitorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.RefcodeInvitorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RefcodeInvitorTable,
+			Columns: []string{user.RefcodeInvitorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nodes := uuo.mutation.RemovedUserrefcodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.UserrefcodesTable,
+			Columns: []string{user.UserrefcodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.UserrefcodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.UserrefcodesTable,
+			Columns: []string{user.UserrefcodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if uuo.mutation.InquiryCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.InquiryTable,
+			Columns: []string{user.InquiryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: inquiry.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.InquiryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.InquiryTable,
+			Columns: []string{user.InquiryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: inquiry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nodes := uuo.mutation.RemovedServiceCustomerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceCustomerTable,
+			Columns: []string{user.ServiceCustomerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.ServiceCustomerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceCustomerTable,
+			Columns: []string{user.ServiceCustomerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if nodes := uuo.mutation.RemovedServiceProviderIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceProviderTable,
+			Columns: []string{user.ServiceProviderColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := uuo.mutation.ServiceProviderIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceProviderTable,
+			Columns: []string{user.ServiceProviderColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	u = &User{config: uuo.config}
 	_spec.Assign = u.assignValues

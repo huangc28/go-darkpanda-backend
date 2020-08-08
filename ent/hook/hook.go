@@ -9,6 +9,32 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/ent"
 )
 
+// The InquiryFunc type is an adapter to allow the use of ordinary
+// function as Inquiry mutator.
+type InquiryFunc func(context.Context, *ent.InquiryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f InquiryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.InquiryMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.InquiryMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The ServiceFunc type is an adapter to allow the use of ordinary
+// function as Service mutator.
+type ServiceFunc func(context.Context, *ent.ServiceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ServiceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.ServiceMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ServiceMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)
@@ -18,6 +44,19 @@ func (f UserFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error)
 	mv, ok := m.(*ent.UserMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The UserRefCodesFunc type is an adapter to allow the use of ordinary
+// function as UserRefCodes mutator.
+type UserRefCodesFunc func(context.Context, *ent.UserRefCodesMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f UserRefCodesFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.UserRefCodesMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserRefCodesMutation", m)
 	}
 	return f(ctx, mv)
 }

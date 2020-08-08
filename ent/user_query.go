@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"errors"
 	"fmt"
 	"math"
@@ -11,8 +12,11 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql"
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
+	"github.com/huangc28/go-darkpanda-backend/ent/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/ent/predicate"
+	"github.com/huangc28/go-darkpanda-backend/ent/service"
 	"github.com/huangc28/go-darkpanda-backend/ent/user"
+	"github.com/huangc28/go-darkpanda-backend/ent/userrefcodes"
 )
 
 // UserQuery is the builder for querying User entities.
@@ -23,6 +27,12 @@ type UserQuery struct {
 	order      []OrderFunc
 	unique     []string
 	predicates []predicate.User
+	// eager-loading edges.
+	withRefcodeInvitor  *UserRefCodesQuery
+	withUserrefcodes    *UserRefCodesQuery
+	withInquiry         *InquiryQuery
+	withServiceCustomer *ServiceQuery
+	withServiceProvider *ServiceQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -50,6 +60,96 @@ func (uq *UserQuery) Offset(offset int) *UserQuery {
 func (uq *UserQuery) Order(o ...OrderFunc) *UserQuery {
 	uq.order = append(uq.order, o...)
 	return uq
+}
+
+// QueryRefcodeInvitor chains the current query on the refcode_invitor edge.
+func (uq *UserQuery) QueryRefcodeInvitor() *UserRefCodesQuery {
+	query := &UserRefCodesQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, uq.sqlQuery()),
+			sqlgraph.To(userrefcodes.Table, userrefcodes.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RefcodeInvitorTable, user.RefcodeInvitorColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryUserrefcodes chains the current query on the userrefcodes edge.
+func (uq *UserQuery) QueryUserrefcodes() *UserRefCodesQuery {
+	query := &UserRefCodesQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, uq.sqlQuery()),
+			sqlgraph.To(userrefcodes.Table, userrefcodes.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.UserrefcodesTable, user.UserrefcodesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryInquiry chains the current query on the inquiry edge.
+func (uq *UserQuery) QueryInquiry() *InquiryQuery {
+	query := &InquiryQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, uq.sqlQuery()),
+			sqlgraph.To(inquiry.Table, inquiry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.InquiryTable, user.InquiryColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryServiceCustomer chains the current query on the service_customer edge.
+func (uq *UserQuery) QueryServiceCustomer() *ServiceQuery {
+	query := &ServiceQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, uq.sqlQuery()),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.ServiceCustomerTable, user.ServiceCustomerColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryServiceProvider chains the current query on the service_provider edge.
+func (uq *UserQuery) QueryServiceProvider() *ServiceQuery {
+	query := &ServiceQuery{config: uq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := uq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, uq.sqlQuery()),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.ServiceProviderTable, user.ServiceProviderColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(uq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first User entity in the query. Returns *NotFoundError when no user was found.
@@ -231,18 +331,73 @@ func (uq *UserQuery) Clone() *UserQuery {
 	}
 }
 
+//  WithRefcodeInvitor tells the query-builder to eager-loads the nodes that are connected to
+// the "refcode_invitor" edge. The optional arguments used to configure the query builder of the edge.
+func (uq *UserQuery) WithRefcodeInvitor(opts ...func(*UserRefCodesQuery)) *UserQuery {
+	query := &UserRefCodesQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withRefcodeInvitor = query
+	return uq
+}
+
+//  WithUserrefcodes tells the query-builder to eager-loads the nodes that are connected to
+// the "userrefcodes" edge. The optional arguments used to configure the query builder of the edge.
+func (uq *UserQuery) WithUserrefcodes(opts ...func(*UserRefCodesQuery)) *UserQuery {
+	query := &UserRefCodesQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withUserrefcodes = query
+	return uq
+}
+
+//  WithInquiry tells the query-builder to eager-loads the nodes that are connected to
+// the "inquiry" edge. The optional arguments used to configure the query builder of the edge.
+func (uq *UserQuery) WithInquiry(opts ...func(*InquiryQuery)) *UserQuery {
+	query := &InquiryQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withInquiry = query
+	return uq
+}
+
+//  WithServiceCustomer tells the query-builder to eager-loads the nodes that are connected to
+// the "service_customer" edge. The optional arguments used to configure the query builder of the edge.
+func (uq *UserQuery) WithServiceCustomer(opts ...func(*ServiceQuery)) *UserQuery {
+	query := &ServiceQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withServiceCustomer = query
+	return uq
+}
+
+//  WithServiceProvider tells the query-builder to eager-loads the nodes that are connected to
+// the "service_provider" edge. The optional arguments used to configure the query builder of the edge.
+func (uq *UserQuery) WithServiceProvider(opts ...func(*ServiceQuery)) *UserQuery {
+	query := &ServiceQuery{config: uq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	uq.withServiceProvider = query
+	return uq
+}
+
 // GroupBy used to group vertices by one or more fields/columns.
 // It is often used with aggregate functions, like: count, max, mean, min, sum.
 //
 // Example:
 //
 //	var v []struct {
-//		Age int `json:"age,omitempty"`
+//		Username string `json:"username,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.User.Query().
-//		GroupBy(user.FieldAge).
+//		GroupBy(user.FieldUsername).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 //
@@ -263,11 +418,11 @@ func (uq *UserQuery) GroupBy(field string, fields ...string) *UserGroupBy {
 // Example:
 //
 //	var v []struct {
-//		Age int `json:"age,omitempty"`
+//		Username string `json:"username,omitempty"`
 //	}
 //
 //	client.User.Query().
-//		Select(user.FieldAge).
+//		Select(user.FieldUsername).
 //		Scan(ctx, &v)
 //
 func (uq *UserQuery) Select(field string, fields ...string) *UserSelect {
@@ -295,8 +450,15 @@ func (uq *UserQuery) prepareQuery(ctx context.Context) error {
 
 func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 	var (
-		nodes = []*User{}
-		_spec = uq.querySpec()
+		nodes       = []*User{}
+		_spec       = uq.querySpec()
+		loadedTypes = [5]bool{
+			uq.withRefcodeInvitor != nil,
+			uq.withUserrefcodes != nil,
+			uq.withInquiry != nil,
+			uq.withServiceCustomer != nil,
+			uq.withServiceProvider != nil,
+		}
 	)
 	_spec.ScanValues = func() []interface{} {
 		node := &User{config: uq.config}
@@ -309,6 +471,7 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 			return fmt.Errorf("ent: Assign called without calling ScanValues")
 		}
 		node := nodes[len(nodes)-1]
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(values...)
 	}
 	if err := sqlgraph.QueryNodes(ctx, uq.driver, _spec); err != nil {
@@ -317,6 +480,147 @@ func (uq *UserQuery) sqlAll(ctx context.Context) ([]*User, error) {
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := uq.withRefcodeInvitor; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*User)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.UserRefCodes(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.RefcodeInvitorColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.invitor_id
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "invitor_id" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "invitor_id" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.RefcodeInvitor = append(node.Edges.RefcodeInvitor, n)
+		}
+	}
+
+	if query := uq.withUserrefcodes; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*User)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.UserRefCodes(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.UserrefcodesColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.invitee_id
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "invitee_id" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "invitee_id" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Userrefcodes = append(node.Edges.Userrefcodes, n)
+		}
+	}
+
+	if query := uq.withInquiry; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*User)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.Inquiry(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.InquiryColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.inquirer_id
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "inquirer_id" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "inquirer_id" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Inquiry = n
+		}
+	}
+
+	if query := uq.withServiceCustomer; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*User)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.Service(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.ServiceCustomerColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.customer_id
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "customer_id" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "customer_id" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.ServiceCustomer = append(node.Edges.ServiceCustomer, n)
+		}
+	}
+
+	if query := uq.withServiceProvider; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*User)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+		}
+		query.withFKs = true
+		query.Where(predicate.Service(func(s *sql.Selector) {
+			s.Where(sql.InValues(user.ServiceProviderColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.service_provider_id
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "service_provider_id" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "service_provider_id" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.ServiceProvider = append(node.Edges.ServiceProvider, n)
+		}
+	}
+
 	return nodes, nil
 }
 

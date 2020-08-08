@@ -6,5 +6,14 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql"
 )
 
+// Inquiry is the predicate function for inquiry builders.
+type Inquiry func(*sql.Selector)
+
+// Service is the predicate function for service builders.
+type Service func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
+
+// UserRefCodes is the predicate function for userrefcodes builders.
+type UserRefCodes func(*sql.Selector)

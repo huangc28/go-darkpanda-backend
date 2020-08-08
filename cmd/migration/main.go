@@ -19,10 +19,7 @@ func init() {
 //  - run the latest migrations
 //  - record SQL that is going to be executed for historical traceback in the future
 func main() {
-
 	ac := config.GetAppConf()
-
-	log.Printf("ac %v", ac)
 
 	dsn := fmt.Sprintf("host=%s port=%d user=%s "+
 		"password=%s dbname=%s sslmode=disable",

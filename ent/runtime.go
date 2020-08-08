@@ -3,7 +3,10 @@
 package ent
 
 import (
+	"time"
+
 	"github.com/huangc28/go-darkpanda-backend/ent/schema"
+	"github.com/huangc28/go-darkpanda-backend/ent/service"
 	"github.com/huangc28/go-darkpanda-backend/ent/user"
 )
 
@@ -11,18 +14,40 @@ import (
 // code (default values, validators or hooks) and stitches it
 // to their package variables.
 func init() {
+	serviceFields := schema.Service{}.Fields()
+	_ = serviceFields
+	// serviceDescGirlReady is the schema descriptor for girl_ready field.
+	serviceDescGirlReady := serviceFields[8].Descriptor()
+	// service.DefaultGirlReady holds the default value on creation for the girl_ready field.
+	service.DefaultGirlReady = serviceDescGirlReady.Default.(bool)
+	// serviceDescManReady is the schema descriptor for man_ready field.
+	serviceDescManReady := serviceFields[9].Descriptor()
+	// service.DefaultManReady holds the default value on creation for the man_ready field.
+	service.DefaultManReady = serviceDescManReady.Default.(bool)
+	// serviceDescCreatedAt is the schema descriptor for created_at field.
+	serviceDescCreatedAt := serviceFields[10].Descriptor()
+	// service.DefaultCreatedAt holds the default value on creation for the created_at field.
+	service.DefaultCreatedAt = serviceDescCreatedAt.Default.(func() time.Time)
+	// serviceDescUpdatedAt is the schema descriptor for updated_at field.
+	serviceDescUpdatedAt := serviceFields[11].Descriptor()
+	// service.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	service.DefaultUpdatedAt = serviceDescUpdatedAt.Default.(func() time.Time)
+	// service.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	service.UpdateDefaultUpdatedAt = serviceDescUpdatedAt.UpdateDefault.(func() time.Time)
 	userFields := schema.User{}.Fields()
 	_ = userFields
-	// userDescAge is the schema descriptor for age field.
-	userDescAge := userFields[0].Descriptor()
-	// user.AgeValidator is a validator for the "age" field. It is called by the builders before save.
-	user.AgeValidator = userDescAge.Validators[0].(func(int) error)
-	// userDescName is the schema descriptor for name field.
-	userDescName := userFields[1].Descriptor()
-	// user.DefaultName holds the default value on creation for the name field.
-	user.DefaultName = userDescName.Default.(string)
-	// userDescMaritalStatus is the schema descriptor for marital_status field.
-	userDescMaritalStatus := userFields[2].Descriptor()
-	// user.DefaultMaritalStatus holds the default value on creation for the marital_status field.
-	user.DefaultMaritalStatus = userDescMaritalStatus.Default.(bool)
+	// userDescPhoneVerified is the schema descriptor for phone_verified field.
+	userDescPhoneVerified := userFields[1].Descriptor()
+	// user.DefaultPhoneVerified holds the default value on creation for the phone_verified field.
+	user.DefaultPhoneVerified = userDescPhoneVerified.Default.(bool)
+	// userDescCreatedAt is the schema descriptor for created_at field.
+	userDescCreatedAt := userFields[6].Descriptor()
+	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
+	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
+	// userDescUpdatedAt is the schema descriptor for updated_at field.
+	userDescUpdatedAt := userFields[7].Descriptor()
+	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
+	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	user.UpdateDefaultUpdatedAt = userDescUpdatedAt.UpdateDefault.(func() time.Time)
 }

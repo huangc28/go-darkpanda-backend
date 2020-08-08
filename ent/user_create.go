@@ -6,10 +6,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 	"github.com/facebookincubator/ent/schema/field"
+	"github.com/huangc28/go-darkpanda-backend/ent/inquiry"
+	"github.com/huangc28/go-darkpanda-backend/ent/service"
 	"github.com/huangc28/go-darkpanda-backend/ent/user"
+	"github.com/huangc28/go-darkpanda-backend/ent/userrefcodes"
 )
 
 // UserCreate is the builder for creating a User entity.
@@ -19,38 +23,163 @@ type UserCreate struct {
 	hooks    []Hook
 }
 
-// SetAge sets the age field.
-func (uc *UserCreate) SetAge(i int) *UserCreate {
-	uc.mutation.SetAge(i)
+// SetUsername sets the username field.
+func (uc *UserCreate) SetUsername(s string) *UserCreate {
+	uc.mutation.SetUsername(s)
 	return uc
 }
 
-// SetName sets the name field.
-func (uc *UserCreate) SetName(s string) *UserCreate {
-	uc.mutation.SetName(s)
+// SetPhoneVerified sets the phone_verified field.
+func (uc *UserCreate) SetPhoneVerified(b bool) *UserCreate {
+	uc.mutation.SetPhoneVerified(b)
 	return uc
 }
 
-// SetNillableName sets the name field if the given value is not nil.
-func (uc *UserCreate) SetNillableName(s *string) *UserCreate {
-	if s != nil {
-		uc.SetName(*s)
-	}
-	return uc
-}
-
-// SetMaritalStatus sets the marital_status field.
-func (uc *UserCreate) SetMaritalStatus(b bool) *UserCreate {
-	uc.mutation.SetMaritalStatus(b)
-	return uc
-}
-
-// SetNillableMaritalStatus sets the marital_status field if the given value is not nil.
-func (uc *UserCreate) SetNillableMaritalStatus(b *bool) *UserCreate {
+// SetNillablePhoneVerified sets the phone_verified field if the given value is not nil.
+func (uc *UserCreate) SetNillablePhoneVerified(b *bool) *UserCreate {
 	if b != nil {
-		uc.SetMaritalStatus(*b)
+		uc.SetPhoneVerified(*b)
 	}
 	return uc
+}
+
+// SetAuthSmsCode sets the auth_sms_code field.
+func (uc *UserCreate) SetAuthSmsCode(i int16) *UserCreate {
+	uc.mutation.SetAuthSmsCode(i)
+	return uc
+}
+
+// SetNillableAuthSmsCode sets the auth_sms_code field if the given value is not nil.
+func (uc *UserCreate) SetNillableAuthSmsCode(i *int16) *UserCreate {
+	if i != nil {
+		uc.SetAuthSmsCode(*i)
+	}
+	return uc
+}
+
+// SetGender sets the gender field.
+func (uc *UserCreate) SetGender(u user.Gender) *UserCreate {
+	uc.mutation.SetGender(u)
+	return uc
+}
+
+// SetPremiumKind sets the premium_kind field.
+func (uc *UserCreate) SetPremiumKind(uk user.PremiumKind) *UserCreate {
+	uc.mutation.SetPremiumKind(uk)
+	return uc
+}
+
+// SetPremiumExpiryDate sets the premium_expiry_date field.
+func (uc *UserCreate) SetPremiumExpiryDate(t time.Time) *UserCreate {
+	uc.mutation.SetPremiumExpiryDate(t)
+	return uc
+}
+
+// SetCreatedAt sets the created_at field.
+func (uc *UserCreate) SetCreatedAt(t time.Time) *UserCreate {
+	uc.mutation.SetCreatedAt(t)
+	return uc
+}
+
+// SetNillableCreatedAt sets the created_at field if the given value is not nil.
+func (uc *UserCreate) SetNillableCreatedAt(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetCreatedAt(*t)
+	}
+	return uc
+}
+
+// SetUpdatedAt sets the updated_at field.
+func (uc *UserCreate) SetUpdatedAt(t time.Time) *UserCreate {
+	uc.mutation.SetUpdatedAt(t)
+	return uc
+}
+
+// SetNillableUpdatedAt sets the updated_at field if the given value is not nil.
+func (uc *UserCreate) SetNillableUpdatedAt(t *time.Time) *UserCreate {
+	if t != nil {
+		uc.SetUpdatedAt(*t)
+	}
+	return uc
+}
+
+// AddRefcodeInvitorIDs adds the refcode_invitor edge to UserRefCodes by ids.
+func (uc *UserCreate) AddRefcodeInvitorIDs(ids ...int) *UserCreate {
+	uc.mutation.AddRefcodeInvitorIDs(ids...)
+	return uc
+}
+
+// AddRefcodeInvitor adds the refcode_invitor edges to UserRefCodes.
+func (uc *UserCreate) AddRefcodeInvitor(u ...*UserRefCodes) *UserCreate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uc.AddRefcodeInvitorIDs(ids...)
+}
+
+// AddUserrefcodeIDs adds the userrefcodes edge to UserRefCodes by ids.
+func (uc *UserCreate) AddUserrefcodeIDs(ids ...int) *UserCreate {
+	uc.mutation.AddUserrefcodeIDs(ids...)
+	return uc
+}
+
+// AddUserrefcodes adds the userrefcodes edges to UserRefCodes.
+func (uc *UserCreate) AddUserrefcodes(u ...*UserRefCodes) *UserCreate {
+	ids := make([]int, len(u))
+	for i := range u {
+		ids[i] = u[i].ID
+	}
+	return uc.AddUserrefcodeIDs(ids...)
+}
+
+// SetInquiryID sets the inquiry edge to Inquiry by id.
+func (uc *UserCreate) SetInquiryID(id int) *UserCreate {
+	uc.mutation.SetInquiryID(id)
+	return uc
+}
+
+// SetNillableInquiryID sets the inquiry edge to Inquiry by id if the given value is not nil.
+func (uc *UserCreate) SetNillableInquiryID(id *int) *UserCreate {
+	if id != nil {
+		uc = uc.SetInquiryID(*id)
+	}
+	return uc
+}
+
+// SetInquiry sets the inquiry edge to Inquiry.
+func (uc *UserCreate) SetInquiry(i *Inquiry) *UserCreate {
+	return uc.SetInquiryID(i.ID)
+}
+
+// AddServiceCustomerIDs adds the service_customer edge to Service by ids.
+func (uc *UserCreate) AddServiceCustomerIDs(ids ...int) *UserCreate {
+	uc.mutation.AddServiceCustomerIDs(ids...)
+	return uc
+}
+
+// AddServiceCustomer adds the service_customer edges to Service.
+func (uc *UserCreate) AddServiceCustomer(s ...*Service) *UserCreate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uc.AddServiceCustomerIDs(ids...)
+}
+
+// AddServiceProviderIDs adds the service_provider edge to Service by ids.
+func (uc *UserCreate) AddServiceProviderIDs(ids ...int) *UserCreate {
+	uc.mutation.AddServiceProviderIDs(ids...)
+	return uc
+}
+
+// AddServiceProvider adds the service_provider edges to Service.
+func (uc *UserCreate) AddServiceProvider(s ...*Service) *UserCreate {
+	ids := make([]int, len(s))
+	for i := range s {
+		ids[i] = s[i].ID
+	}
+	return uc.AddServiceProviderIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -100,21 +229,39 @@ func (uc *UserCreate) SaveX(ctx context.Context) *User {
 }
 
 func (uc *UserCreate) preSave() error {
-	if _, ok := uc.mutation.Age(); !ok {
-		return &ValidationError{Name: "age", err: errors.New("ent: missing required field \"age\"")}
+	if _, ok := uc.mutation.Username(); !ok {
+		return &ValidationError{Name: "username", err: errors.New("ent: missing required field \"username\"")}
 	}
-	if v, ok := uc.mutation.Age(); ok {
-		if err := user.AgeValidator(v); err != nil {
-			return &ValidationError{Name: "age", err: fmt.Errorf("ent: validator failed for field \"age\": %w", err)}
+	if _, ok := uc.mutation.PhoneVerified(); !ok {
+		v := user.DefaultPhoneVerified
+		uc.mutation.SetPhoneVerified(v)
+	}
+	if _, ok := uc.mutation.Gender(); !ok {
+		return &ValidationError{Name: "gender", err: errors.New("ent: missing required field \"gender\"")}
+	}
+	if v, ok := uc.mutation.Gender(); ok {
+		if err := user.GenderValidator(v); err != nil {
+			return &ValidationError{Name: "gender", err: fmt.Errorf("ent: validator failed for field \"gender\": %w", err)}
 		}
 	}
-	if _, ok := uc.mutation.Name(); !ok {
-		v := user.DefaultName
-		uc.mutation.SetName(v)
+	if _, ok := uc.mutation.PremiumKind(); !ok {
+		return &ValidationError{Name: "premium_kind", err: errors.New("ent: missing required field \"premium_kind\"")}
 	}
-	if _, ok := uc.mutation.MaritalStatus(); !ok {
-		v := user.DefaultMaritalStatus
-		uc.mutation.SetMaritalStatus(v)
+	if v, ok := uc.mutation.PremiumKind(); ok {
+		if err := user.PremiumKindValidator(v); err != nil {
+			return &ValidationError{Name: "premium_kind", err: fmt.Errorf("ent: validator failed for field \"premium_kind\": %w", err)}
+		}
+	}
+	if _, ok := uc.mutation.PremiumExpiryDate(); !ok {
+		return &ValidationError{Name: "premium_expiry_date", err: errors.New("ent: missing required field \"premium_expiry_date\"")}
+	}
+	if _, ok := uc.mutation.CreatedAt(); !ok {
+		v := user.DefaultCreatedAt()
+		uc.mutation.SetCreatedAt(v)
+	}
+	if _, ok := uc.mutation.UpdatedAt(); !ok {
+		v := user.DefaultUpdatedAt()
+		uc.mutation.SetUpdatedAt(v)
 	}
 	return nil
 }
@@ -143,29 +290,164 @@ func (uc *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			},
 		}
 	)
-	if value, ok := uc.mutation.Age(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeInt,
-			Value:  value,
-			Column: user.FieldAge,
-		})
-		u.Age = value
-	}
-	if value, ok := uc.mutation.Name(); ok {
+	if value, ok := uc.mutation.Username(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeString,
 			Value:  value,
-			Column: user.FieldName,
+			Column: user.FieldUsername,
 		})
-		u.Name = value
+		u.Username = value
 	}
-	if value, ok := uc.mutation.MaritalStatus(); ok {
+	if value, ok := uc.mutation.PhoneVerified(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeBool,
 			Value:  value,
-			Column: user.FieldMaritalStatus,
+			Column: user.FieldPhoneVerified,
 		})
-		u.MaritalStatus = value
+		u.PhoneVerified = value
+	}
+	if value, ok := uc.mutation.AuthSmsCode(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeInt16,
+			Value:  value,
+			Column: user.FieldAuthSmsCode,
+		})
+		u.AuthSmsCode = value
+	}
+	if value, ok := uc.mutation.Gender(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: user.FieldGender,
+		})
+		u.Gender = value
+	}
+	if value, ok := uc.mutation.PremiumKind(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeEnum,
+			Value:  value,
+			Column: user.FieldPremiumKind,
+		})
+		u.PremiumKind = value
+	}
+	if value, ok := uc.mutation.PremiumExpiryDate(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldPremiumExpiryDate,
+		})
+		u.PremiumExpiryDate = value
+	}
+	if value, ok := uc.mutation.CreatedAt(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldCreatedAt,
+		})
+		u.CreatedAt = value
+	}
+	if value, ok := uc.mutation.UpdatedAt(); ok {
+		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
+			Type:   field.TypeTime,
+			Value:  value,
+			Column: user.FieldUpdatedAt,
+		})
+		u.UpdatedAt = value
+	}
+	if nodes := uc.mutation.RefcodeInvitorIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RefcodeInvitorTable,
+			Columns: []string{user.RefcodeInvitorColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.UserrefcodesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.UserrefcodesTable,
+			Columns: []string{user.UserrefcodesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: userrefcodes.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.InquiryIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.InquiryTable,
+			Columns: []string{user.InquiryColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: inquiry.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.ServiceCustomerIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceCustomerTable,
+			Columns: []string{user.ServiceCustomerColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := uc.mutation.ServiceProviderIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: true,
+			Table:   user.ServiceProviderTable,
+			Columns: []string{user.ServiceProviderColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: service.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return u, _spec
 }

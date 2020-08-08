@@ -4,7 +4,9 @@ go 1.14
 
 require (
 	github.com/facebookincubator/ent v0.3.0
+	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4
+	github.com/kyleconroy/sqlc v1.5.0 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/spf13/viper v1.7.1

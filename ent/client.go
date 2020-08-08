@@ -9,10 +9,14 @@ import (
 
 	"github.com/huangc28/go-darkpanda-backend/ent/migrate"
 
+	"github.com/huangc28/go-darkpanda-backend/ent/inquiry"
+	"github.com/huangc28/go-darkpanda-backend/ent/service"
 	"github.com/huangc28/go-darkpanda-backend/ent/user"
+	"github.com/huangc28/go-darkpanda-backend/ent/userrefcodes"
 
 	"github.com/facebookincubator/ent/dialect"
 	"github.com/facebookincubator/ent/dialect/sql"
+	"github.com/facebookincubator/ent/dialect/sql/sqlgraph"
 )
 
 // Client is the client that holds all ent builders.
@@ -20,8 +24,14 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Inquiry is the client for interacting with the Inquiry builders.
+	Inquiry *InquiryClient
+	// Service is the client for interacting with the Service builders.
+	Service *ServiceClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
+	// UserRefCodes is the client for interacting with the UserRefCodes builders.
+	UserRefCodes *UserRefCodesClient
 }
 
 // NewClient creates a new client configured with the given options.
@@ -35,7 +45,10 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Inquiry = NewInquiryClient(c.config)
+	c.Service = NewServiceClient(c.config)
 	c.User = NewUserClient(c.config)
+	c.UserRefCodes = NewUserRefCodesClient(c.config)
 }
 
 // Open opens a database/sql.DB specified by the driver name and
@@ -66,9 +79,12 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	}
 	cfg := config{driver: tx, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
-		ctx:    ctx,
-		config: cfg,
-		User:   NewUserClient(cfg),
+		ctx:          ctx,
+		config:       cfg,
+		Inquiry:      NewInquiryClient(cfg),
+		Service:      NewServiceClient(cfg),
+		User:         NewUserClient(cfg),
+		UserRefCodes: NewUserRefCodesClient(cfg),
 	}, nil
 }
 
@@ -83,15 +99,18 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	}
 	cfg := config{driver: &txDriver{tx: tx, drv: c.driver}, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
-		config: cfg,
-		User:   NewUserClient(cfg),
+		config:       cfg,
+		Inquiry:      NewInquiryClient(cfg),
+		Service:      NewServiceClient(cfg),
+		User:         NewUserClient(cfg),
+		UserRefCodes: NewUserRefCodesClient(cfg),
 	}, nil
 }
 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		User.
+//		Inquiry.
 //		Query().
 //		Count(ctx)
 //
@@ -113,7 +132,234 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Inquiry.Use(hooks...)
+	c.Service.Use(hooks...)
 	c.User.Use(hooks...)
+	c.UserRefCodes.Use(hooks...)
+}
+
+// InquiryClient is a client for the Inquiry schema.
+type InquiryClient struct {
+	config
+}
+
+// NewInquiryClient returns a client for the Inquiry from the given config.
+func NewInquiryClient(c config) *InquiryClient {
+	return &InquiryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `inquiry.Hooks(f(g(h())))`.
+func (c *InquiryClient) Use(hooks ...Hook) {
+	c.hooks.Inquiry = append(c.hooks.Inquiry, hooks...)
+}
+
+// Create returns a create builder for Inquiry.
+func (c *InquiryClient) Create() *InquiryCreate {
+	mutation := newInquiryMutation(c.config, OpCreate)
+	return &InquiryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// BulkCreate returns a builder for creating a bulk of Inquiry entities.
+func (c *InquiryClient) CreateBulk(builders ...*InquiryCreate) *InquiryCreateBulk {
+	return &InquiryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Inquiry.
+func (c *InquiryClient) Update() *InquiryUpdate {
+	mutation := newInquiryMutation(c.config, OpUpdate)
+	return &InquiryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *InquiryClient) UpdateOne(i *Inquiry) *InquiryUpdateOne {
+	mutation := newInquiryMutation(c.config, OpUpdateOne, withInquiry(i))
+	return &InquiryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *InquiryClient) UpdateOneID(id int) *InquiryUpdateOne {
+	mutation := newInquiryMutation(c.config, OpUpdateOne, withInquiryID(id))
+	return &InquiryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Inquiry.
+func (c *InquiryClient) Delete() *InquiryDelete {
+	mutation := newInquiryMutation(c.config, OpDelete)
+	return &InquiryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *InquiryClient) DeleteOne(i *Inquiry) *InquiryDeleteOne {
+	return c.DeleteOneID(i.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *InquiryClient) DeleteOneID(id int) *InquiryDeleteOne {
+	builder := c.Delete().Where(inquiry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &InquiryDeleteOne{builder}
+}
+
+// Query returns a query builder for Inquiry.
+func (c *InquiryClient) Query() *InquiryQuery {
+	return &InquiryQuery{config: c.config}
+}
+
+// Get returns a Inquiry entity by its id.
+func (c *InquiryClient) Get(ctx context.Context, id int) (*Inquiry, error) {
+	return c.Query().Where(inquiry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *InquiryClient) GetX(ctx context.Context, id int) *Inquiry {
+	i, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return i
+}
+
+// QueryUsers queries the users edge of a Inquiry.
+func (c *InquiryClient) QueryUsers(i *Inquiry) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := i.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(inquiry.Table, inquiry.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, inquiry.UsersTable, inquiry.UsersColumn),
+		)
+		fromV = sqlgraph.Neighbors(i.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *InquiryClient) Hooks() []Hook {
+	return c.hooks.Inquiry
+}
+
+// ServiceClient is a client for the Service schema.
+type ServiceClient struct {
+	config
+}
+
+// NewServiceClient returns a client for the Service from the given config.
+func NewServiceClient(c config) *ServiceClient {
+	return &ServiceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `service.Hooks(f(g(h())))`.
+func (c *ServiceClient) Use(hooks ...Hook) {
+	c.hooks.Service = append(c.hooks.Service, hooks...)
+}
+
+// Create returns a create builder for Service.
+func (c *ServiceClient) Create() *ServiceCreate {
+	mutation := newServiceMutation(c.config, OpCreate)
+	return &ServiceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// BulkCreate returns a builder for creating a bulk of Service entities.
+func (c *ServiceClient) CreateBulk(builders ...*ServiceCreate) *ServiceCreateBulk {
+	return &ServiceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Service.
+func (c *ServiceClient) Update() *ServiceUpdate {
+	mutation := newServiceMutation(c.config, OpUpdate)
+	return &ServiceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ServiceClient) UpdateOne(s *Service) *ServiceUpdateOne {
+	mutation := newServiceMutation(c.config, OpUpdateOne, withService(s))
+	return &ServiceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ServiceClient) UpdateOneID(id int) *ServiceUpdateOne {
+	mutation := newServiceMutation(c.config, OpUpdateOne, withServiceID(id))
+	return &ServiceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Service.
+func (c *ServiceClient) Delete() *ServiceDelete {
+	mutation := newServiceMutation(c.config, OpDelete)
+	return &ServiceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *ServiceClient) DeleteOne(s *Service) *ServiceDeleteOne {
+	return c.DeleteOneID(s.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *ServiceClient) DeleteOneID(id int) *ServiceDeleteOne {
+	builder := c.Delete().Where(service.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ServiceDeleteOne{builder}
+}
+
+// Query returns a query builder for Service.
+func (c *ServiceClient) Query() *ServiceQuery {
+	return &ServiceQuery{config: c.config}
+}
+
+// Get returns a Service entity by its id.
+func (c *ServiceClient) Get(ctx context.Context, id int) (*Service, error) {
+	return c.Query().Where(service.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ServiceClient) GetX(ctx context.Context, id int) *Service {
+	s, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return s
+}
+
+// QueryCustomer queries the customer edge of a Service.
+func (c *ServiceClient) QueryCustomer(s *Service) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(service.Table, service.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, service.CustomerTable, service.CustomerColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryServiceProvider queries the service_provider edge of a Service.
+func (c *ServiceClient) QueryServiceProvider(s *Service) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := s.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(service.Table, service.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, service.ServiceProviderTable, service.ServiceProviderColumn),
+		)
+		fromV = sqlgraph.Neighbors(s.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ServiceClient) Hooks() []Hook {
+	return c.hooks.Service
 }
 
 // UserClient is a client for the User schema.
@@ -199,7 +445,207 @@ func (c *UserClient) GetX(ctx context.Context, id int) *User {
 	return u
 }
 
+// QueryRefcodeInvitor queries the refcode_invitor edge of a User.
+func (c *UserClient) QueryRefcodeInvitor(u *User) *UserRefCodesQuery {
+	query := &UserRefCodesQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(userrefcodes.Table, userrefcodes.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RefcodeInvitorTable, user.RefcodeInvitorColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryUserrefcodes queries the userrefcodes edge of a User.
+func (c *UserClient) QueryUserrefcodes(u *User) *UserRefCodesQuery {
+	query := &UserRefCodesQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(userrefcodes.Table, userrefcodes.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.UserrefcodesTable, user.UserrefcodesColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryInquiry queries the inquiry edge of a User.
+func (c *UserClient) QueryInquiry(u *User) *InquiryQuery {
+	query := &InquiryQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(inquiry.Table, inquiry.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.InquiryTable, user.InquiryColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryServiceCustomer queries the service_customer edge of a User.
+func (c *UserClient) QueryServiceCustomer(u *User) *ServiceQuery {
+	query := &ServiceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.ServiceCustomerTable, user.ServiceCustomerColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryServiceProvider queries the service_provider edge of a User.
+func (c *UserClient) QueryServiceProvider(u *User) *ServiceQuery {
+	query := &ServiceQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(service.Table, service.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, user.ServiceProviderTable, user.ServiceProviderColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
+}
+
+// UserRefCodesClient is a client for the UserRefCodes schema.
+type UserRefCodesClient struct {
+	config
+}
+
+// NewUserRefCodesClient returns a client for the UserRefCodes from the given config.
+func NewUserRefCodesClient(c config) *UserRefCodesClient {
+	return &UserRefCodesClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `userrefcodes.Hooks(f(g(h())))`.
+func (c *UserRefCodesClient) Use(hooks ...Hook) {
+	c.hooks.UserRefCodes = append(c.hooks.UserRefCodes, hooks...)
+}
+
+// Create returns a create builder for UserRefCodes.
+func (c *UserRefCodesClient) Create() *UserRefCodesCreate {
+	mutation := newUserRefCodesMutation(c.config, OpCreate)
+	return &UserRefCodesCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// BulkCreate returns a builder for creating a bulk of UserRefCodes entities.
+func (c *UserRefCodesClient) CreateBulk(builders ...*UserRefCodesCreate) *UserRefCodesCreateBulk {
+	return &UserRefCodesCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserRefCodes.
+func (c *UserRefCodesClient) Update() *UserRefCodesUpdate {
+	mutation := newUserRefCodesMutation(c.config, OpUpdate)
+	return &UserRefCodesUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserRefCodesClient) UpdateOne(urc *UserRefCodes) *UserRefCodesUpdateOne {
+	mutation := newUserRefCodesMutation(c.config, OpUpdateOne, withUserRefCodes(urc))
+	return &UserRefCodesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserRefCodesClient) UpdateOneID(id int) *UserRefCodesUpdateOne {
+	mutation := newUserRefCodesMutation(c.config, OpUpdateOne, withUserRefCodesID(id))
+	return &UserRefCodesUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserRefCodes.
+func (c *UserRefCodesClient) Delete() *UserRefCodesDelete {
+	mutation := newUserRefCodesMutation(c.config, OpDelete)
+	return &UserRefCodesDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *UserRefCodesClient) DeleteOne(urc *UserRefCodes) *UserRefCodesDeleteOne {
+	return c.DeleteOneID(urc.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *UserRefCodesClient) DeleteOneID(id int) *UserRefCodesDeleteOne {
+	builder := c.Delete().Where(userrefcodes.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserRefCodesDeleteOne{builder}
+}
+
+// Query returns a query builder for UserRefCodes.
+func (c *UserRefCodesClient) Query() *UserRefCodesQuery {
+	return &UserRefCodesQuery{config: c.config}
+}
+
+// Get returns a UserRefCodes entity by its id.
+func (c *UserRefCodesClient) Get(ctx context.Context, id int) (*UserRefCodes, error) {
+	return c.Query().Where(userrefcodes.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserRefCodesClient) GetX(ctx context.Context, id int) *UserRefCodes {
+	urc, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return urc
+}
+
+// QueryUsers queries the users edge of a UserRefCodes.
+func (c *UserRefCodesClient) QueryUsers(urc *UserRefCodes) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := urc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(userrefcodes.Table, userrefcodes.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, userrefcodes.UsersTable, userrefcodes.UsersColumn),
+		)
+		fromV = sqlgraph.Neighbors(urc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRefcodeInvitee queries the refcode_invitee edge of a UserRefCodes.
+func (c *UserRefCodesClient) QueryRefcodeInvitee(urc *UserRefCodes) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := urc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(userrefcodes.Table, userrefcodes.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, userrefcodes.RefcodeInviteeTable, userrefcodes.RefcodeInviteeColumn),
+		)
+		fromV = sqlgraph.Neighbors(urc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *UserRefCodesClient) Hooks() []Hook {
+	return c.hooks.UserRefCodes
 }

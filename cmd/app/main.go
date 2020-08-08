@@ -10,22 +10,21 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/huangc28/go-darkpanda-backend/config"
-	"github.com/huangc28/go-darkpanda-backend/internal/auth"
+	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"golang.org/x/net/context"
 )
 
-func main() {
-	// initialize config
+func init() {
 	config.InitConfig()
+}
 
+func main() {
 	r := mux.NewRouter()
 	verRouter := r.PathPrefix("/v1").Subrouter()
 
-	auth.Routes(verRouter)
-
-	http.Handle("/", r)
+	app.StartApp(verRouter)
 
 	srv := &http.Server{
 		Handler: r,

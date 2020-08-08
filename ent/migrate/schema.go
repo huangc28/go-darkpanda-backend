@@ -8,12 +8,80 @@ import (
 )
 
 var (
+	// InquiriesColumns holds the columns for the "inquiries" table.
+	InquiriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "budget", Type: field.TypeFloat32},
+		{Name: "service_type", Type: field.TypeEnum, Enums: []string{"chat", "diner", "movie", "sex", "shopping"}},
+		{Name: "inquiry_status", Type: field.TypeEnum, Enums: []string{"booked", "canceled", "expired", "inquiring"}},
+		{Name: "inquirer_id", Type: field.TypeInt, Unique: true, Nullable: true},
+	}
+	// InquiriesTable holds the schema information for the "inquiries" table.
+	InquiriesTable = &schema.Table{
+		Name:       "inquiries",
+		Columns:    InquiriesColumns,
+		PrimaryKey: []*schema.Column{InquiriesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "inquiries_users_inquiry",
+				Columns: []*schema.Column{InquiriesColumns[4]},
+
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// ServicesColumns holds the columns for the "services" table.
+	ServicesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "uuid", Type: field.TypeUUID},
+		{Name: "price", Type: field.TypeFloat32},
+		{Name: "duration", Type: field.TypeInt},
+		{Name: "appointment_time", Type: field.TypeTime},
+		{Name: "lng", Type: field.TypeFloat64},
+		{Name: "lat", Type: field.TypeFloat64},
+		{Name: "service_type", Type: field.TypeEnum, Enums: []string{"chat", "diner", "movie", "sex", "shopping"}},
+		{Name: "service_status", Type: field.TypeEnum, Nullable: true, Enums: []string{"canceled", "completed", "failed_due_to_both", "failed_due_to_girl", "failed_due_to_man", "fulfilling", "girl_waiting", "to_be_fulfilled"}},
+		{Name: "girl_ready", Type: field.TypeBool},
+		{Name: "man_ready", Type: field.TypeBool},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "customer_id", Type: field.TypeInt, Nullable: true},
+		{Name: "service_provider_id", Type: field.TypeInt, Nullable: true},
+	}
+	// ServicesTable holds the schema information for the "services" table.
+	ServicesTable = &schema.Table{
+		Name:       "services",
+		Columns:    ServicesColumns,
+		PrimaryKey: []*schema.Column{ServicesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "services_users_customer",
+				Columns: []*schema.Column{ServicesColumns[13]},
+
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:  "services_users_service_provider",
+				Columns: []*schema.Column{ServicesColumns[14]},
+
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// UsersColumns holds the columns for the "users" table.
 	UsersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "age", Type: field.TypeInt},
-		{Name: "name", Type: field.TypeString, Default: "unknown"},
-		{Name: "marital_status", Type: field.TypeBool},
+		{Name: "username", Type: field.TypeString, Unique: true},
+		{Name: "phone_verified", Type: field.TypeBool},
+		{Name: "auth_sms_code", Type: field.TypeInt16, Nullable: true},
+		{Name: "gender", Type: field.TypeEnum, Enums: []string{"female", "male"}},
+		{Name: "premium_kind", Type: field.TypeEnum, Enums: []string{"normal", "paid"}},
+		{Name: "premium_expiry_date", Type: field.TypeTime},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
 	}
 	// UsersTable holds the schema information for the "users" table.
 	UsersTable = &schema.Table{
@@ -22,11 +90,49 @@ var (
 		PrimaryKey:  []*schema.Column{UsersColumns[0]},
 		ForeignKeys: []*schema.ForeignKey{},
 	}
+	// UserRefCodesColumns holds the columns for the "user_ref_codes" table.
+	UserRefCodesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "ref_code", Type: field.TypeString},
+		{Name: "ref_code_type", Type: field.TypeEnum, Enums: []string{"invitor", "manager"}},
+		{Name: "invitor_id", Type: field.TypeInt, Nullable: true},
+		{Name: "invitee_id", Type: field.TypeInt, Nullable: true},
+	}
+	// UserRefCodesTable holds the schema information for the "user_ref_codes" table.
+	UserRefCodesTable = &schema.Table{
+		Name:       "user_ref_codes",
+		Columns:    UserRefCodesColumns,
+		PrimaryKey: []*schema.Column{UserRefCodesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "user_ref_codes_users_refcode_invitor",
+				Columns: []*schema.Column{UserRefCodesColumns[3]},
+
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:  "user_ref_codes_users_refcode_invitee",
+				Columns: []*schema.Column{UserRefCodesColumns[4]},
+
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		InquiriesTable,
+		ServicesTable,
 		UsersTable,
+		UserRefCodesTable,
 	}
 )
 
 func init() {
+	InquiriesTable.ForeignKeys[0].RefTable = UsersTable
+	ServicesTable.ForeignKeys[0].RefTable = UsersTable
+	ServicesTable.ForeignKeys[1].RefTable = UsersTable
+	UserRefCodesTable.ForeignKeys[0].RefTable = UsersTable
+	UserRefCodesTable.ForeignKeys[1].RefTable = UsersTable
 }
