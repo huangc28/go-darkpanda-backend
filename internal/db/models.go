@@ -164,6 +164,17 @@ type User struct {
 	DeletedAt         sql.NullTime  `json:"deleted_at"`
 }
 
+type UserRating struct {
+	ID         int64          `json:"id"`
+	FromUserID sql.NullInt32  `json:"from_user_id"`
+	ToUserID   sql.NullInt32  `json:"to_user_id"`
+	Rating     sql.NullInt32  `json:"rating"`
+	Comments   sql.NullString `json:"comments"`
+	CreatedAt  time.Time      `json:"created_at"`
+	UpdatedAt  sql.NullTime   `json:"updated_at"`
+	DeletedAt  sql.NullTime   `json:"deleted_at"`
+}
+
 type UserRefcode struct {
 	ID          int64         `json:"id"`
 	InvitorID   int32         `json:"invitor_id"`
