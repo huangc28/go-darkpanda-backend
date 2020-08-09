@@ -50,9 +50,11 @@ type UserEdges struct {
 	ServiceCustomer []*Service
 	// ServiceProvider holds the value of the service_provider edge.
 	ServiceProvider []*Service
+	// Groups holds the value of the groups edge.
+	Groups []*Group
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [5]bool
+	loadedTypes [6]bool
 }
 
 // RefcodeInvitorOrErr returns the RefcodeInvitor value or an error if the edge
@@ -103,6 +105,15 @@ func (e UserEdges) ServiceProviderOrErr() ([]*Service, error) {
 		return e.ServiceProvider, nil
 	}
 	return nil, &NotLoadedError{edge: "service_provider"}
+}
+
+// GroupsOrErr returns the Groups value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GroupsOrErr() ([]*Group, error) {
+	if e.loadedTypes[5] {
+		return e.Groups, nil
+	}
+	return nil, &NotLoadedError{edge: "groups"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -198,6 +209,11 @@ func (u *User) QueryServiceCustomer() *ServiceQuery {
 // QueryServiceProvider queries the service_provider edge of the User.
 func (u *User) QueryServiceProvider() *ServiceQuery {
 	return (&UserClient{config: u.config}).QueryServiceProvider(u)
+}
+
+// QueryGroups queries the groups edge of the User.
+func (u *User) QueryGroups() *GroupQuery {
+	return (&UserClient{config: u.config}).QueryGroups(u)
 }
 
 // Update returns a builder for updating this User.

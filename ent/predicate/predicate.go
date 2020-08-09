@@ -6,6 +6,12 @@ import (
 	"github.com/facebookincubator/ent/dialect/sql"
 )
 
+// Group is the predicate function for group builders.
+type Group func(*sql.Selector)
+
+// GroupUsers is the predicate function for groupusers builders.
+type GroupUsers func(*sql.Selector)
+
 // Inquiry is the predicate function for inquiry builders.
 type Inquiry func(*sql.Selector)
 

@@ -9,6 +9,8 @@ import (
 
 	"github.com/huangc28/go-darkpanda-backend/ent/migrate"
 
+	"github.com/huangc28/go-darkpanda-backend/ent/group"
+	"github.com/huangc28/go-darkpanda-backend/ent/groupusers"
 	"github.com/huangc28/go-darkpanda-backend/ent/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/ent/service"
 	"github.com/huangc28/go-darkpanda-backend/ent/user"
@@ -24,6 +26,10 @@ type Client struct {
 	config
 	// Schema is the client for creating, migrating and dropping schema.
 	Schema *migrate.Schema
+	// Group is the client for interacting with the Group builders.
+	Group *GroupClient
+	// GroupUsers is the client for interacting with the GroupUsers builders.
+	GroupUsers *GroupUsersClient
 	// Inquiry is the client for interacting with the Inquiry builders.
 	Inquiry *InquiryClient
 	// Service is the client for interacting with the Service builders.
@@ -45,6 +51,8 @@ func NewClient(opts ...Option) *Client {
 
 func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
+	c.Group = NewGroupClient(c.config)
+	c.GroupUsers = NewGroupUsersClient(c.config)
 	c.Inquiry = NewInquiryClient(c.config)
 	c.Service = NewServiceClient(c.config)
 	c.User = NewUserClient(c.config)
@@ -81,6 +89,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	return &Tx{
 		ctx:          ctx,
 		config:       cfg,
+		Group:        NewGroupClient(cfg),
+		GroupUsers:   NewGroupUsersClient(cfg),
 		Inquiry:      NewInquiryClient(cfg),
 		Service:      NewServiceClient(cfg),
 		User:         NewUserClient(cfg),
@@ -100,6 +110,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := config{driver: &txDriver{tx: tx, drv: c.driver}, log: c.log, debug: c.debug, hooks: c.hooks}
 	return &Tx{
 		config:       cfg,
+		Group:        NewGroupClient(cfg),
+		GroupUsers:   NewGroupUsersClient(cfg),
 		Inquiry:      NewInquiryClient(cfg),
 		Service:      NewServiceClient(cfg),
 		User:         NewUserClient(cfg),
@@ -110,7 +122,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 // Debug returns a new debug-client. It's used to get verbose logging on specific operations.
 //
 //	client.Debug().
-//		Inquiry.
+//		Group.
 //		Query().
 //		Count(ctx)
 //
@@ -132,10 +144,204 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
+	c.Group.Use(hooks...)
+	c.GroupUsers.Use(hooks...)
 	c.Inquiry.Use(hooks...)
 	c.Service.Use(hooks...)
 	c.User.Use(hooks...)
 	c.UserRefCodes.Use(hooks...)
+}
+
+// GroupClient is a client for the Group schema.
+type GroupClient struct {
+	config
+}
+
+// NewGroupClient returns a client for the Group from the given config.
+func NewGroupClient(c config) *GroupClient {
+	return &GroupClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `group.Hooks(f(g(h())))`.
+func (c *GroupClient) Use(hooks ...Hook) {
+	c.hooks.Group = append(c.hooks.Group, hooks...)
+}
+
+// Create returns a create builder for Group.
+func (c *GroupClient) Create() *GroupCreate {
+	mutation := newGroupMutation(c.config, OpCreate)
+	return &GroupCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// BulkCreate returns a builder for creating a bulk of Group entities.
+func (c *GroupClient) CreateBulk(builders ...*GroupCreate) *GroupCreateBulk {
+	return &GroupCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Group.
+func (c *GroupClient) Update() *GroupUpdate {
+	mutation := newGroupMutation(c.config, OpUpdate)
+	return &GroupUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroupClient) UpdateOne(gr *Group) *GroupUpdateOne {
+	mutation := newGroupMutation(c.config, OpUpdateOne, withGroup(gr))
+	return &GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GroupClient) UpdateOneID(id int) *GroupUpdateOne {
+	mutation := newGroupMutation(c.config, OpUpdateOne, withGroupID(id))
+	return &GroupUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Group.
+func (c *GroupClient) Delete() *GroupDelete {
+	mutation := newGroupMutation(c.config, OpDelete)
+	return &GroupDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *GroupClient) DeleteOne(gr *Group) *GroupDeleteOne {
+	return c.DeleteOneID(gr.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *GroupClient) DeleteOneID(id int) *GroupDeleteOne {
+	builder := c.Delete().Where(group.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GroupDeleteOne{builder}
+}
+
+// Query returns a query builder for Group.
+func (c *GroupClient) Query() *GroupQuery {
+	return &GroupQuery{config: c.config}
+}
+
+// Get returns a Group entity by its id.
+func (c *GroupClient) Get(ctx context.Context, id int) (*Group, error) {
+	return c.Query().Where(group.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroupClient) GetX(ctx context.Context, id int) *Group {
+	gr, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return gr
+}
+
+// QueryUsers queries the users edge of a Group.
+func (c *GroupClient) QueryUsers(gr *Group) *UserQuery {
+	query := &UserQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := gr.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, group.UsersTable, group.UsersPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(gr.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GroupClient) Hooks() []Hook {
+	return c.hooks.Group
+}
+
+// GroupUsersClient is a client for the GroupUsers schema.
+type GroupUsersClient struct {
+	config
+}
+
+// NewGroupUsersClient returns a client for the GroupUsers from the given config.
+func NewGroupUsersClient(c config) *GroupUsersClient {
+	return &GroupUsersClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `groupusers.Hooks(f(g(h())))`.
+func (c *GroupUsersClient) Use(hooks ...Hook) {
+	c.hooks.GroupUsers = append(c.hooks.GroupUsers, hooks...)
+}
+
+// Create returns a create builder for GroupUsers.
+func (c *GroupUsersClient) Create() *GroupUsersCreate {
+	mutation := newGroupUsersMutation(c.config, OpCreate)
+	return &GroupUsersCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// BulkCreate returns a builder for creating a bulk of GroupUsers entities.
+func (c *GroupUsersClient) CreateBulk(builders ...*GroupUsersCreate) *GroupUsersCreateBulk {
+	return &GroupUsersCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GroupUsers.
+func (c *GroupUsersClient) Update() *GroupUsersUpdate {
+	mutation := newGroupUsersMutation(c.config, OpUpdate)
+	return &GroupUsersUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroupUsersClient) UpdateOne(gu *GroupUsers) *GroupUsersUpdateOne {
+	mutation := newGroupUsersMutation(c.config, OpUpdateOne, withGroupUsers(gu))
+	return &GroupUsersUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GroupUsersClient) UpdateOneID(id int) *GroupUsersUpdateOne {
+	mutation := newGroupUsersMutation(c.config, OpUpdateOne, withGroupUsersID(id))
+	return &GroupUsersUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GroupUsers.
+func (c *GroupUsersClient) Delete() *GroupUsersDelete {
+	mutation := newGroupUsersMutation(c.config, OpDelete)
+	return &GroupUsersDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a delete builder for the given entity.
+func (c *GroupUsersClient) DeleteOne(gu *GroupUsers) *GroupUsersDeleteOne {
+	return c.DeleteOneID(gu.ID)
+}
+
+// DeleteOneID returns a delete builder for the given id.
+func (c *GroupUsersClient) DeleteOneID(id int) *GroupUsersDeleteOne {
+	builder := c.Delete().Where(groupusers.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GroupUsersDeleteOne{builder}
+}
+
+// Query returns a query builder for GroupUsers.
+func (c *GroupUsersClient) Query() *GroupUsersQuery {
+	return &GroupUsersQuery{config: c.config}
+}
+
+// Get returns a GroupUsers entity by its id.
+func (c *GroupUsersClient) Get(ctx context.Context, id int) (*GroupUsers, error) {
+	return c.Query().Where(groupusers.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroupUsersClient) GetX(ctx context.Context, id int) *GroupUsers {
+	gu, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return gu
+}
+
+// Hooks returns the client hooks.
+func (c *GroupUsersClient) Hooks() []Hook {
+	return c.hooks.GroupUsers
 }
 
 // InquiryClient is a client for the Inquiry schema.
@@ -518,6 +724,22 @@ func (c *UserClient) QueryServiceProvider(u *User) *ServiceQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(service.Table, service.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, true, user.ServiceProviderTable, user.ServiceProviderColumn),
+		)
+		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroups queries the groups edge of a User.
+func (c *UserClient) QueryGroups(u *User) *GroupQuery {
+	query := &GroupQuery{config: c.config}
+	query.path = func(ctx context.Context) (fromV *sql.Selector, _ error) {
+		id := u.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, user.GroupsTable, user.GroupsPrimaryKey...),
 		)
 		fromV = sqlgraph.Neighbors(u.driver.Dialect(), step)
 		return fromV, nil

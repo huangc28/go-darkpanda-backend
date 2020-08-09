@@ -8,6 +8,30 @@ import (
 )
 
 var (
+	// GroupsColumns holds the columns for the "groups" table.
+	GroupsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "group_type", Type: field.TypeEnum, Enums: []string{"Agroup", "Bgroup"}},
+	}
+	// GroupsTable holds the schema information for the "groups" table.
+	GroupsTable = &schema.Table{
+		Name:        "groups",
+		Columns:     GroupsColumns,
+		PrimaryKey:  []*schema.Column{GroupsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
+	}
+	// GroupUsersColumns holds the columns for the "group_users" table.
+	GroupUsersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "auth_type", Type: field.TypeEnum, Enums: []string{"admin", "user"}},
+	}
+	// GroupUsersTable holds the schema information for the "group_users" table.
+	GroupUsersTable = &schema.Table{
+		Name:        "group_users",
+		Columns:     GroupUsersColumns,
+		PrimaryKey:  []*schema.Column{GroupUsersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{},
+	}
 	// InquiriesColumns holds the columns for the "inquiries" table.
 	InquiriesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -120,12 +144,42 @@ var (
 			},
 		},
 	}
+	// GroupUsersColumns holds the columns for the "group_users" table.
+	GroupUsersColumns = []*schema.Column{
+		{Name: "group_id", Type: field.TypeInt},
+		{Name: "user_id", Type: field.TypeInt},
+	}
+	// GroupUsersTable holds the schema information for the "group_users" table.
+	GroupUsersTable = &schema.Table{
+		Name:       "group_users",
+		Columns:    GroupUsersColumns,
+		PrimaryKey: []*schema.Column{GroupUsersColumns[0], GroupUsersColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:  "group_users_group_id",
+				Columns: []*schema.Column{GroupUsersColumns[0]},
+
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:  "group_users_user_id",
+				Columns: []*schema.Column{GroupUsersColumns[1]},
+
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
+		GroupsTable,
+		GroupUsersTable,
 		InquiriesTable,
 		ServicesTable,
 		UsersTable,
 		UserRefCodesTable,
+		GroupUsersTable,
 	}
 )
 
@@ -135,4 +189,6 @@ func init() {
 	ServicesTable.ForeignKeys[1].RefTable = UsersTable
 	UserRefCodesTable.ForeignKeys[0].RefTable = UsersTable
 	UserRefCodesTable.ForeignKeys[1].RefTable = UsersTable
+	GroupUsersTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupUsersTable.ForeignKeys[1].RefTable = UsersTable
 }

@@ -39,6 +39,8 @@ const (
 	EdgeServiceCustomer = "service_customer"
 	// EdgeServiceProvider holds the string denoting the service_provider edge name in mutations.
 	EdgeServiceProvider = "service_provider"
+	// EdgeGroups holds the string denoting the groups edge name in mutations.
+	EdgeGroups = "groups"
 
 	// Table holds the table name of the user in the database.
 	Table = "users"
@@ -77,6 +79,11 @@ const (
 	ServiceProviderInverseTable = "services"
 	// ServiceProviderColumn is the table column denoting the service_provider relation/edge.
 	ServiceProviderColumn = "service_provider_id"
+	// GroupsTable is the table the holds the groups relation/edge. The primary key declared below.
+	GroupsTable = "group_users"
+	// GroupsInverseTable is the table name for the Group entity.
+	// It exists in this package in order to avoid circular dependency with the "group" package.
+	GroupsInverseTable = "groups"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -91,6 +98,12 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 }
+
+var (
+	// GroupsPrimaryKey and GroupsColumn2 are the table columns denoting the
+	// primary key for the groups relation (M2M).
+	GroupsPrimaryKey = []string{"group_id", "user_id"}
+)
 
 var (
 	// DefaultPhoneVerified holds the default value on creation for the phone_verified field.

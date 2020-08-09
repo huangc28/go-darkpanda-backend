@@ -9,6 +9,32 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/ent"
 )
 
+// The GroupFunc type is an adapter to allow the use of ordinary
+// function as Group mutator.
+type GroupFunc func(context.Context, *ent.GroupMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GroupMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The GroupUsersFunc type is an adapter to allow the use of ordinary
+// function as GroupUsers mutator.
+type GroupUsersFunc func(context.Context, *ent.GroupUsersMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GroupUsersFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.GroupUsersMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupUsersMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The InquiryFunc type is an adapter to allow the use of ordinary
 // function as Inquiry mutator.
 type InquiryFunc func(context.Context, *ent.InquiryMutation) (ent.Value, error)

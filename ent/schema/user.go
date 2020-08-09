@@ -88,5 +88,7 @@ func (User) Edges() []ent.Edge {
 		edge.From("service_customer", Service.Type).Ref("customer"),
 
 		edge.From("service_provider", Service.Type).Ref("service_provider"),
+
+		edge.From("groups", Group.Type).Ref("users"),
 	}
 }
