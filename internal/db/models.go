@@ -50,21 +50,21 @@ func (e *InquiryStatus) Scan(src interface{}) error {
 	return nil
 }
 
-type PremiumKind string
+type PremiumType string
 
 const (
-	PremiumKindNormal PremiumKind = "normal"
-	PremiumKindPaid   PremiumKind = "paid"
+	PremiumTypeNormal PremiumType = "normal"
+	PremiumTypePaid   PremiumType = "paid"
 )
 
-func (e *PremiumKind) Scan(src interface{}) error {
+func (e *PremiumType) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = PremiumKind(s)
+		*e = PremiumType(s)
 	case string:
-		*e = PremiumKind(s)
+		*e = PremiumType(s)
 	default:
-		return fmt.Errorf("unsupported scan type for PremiumKind: %T", src)
+		return fmt.Errorf("unsupported scan type for PremiumType: %T", src)
 	}
 	return nil
 }
@@ -115,7 +115,7 @@ type Payment struct {
 	PayerID    int32          `json:"payer_id"`
 	PayeeID    int32          `json:"payee_id"`
 	ServiceID  int32          `json:"service_id"`
-	Price      float64        `json:"price"`
+	Price      string         `json:"price"`
 	RecTradeID sql.NullString `json:"rec_trade_id"`
 	CreatedAt  time.Time      `json:"created_at"`
 	UpdatedAt  sql.NullTime   `json:"updated_at"`
@@ -130,8 +130,8 @@ type Service struct {
 	Price             float64       `json:"price"`
 	Duration          int32         `json:"duration"`
 	AppointmentTime   time.Time     `json:"appointment_time"`
-	Lng               time.Time     `json:"lng"`
-	Lat               time.Time     `json:"lat"`
+	Lng               string        `json:"lng"`
+	Lat               string        `json:"lat"`
 	ServiceType       ServiceType   `json:"service_type"`
 	GirlReady         sql.NullBool  `json:"girl_ready"`
 	ManReady          sql.NullBool  `json:"man_ready"`
@@ -157,7 +157,7 @@ type User struct {
 	PhoneVerified     sql.NullBool  `json:"phone_verified"`
 	AuthSmsCode       sql.NullInt32 `json:"auth_sms_code"`
 	Gender            Gender        `json:"gender"`
-	PremiumKind       PremiumKind   `json:"premium_kind"`
+	PremiumType       PremiumType   `json:"premium_type"`
 	PremiumExpiryDate sql.NullTime  `json:"premium_expiry_date"`
 	CreatedAt         time.Time     `json:"created_at"`
 	UpdatedAt         sql.NullTime  `json:"updated_at"`
