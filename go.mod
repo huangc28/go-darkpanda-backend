@@ -4,6 +4,8 @@ go 1.14
 
 require (
 	github.com/facebookincubator/ent v0.3.0
+	github.com/golang-migrate/migrate v3.5.4+incompatible // indirect
+	github.com/golang-migrate/migrate/v4 v4.12.2 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gorilla/mux v1.7.4
 	github.com/kyleconroy/sqlc v1.5.0 // indirect

@@ -1,6 +1,10 @@
 -- service_inquiries.sql
 BEGIN;
 
+DROP TABLE IF EXISTS service_inquiries;
+DROP TYPE IF EXISTS inquiry_status;
+DROP TYPE IF EXISTS service_type;
+
 CREATE TYPE inquiry_status AS ENUM (
 	'inquiring',
 	'canceled',
@@ -25,9 +29,7 @@ CREATE TABLE IF NOT EXISTS service_inquiries (
 
 	created_at timestamp NOT NULL DEFAULT NOW(),
 	updated_at timestamp NULL DEFAULT current_timestamp,
-	deleted_at timestamp,
-
-	CONSTRAINT inquirer_id_fk PRIMARY KEY (inquirer_id)
+	deleted_at timestamp
 );
 
 COMMIT;

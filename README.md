@@ -25,6 +25,26 @@ run docker compose environment
 docker-compose -f build/package/docker-compose.yaml --env-file build/package/.docker.env up -d
 ```
 
+# migrations
+
+**create**
+
+```
+migrate create -ext sql -dir db/migrations -seq ${MIGRATION_NAME}
+```
+
+**up**
+
+```
+migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' up
+```
+
+**down**
+
+```
+migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' up
+```
+
 # TODOs
 
 - docker environment with postgres and redis
