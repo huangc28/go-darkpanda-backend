@@ -1,11 +1,13 @@
 package genmodel
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -77,7 +79,6 @@ func appendFileContentToDestFile(files []os.FileInfo, src string, dest string) {
 				log.Fatalf("Failed to read bytes from src file %s", err.Error())
 			}
 
-			log.Printf("some byte %s", string(cByte))
 			if _, err := destFile.Write(cByte); err != nil {
 				log.Fatalf("Failed when piping content from %s, exiting... with error %s", filepath.Join(src, file.Name()), err.Error())
 			}
@@ -129,7 +130,17 @@ func Gen(cmd *cobra.Command, args []string) {
 
 	appendFileContentToDestFile(mFiles, dirPath, filepath.Join(cwd, "db/schema.sql"))
 
-	// exec
+	// ---------- execute sqlc generate command ----------
+	var out bytes.Buffer
+	osCmd := exec.Command("sqlc", "generate")
+	osCmd.Env = append(os.Environ())
+	osCmd.Stdout = &out
+
+	if err := osCmd.Run(); err != nil {
+		log.Fatalf("Failed to run 'sqlc generate' command %s", err.Error())
+	}
+
+	fmt.Printf("go models generated successfully from %s %s\n", dirPath, out.String())
 }
 
 var genModelCmd = &cobra.Command{
