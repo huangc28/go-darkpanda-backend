@@ -12,21 +12,22 @@ import (
 )
 
 type RegisterBody struct {
-	ReferCode string        `json:"refer_code" binding:"required"`
-	Username  string        `json:"username" binding:"required"`
-	Gender    models.Gender `json:"gender" binding:"required"`
+	ReferCode string `json:"refer_code" binding:"required"`
+	Username  string `json:"username" binding:"required"`
+	Gender    string `json:"gender" binding:"oneof='male' 'female'"`
 }
 
 // We need the following to register new user
 //   - reference code
 //   - username
+// @TODO check username is duplicated
 func RegisterHandler(c *gin.Context) {
-	var body RegisterBody
-
-	//abortHelper := apperr.AbortWithResponse(c)
+	var (
+		body RegisterBody
+		ctx  context.Context = context.Background()
+	)
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		log.Println("failed to bind")
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -34,20 +35,42 @@ func RegisterHandler(c *gin.Context) {
 				err.Error(),
 			),
 		)
-		//abortHelper(
-		//http.StatusBadRequest,
-		//apperr.FailedToValidateRegisterParams,
-		//err.Error(),
-		//).SetType(gin.ErrorTypePublic)
 
 		return
 	}
+
+	// ------------------- check username is not registered already -------------------
+	dao := NewAuthDao(db.GetDB())
+	usernameExists, err := dao.CheckUsernameExists(ctx, body.ReferCode)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckUsernameExistence,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if usernameExists {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.UsernameNotAvailable),
+		)
+
+		return
+	}
+
+	// ------------------- check refercode is valid -------------------
 
 	// check if reference code exists and invitee id is null
 	q := models.New(db.GetDB())
 
 	urc, err := q.GetReferCodeInfoByRefcode(
-		context.Background(),
+		ctx,
 		body.ReferCode,
 	)
 
@@ -59,7 +82,7 @@ func RegisterHandler(c *gin.Context) {
 				apperr.FailedToRetrieveReferCodeInfo,
 				err.Error(),
 			),
-		).SetType(gin.ErrorTypePublic)
+		)
 
 		return
 	}
@@ -68,19 +91,24 @@ func RegisterHandler(c *gin.Context) {
 	if urc.InviteeID.Valid == true {
 		c.AbortWithError(
 			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.ReferCodeOccupied,
-				"refer code already occupied",
-			),
-		).SetType(gin.ErrorTypePublic)
+			apperr.NewErr(apperr.ReferCodeOccupied),
+		)
 
 		return
 	}
 
 	// if refer code and username are all valid, create a new user
-	//newUser, err = q.CreateUser(c, models.CreateUserParams{
-	//Username: body.Username,
-	//})
+	newUser, err := q.CreateUser(c, models.CreateUserParams{
+		Username:    body.Username,
+		Gender:      models.Gender(body.Gender),
+		PremiumType: models.PremiumTypeNormal,
+	})
 
-	c.String(http.StatusOK, "register handler")
+	if err != nil {
+
+	}
+
+	log.Printf("new user %v", newUser)
+	//c.String(http.StatusOK, "register handler")
+	c.JSON(http.StatusOK, struct{}{})
 }

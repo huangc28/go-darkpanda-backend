@@ -13,9 +13,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/stretchr/testify/suite"
+	"gotest.tools/assert"
 )
 
 type UserRegistrationTestSuite struct {
@@ -32,6 +34,7 @@ func (suite *UserRegistrationTestSuite) TearDownSuite() {
 }
 
 func (suite *UserRegistrationTestSuite) TestRegisterMissingParams() {
+	suite.T().Skip()
 	const ReferCode = "somerefercode"
 	body := struct {
 		ReferCode string `json:"refer_code"`
@@ -50,12 +53,17 @@ func (suite *UserRegistrationTestSuite) TestRegisterMissingParams() {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
-	log.Printf("body string %s", rr.Body.String())
+	assert.Equal(suite.T(), rr.Result().StatusCode, http.StatusBadRequest)
+	r := json.NewDecoder(rr.Body)
+	resStruct := struct {
+		ErrCode string `json:"err_code"`
+	}{}
+
+	r.Decode(&resStruct)
+	assert.Equal(suite.T(), resStruct.ErrCode, apperr.FailedToValidateRegisterParams)
 }
 
 func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
-	suite.T().Skip()
-
 	q := models.New(db.GetDB())
 
 	// Create invitor
@@ -98,9 +106,11 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 	body := struct {
 		ReferCode string `json:"refer_code"`
 		Username  string `json:"username"`
+		Gender    string `json:"gender"`
 	}{
 		ReferCode,
 		"bryan huang",
+		"female",
 	}
 
 	bodyB, _ := json.Marshal(&body)
@@ -115,7 +125,7 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
-	log.Printf("rr status %d", rr.Code)
+	//log.Printf("rr status %d", rr.Code)
 }
 
 func TestRegistrationTestSuite(t *testing.T) {

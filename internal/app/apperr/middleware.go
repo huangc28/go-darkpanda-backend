@@ -11,24 +11,27 @@ func HandleError() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Next()
 
-		srcErr := c.Errors.Last().Err
+		err := c.Errors.Last()
 
-		var parsedErr *Error
+		if err != nil {
+			srcErr := err.Err
+			var parsedErr *Error
 
-		switch srcErr.(type) {
-		case *Error:
-			parsedErr = srcErr.(*Error)
-		default:
-			parsedErr = &Error{
-				ErrCode: UnknownErrorToApplication,
-				ErrMsg:  srcErr.Error(),
+			switch srcErr.(type) {
+			case *Error:
+				parsedErr = srcErr.(*Error)
+			default:
+				parsedErr = &Error{
+					ErrCode: UnknownErrorToApplication,
+					ErrMsg:  srcErr.Error(),
+				}
+
+				c.Writer.WriteHeader(http.StatusInternalServerError)
 			}
 
-			c.Writer.WriteHeader(http.StatusInternalServerError)
+			c.JSON(c.Writer.Status(), parsedErr)
+
+			return
 		}
-
-		c.JSON(c.Writer.Status(), parsedErr)
-
-		return
 	}
 }
