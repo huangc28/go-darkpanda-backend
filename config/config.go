@@ -1,8 +1,11 @@
 package config
 
 import (
-	"log"
 	"os"
+	"path/filepath"
+	"runtime"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
 )
@@ -27,6 +30,18 @@ type AppConf struct {
 
 var appConf AppConf
 
+// getProjRootPath gets project root directory relative to `config/config.go`
+func getProjRootPath() string {
+	var (
+		_, b, _, _ = runtime.Caller(0)
+		basepath   = filepath.Dir(b)
+	)
+
+	log.Printf("project root dir %v", basepath)
+
+	return filepath.Join(basepath, "..")
+}
+
 // reads config from .env.toml
 func InitConfig() {
 	viper.SetConfigName(".env")
@@ -34,14 +49,17 @@ func InitConfig() {
 
 	// config path can be at project root directory
 	cwd, err := os.Getwd()
+	// retrieve executable path
 
 	if err != nil {
 		log.Fatalf("failed to get current working directory: %s", err.Error())
 	}
 
-	log.Printf("cwd %s", cwd)
+	log.Infof("search .env in path... %s", cwd)
+
 	viper.AddConfigPath(cwd)
 	viper.AddConfigPath(".")
+	viper.AddConfigPath(getProjRootPath())
 	viper.AllowEmptyEnv(true)
 	viper.AutomaticEnv()
 

@@ -25,7 +25,15 @@ run docker compose environment
 docker-compose -f build/package/docker-compose.yaml --env-file build/package/.docker.env up -d
 ```
 
-# migrations
+# Migrations and model generation
+
+We use [go-migration](https://github.com/golang-migrate/migrate) to manage migrations for this project.
+
+**local postgres DSN**
+
+```
+postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable
+```
 
 **create**
 
@@ -44,6 +52,16 @@ migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/
 ```
 migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' up
 ```
+
+Run the following command to generate models in go code from migration contents:
+
+```
+go run cmd/genmodel/main.go
+```
+
+It reads and collect migration SQL from `db/migrations`. The collected content will be written to `db/schema.sql`. Moreover, it generate go code via [sqlc](https://github.com/kyleconroy/sqlc) based on SQL in `db/migrations/schema.sql`.
+
+The content in `db/migrations/schema.sql` will be truncated everytime running the above command to ensure the model is always up to date with the latest SQL of migration **up** files.
 
 # TODOs
 

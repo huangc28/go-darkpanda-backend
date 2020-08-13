@@ -105,6 +105,7 @@ func Gen(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to connect to psql %v", err.Error())
 	}
 
+	// ---------- read migration info of the project  ----------
 	// read version info from schema_migrations table
 	version, dirty, err := GetMigrationInfo(db)
 
@@ -116,7 +117,7 @@ func Gen(cmd *cobra.Command, args []string) {
 		log.Fatal("Migration seems dirty! Please fix the migration first")
 	}
 
-	// read contents from list of migration files
+	// ---------- read `migration up` files from migration directory ----------
 	cwd, _ := os.Getwd()
 	dirPath := filepath.Join(cwd, "db/migrations")
 

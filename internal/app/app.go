@@ -1,14 +1,20 @@
 package app
 
 import (
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 )
 
-// initialize IoC container
-// importing router from domains
+func StartApp(e *gin.Engine) *gin.Engine {
+	e.Use(gin.Logger())
+	e.Use(gin.Recovery())
+	e.Use(apperr.HandleError())
 
-func StartApp(r *mux.Router) {
-	auth.Routes(r)
+	rv1 := e.Group("/v1")
+
+	auth.Routes(rv1)
 	//user.Routes(r)
+
+	return e
 }
