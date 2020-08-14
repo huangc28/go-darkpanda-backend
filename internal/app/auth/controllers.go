@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -119,9 +120,10 @@ func RegisterHandler(c *gin.Context) {
 
 	// if refer code and username are all valid, create a new user
 	newUser, err := q.CreateUser(c, models.CreateUserParams{
-		Username:    body.Username,
-		Gender:      models.Gender(body.Gender),
-		PremiumType: models.PremiumTypeNormal,
+		Username:      body.Username,
+		Gender:        models.Gender(body.Gender),
+		PremiumType:   models.PremiumTypeNormal,
+		PhoneVerified: sql.NullBool{Bool: false, Valid: true},
 	})
 
 	if err != nil {

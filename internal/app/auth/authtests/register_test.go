@@ -133,6 +133,15 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 
 	assert.Equal(suite.T(), resUser.Username, "somename")
 	assert.Equal(suite.T(), resUser.Gender, "female")
+
+	// retrieve users
+	query := models.New(db.GetDB())
+	dbUser, _ := query.GetUserByUsername(context.Background(), "somename")
+
+	assert.Equal(suite.T(), dbUser.Gender, models.GenderFemale)
+	assert.Equal(suite.T(), dbUser.PremiumType, models.PremiumTypeNormal)
+	assert.Equal(suite.T(), dbUser.PhoneVerified.Bool, false) // the value of phone_verified is false
+	assert.Equal(suite.T(), dbUser.PhoneVerified.Valid, true) // the value of phone_verified exists in table
 }
 
 func TestRegistrationTestSuite(t *testing.T) {

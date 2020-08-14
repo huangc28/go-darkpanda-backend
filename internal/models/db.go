@@ -28,11 +28,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
 	}
-	if q.getAuthorStmt, err = db.PrepareContext(ctx, getAuthor); err != nil {
-		return nil, fmt.Errorf("error preparing query GetAuthor: %w", err)
-	}
 	if q.getReferCodeInfoByRefcodeStmt, err = db.PrepareContext(ctx, getReferCodeInfoByRefcode); err != nil {
 		return nil, fmt.Errorf("error preparing query GetReferCodeInfoByRefcode: %w", err)
+	}
+	if q.getUserByUsernameStmt, err = db.PrepareContext(ctx, getUserByUsername); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserByUsername: %w", err)
 	}
 	return &q, nil
 }
@@ -49,14 +49,14 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
 		}
 	}
-	if q.getAuthorStmt != nil {
-		if cerr := q.getAuthorStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing getAuthorStmt: %w", cerr)
-		}
-	}
 	if q.getReferCodeInfoByRefcodeStmt != nil {
 		if cerr := q.getReferCodeInfoByRefcodeStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getReferCodeInfoByRefcodeStmt: %w", cerr)
+		}
+	}
+	if q.getUserByUsernameStmt != nil {
+		if cerr := q.getUserByUsernameStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserByUsernameStmt: %w", cerr)
 		}
 	}
 	return err
@@ -100,8 +100,8 @@ type Queries struct {
 	tx                            *sql.Tx
 	createRefcodeStmt             *sql.Stmt
 	createUserStmt                *sql.Stmt
-	getAuthorStmt                 *sql.Stmt
 	getReferCodeInfoByRefcodeStmt *sql.Stmt
+	getUserByUsernameStmt         *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -110,7 +110,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                            tx,
 		createRefcodeStmt:             q.createRefcodeStmt,
 		createUserStmt:                q.createUserStmt,
-		getAuthorStmt:                 q.getAuthorStmt,
 		getReferCodeInfoByRefcodeStmt: q.getReferCodeInfoByRefcodeStmt,
+		getUserByUsernameStmt:         q.getUserByUsernameStmt,
 	}
 }
