@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -41,7 +40,7 @@ func RegisterHandler(c *gin.Context) {
 
 	// ------------------- check username is not registered already -------------------
 	dao := NewAuthDao(db.GetDB())
-	usernameExists, err := dao.CheckUsernameExists(ctx, body.ReferCode)
+	usernameExists, err := dao.CheckUsernameExists(ctx, body.Username)
 
 	if err != nil {
 		c.AbortWithError(
@@ -64,8 +63,29 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	// ------------------- check refercode is valid -------------------
+	// ------------------- check if refercode exists -------------------
+	referCodeExists, err := dao.CheckReferCodeExists(ctx, body.ReferCode)
 
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckReferCodeExists,
+				err.Error(),
+			),
+		)
+	}
+
+	if !referCodeExists {
+		c.AbortWithError(
+			http.StatusNotFound,
+			apperr.NewErr(apperr.ReferCodeNotExist),
+		)
+
+		return
+	}
+
+	// ------------------- check refercode is valid -------------------
 	// check if reference code exists and invitee id is null
 	q := models.New(db.GetDB())
 
@@ -88,7 +108,7 @@ func RegisterHandler(c *gin.Context) {
 	}
 
 	// if inviteeID has been occupied, the given refer code can't be used anymore
-	if urc.InviteeID.Valid == true {
+	if urc.InviteeID.Valid {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.ReferCodeOccupied),
@@ -105,10 +125,16 @@ func RegisterHandler(c *gin.Context) {
 	})
 
 	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateUser,
+				err.Error(),
+			),
+		)
 
+		return
 	}
 
-	log.Printf("new user %v", newUser)
-	//c.String(http.StatusOK, "register handler")
-	c.JSON(http.StatusOK, struct{}{})
+	c.JSON(http.StatusOK, NewTransform().TransformUser(&newUser))
 }

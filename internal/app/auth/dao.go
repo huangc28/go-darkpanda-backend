@@ -20,15 +20,21 @@ func NewAuthDao(db *sql.DB) *AuthDAO {
 }
 
 func (dao *AuthDAO) CheckUsernameExists(ctx context.Context, username string) (bool, error) {
-	const query = `
-		SELECT exists (
-			SELECT 1
-			FROM users
-			WHERE username = ?
-		) AS exists`
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE username = $1) AS "exists"`
 	var exists bool
 
 	if err := dao.db.QueryRow(query, username).Scan(&exists); err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+func (dao *AuthDAO) CheckReferCodeExists(ctx context.Context, referCode string) (bool, error) {
+	query := `SELECT EXISTS(SELECT 1 FROM user_refcodes WHERE ref_code = $1) AS "exists"`
+	var exists bool
+
+	if err := dao.db.QueryRow(query, referCode).Scan(&exists); err != nil {
 		return false, err
 	}
 

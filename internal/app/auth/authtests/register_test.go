@@ -14,6 +14,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/stretchr/testify/suite"
@@ -34,7 +35,6 @@ func (suite *UserRegistrationTestSuite) TearDownSuite() {
 }
 
 func (suite *UserRegistrationTestSuite) TestRegisterMissingParams() {
-	suite.T().Skip()
 	const ReferCode = "somerefercode"
 	body := struct {
 		ReferCode string `json:"refer_code"`
@@ -109,7 +109,7 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 		Gender    string `json:"gender"`
 	}{
 		ReferCode,
-		"bryan huang",
+		"somename",
 		"female",
 	}
 
@@ -125,7 +125,14 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
-	//log.Printf("rr status %d", rr.Code)
+	dec := json.NewDecoder(rr.Body)
+	var resUser auth.TransformedUser
+	if err := dec.Decode(&resUser); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Equal(suite.T(), resUser.Username, "somename")
+	assert.Equal(suite.T(), resUser.Gender, "female")
 }
 
 func TestRegistrationTestSuite(t *testing.T) {
