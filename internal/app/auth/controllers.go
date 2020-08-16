@@ -10,8 +10,10 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/spf13/viper"
 	"github.com/ventu-io/go-shortid"
 )
 
@@ -239,6 +241,21 @@ func SendVerifyCodeHandler(c *gin.Context) {
 	}
 
 	// ------------------- send verification code via twillio -------------------
+	//twilioConf := config.GetAppConf().TwilioConf
+	//log.Printf("DEBUG 3 from %s", viper.GetString("twilio.account_id"))
+	//log.Printf("DEBUG 4 from %s", viper.GetString("twilio.from"))
+	twilioClient := twilio.New(twilio.TwilioConf{
+		AccountSID:   viper.GetString("twilio.account_id"),
+		AccountToken: viper.GetString("twilio.auth_token"),
+	})
+
+	twilioClient.SendSMS(
+		viper.GetString("twilio.from"),
+		body.Mobile,
+		"some content",
+	)
+
+	// ------------------- send sms code back -------------------
 	res := struct {
 		Uuid         string `json:"uuid"`
 		VerifyPrefix string `json:"verify_prefix"`

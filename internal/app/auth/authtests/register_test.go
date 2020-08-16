@@ -17,6 +17,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 	"gotest.tools/assert"
 )
@@ -29,9 +30,10 @@ func (suite *UserRegistrationTestSuite) SetupSuite() {
 	manager.NewDefaultManager()
 }
 
-func (suite *UserRegistrationTestSuite) TearDownSuite() {
-	// @TODO close database connection
-	log.Println("teardown test suite")
+func (suite *UserRegistrationTestSuite) BeforeTest(suiteName, testName string) {
+	if testName == "TestSendVerifyCodeViaTwilioSuccess" {
+		viper.Set("twilio.from", "+15005550006")
+	}
 }
 
 func (suite *UserRegistrationTestSuite) TestRegisterMissingParams() {
@@ -145,7 +147,7 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 	assert.Equal(suite.T(), resUser.Uuid, dbUser.Uuid)
 }
 
-func (suite *UserRegistrationTestSuite) TestSendVerifyCodeViaTwillioSuccess() {
+func (suite *UserRegistrationTestSuite) TestSendVerifyCodeViaTwilioSuccess() {
 	// create a new user that wants to proceed phone verification process
 	q := models.New(db.GetDB())
 
