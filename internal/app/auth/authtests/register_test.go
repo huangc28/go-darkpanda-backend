@@ -142,6 +142,59 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 	assert.Equal(suite.T(), dbUser.PremiumType, models.PremiumTypeNormal)
 	assert.Equal(suite.T(), dbUser.PhoneVerified.Bool, false) // the value of phone_verified is false
 	assert.Equal(suite.T(), dbUser.PhoneVerified.Valid, true) // the value of phone_verified exists in table
+	assert.Equal(suite.T(), resUser.Uuid, dbUser.Uuid)
+}
+
+func (suite *UserRegistrationTestSuite) TestSendVerifyCodeViaTwillioSuccess() {
+	// create a new user that wants to proceed phone verification process
+	q := models.New(db.GetDB())
+
+	usr, err := q.CreateUser(context.Background(), models.CreateUserParams{
+		Username: "someguy",
+		Uuid:     "someuuid",
+		PhoneVerified: sql.NullBool{
+			Bool:  false,
+			Valid: true,
+		},
+		AuthSmsCode: sql.NullInt32{
+			Valid: false,
+		},
+		Gender:      models.GenderFemale,
+		PremiumType: models.PremiumTypeNormal,
+		PremiumExpiryDate: sql.NullTime{
+			Valid: false,
+		},
+	})
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	body := struct {
+		Uuid   string `json:"uuid"`
+		Mobile string `json:"mobile"`
+	}{
+		usr.Uuid,
+		"+886988272727",
+	}
+
+	bodyByte, _ := json.Marshal(&body)
+	req, err := http.NewRequest("POST", "/v1/send-verify-code", bytes.NewBuffer(bodyByte))
+
+	if err != nil {
+		suite.
+			T().
+			Fatalf("[send_verify_code] failed to request registerAPI %s", err.Error())
+	}
+
+	router := app.StartApp(gin.Default())
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	var container []byte
+	rr.Result().Body.Read(container)
+
+	log.Printf("response body &&& %s", string(container))
 }
 
 func TestRegistrationTestSuite(t *testing.T) {

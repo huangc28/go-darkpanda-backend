@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE users
+ADD COLUMN phone_verify_code VARCHAR(20);
+
+COMMIT;

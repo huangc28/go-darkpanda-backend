@@ -152,16 +152,18 @@ type ServiceInquiry struct {
 }
 
 type User struct {
-	ID                int64         `json:"id"`
-	Username          string        `json:"username"`
-	PhoneVerified     sql.NullBool  `json:"phone_verified"`
-	AuthSmsCode       sql.NullInt32 `json:"auth_sms_code"`
-	Gender            Gender        `json:"gender"`
-	PremiumType       PremiumType   `json:"premium_type"`
-	PremiumExpiryDate sql.NullTime  `json:"premium_expiry_date"`
-	CreatedAt         time.Time     `json:"created_at"`
-	UpdatedAt         sql.NullTime  `json:"updated_at"`
-	DeletedAt         sql.NullTime  `json:"deleted_at"`
+	ID                int64          `json:"id"`
+	Username          string         `json:"username"`
+	PhoneVerified     sql.NullBool   `json:"phone_verified"`
+	AuthSmsCode       sql.NullInt32  `json:"auth_sms_code"`
+	Gender            Gender         `json:"gender"`
+	PremiumType       PremiumType    `json:"premium_type"`
+	PremiumExpiryDate sql.NullTime   `json:"premium_expiry_date"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         sql.NullTime   `json:"updated_at"`
+	DeletedAt         sql.NullTime   `json:"deleted_at"`
+	Uuid              string         `json:"uuid"`
+	PhoneVerifyCode   sql.NullString `json:"phone_verify_code"`
 }
 
 type UserRating struct {

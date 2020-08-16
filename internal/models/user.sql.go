@@ -11,17 +11,19 @@ import (
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (
 	username,
+	uuid,
 	phone_verified,
 	auth_sms_code,
 	gender,
 	premium_type,
 	premium_expiry_date
-) VALUES ($1, $2, $3, $4, $5, $6)
-RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code
 `
 
 type CreateUserParams struct {
 	Username          string        `json:"username"`
+	Uuid              string        `json:"uuid"`
 	PhoneVerified     sql.NullBool  `json:"phone_verified"`
 	AuthSmsCode       sql.NullInt32 `json:"auth_sms_code"`
 	Gender            Gender        `json:"gender"`
@@ -32,6 +34,7 @@ type CreateUserParams struct {
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.queryRow(ctx, q.createUserStmt, createUser,
 		arg.Username,
+		arg.Uuid,
 		arg.PhoneVerified,
 		arg.AuthSmsCode,
 		arg.Gender,
@@ -50,12 +53,14 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Uuid,
+		&i.PhoneVerifyCode,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at FROM users
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -73,6 +78,48 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Uuid,
+		&i.PhoneVerifyCode,
 	)
 	return i, err
+}
+
+const getUserByUuid = `-- name: GetUserByUuid :one
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code FROM users
+WHERE uuid = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByUuid(ctx context.Context, uuid string) (User, error) {
+	row := q.queryRow(ctx, q.getUserByUuidStmt, getUserByUuid, uuid)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PhoneVerified,
+		&i.AuthSmsCode,
+		&i.Gender,
+		&i.PremiumType,
+		&i.PremiumExpiryDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Uuid,
+		&i.PhoneVerifyCode,
+	)
+	return i, err
+}
+
+const updateVerifyCodeById = `-- name: UpdateVerifyCodeById :exec
+UPDATE users SET phone_verify_code = $1
+WHERE id = $2
+`
+
+type UpdateVerifyCodeByIdParams struct {
+	PhoneVerifyCode sql.NullString `json:"phone_verify_code"`
+	ID              int64          `json:"id"`
+}
+
+func (q *Queries) UpdateVerifyCodeById(ctx context.Context, arg UpdateVerifyCodeByIdParams) error {
+	_, err := q.exec(ctx, q.updateVerifyCodeByIdStmt, updateVerifyCodeById, arg.PhoneVerifyCode, arg.ID)
+	return err
 }

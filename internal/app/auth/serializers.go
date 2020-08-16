@@ -13,15 +13,15 @@ func NewTransform() *AuthTransform {
 }
 
 type TransformedUser struct {
-	ID            int64  `json:"id"`
 	Username      string `json:"username"`
 	PhoneVerified bool   `json:"phone_verified"`
 	Gender        string `json:"gender"`
+	Uuid          string `json:uuid`
 }
 
 func (at *AuthTransform) TransformUser(m *models.User) *TransformedUser {
 	tu := &TransformedUser{
-		ID:            m.ID,
+		Uuid:          m.Uuid,
 		Username:      m.Username,
 		PhoneVerified: m.PhoneVerified.Bool,
 		Gender:        string(m.Gender),

@@ -65,5 +65,6 @@ The content in `db/migrations/schema.sql` will be truncated everytime running th
 
 # TODOs
 
-- docker environment with postgres and redis
-- dotenv files
+- [x] docker environment with postgres and redis
+- [x] dotenv files
+- []  use shell command for go `migration` so that we do not need to specify dsn every time using the command

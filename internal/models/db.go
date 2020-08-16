@@ -34,6 +34,12 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserByUsernameStmt, err = db.PrepareContext(ctx, getUserByUsername); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByUsername: %w", err)
 	}
+	if q.getUserByUuidStmt, err = db.PrepareContext(ctx, getUserByUuid); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserByUuid: %w", err)
+	}
+	if q.updateVerifyCodeByIdStmt, err = db.PrepareContext(ctx, updateVerifyCodeById); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateVerifyCodeById: %w", err)
+	}
 	return &q, nil
 }
 
@@ -57,6 +63,16 @@ func (q *Queries) Close() error {
 	if q.getUserByUsernameStmt != nil {
 		if cerr := q.getUserByUsernameStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserByUsernameStmt: %w", cerr)
+		}
+	}
+	if q.getUserByUuidStmt != nil {
+		if cerr := q.getUserByUuidStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserByUuidStmt: %w", cerr)
+		}
+	}
+	if q.updateVerifyCodeByIdStmt != nil {
+		if cerr := q.updateVerifyCodeByIdStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateVerifyCodeByIdStmt: %w", cerr)
 		}
 	}
 	return err
@@ -102,6 +118,8 @@ type Queries struct {
 	createUserStmt                *sql.Stmt
 	getReferCodeInfoByRefcodeStmt *sql.Stmt
 	getUserByUsernameStmt         *sql.Stmt
+	getUserByUuidStmt             *sql.Stmt
+	updateVerifyCodeByIdStmt      *sql.Stmt
 }
 
 func (q *Queries) WithTx(tx *sql.Tx) *Queries {
@@ -112,5 +130,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		createUserStmt:                q.createUserStmt,
 		getReferCodeInfoByRefcodeStmt: q.getReferCodeInfoByRefcodeStmt,
 		getUserByUsernameStmt:         q.getUserByUsernameStmt,
+		getUserByUuidStmt:             q.getUserByUuidStmt,
+		updateVerifyCodeByIdStmt:      q.updateVerifyCodeByIdStmt,
 	}
 }

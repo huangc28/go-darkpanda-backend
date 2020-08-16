@@ -23,9 +23,16 @@ type DBConf struct {
 	Dbname   string
 }
 
+type TwilioConf struct {
+	AccountId string `mapstructure:"account_id"`
+	AuthToken string `mapstructure:"auth_token"`
+	From      string `mapstructure:"from"`
+}
+
 type AppConf struct {
-	Port   string
-	DBConf *DBConf `mapstructure:"db"`
+	Port       string
+	DBConf     *DBConf     `mapstructure:"db"`
+	TwilioConf *TwilioConf `mapstructure:"twilio"`
 }
 
 var appConf AppConf
