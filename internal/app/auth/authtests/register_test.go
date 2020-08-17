@@ -251,11 +251,15 @@ func (suite *UserRegistrationTestSuite) TestVerifyPhoneSuccess() {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
-	if status := rr.Result().StatusCode; status == http.StatusOK {
+	if status := rr.Result().StatusCode; status != http.StatusOK {
 		bbyte, _ := ioutil.ReadAll(rr.Result().Body)
 		suite.T().Fatalf("Failed to verify code %s", string(bbyte))
 	}
-	//log.Printf("new user %s", req.Response.Status)
+
+	// ------------------- retrieve from DB makesure phone is verified -------------------
+	dbuser, _ := q.GetUserByVerifyCode(ctx, newUser.PhoneVerifyCode)
+
+	assert.Equal(suite.T(), dbuser.PhoneVerified.Bool, true)
 }
 
 func TestRegistrationTestSuite(t *testing.T) {
