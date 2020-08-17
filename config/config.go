@@ -30,7 +30,8 @@ type TwilioConf struct {
 }
 
 type AppConf struct {
-	Port       string
+	Port       string      `mapstructure:"port"`
+	JwtSecret  string      `mapstructure:"jwt_secret"`
 	DBConf     *DBConf     `mapstructure:"db"`
 	TwilioConf *TwilioConf `mapstructure:"twilio"`
 }

@@ -260,6 +260,17 @@ func (suite *UserRegistrationTestSuite) TestVerifyPhoneSuccess() {
 	dbuser, _ := q.GetUserByVerifyCode(ctx, newUser.PhoneVerifyCode)
 
 	assert.Equal(suite.T(), dbuser.PhoneVerified.Bool, true)
+
+	// ------------------- response has jwt token -------------------
+	dec := json.NewDecoder(rr.Body)
+	rBody := struct {
+		JwtToken string `json:"jwt_token"`
+	}{}
+	if err := dec.Decode(&rBody); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.NotEmpty(suite.T(), rBody.JwtToken)
 }
 
 func TestRegistrationTestSuite(t *testing.T) {

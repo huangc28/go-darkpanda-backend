@@ -21,6 +21,7 @@ const (
 	UserNotFoundByVerifyCode             = "1000018"
 	VerifyCodeNotMatching                = "1000019"
 	FailedToUpdateVerifyStatus           = "1000020"
+	FailedToGenerateJwtToken             = "1000021"
 )
 
 var ErrCodeMsgMap = map[string]string{

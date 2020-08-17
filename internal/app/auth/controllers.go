@@ -9,8 +9,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/jwttoken"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
@@ -398,6 +400,26 @@ func VerifyPhoneHandler(c *gin.Context) {
 	}
 
 	// ------------------- generate jwt token and return it -------------------
+	token, err := jwttoken.CreateToken(
+		user.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
 
-	c.JSON(http.StatusOK, struct{}{})
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGenerateJwtToken,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	resp := struct {
+		JwtToken string `json:"jwt_token"`
+	}{token}
+
+	c.JSON(http.StatusOK, &resp)
 }
