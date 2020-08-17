@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,8 +17,8 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gotest.tools/assert"
 )
 
 type UserRegistrationTestSuite struct {
@@ -193,10 +192,18 @@ func (suite *UserRegistrationTestSuite) TestSendVerifyCodeViaTwilioSuccess() {
 	rr := httptest.NewRecorder()
 	router.ServeHTTP(rr, req)
 
-	var container []byte
-	rr.Result().Body.Read(container)
+	respStruct := struct {
+		Uuid         string `json:"uuid"`
+		VerifyPrefix string `json:"verify_prefix"`
+		VerifySuffix int    `json:"verify_suffix"`
+	}{}
 
-	log.Printf("response body &&& %s", string(container))
+	dec := json.NewDecoder(rr.Result().Body)
+	dec.Decode(&respStruct)
+
+	assert.NotEmpty(suite.T(), respStruct.VerifyPrefix)
+	assert.NotEmpty(suite.T(), respStruct.VerifySuffix)
+	assert.Equal(suite.T(), respStruct.Uuid, body.Uuid)
 }
 
 func TestRegistrationTestSuite(t *testing.T) {

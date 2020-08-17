@@ -14,6 +14,8 @@ const (
 	FailedToGetUserByUuid                = "1000011"
 	UserIsPhoneVerified                  = "1000012"
 	FailedToUpdateVerifyCode             = "1000013"
+	TwilioRespErr                        = "1000014"
+	FailedToSendTwilioSMSErr             = "1000015"
 )
 
 var ErrCodeMsgMap = map[string]string{

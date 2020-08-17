@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -241,32 +242,60 @@ func SendVerifyCodeHandler(c *gin.Context) {
 	}
 
 	// ------------------- send verification code via twillio -------------------
-	//twilioConf := config.GetAppConf().TwilioConf
-	//log.Printf("DEBUG 3 from %s", viper.GetString("twilio.account_id"))
-	//log.Printf("DEBUG 4 from %s", viper.GetString("twilio.from"))
 	twilioClient := twilio.New(twilio.TwilioConf{
 		AccountSID:   viper.GetString("twilio.account_id"),
 		AccountToken: viper.GetString("twilio.auth_token"),
 	})
 
-	twilioClient.SendSMS(
+	smsResp, err := twilioClient.SendSMS(
 		viper.GetString("twilio.from"),
 		body.Mobile,
-		"some content",
+		fmt.Sprintf("your darkpanda verify code: \n\n %d", verfDigs),
 	)
+
+	if err != nil {
+		if _, isTwilioErr := err.(*twilio.SMSError); isTwilioErr {
+			log.Fatalf("twilio sends back failed response %s", err.Error())
+
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.TwilioRespErr,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendTwilioSMSErr,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	log.
+		WithFields(log.Fields{
+			"user_uuid": usr.Uuid,
+			"mobile":    body.Mobile,
+		}).
+		Infof("sends twilio SMS success! %v", smsResp.SID)
 
 	// ------------------- send sms code back -------------------
 	res := struct {
 		Uuid         string `json:"uuid"`
 		VerifyPrefix string `json:"verify_prefix"`
-		VerifySuffix int    `json:"verify_suffix "`
+		VerifySuffix int    `json:"verify_suffix"`
 	}{
 		usr.Uuid,
 		verPrefix,
 		verfDigs,
 	}
-
-	log.Printf("DEBUG 1 %v", res)
 
 	c.JSON(http.StatusOK, &res)
 }
