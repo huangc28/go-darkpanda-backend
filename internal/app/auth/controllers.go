@@ -209,7 +209,7 @@ func SendVerifyCodeHandler(c *gin.Context) {
 	if usr.PhoneVerified.Bool {
 		c.AbortWithError(
 			http.StatusBadRequest,
-			apperr.NewErr(apperr.UserIsPhoneVerified),
+			apperr.NewErr(apperr.UserHasPhoneVerified),
 		)
 
 		return
@@ -300,6 +300,104 @@ func SendVerifyCodeHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, &res)
 }
 
-func VerifyPhoneHandler(c *gin.Context) {
+// ------------------- phone verification -------------------
+// receive uuid
+// receive verification code
+// check the following to verify phone.
+//   - phone_verified is false
+//   - phone_verify_code is the same as the one received from client
 
+type VerifyPhoneBody struct {
+	Uuid       string `json:"uuid" binding:"required,gt=0"`
+	VerifyCode string `json:"verify_code" binding:"required,gt=0"`
+}
+
+func VerifyPhoneHandler(c *gin.Context) {
+	var (
+		ctx  context.Context = context.Background()
+		body VerifyPhoneBody
+	)
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateVerifyPhoneParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- check if the given verify code exists in DB -------------------
+	q := models.New(db.GetDB())
+	user, err := q.GetUserByVerifyCode(ctx, sql.NullString{
+		String: body.VerifyCode,
+		Valid:  true,
+	})
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusNotFound,
+				apperr.NewErr(apperr.UserNotFoundByVerifyCode),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByVerifyCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- makesure the user has not already verified  -------------------
+	if user.PhoneVerified.Bool == true {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.UserHasPhoneVerified),
+		)
+
+		return
+	}
+
+	// ------------------- makesure verify code given matches -------------------
+	if user.PhoneVerifyCode.String != body.VerifyCode {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.VerifyCodeNotMatching),
+		)
+
+		return
+	}
+
+	// ------------------- set the user to be phone verified -------------------
+	if err := q.UpdateVerifyStatusById(ctx, models.UpdateVerifyStatusByIdParams{
+		ID: user.ID,
+		PhoneVerified: sql.NullBool{
+			Bool:  true,
+			Valid: true,
+		},
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateVerifyStatus,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- generate jwt token and return it -------------------
+
+	c.JSON(http.StatusOK, struct{}{})
 }

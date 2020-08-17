@@ -5,15 +5,19 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/spf13/viper"
@@ -204,6 +208,54 @@ func (suite *UserRegistrationTestSuite) TestSendVerifyCodeViaTwilioSuccess() {
 	assert.NotEmpty(suite.T(), respStruct.VerifyPrefix)
 	assert.NotEmpty(suite.T(), respStruct.VerifySuffix)
 	assert.Equal(suite.T(), respStruct.Uuid, body.Uuid)
+}
+
+func (suite *UserRegistrationTestSuite) TestVerifyPhoneSuccess() {
+	ctx := context.Background()
+
+	newUserParams, err := util.GenTestUserParams(ctx)
+
+	if err != nil {
+		suite.T().Fatalf("failed to generate test user param %s", err.Error())
+	}
+
+	// ------------------- tweak on user params to create new user -------------------
+	newUserParams.PhoneVerified = sql.NullBool{
+		Bool:  false,
+		Valid: true,
+	}
+	q := models.New(db.GetDB())
+	newUser, err := q.CreateUser(ctx, *newUserParams)
+
+	if err != nil {
+		suite.T().Fatalf("failed to create test user %s", err.Error())
+	}
+
+	// ------------------- request phone verify API -------------------
+	body := struct {
+		Uuid       string `json:"uuid"`
+		VerifyCode string `json:"verify_code"`
+	}{
+		newUser.Uuid,
+		newUser.PhoneVerifyCode.String,
+	}
+
+	bodyByte, _ := json.Marshal(&body)
+	req, err := http.NewRequest("POST", "/v1/verify-phone", bytes.NewBuffer(bodyByte))
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	router := app.StartApp(gin.Default())
+	rr := httptest.NewRecorder()
+	router.ServeHTTP(rr, req)
+
+	if status := rr.Result().StatusCode; status == http.StatusOK {
+		bbyte, _ := ioutil.ReadAll(rr.Result().Body)
+		suite.T().Fatalf("Failed to verify code %s", string(bbyte))
+	}
+	//log.Printf("new user %s", req.Response.Status)
 }
 
 func TestRegistrationTestSuite(t *testing.T) {

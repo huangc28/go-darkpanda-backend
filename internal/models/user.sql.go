@@ -12,29 +12,32 @@ const createUser = `-- name: CreateUser :one
 INSERT INTO users (
 	username,
 	uuid,
+	phone_verify_code,
 	phone_verified,
 	auth_sms_code,
 	gender,
 	premium_type,
 	premium_expiry_date
-) VALUES ($1, $2, $3, $4, $5, $6, $7)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code
 `
 
 type CreateUserParams struct {
-	Username          string        `json:"username"`
-	Uuid              string        `json:"uuid"`
-	PhoneVerified     sql.NullBool  `json:"phone_verified"`
-	AuthSmsCode       sql.NullInt32 `json:"auth_sms_code"`
-	Gender            Gender        `json:"gender"`
-	PremiumType       PremiumType   `json:"premium_type"`
-	PremiumExpiryDate sql.NullTime  `json:"premium_expiry_date"`
+	Username          string         `json:"username"`
+	Uuid              string         `json:"uuid"`
+	PhoneVerifyCode   sql.NullString `json:"phone_verify_code"`
+	PhoneVerified     sql.NullBool   `json:"phone_verified"`
+	AuthSmsCode       sql.NullInt32  `json:"auth_sms_code"`
+	Gender            Gender         `json:"gender"`
+	PremiumType       PremiumType    `json:"premium_type"`
+	PremiumExpiryDate sql.NullTime   `json:"premium_expiry_date"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.queryRow(ctx, q.createUserStmt, createUser,
 		arg.Username,
 		arg.Uuid,
+		arg.PhoneVerifyCode,
 		arg.PhoneVerified,
 		arg.AuthSmsCode,
 		arg.Gender,
@@ -109,6 +112,31 @@ func (q *Queries) GetUserByUuid(ctx context.Context, uuid string) (User, error) 
 	return i, err
 }
 
+const getUserByVerifyCode = `-- name: GetUserByVerifyCode :one
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code FROM users
+WHERE phone_verify_code = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByVerifyCode(ctx context.Context, phoneVerifyCode sql.NullString) (User, error) {
+	row := q.queryRow(ctx, q.getUserByVerifyCodeStmt, getUserByVerifyCode, phoneVerifyCode)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PhoneVerified,
+		&i.AuthSmsCode,
+		&i.Gender,
+		&i.PremiumType,
+		&i.PremiumExpiryDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Uuid,
+		&i.PhoneVerifyCode,
+	)
+	return i, err
+}
+
 const updateVerifyCodeById = `-- name: UpdateVerifyCodeById :exec
 UPDATE users SET phone_verify_code = $1
 WHERE id = $2
@@ -121,5 +149,20 @@ type UpdateVerifyCodeByIdParams struct {
 
 func (q *Queries) UpdateVerifyCodeById(ctx context.Context, arg UpdateVerifyCodeByIdParams) error {
 	_, err := q.exec(ctx, q.updateVerifyCodeByIdStmt, updateVerifyCodeById, arg.PhoneVerifyCode, arg.ID)
+	return err
+}
+
+const updateVerifyStatusById = `-- name: UpdateVerifyStatusById :exec
+UPDATE users SET phone_verified = $2
+WHERE id = $1
+`
+
+type UpdateVerifyStatusByIdParams struct {
+	ID            int64        `json:"id"`
+	PhoneVerified sql.NullBool `json:"phone_verified"`
+}
+
+func (q *Queries) UpdateVerifyStatusById(ctx context.Context, arg UpdateVerifyStatusByIdParams) error {
+	_, err := q.exec(ctx, q.updateVerifyStatusByIdStmt, updateVerifyStatusById, arg.ID, arg.PhoneVerified)
 	return err
 }
