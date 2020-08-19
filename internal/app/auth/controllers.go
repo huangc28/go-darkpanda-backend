@@ -308,7 +308,7 @@ func SendVerifyCodeHandler(c *gin.Context) {
 // check the following to verify phone.
 //   - phone_verified is false
 //   - phone_verify_code is the same as the one received from client
-
+// Sends jwt token back to client once its validated
 type VerifyPhoneBody struct {
 	Uuid       string `json:"uuid" binding:"required,gt=0"`
 	VerifyCode string `json:"verify_code" binding:"required,gt=0"`

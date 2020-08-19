@@ -5,10 +5,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 )
 
-// - /v1/register
-// - /v1/send-verify-code
-// - /v1/verify-phone
-// - /v1/logout
 func Routes(r *gin.RouterGroup) {
 	r.POST("/register", RegisterHandler)
 	r.POST("/send-verify-code", SendVerifyCodeHandler)
