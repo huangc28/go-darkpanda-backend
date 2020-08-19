@@ -45,12 +45,6 @@ func (m *Manager) Register(name string, init initializer) error {
 	return nil
 }
 
-//func (m *Manager) ExecLog() {
-//m.Exec("init log", func() {
-
-//})
-//}
-
 func (m *Manager) ExecAppConfig() *Manager {
 	m.Exec("init app config", func() error {
 		config.InitConfig()
@@ -71,6 +65,22 @@ func (m *Manager) ExecDBInit() *Manager {
 
 		return nil
 	})
+
+	return m
+}
+
+func (m *Manager) ExecRedisInit() *Manager {
+	rdsConf := config.GetAppConf().RedisConf
+
+	err := db.InitRedis(db.RedisConf{
+		Addr:     rdsConf.Addr,
+		Password: rdsConf.Password,
+		DB:       rdsConf.DB,
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return m
 }
@@ -120,7 +130,6 @@ func NewManager() *Manager {
 }
 
 func NewDefaultManager() *Manager {
-
 	manager := &Manager{
 		initials:     make(map[string]initializer),
 		initialState: make(map[string]bool),
@@ -129,7 +138,8 @@ func NewDefaultManager() *Manager {
 	// we need to initialize log register before call log
 	manager.
 		ExecAppConfig().
-		ExecDBInit()
+		ExecDBInit().
+		ExecRedisInit()
 
 	// In the future, we can use condition build to make
 	// swagger not be compiled in the production environment.

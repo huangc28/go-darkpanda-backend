@@ -1,11 +1,16 @@
 package util
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 
 	faker "github.com/bxcodec/faker/v3"
+	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/ventu-io/go-shortid"
 )
@@ -42,4 +47,28 @@ func GenTestUserParams(ctx context.Context) (*models.CreateUserParams, error) {
 	}
 
 	return p, nil
+}
+
+type SendRequest func(method string, url string, body interface{}) (*httptest.ResponseRecorder, error)
+
+func SendRequestToApp(e *gin.Engine) SendRequest {
+	return func(method string, url string, body interface{}) (*httptest.ResponseRecorder, error) {
+
+		bbody, err := json.Marshal(&body)
+
+		if err != nil {
+			return nil, err
+		}
+
+		req, err := http.NewRequest(method, url, bytes.NewBuffer(bbody))
+
+		if err != nil {
+			return nil, err
+		}
+
+		rr := httptest.NewRecorder()
+		e.ServeHTTP(rr, req)
+
+		return rr, nil
+	}
 }

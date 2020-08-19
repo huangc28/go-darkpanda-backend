@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -49,7 +50,7 @@ func RegisterHandler(c *gin.Context) {
 	}
 
 	// ------------------- check username is not registered already -------------------
-	dao := NewAuthDao(db.GetDB())
+	dao := NewUserCheckerDAO(db.GetDB())
 	usernameExists, err := dao.CheckUsernameExists(ctx, body.Username)
 
 	if err != nil {
@@ -169,8 +170,8 @@ func RegisterHandler(c *gin.Context) {
 //   - mobile number
 // from the client.
 type SendVerifyCodeBody struct {
-	Uuid   string `json:"uuid" binding:"required,gt=0"`
-	Mobile string `json:"mobile" binding:"required,numeric,gt=0"`
+	Username string `json:"username" binding:"required,gt=0"`
+	Mobile   string `json:"mobile" binding:"required,numeric,gt=0"`
 }
 
 func SendVerifyCodeHandler(c *gin.Context) {
@@ -193,7 +194,7 @@ func SendVerifyCodeHandler(c *gin.Context) {
 
 	// retrieve user by uuid
 	q := models.New(db.GetDB())
-	usr, err := q.GetUserByUuid(ctx, body.Uuid)
+	usr, err := q.GetUserByUsername(ctx, body.Username)
 
 	if err != nil {
 		c.AbortWithError(
@@ -360,16 +361,6 @@ func VerifyPhoneHandler(c *gin.Context) {
 		return
 	}
 
-	// ------------------- makesure the user has not already verified  -------------------
-	if user.PhoneVerified.Bool == true {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.UserHasPhoneVerified),
-		)
-
-		return
-	}
-
 	// ------------------- makesure verify code given matches -------------------
 	if user.PhoneVerifyCode.String != body.VerifyCode {
 		c.AbortWithError(
@@ -381,22 +372,24 @@ func VerifyPhoneHandler(c *gin.Context) {
 	}
 
 	// ------------------- set the user to be phone verified -------------------
-	if err := q.UpdateVerifyStatusById(ctx, models.UpdateVerifyStatusByIdParams{
-		ID: user.ID,
-		PhoneVerified: sql.NullBool{
-			Bool:  true,
-			Valid: true,
-		},
-	}); err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToUpdateVerifyStatus,
-				err.Error(),
-			),
-		)
+	if user.PhoneVerified.Bool == false {
+		if err := q.UpdateVerifyStatusById(ctx, models.UpdateVerifyStatusByIdParams{
+			ID: user.ID,
+			PhoneVerified: sql.NullBool{
+				Bool:  true,
+				Valid: true,
+			},
+		}); err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToUpdateVerifyStatus,
+					err.Error(),
+				),
+			)
 
-		return
+			return
+		}
 	}
 
 	// ------------------- generate jwt token and return it -------------------
@@ -418,8 +411,92 @@ func VerifyPhoneHandler(c *gin.Context) {
 	}
 
 	resp := struct {
-		JwtToken string `json:"jwt_token"`
+		JwtToken string `json:"jwt"`
 	}{token}
 
 	c.JSON(http.StatusOK, &resp)
+}
+
+// store jwt token in redis and db
+type RevokeJwtBody struct {
+	Jwt string `json:"jwt" binding:"required,gt=0"`
+}
+
+func RevokeJwtHandler(c *gin.Context) {
+	var (
+		body *RevokeJwtBody  = &RevokeJwtBody{}
+		ctx  context.Context = context.Background()
+	)
+
+	if err := c.ShouldBindJSON(body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateRevokeJwtParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- check uuid exists in platform -------------------
+	// @TODO move the following logic to middleware
+	claims := &jwttoken.Claim{}
+	tkn, err := jwt.ParseWithClaims(body.Jwt, claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(config.GetAppConf().JwtSecret), nil
+	})
+
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			c.AbortWithError(
+				http.StatusUnauthorized,
+				apperr.NewErr(
+					apperr.InvalidSignature,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToParseSignature,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if !tkn.Valid {
+		c.AbortWithError(
+			http.StatusUnauthorized,
+			apperr.NewErr(
+				apperr.InvalidSigature,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- invalidate jwt -------------------
+	authDao := NewAuthDao(db.GetRedis())
+
+	if err := authDao.RevokeJwt(ctx, body.Jwt); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToInvalidateSignature,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct{}{})
 }

@@ -23,6 +23,12 @@ type DBConf struct {
 	Dbname   string
 }
 
+type RedisConf struct {
+	Addr     string `mapstructure:"addr"`
+	Password string `mapstructure:"password"`
+	DB       int    `mapstructure:"db"`
+}
+
 type TwilioConf struct {
 	AccountId string `mapstructure:"account_id"`
 	AuthToken string `mapstructure:"auth_token"`
@@ -33,6 +39,7 @@ type AppConf struct {
 	Port       string      `mapstructure:"port"`
 	JwtSecret  string      `mapstructure:"jwt_secret"`
 	DBConf     *DBConf     `mapstructure:"db"`
+	RedisConf  *RedisConf  `mapstructure:"redis"`
 	TwilioConf *TwilioConf `mapstructure:"twilio"`
 }
 

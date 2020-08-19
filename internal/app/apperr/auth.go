@@ -22,6 +22,11 @@ const (
 	VerifyCodeNotMatching                = "1000019"
 	FailedToUpdateVerifyStatus           = "1000020"
 	FailedToGenerateJwtToken             = "1000021"
+	FailedToValidateRevokeJwtParams      = "1000022"
+	InvalidSignature                     = "1000023"
+	FailedToParseSignature               = "1000024"
+	InvalidSigature                      = "1000025"
+	FailedToInvalidateSignature          = "1000026"
 )
 
 var ErrCodeMsgMap = map[string]string{

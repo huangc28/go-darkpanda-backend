@@ -13,10 +13,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/jwttoken"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
@@ -27,10 +29,12 @@ import (
 
 type UserRegistrationTestSuite struct {
 	suite.Suite
+	sendRequest util.SendRequest
 }
 
 func (suite *UserRegistrationTestSuite) SetupSuite() {
 	manager.NewDefaultManager()
+	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 }
 
 func (suite *UserRegistrationTestSuite) BeforeTest(suiteName, testName string) {
@@ -176,10 +180,10 @@ func (suite *UserRegistrationTestSuite) TestSendVerifyCodeViaTwilioSuccess() {
 	}
 
 	body := struct {
-		Uuid   string `json:"uuid"`
-		Mobile string `json:"mobile"`
+		Username string `json:"username"`
+		Mobile   string `json:"mobile"`
 	}{
-		usr.Uuid,
+		usr.Username,
 		"+886988272727",
 	}
 
@@ -207,7 +211,7 @@ func (suite *UserRegistrationTestSuite) TestSendVerifyCodeViaTwilioSuccess() {
 
 	assert.NotEmpty(suite.T(), respStruct.VerifyPrefix)
 	assert.NotEmpty(suite.T(), respStruct.VerifySuffix)
-	assert.Equal(suite.T(), respStruct.Uuid, body.Uuid)
+	assert.Equal(suite.T(), respStruct.Uuid, usr.Uuid)
 }
 
 func (suite *UserRegistrationTestSuite) TestVerifyPhoneSuccess() {
@@ -260,17 +264,47 @@ func (suite *UserRegistrationTestSuite) TestVerifyPhoneSuccess() {
 	dbuser, _ := q.GetUserByVerifyCode(ctx, newUser.PhoneVerifyCode)
 
 	assert.Equal(suite.T(), dbuser.PhoneVerified.Bool, true)
-
 	// ------------------- response has jwt token -------------------
 	dec := json.NewDecoder(rr.Body)
 	rBody := struct {
-		JwtToken string `json:"jwt_token"`
+		JwtToken string `json:"jwt"`
 	}{}
 	if err := dec.Decode(&rBody); err != nil {
 		suite.T().Fatal(err)
 	}
 
 	assert.NotEmpty(suite.T(), rBody.JwtToken)
+}
+
+func (suite *UserRegistrationTestSuite) TestRevokeJwtSuccess() {
+	// ------------------- generate jwt token -------------------
+	jwt, err := jwttoken.CreateToken("someuuid", config.GetAppConf().JwtSecret)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- create request -------------------
+	body := struct {
+		Jwt string `json:"jwt"`
+	}{jwt}
+
+	resp, err := suite.sendRequest("POST", "/v1/revoke-jwt", body)
+
+	if resp.Result().StatusCode != http.StatusOK {
+		suite.T().Fatalf("Failed to revoke jwt token")
+	}
+
+	// ------------------- check in redis if jwt exists -------------------
+	ctx := context.Background()
+	rds := db.GetRedis()
+	isMember, err := rds.SIsMember(ctx, auth.INVALIDATE_TOKEN_REDIS_KEY, jwt).Result()
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Equal(suite.T(), isMember, true)
 }
 
 func TestRegistrationTestSuite(t *testing.T) {
