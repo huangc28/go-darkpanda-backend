@@ -27,6 +27,7 @@ const (
 	FailedToParseSignature               = "1000024"
 	InvalidSigature                      = "1000025"
 	FailedToInvalidateSignature          = "1000026"
+	JWTNotProvided                       = "1000027"
 )
 
 var ErrCodeMsgMap = map[string]string{
@@ -35,4 +36,5 @@ var ErrCodeMsgMap = map[string]string{
 	ReferCodeNotExist:        "refer code does't exist",
 	UserHasPhoneVerified:     "user is phone verified",
 	UserNotFoundByVerifyCode: "user not found by the given verify code",
+	JWTNotProvided:           "JWT token not exists",
 }

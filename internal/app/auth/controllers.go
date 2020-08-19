@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/dgrijalva/jwt-go"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -424,69 +423,15 @@ type RevokeJwtBody struct {
 
 func RevokeJwtHandler(c *gin.Context) {
 	var (
-		body *RevokeJwtBody  = &RevokeJwtBody{}
-		ctx  context.Context = context.Background()
+		ctx context.Context = context.Background()
 	)
 
-	if err := c.ShouldBindJSON(body); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToValidateRevokeJwtParams,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// ------------------- check uuid exists in platform -------------------
-	// @TODO move the following logic to middleware
-	claims := &jwttoken.Claim{}
-	tkn, err := jwt.ParseWithClaims(body.Jwt, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(config.GetAppConf().JwtSecret), nil
-	})
-
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			c.AbortWithError(
-				http.StatusUnauthorized,
-				apperr.NewErr(
-					apperr.InvalidSignature,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToParseSignature,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	if !tkn.Valid {
-		c.AbortWithError(
-			http.StatusUnauthorized,
-			apperr.NewErr(
-				apperr.InvalidSigature,
-				err.Error(),
-			),
-		)
-
-		return
-	}
+	jwt := c.GetString("jwt")
 
 	// ------------------- invalidate jwt -------------------
 	authDao := NewAuthDao(db.GetRedis())
 
-	if err := authDao.RevokeJwt(ctx, body.Jwt); err != nil {
+	if err := authDao.RevokeJwt(ctx, jwt); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
