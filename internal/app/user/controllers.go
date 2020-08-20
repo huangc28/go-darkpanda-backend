@@ -9,6 +9,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	log "github.com/sirupsen/logrus"
 )
 
 // Get the following information from the user:
@@ -22,7 +23,24 @@ func GetUserInfo(c *gin.Context) {
 		ctx  context.Context = context.Background()
 	)
 
-	q := models.New(db.GetDB())
+	tx, err := db.
+		GetDB().
+		BeginTx(ctx, nil)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBeginTx,
+				err.Error(),
+			),
+		)
+
+		tx.Rollback()
+		return
+	}
+
+	q := models.New(tx)
 	usr, err := q.GetUserByUuid(ctx, uuid)
 
 	if err != nil {
@@ -37,17 +55,30 @@ func GetUserInfo(c *gin.Context) {
 		return
 	}
 
-	// ------------------- check if user has an active service -------------------
-	inquiry, err := q.GetInquiryByInquirerID(ctx, models.GetInquiryByInquirerIDParams{
-		InquirerID: sql.NullInt32{
-			Int32: int32(usr.ID),
-			Valid: true,
-		},
-		InquiryStatus: models.InquiryStatusInquiring,
-	})
+	// ------------------- get user relative info base on gender -------------------
+	switch usr.Gender {
+	case models.GenderMale:
+		data, err := GatherMaleInfo(
+			ctx,
+			q,
+			&usr,
+		)
 
-	if err != nil {
-		if err != sql.ErrNoRows {
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToFindInquiryByInquiererID,
+					err.Error(),
+				),
+			)
+
+			tx.Rollback()
+			return
+
+		}
+
+		if err := tx.Commit(); err != nil {
 			c.AbortWithError(
 				http.StatusInternalServerError,
 				apperr.NewErr(
@@ -59,6 +90,30 @@ func GetUserInfo(c *gin.Context) {
 			return
 		}
 
+		c.JSON(http.StatusOK, data)
+
+	case models.GenderFemale:
+		log.Printf("gather female info")
+	}
+
+}
+
+func GatherMaleInfo(ctx context.Context, q *models.Queries, usr *models.User) (*TransformUserWithInquiryData, error) {
+	// ------------------- check if user has an active service -------------------
+	inquiry, err := q.GetInquiryByInquirerID(ctx, models.GetInquiryByInquirerIDParams{
+		InquirerID: sql.NullInt32{
+			Int32: int32(usr.ID),
+			Valid: true,
+		},
+		InquiryStatus: models.InquiryStatusInquiring,
+	})
+
+	if err != nil {
+		if err != sql.ErrNoRows {
+
+			return nil, err
+		}
+
 	}
 
 	inquiries := make([]*models.ServiceInquiry, 0)
@@ -67,8 +122,5 @@ func GetUserInfo(c *gin.Context) {
 		inquiries = append(inquiries, &inquiry)
 	}
 
-	c.JSON(
-		http.StatusOK,
-		NewTransform().TransformUserWithInquiry(&usr, inquiries),
-	)
+	return NewTransform().TransformUserWithInquiry(usr, inquiries), nil
 }

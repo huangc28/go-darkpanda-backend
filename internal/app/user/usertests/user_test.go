@@ -32,7 +32,6 @@ func (suite *UserAPITestsSuite) SetupSuite() {
 
 func (suite *UserAPITestsSuite) TestGetMaleUserInfo() {
 	// create a male user that has no related active inquiry
-
 	ctx := context.Background()
 	newUserParams, err := util.GenTestUserParams(ctx)
 	newUserParams.Gender = models.GenderMale
@@ -74,6 +73,53 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfo() {
 
 	assert.Equal(suite.T(), len(respStruct.Inquiries), 0)
 
+}
+
+func (suite *UserAPITestsSuite) TestGetMaleUserInfoWithActiveInquiry() {
+	// create a male user along with active inquiries
+	ctx := context.Background()
+	newUserParams, err := util.GenTestUserParams(ctx)
+	newUserParams.Gender = models.GenderMale
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	q := models.New(db.GetDB())
+	newUser, err := q.CreateUser(ctx, *newUserParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	newInquiryParams, err := util.GenTestInquiryParams(newUser.ID)
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+	newInquiryParams.InquiryStatus = models.InquiryStatusInquiring
+	if _, err := q.CreateInquiry(ctx, *newInquiryParams); err != nil {
+		suite.T().Fatalf("Failed to create inquiry %s", err.Error())
+	}
+
+	// ------------------- Create jwt to request the API -------------------
+	jwt, err := jwtactor.CreateToken(newUser.Uuid, config.GetAppConf().JwtSecret)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	header := make(map[string]string)
+	header["Authorization"] = fmt.Sprintf("Bearer %s", jwt)
+	resp, _ := suite.sendRequest("POST", "/v1/me", struct{}{}, header)
+
+	// ------------------- assert test cases -------------------
+	respStruct := &user.TransformUserWithInquiryData{}
+	dec := json.NewDecoder(resp.Result().Body)
+	if err := dec.Decode(respStruct); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Equal(suite.T(), len(respStruct.Inquiries), 1)
 }
 
 func TestUserAPISuite(t *testing.T) {

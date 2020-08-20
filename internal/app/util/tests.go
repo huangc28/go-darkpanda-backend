@@ -49,6 +49,45 @@ func GenTestUserParams(ctx context.Context) (*models.CreateUserParams, error) {
 	return p, nil
 }
 
+func randomServiceType() models.ServiceType {
+	gs := []models.ServiceType{
+		models.ServiceTypeChat,
+		models.ServiceTypeDiner,
+		models.ServiceTypeMovie,
+		models.ServiceTypeSex,
+		models.ServiceTypeShopping,
+	}
+
+	return gs[seededRand.Intn(len(gs))]
+}
+
+func randomInquiryStatus() models.InquiryStatus {
+	gs := []models.InquiryStatus{
+		models.InquiryStatusBooked,
+		models.InquiryStatusCanceled,
+		models.InquiryStatusExpired,
+		models.InquiryStatusInquiring,
+	}
+
+	return gs[seededRand.Intn(len(gs))]
+}
+
+func GenTestInquiryParams(inquirerID int64) (*models.CreateInquiryParams, error) {
+	p := &models.CreateInquiryParams{}
+	if err := faker.FakeData(p); err != nil {
+		return nil, err
+	}
+
+	p.InquirerID = sql.NullInt32{
+		Int32: int32(inquirerID),
+		Valid: true,
+	}
+	p.ServiceType = randomServiceType()
+	p.InquiryStatus = randomInquiryStatus()
+
+	return p, nil
+}
+
 type SendRequest func(method string, url string, body interface{}, header map[string]string) (*httptest.ResponseRecorder, error)
 
 func SendRequestToApp(e *gin.Engine) SendRequest {

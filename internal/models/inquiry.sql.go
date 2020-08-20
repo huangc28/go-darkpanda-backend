@@ -8,6 +8,44 @@ import (
 	"database/sql"
 )
 
+const createInquiry = `-- name: CreateInquiry :one
+INSERT INTO service_inquiries(
+	inquirer_id,
+	budget,
+	service_type,
+	inquiry_status
+) VALUES ($1, $2, $3, $4)
+RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at
+`
+
+type CreateInquiryParams struct {
+	InquirerID    sql.NullInt32 `json:"inquirer_id"`
+	Budget        float64       `json:"budget"`
+	ServiceType   ServiceType   `json:"service_type"`
+	InquiryStatus InquiryStatus `json:"inquiry_status"`
+}
+
+func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (ServiceInquiry, error) {
+	row := q.queryRow(ctx, q.createInquiryStmt, createInquiry,
+		arg.InquirerID,
+		arg.Budget,
+		arg.ServiceType,
+		arg.InquiryStatus,
+	)
+	var i ServiceInquiry
+	err := row.Scan(
+		&i.ID,
+		&i.InquirerID,
+		&i.Budget,
+		&i.ServiceType,
+		&i.InquiryStatus,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+	)
+	return i, err
+}
+
 const getInquiryByInquirerID = `-- name: GetInquiryByInquirerID :one
 SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at FROM service_inquiries
 WHERE inquirer_id = $1
