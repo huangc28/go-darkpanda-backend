@@ -1,4 +1,4 @@
-package auth
+package jwtactor
 
 import (
 	"encoding/json"
@@ -8,7 +8,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/jwttoken"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -77,7 +76,7 @@ func JwtValidator(opt JwtMiddlewareOptions) gin.HandlerFunc {
 			return
 		}
 
-		claims := &jwttoken.Claim{}
+		claims := &Claim{}
 		tkn, err := jwt.ParseWithClaims(token, claims, func(token *jwt.Token) (interface{}, error) {
 			return []byte(opt.Secret), nil
 		})
@@ -122,7 +121,7 @@ func JwtValidator(opt JwtMiddlewareOptions) gin.HandlerFunc {
 		c.Set("uuid", claims.Uuid)
 		c.Set("jwt", token)
 
-		log.Infoln("Pass the validation test!")
+		log.Infoln("jwt given passes the validation!")
 
 		c.Next()
 	}

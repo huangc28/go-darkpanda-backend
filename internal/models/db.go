@@ -28,6 +28,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
 	}
+	if q.getInquiryByInquirerIDStmt, err = db.PrepareContext(ctx, getInquiryByInquirerID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetInquiryByInquirerID: %w", err)
+	}
 	if q.getReferCodeInfoByRefcodeStmt, err = db.PrepareContext(ctx, getReferCodeInfoByRefcode); err != nil {
 		return nil, fmt.Errorf("error preparing query GetReferCodeInfoByRefcode: %w", err)
 	}
@@ -59,6 +62,11 @@ func (q *Queries) Close() error {
 	if q.createUserStmt != nil {
 		if cerr := q.createUserStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
+		}
+	}
+	if q.getInquiryByInquirerIDStmt != nil {
+		if cerr := q.getInquiryByInquirerIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getInquiryByInquirerIDStmt: %w", cerr)
 		}
 	}
 	if q.getReferCodeInfoByRefcodeStmt != nil {
@@ -132,6 +140,7 @@ type Queries struct {
 	tx                            *sql.Tx
 	createRefcodeStmt             *sql.Stmt
 	createUserStmt                *sql.Stmt
+	getInquiryByInquirerIDStmt    *sql.Stmt
 	getReferCodeInfoByRefcodeStmt *sql.Stmt
 	getUserByUsernameStmt         *sql.Stmt
 	getUserByUuidStmt             *sql.Stmt
@@ -146,6 +155,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                            tx,
 		createRefcodeStmt:             q.createRefcodeStmt,
 		createUserStmt:                q.createUserStmt,
+		getInquiryByInquirerIDStmt:    q.getInquiryByInquirerIDStmt,
 		getReferCodeInfoByRefcodeStmt: q.getReferCodeInfoByRefcodeStmt,
 		getUserByUsernameStmt:         q.getUserByUsernameStmt,
 		getUserByUuidStmt:             q.getUserByUuidStmt,

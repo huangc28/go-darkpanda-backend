@@ -12,8 +12,8 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/jwttoken"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/twilio"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/spf13/viper"
@@ -392,7 +392,7 @@ func VerifyPhoneHandler(c *gin.Context) {
 	}
 
 	// ------------------- generate jwt token and return it -------------------
-	token, err := jwttoken.CreateToken(
+	token, err := jwtactor.CreateToken(
 		user.Uuid,
 		config.GetAppConf().JwtSecret,
 	)

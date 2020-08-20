@@ -28,13 +28,15 @@ const (
 	InvalidSigature                      = "1000025"
 	FailedToInvalidateSignature          = "1000026"
 	JWTNotProvided                       = "1000027"
+	FailedToFindInquiryByInquiererID     = "1000028"
 )
 
 var ErrCodeMsgMap = map[string]string{
-	ReferCodeOccupied:        "refer code already occupied",
-	UsernameNotAvailable:     "username is has been registered",
-	ReferCodeNotExist:        "refer code does't exist",
-	UserHasPhoneVerified:     "user is phone verified",
-	UserNotFoundByVerifyCode: "user not found by the given verify code",
-	JWTNotProvided:           "JWT token not exists",
+	ReferCodeOccupied:                "refer code already occupied",
+	UsernameNotAvailable:             "username is has been registered",
+	ReferCodeNotExist:                "refer code does't exist",
+	UserHasPhoneVerified:             "user is phone verified",
+	UserNotFoundByVerifyCode:         "user not found by the given verify code",
+	JWTNotProvided:                   "JWT token not exists",
+	FailedToFindInquiryByInquiererID: "failed to find inquiry by inquirer ID",
 }

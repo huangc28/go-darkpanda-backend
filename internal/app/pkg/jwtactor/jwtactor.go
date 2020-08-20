@@ -1,4 +1,4 @@
-package jwttoken
+package jwtactor
 
 import (
 	"time"

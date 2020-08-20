@@ -49,10 +49,10 @@ func GenTestUserParams(ctx context.Context) (*models.CreateUserParams, error) {
 	return p, nil
 }
 
-type SendRequest func(method string, url string, body interface{}) (*httptest.ResponseRecorder, error)
+type SendRequest func(method string, url string, body interface{}, header map[string]string) (*httptest.ResponseRecorder, error)
 
 func SendRequestToApp(e *gin.Engine) SendRequest {
-	return func(method string, url string, body interface{}) (*httptest.ResponseRecorder, error) {
+	return func(method string, url string, body interface{}, header map[string]string) (*httptest.ResponseRecorder, error) {
 
 		bbody, err := json.Marshal(&body)
 
@@ -62,11 +62,16 @@ func SendRequestToApp(e *gin.Engine) SendRequest {
 
 		req, err := http.NewRequest(method, url, bytes.NewBuffer(bbody))
 
+		for headerKey, headerVal := range header {
+			req.Header.Set(headerKey, headerVal)
+		}
+
 		if err != nil {
 			return nil, err
 		}
 
 		rr := httptest.NewRecorder()
+
 		e.ServeHTTP(rr, req)
 
 		return rr, nil

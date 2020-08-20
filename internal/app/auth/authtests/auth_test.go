@@ -18,7 +18,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/jwttoken"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
@@ -278,7 +278,7 @@ func (suite *UserRegistrationTestSuite) TestVerifyPhoneSuccess() {
 
 func (suite *UserRegistrationTestSuite) TestRevokeJwtSuccess() {
 	// ------------------- generate jwt token -------------------
-	jwt, err := jwttoken.CreateToken("someuuid", config.GetAppConf().JwtSecret)
+	jwt, err := jwtactor.CreateToken("someuuid", config.GetAppConf().JwtSecret)
 
 	if err != nil {
 		suite.T().Fatal(err)
@@ -289,7 +289,8 @@ func (suite *UserRegistrationTestSuite) TestRevokeJwtSuccess() {
 		Jwt string `json:"jwt"`
 	}{jwt}
 
-	resp, err := suite.sendRequest("POST", "/v1/revoke-jwt", body)
+	headers := make(map[string]string)
+	resp, err := suite.sendRequest("POST", "/v1/revoke-jwt", body, headers)
 
 	if resp.Result().StatusCode != http.StatusOK {
 		suite.T().Fatalf("Failed to revoke jwt token")

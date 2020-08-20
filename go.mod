@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-txdb v0.1.3
 	github.com/bxcodec/faker/v3 v3.5.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/docker/distribution v2.7.1+incompatible
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-playground/validator/v10 v10.3.0 // indirect
 	github.com/go-redis/redis v6.15.9+incompatible
@@ -29,8 +30,11 @@ require (
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf // indirect
 	github.com/ventu-io/go-shortid v0.0.0-20171029131806-771a37caa5cf
 	go.opentelemetry.io/otel v0.10.0 // indirect
+	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
+	google.golang.org/appengine v1.6.6
 	google.golang.org/grpc v1.31.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
+	gotest.tools v2.2.0+incompatible // indirect
 )

@@ -16,7 +16,7 @@ type TransformedUser struct {
 	Username      string `json:"username"`
 	PhoneVerified bool   `json:"phone_verified"`
 	Gender        string `json:"gender"`
-	Uuid          string `json:uuid`
+	Uuid          string `json:"uuid"`
 }
 
 func (at *AuthTransform) TransformUser(m *models.User) *TransformedUser {

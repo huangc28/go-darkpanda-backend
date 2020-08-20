@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
 )
 
 func StartApp(e *gin.Engine) *gin.Engine {
@@ -14,7 +15,7 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	rv1 := e.Group("/v1")
 
 	auth.Routes(rv1)
-	//user.Routes(r)
+	user.Routes(rv1)
 
 	return e
 }

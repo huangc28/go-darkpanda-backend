@@ -3,6 +3,7 @@ package auth
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
 func Routes(r *gin.RouterGroup) {
@@ -11,7 +12,7 @@ func Routes(r *gin.RouterGroup) {
 	r.POST("/verify-phone", VerifyPhoneHandler)
 	r.POST(
 		"/revoke-jwt",
-		JwtValidator(JwtMiddlewareOptions{
+		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 			Secret: config.GetAppConf().JwtSecret,
 		}),
 		RevokeJwtHandler,
