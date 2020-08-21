@@ -1,9 +1,23 @@
 package apperr
 
+func mergeMaps(maps ...map[string]string) map[string]string {
+	mm := make(map[string]string)
+
+	for _, m := range maps {
+		for k, v := range m {
+			mm[k] = v
+		}
+	}
+
+	return mm
+}
+
 type Error struct {
 	ErrCode string `json:"err_code"`
 	ErrMsg  string `json:"err_msg"`
 }
+
+var MasterErrorMessageMap map[string]string = make(map[string]string)
 
 func (e *Error) Error() string {
 	return e.ErrMsg
@@ -23,9 +37,16 @@ func NewErr(errCode string, args ...interface{}) *Error {
 }
 
 func GetErrorMessage(code string) string {
+	if MasterErrorMessageMap == nil {
+		MasterErrorMessageMap = mergeMaps(
+			AuthErrCodeMsgMap,
+			InquiryErrCodeMsgMap,
+		)
+	}
+
 	message := ""
 
-	if msg, exists := ErrCodeMsgMap[code]; exists {
+	if msg, exists := MasterErrorMessageMap[code]; exists {
 		message = msg
 	}
 

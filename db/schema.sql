@@ -163,3 +163,9 @@ ALTER TABLE users
 ADD COLUMN phone_verify_code VARCHAR(20);
 
 COMMIT;
+BEGIN;
+
+ALTER TABLE service_inquiries
+ADD COLUMN uuid VARCHAR(40) UNIQUE NOT NULL;
+
+COMMIT;

@@ -31,7 +31,7 @@ const (
 	FailedToFindInquiryByInquiererID     = "1000028"
 )
 
-var ErrCodeMsgMap = map[string]string{
+var AuthErrCodeMsgMap = map[string]string{
 	ReferCodeOccupied:                "refer code already occupied",
 	UsernameNotAvailable:             "username is has been registered",
 	ReferCodeNotExist:                "refer code does't exist",

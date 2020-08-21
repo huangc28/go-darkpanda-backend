@@ -10,15 +10,17 @@ import (
 
 const createInquiry = `-- name: CreateInquiry :one
 INSERT INTO service_inquiries(
+	uuid,
 	inquirer_id,
 	budget,
 	service_type,
 	inquiry_status
-) VALUES ($1, $2, $3, $4)
-RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at
+) VALUES ($1, $2, $3, $4, $5)
+RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid
 `
 
 type CreateInquiryParams struct {
+	Uuid          string        `json:"uuid"`
 	InquirerID    sql.NullInt32 `json:"inquirer_id"`
 	Budget        float64       `json:"budget"`
 	ServiceType   ServiceType   `json:"service_type"`
@@ -27,6 +29,7 @@ type CreateInquiryParams struct {
 
 func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (ServiceInquiry, error) {
 	row := q.queryRow(ctx, q.createInquiryStmt, createInquiry,
+		arg.Uuid,
 		arg.InquirerID,
 		arg.Budget,
 		arg.ServiceType,
@@ -42,12 +45,13 @@ func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (S
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Uuid,
 	)
 	return i, err
 }
 
 const getInquiryByInquirerID = `-- name: GetInquiryByInquirerID :one
-SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at FROM service_inquiries
+SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid FROM service_inquiries
 WHERE inquirer_id = $1
 AND inquiry_status = $2
 `
@@ -69,6 +73,23 @@ func (q *Queries) GetInquiryByInquirerID(ctx context.Context, arg GetInquiryByIn
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.Uuid,
 	)
 	return i, err
+}
+
+const patchInquiryStatus = `-- name: PatchInquiryStatus :exec
+UPDATE service_inquiries
+SET inquiry_status = $1
+WHERE id = $2
+`
+
+type PatchInquiryStatusParams struct {
+	InquiryStatus InquiryStatus `json:"inquiry_status"`
+	ID            int64         `json:"id"`
+}
+
+func (q *Queries) PatchInquiryStatus(ctx context.Context, arg PatchInquiryStatusParams) error {
+	_, err := q.exec(ctx, q.patchInquiryStatusStmt, patchInquiryStatus, arg.InquiryStatus, arg.ID)
+	return err
 }

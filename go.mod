@@ -27,7 +27,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf // indirect
+	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/ventu-io/go-shortid v0.0.0-20171029131806-771a37caa5cf
 	go.opentelemetry.io/otel v0.10.0 // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
