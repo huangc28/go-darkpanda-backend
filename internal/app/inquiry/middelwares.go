@@ -46,7 +46,7 @@ func IsMale(dao UserDaoer) gin.HandlerFunc {
 	}
 }
 
-func ValidateBeforeAlterInquiryStatus() gin.HandlerFunc {
+func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
 		ctx := context.Background()
@@ -88,7 +88,7 @@ func ValidateBeforeAlterInquiryStatus() gin.HandlerFunc {
 		// ------------------- try to emit transition event  -------------------
 		iq, err := q.GetInquiryByUuid(ctx, uriParams.InquiryUuid)
 		fsm, _ := NewInquiryFSM(iq.InquiryStatus)
-		if err := fsm.Event(Cancel.ToString()); err != nil {
+		if err := fsm.Event(action.ToString()); err != nil {
 			c.AbortWithError(
 				http.StatusBadRequest,
 				apperr.NewErr(

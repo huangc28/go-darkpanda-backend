@@ -15,10 +15,6 @@ import (
 	"github.com/teris-io/shortid"
 )
 
-type InquiryController struct {
-	UserDao UserDaoer
-}
-
 type EmitInquiryBody struct {
 	Budget      float64 `json:"budget" binding:"required"`
 	ServiceType string  `json:"service_type" binding:"required"`
@@ -172,5 +168,38 @@ func CancelInquiry(c *gin.Context) {
 }
 
 func ExpireInquiry(c *gin.Context) {
+	eup, uriParamExists := c.Get("uri_params")
+	efsm, nFsmExists := c.Get("next_fsm_state")
 
+	if !uriParamExists || !nFsmExists {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
+		)
+
+		return
+	}
+
+	uriParams := eup.(*CancelInquiryUriParam)
+	fsm := efsm.(*fsm.FSM)
+
+	// ------------------- Update inquiry status to expire  -------------------
+	ctx := context.Background()
+	q := models.New(db.GetDB())
+
+	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
+		InquiryStatus: models.InquiryStatus(fsm.Current()),
+		Uuid:          uriParams.InquiryUuid,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, NewTransform().TransformInquiry(uiq))
 }

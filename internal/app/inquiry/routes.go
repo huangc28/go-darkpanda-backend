@@ -25,7 +25,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	g.PATCH(
 		"/:inquiry_uuid/cancel",
 		IsMale(userDao),
-		ValidateBeforeAlterInquiryStatus(),
+		ValidateBeforeAlterInquiryStatus(Cancel),
 		CancelInquiry,
 	)
 
@@ -33,7 +33,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	g.PATCH(
 		"/:inquiry_uuid/expire",
 		IsMale(userDao),
-		ValidateBeforeAlterInquiryStatus(),
+		ValidateBeforeAlterInquiryStatus(Expire),
 		ExpireInquiry,
 	)
 }
