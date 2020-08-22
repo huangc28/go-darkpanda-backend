@@ -137,8 +137,6 @@ func (suite *InquiryTestSuite) TestCancelInquirySuccess() {
 		suite.T().Fatal(err)
 	}
 
-	//bbody, _ := ioutil.ReadAll(resp.Result().Body)
-	//log.Printf("DEBUG %v", string(bbody))
 	respBody := struct {
 		Uuid          string `json:"uuid"`
 		InquiryStatus string `json:"inquiry_status"`

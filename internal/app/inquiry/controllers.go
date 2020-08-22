@@ -10,9 +10,14 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/looplab/fsm"
 	log "github.com/sirupsen/logrus"
 	"github.com/teris-io/shortid"
 )
+
+type InquiryController struct {
+	UserDao UserDaoer
+}
 
 type EmitInquiryBody struct {
 	Budget      float64 `json:"budget" binding:"required"`
@@ -129,56 +134,26 @@ type CancelInquiryUriParam struct {
 }
 
 func CancelInquiry(c *gin.Context) {
-	ctx := context.Background()
-	usrUuid := c.GetString("uuid")
-	uriParams := &CancelInquiryUriParam{}
+	// ------------------- gather information from middleware -------------------
+	eup, uriParamExists := c.Get("uri_params")
+	efsm, nFsmExists := c.Get("next_fsm_state")
 
-	if err := c.ShouldBindUri(uriParams); err != nil {
+	if !uriParamExists || !nFsmExists {
 		c.AbortWithError(
 			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToValidateCancelInquiryParams,
-				err.Error(),
-			),
+			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
 		)
 
 		return
 	}
 
-	q := models.New(db.GetDB())
-
-	// ------------------- makesure the user owns the inquiry -------------------
-	err := q.CheckUserOwnsInquiry(ctx, models.CheckUserOwnsInquiryParams{
-
-		Uuid:   usrUuid,
-		Uuid_2: uriParams.InquiryUuid,
-	})
-
-	if err == sql.ErrNoRows {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.UserNotOwnInquiry),
-		)
-
-		return
-	}
-
-	// ------------------- check if its cancelable  -------------------
-	iq, err := q.GetInquiryByUuid(ctx, uriParams.InquiryUuid)
-	fsm, _ := NewInquiryFSM(iq.InquiryStatus)
-	if err := fsm.Event(Cancel.ToString()); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.InquiryFSMTransitionFailed,
-				err.Error(),
-			),
-		)
-
-		return
-	}
+	uriParams := eup.(*CancelInquiryUriParam)
+	fsm := efsm.(*fsm.FSM)
 
 	// ------------------- Update inquiry status to cancel  -------------------
+	ctx := context.Background()
+	q := models.New(db.GetDB())
+
 	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
 		InquiryStatus: models.InquiryStatus(fsm.Current()),
 		Uuid:          uriParams.InquiryUuid,
@@ -194,4 +169,8 @@ func CancelInquiry(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, NewTransform().TransformInquiry(uiq))
+}
+
+func ExpireInquiry(c *gin.Context) {
+
 }
