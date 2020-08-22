@@ -11,6 +11,7 @@ import (
 
 	faker "github.com/bxcodec/faker/v3"
 	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/ventu-io/go-shortid"
 )
@@ -115,4 +116,12 @@ func SendRequestToApp(e *gin.Engine) SendRequest {
 
 		return rr, nil
 	}
+}
+
+func CreateJwtHeaderMap(uuid, secret string) map[string]string {
+	header := make(map[string]string)
+	token, _ := jwtactor.CreateToken(uuid, secret)
+	header["Authorization"] = fmt.Sprintf("Bearer %s", token)
+
+	return header
 }

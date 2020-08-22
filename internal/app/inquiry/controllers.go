@@ -24,6 +24,8 @@ func EmitInquiryHandler(c *gin.Context) {
 	// check if user is male
 	// check if user has active inquiry already
 	body := &EmitInquiryBody{}
+	ctx := context.Background()
+
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
@@ -37,7 +39,6 @@ func EmitInquiryHandler(c *gin.Context) {
 	}
 
 	uuid := c.GetString("uuid")
-	ctx := context.Background()
 	q := models.New(db.GetDB())
 	usr, err := q.GetUserByUuid(ctx, uuid)
 
@@ -121,4 +122,76 @@ func EmitInquiryHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, NewTransform().TransformInquiry(iq))
+}
+
+type CancelInquiryUriParam struct {
+	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
+}
+
+func CancelInquiry(c *gin.Context) {
+	ctx := context.Background()
+	usrUuid := c.GetString("uuid")
+	uriParams := &CancelInquiryUriParam{}
+
+	if err := c.ShouldBindUri(uriParams); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateCancelInquiryParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	q := models.New(db.GetDB())
+
+	// ------------------- makesure the user owns the inquiry -------------------
+	err := q.CheckUserOwnsInquiry(ctx, models.CheckUserOwnsInquiryParams{
+
+		Uuid:   usrUuid,
+		Uuid_2: uriParams.InquiryUuid,
+	})
+
+	if err == sql.ErrNoRows {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.UserNotOwnInquiry),
+		)
+
+		return
+	}
+
+	// ------------------- check if its cancelable  -------------------
+	iq, err := q.GetInquiryByUuid(ctx, uriParams.InquiryUuid)
+	fsm, _ := NewInquiryFSM(iq.InquiryStatus)
+	if err := fsm.Event(Cancel.ToString()); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.InquiryFSMTransitionFailed,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- Update inquiry status to cancel  -------------------
+	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
+		InquiryStatus: models.InquiryStatus(fsm.Current()),
+		Uuid:          uriParams.InquiryUuid,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, NewTransform().TransformInquiry(uiq))
 }

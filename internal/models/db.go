@@ -22,6 +22,9 @@ func New(db DBTX) *Queries {
 func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	q := Queries{db: db}
 	var err error
+	if q.checkUserOwnsInquiryStmt, err = db.PrepareContext(ctx, checkUserOwnsInquiry); err != nil {
+		return nil, fmt.Errorf("error preparing query CheckUserOwnsInquiry: %w", err)
+	}
 	if q.createInquiryStmt, err = db.PrepareContext(ctx, createInquiry); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateInquiry: %w", err)
 	}
@@ -33,6 +36,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getInquiryByInquirerIDStmt, err = db.PrepareContext(ctx, getInquiryByInquirerID); err != nil {
 		return nil, fmt.Errorf("error preparing query GetInquiryByInquirerID: %w", err)
+	}
+	if q.getInquiryByUuidStmt, err = db.PrepareContext(ctx, getInquiryByUuid); err != nil {
+		return nil, fmt.Errorf("error preparing query GetInquiryByUuid: %w", err)
 	}
 	if q.getReferCodeInfoByRefcodeStmt, err = db.PrepareContext(ctx, getReferCodeInfoByRefcode); err != nil {
 		return nil, fmt.Errorf("error preparing query GetReferCodeInfoByRefcode: %w", err)
@@ -46,8 +52,14 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserByVerifyCodeStmt, err = db.PrepareContext(ctx, getUserByVerifyCode); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByVerifyCode: %w", err)
 	}
+	if q.getUserIDByUuidStmt, err = db.PrepareContext(ctx, getUserIDByUuid); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserIDByUuid: %w", err)
+	}
 	if q.patchInquiryStatusStmt, err = db.PrepareContext(ctx, patchInquiryStatus); err != nil {
 		return nil, fmt.Errorf("error preparing query PatchInquiryStatus: %w", err)
+	}
+	if q.patchInquiryStatusByUuidStmt, err = db.PrepareContext(ctx, patchInquiryStatusByUuid); err != nil {
+		return nil, fmt.Errorf("error preparing query PatchInquiryStatusByUuid: %w", err)
 	}
 	if q.updateVerifyCodeByIdStmt, err = db.PrepareContext(ctx, updateVerifyCodeById); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateVerifyCodeById: %w", err)
@@ -60,6 +72,11 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 
 func (q *Queries) Close() error {
 	var err error
+	if q.checkUserOwnsInquiryStmt != nil {
+		if cerr := q.checkUserOwnsInquiryStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing checkUserOwnsInquiryStmt: %w", cerr)
+		}
+	}
 	if q.createInquiryStmt != nil {
 		if cerr := q.createInquiryStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createInquiryStmt: %w", cerr)
@@ -78,6 +95,11 @@ func (q *Queries) Close() error {
 	if q.getInquiryByInquirerIDStmt != nil {
 		if cerr := q.getInquiryByInquirerIDStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getInquiryByInquirerIDStmt: %w", cerr)
+		}
+	}
+	if q.getInquiryByUuidStmt != nil {
+		if cerr := q.getInquiryByUuidStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getInquiryByUuidStmt: %w", cerr)
 		}
 	}
 	if q.getReferCodeInfoByRefcodeStmt != nil {
@@ -100,9 +122,19 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getUserByVerifyCodeStmt: %w", cerr)
 		}
 	}
+	if q.getUserIDByUuidStmt != nil {
+		if cerr := q.getUserIDByUuidStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserIDByUuidStmt: %w", cerr)
+		}
+	}
 	if q.patchInquiryStatusStmt != nil {
 		if cerr := q.patchInquiryStatusStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing patchInquiryStatusStmt: %w", cerr)
+		}
+	}
+	if q.patchInquiryStatusByUuidStmt != nil {
+		if cerr := q.patchInquiryStatusByUuidStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing patchInquiryStatusByUuidStmt: %w", cerr)
 		}
 	}
 	if q.updateVerifyCodeByIdStmt != nil {
@@ -154,15 +186,19 @@ func (q *Queries) queryRow(ctx context.Context, stmt *sql.Stmt, query string, ar
 type Queries struct {
 	db                            DBTX
 	tx                            *sql.Tx
+	checkUserOwnsInquiryStmt      *sql.Stmt
 	createInquiryStmt             *sql.Stmt
 	createRefcodeStmt             *sql.Stmt
 	createUserStmt                *sql.Stmt
 	getInquiryByInquirerIDStmt    *sql.Stmt
+	getInquiryByUuidStmt          *sql.Stmt
 	getReferCodeInfoByRefcodeStmt *sql.Stmt
 	getUserByUsernameStmt         *sql.Stmt
 	getUserByUuidStmt             *sql.Stmt
 	getUserByVerifyCodeStmt       *sql.Stmt
+	getUserIDByUuidStmt           *sql.Stmt
 	patchInquiryStatusStmt        *sql.Stmt
+	patchInquiryStatusByUuidStmt  *sql.Stmt
 	updateVerifyCodeByIdStmt      *sql.Stmt
 	updateVerifyStatusByIdStmt    *sql.Stmt
 }
@@ -171,15 +207,19 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 	return &Queries{
 		db:                            tx,
 		tx:                            tx,
+		checkUserOwnsInquiryStmt:      q.checkUserOwnsInquiryStmt,
 		createInquiryStmt:             q.createInquiryStmt,
 		createRefcodeStmt:             q.createRefcodeStmt,
 		createUserStmt:                q.createUserStmt,
 		getInquiryByInquirerIDStmt:    q.getInquiryByInquirerIDStmt,
+		getInquiryByUuidStmt:          q.getInquiryByUuidStmt,
 		getReferCodeInfoByRefcodeStmt: q.getReferCodeInfoByRefcodeStmt,
 		getUserByUsernameStmt:         q.getUserByUsernameStmt,
 		getUserByUuidStmt:             q.getUserByUuidStmt,
 		getUserByVerifyCodeStmt:       q.getUserByVerifyCodeStmt,
+		getUserIDByUuidStmt:           q.getUserIDByUuidStmt,
 		patchInquiryStatusStmt:        q.patchInquiryStatusStmt,
+		patchInquiryStatusByUuidStmt:  q.patchInquiryStatusByUuidStmt,
 		updateVerifyCodeByIdStmt:      q.updateVerifyCodeByIdStmt,
 		updateVerifyStatusByIdStmt:    q.updateVerifyStatusByIdStmt,
 	}

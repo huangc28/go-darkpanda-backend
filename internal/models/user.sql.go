@@ -137,6 +137,18 @@ func (q *Queries) GetUserByVerifyCode(ctx context.Context, phoneVerifyCode sql.N
 	return i, err
 }
 
+const getUserIDByUuid = `-- name: GetUserIDByUuid :one
+SELECT id FROM users
+WHERE uuid = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserIDByUuid(ctx context.Context, uuid string) (int64, error) {
+	row := q.queryRow(ctx, q.getUserIDByUuidStmt, getUserIDByUuid, uuid)
+	var id int64
+	err := row.Scan(&id)
+	return id, err
+}
+
 const updateVerifyCodeById = `-- name: UpdateVerifyCodeById :exec
 UPDATE users SET phone_verify_code = $1
 WHERE id = $2

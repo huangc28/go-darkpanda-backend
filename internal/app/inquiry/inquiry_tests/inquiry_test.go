@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -21,12 +22,25 @@ import (
 
 type InquiryTestSuite struct {
 	suite.Suite
-	sendRequest util.SendRequest
+	sendRequest      util.SendRequest
+	newUserParams    *models.CreateUserParams
+	newInquiryParams *models.CreateInquiryParams
 }
 
 func (suite *InquiryTestSuite) SetupSuite() {
 	manager.NewDefaultManager()
 	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
+}
+
+func (suite *InquiryTestSuite) BeforeTest(suiteName, testName string) {
+	// generate new user params before test
+	newUserParams, err := util.GenTestUserParams(context.Background())
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	suite.newUserParams = newUserParams
 }
 
 func (suite *InquiryTestSuite) TestEmitInquirySuccess() {
@@ -84,6 +98,62 @@ func (suite *InquiryTestSuite) TestEmitInquirySuccess() {
 	assert.Equal(suite.T(), respBody.Budget, 100.10)
 	assert.Equal(suite.T(), respBody.ServiceType, models.ServiceTypeSex)
 	assert.Equal(suite.T(), respBody.InquiryStatus, models.InquiryStatusInquiring)
+}
+
+func (suite *InquiryTestSuite) TestCancelInquirySuccess() {
+	ctx := context.Background()
+	newUserParams := suite.newUserParams
+	newUserParams.Gender = models.GenderMale
+	q := models.New(db.GetDB())
+	usr, err := q.CreateUser(ctx, *newUserParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	newInquiryParams, err := util.GenTestInquiryParams(usr.ID)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	newInquiryParams.InquiryStatus = models.InquiryStatusInquiring
+	newInquiry, err := q.CreateInquiry(ctx, *newInquiryParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- request API -------------------
+	header := util.CreateJwtHeaderMap(usr.Uuid, config.GetAppConf().JwtSecret)
+	resp, err := suite.sendRequest(
+		"PATCH",
+		fmt.Sprintf("/v1/inquiries/%s/cancel", newInquiry.Uuid),
+		struct{}{},
+		header,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	//bbody, _ := ioutil.ReadAll(resp.Result().Body)
+	//log.Printf("DEBUG %v", string(bbody))
+	respBody := struct {
+		Uuid          string `json:"uuid"`
+		InquiryStatus string `json:"inquiry_status"`
+	}{}
+
+	dec := json.NewDecoder(resp.Result().Body)
+	dec.Decode(&respBody)
+
+	// ------------------- assert test case -------------------
+	assert.Equal(suite.T(), http.StatusOK, resp.Result().StatusCode)
+	assert.Equal(suite.T(), string(models.InquiryStatusCanceled), respBody.InquiryStatus)
+
+	siq, _ := q.GetInquiryByUuid(ctx, newInquiry.Uuid)
+
+	assert.Equal(suite.T(), models.InquiryStatusCanceled, siq.InquiryStatus)
 }
 
 func TestInquirySuites(t *testing.T) {

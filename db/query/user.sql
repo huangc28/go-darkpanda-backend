@@ -19,6 +19,10 @@ RETURNING *;
 SELECT * FROM users
 WHERE uuid = $1 LIMIT 1;
 
+-- name: GetUserIDByUuid :one
+SELECT id FROM users
+WHERE uuid = $1 LIMIT 1;
+
 -- name: UpdateVerifyCodeById :exec
 UPDATE users SET phone_verify_code = $1
 WHERE id = $2;

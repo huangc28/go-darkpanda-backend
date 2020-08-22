@@ -18,6 +18,7 @@ require (
 	github.com/gorilla/mux v1.7.4
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/lib/pq v1.8.0
+	github.com/looplab/fsm v0.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/prometheus/common v0.9.1
 	github.com/sirupsen/logrus v1.6.0

@@ -12,4 +12,7 @@ func Routes(r *gin.RouterGroup) {
 	}))
 
 	g.POST("", EmitInquiryHandler)
+
+	// cancel inquiry
+	g.PATCH("/:inquiry_uuid/cancel", CancelInquiry)
 }
