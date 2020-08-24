@@ -22,7 +22,7 @@ CREATE TYPE service_type AS ENUM (
 
 CREATE TABLE IF NOT EXISTS service_inquiries (
 	id BIGSERIAL PRIMARY KEY,
-	inquirer_id INT REFERENCES users (id)  ON DELETE CASCADE,
+	inquirer_id INT REFERENCES users (id) ON DELETE CASCADE,
 	budget FLOAT NOT NULL,
 	service_type service_type NOT NULL,
 	inquiry_status inquiry_status NOT NULL,

@@ -19,6 +19,10 @@ RETURNING *;
 SELECT * FROM users
 WHERE uuid = $1 LIMIT 1;
 
+-- name: GetUserByID :one
+SELECT * FROM users
+WHERE id = $1 LIMIT 1;
+
 -- name: GetUserIDByUuid :one
 SELECT id FROM users
 WHERE uuid = $1 LIMIT 1;

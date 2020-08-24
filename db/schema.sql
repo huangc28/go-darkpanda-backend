@@ -54,7 +54,7 @@ CREATE TYPE service_type AS ENUM (
 
 CREATE TABLE IF NOT EXISTS service_inquiries (
 	id BIGSERIAL PRIMARY KEY,
-	inquirer_id INT REFERENCES users (id)  ON DELETE CASCADE,
+	inquirer_id INT REFERENCES users (id) ON DELETE CASCADE,
 	budget FLOAT NOT NULL,
 	service_type service_type NOT NULL,
 	inquiry_status inquiry_status NOT NULL,
@@ -167,5 +167,69 @@ BEGIN;
 
 ALTER TABLE service_inquiries
 ADD COLUMN uuid VARCHAR(40) UNIQUE NOT NULL;
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE services
+ALTER COLUMN price DROP NOT NULL;
+
+ALTER TABLE services
+ALTER COLUMN duration DROP NOT NULL;
+
+ALTER TABLE services
+ALTER COLUMN appointment_time DROP NOT NULL;
+
+ALTER TABLE services
+ALTER COLUMN lng DROP NOT NULL;
+
+ALTER TABLE services
+ALTER COLUMN lat DROP NOT NULL;
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE service_inquiries
+ALTER COLUMN budget TYPE numeric(12, 2);
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE services
+ADD COLUMN budget numeric(12, 2);
+
+ALTER TABLE services
+ALTER COLUMN price TYPE numeric(12, 2);
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE services
+ADD COLUMN inquiry_id INT NOT NULL;
+
+ALTER TABLE services
+   ADD CONSTRAINT fk_inquiry_id
+   FOREIGN KEY (inquiry_id)
+   REFERENCES service_inquiries(id);
+
+COMMIT;
+BEGIN;
+
+DROP TYPE IF EXISTS service_status;
+
+CREATE TYPE service_status AS ENUM  (
+	'unpaid',
+	'to_be_fulfilled',
+	'canceled',
+	'failed_due_to_both',
+	'girl_waiting',
+	'fufilling',
+	'failed_due_to_girl',
+	'failed_due_to_man',
+	'completed'
+);
+
+ALTER TABLE services
+ADD COLUMN service_status service_status NOT NULL DEFAULT 'unpaid';
 
 COMMIT;

@@ -26,7 +26,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 		"/:inquiry_uuid/cancel",
 		IsMale(userDao),
 		ValidateBeforeAlterInquiryStatus(Cancel),
-		CancelInquiry,
+		CancelInquiryHandler,
 	)
 
 	// expire an inquiry
@@ -34,6 +34,14 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 		"/:inquiry_uuid/expire",
 		IsMale(userDao),
 		ValidateBeforeAlterInquiryStatus(Expire),
-		ExpireInquiry,
+		ExpireInquiryHandler,
+	)
+
+	// pickup an inquiry
+	g.POST(
+		"/:inquiry_uuid/pickup",
+		IsFemale(userDao),
+		ValidateBeforeAlterInquiryStatus(Pickup),
+		PickupInquiryHandler,
 	)
 }

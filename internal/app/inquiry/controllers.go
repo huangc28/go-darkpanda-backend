@@ -16,8 +16,8 @@ import (
 )
 
 type EmitInquiryBody struct {
-	Budget      float64 `json:"budget" binding:"required"`
-	ServiceType string  `json:"service_type" binding:"required"`
+	Budget      string `json:"budget" binding:"required"`
+	ServiceType string `json:"service_type" binding:"required"`
 }
 
 func EmitInquiryHandler(c *gin.Context) {
@@ -129,7 +129,7 @@ type CancelInquiryUriParam struct {
 	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
 }
 
-func CancelInquiry(c *gin.Context) {
+func CancelInquiryHandler(c *gin.Context) {
 	// ------------------- gather information from middleware -------------------
 	eup, uriParamExists := c.Get("uri_params")
 	efsm, nFsmExists := c.Get("next_fsm_state")
@@ -167,7 +167,7 @@ func CancelInquiry(c *gin.Context) {
 	c.JSON(http.StatusOK, NewTransform().TransformInquiry(uiq))
 }
 
-func ExpireInquiry(c *gin.Context) {
+func ExpireInquiryHandler(c *gin.Context) {
 	eup, uriParamExists := c.Get("uri_params")
 	efsm, nFsmExists := c.Get("next_fsm_state")
 
@@ -202,4 +202,113 @@ func ExpireInquiry(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, NewTransform().TransformInquiry(uiq))
+}
+
+func PickupInquiryHandler(c *gin.Context) {
+	eup, uriParamExists := c.Get("uri_params")
+	eiq, inquiryExists := c.Get("inquiry")
+	efsm, nFsmExists := c.Get("next_fsm_state")
+
+	if !uriParamExists || !nFsmExists || !inquiryExists {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
+		)
+
+		return
+	}
+
+	uriParams := eup.(*CancelInquiryUriParam)
+	fsm := efsm.(*fsm.FSM)
+	iq := eiq.(models.ServiceInquiry)
+
+	// ------------------- check if inquiry has already expired -------------------
+	if util.IsExpired(iq.CreatedAt) {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.CanNotPickupExpiredInquiry),
+		)
+
+		return
+	}
+
+	// ------------------- create inquiry and service -------------------
+	ctx := context.Background()
+	tx, _ := db.GetDB().Begin()
+	q := models.New(tx)
+
+	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
+		InquiryStatus: models.InquiryStatus(fsm.Current()),
+		Uuid:          uriParams.InquiryUuid,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
+		)
+
+		tx.Rollback()
+		return
+	}
+
+	serviceProviderID, _ := q.GetUserIDByUuid(ctx, c.GetString("uuid"))
+
+	nsrv, err := q.CreateService(ctx, models.CreateServiceParams{
+		CustomerID: sql.NullInt32{
+			Int32: uiq.InquirerID.Int32,
+			Valid: true,
+		},
+		ServiceProviderID: sql.NullInt32{
+			Int32: int32(serviceProviderID),
+			Valid: true,
+		},
+		Budget: sql.NullString{
+			String: uiq.Budget,
+			Valid:  true,
+		},
+		ServiceType:   uiq.ServiceType,
+		InquiryID:     int32(uiq.ID),
+		ServiceStatus: models.ServiceStatusUnpaid,
+	})
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"inqiury_id": iq.ID,
+		}).Fatalf("Failed to create service %s", err.Error())
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateService,
+				err.Error(),
+			),
+		)
+
+		tx.Rollback()
+		return
+	}
+
+	// retrieve inquirier information
+	inquirer, err := q.GetUserByID(ctx, int64(uiq.InquirerID.Int32))
+
+	if err != nil {
+		log.WithFields(log.Fields{
+			"inquirer_id": inquirer.ID,
+		}).Debugf("Failed to retrieve inquirer information %s", err.Error())
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquiererByID,
+				err.Error(),
+			),
+		)
+
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+	c.JSON(http.StatusOK, NewTransform().TransformService(nsrv, inquirer))
 }

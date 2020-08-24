@@ -11,8 +11,8 @@ type InquiryActions string
 
 var (
 	Cancel InquiryActions = "cancel"
-	Book   InquiryActions = "book"
 	Expire InquiryActions = "expire"
+	Pickup InquiryActions = "pickup"
 )
 
 func (a *InquiryActions) ToString() string {
@@ -35,7 +35,7 @@ func NewInquiryFSM(initial models.InquiryStatus) (*fsm.FSM, error) {
 				Dst: string(models.InquiryStatusCanceled),
 			},
 			{
-				Name: Book.ToString(),
+				Name: Pickup.ToString(),
 				Src: []string{
 					string(models.InquiryStatusInquiring),
 				},

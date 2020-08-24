@@ -12,6 +12,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
@@ -126,6 +127,7 @@ func (suite *InquiryTestSuite) TestCancelInquirySuccess() {
 
 	// ------------------- request API -------------------
 	header := util.CreateJwtHeaderMap(usr.Uuid, config.GetAppConf().JwtSecret)
+
 	resp, err := suite.sendRequest(
 		"PATCH",
 		fmt.Sprintf("/v1/inquiries/%s/cancel", newInquiry.Uuid),
@@ -140,6 +142,7 @@ func (suite *InquiryTestSuite) TestCancelInquirySuccess() {
 	respBody := struct {
 		Uuid          string `json:"uuid"`
 		InquiryStatus string `json:"inquiry_status"`
+		Budget        string `json:"budget"`
 	}{}
 
 	dec := json.NewDecoder(resp.Result().Body)
@@ -152,6 +155,69 @@ func (suite *InquiryTestSuite) TestCancelInquirySuccess() {
 	siq, _ := q.GetInquiryByUuid(ctx, newInquiry.Uuid)
 
 	assert.Equal(suite.T(), models.InquiryStatusCanceled, siq.InquiryStatus)
+	assert.NotEmpty(suite.T(), respBody.Budget)
+}
+
+func (suite *InquiryTestSuite) TestPickupInquirySuccess() {
+	ctx := context.Background()
+
+	// create a female user to pickup the inquiry
+	femaleUserParams := suite.newUserParams
+	femaleUserParams.Gender = models.GenderFemale
+	q := models.New(db.GetDB())
+	femaleUser, err := q.CreateUser(ctx, *femaleUserParams)
+
+	if err != nil {
+		suite.T().Fatalf("Failed to create female user %s", err.Error())
+	}
+
+	// create a male that hosts the inquiry
+	maleUserParams, _ := util.GenTestUserParams(ctx)
+	maleUserParams.Gender = models.GenderMale
+	maleUser, err := q.CreateUser(ctx, *maleUserParams)
+
+	if err != nil {
+		suite.T().Fatalf("Failed to create female user %s", err.Error())
+	}
+
+	// create an inquiry
+	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
+	iqParams.InquiryStatus = models.InquiryStatusInquiring
+	iqParams.ServiceType = models.ServiceTypeSex
+	iq, err := q.CreateInquiry(ctx, *iqParams)
+
+	if err != nil {
+		suite.T().Fatalf("Failed to create new inquiry %s", err.Error())
+	}
+
+	headerMap := util.CreateJwtHeaderMap(femaleUser.Uuid, config.GetAppConf().JwtSecret)
+	resp, err := suite.sendRequest(
+		"POST",
+		fmt.Sprintf("/v1/inquiries/%s/pickup", iq.Uuid),
+		struct{}{},
+		headerMap,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- Assert test cases -------------------
+	assert.Equal(suite.T(), http.StatusOK, resp.Result().StatusCode)
+
+	respBody := inquiry.TransformedService{}
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(&respBody); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.NotEmpty(suite.T(), respBody.Uuid)
+	assert.Equal(suite.T(), string(models.ServiceStatusUnpaid), respBody.ServiceStatus)
+	assert.Equal(suite.T(), string(models.ServiceTypeSex), respBody.ServiceType)
+
+	assert.NotEmpty(suite.T(), respBody.User.Uuid)
+	assert.Equal(suite.T(), maleUser.Username, respBody.User.Username)
+	assert.Equal(suite.T(), string(maleUser.PremiumType), respBody.User.PremiumType)
 }
 
 func TestInquirySuites(t *testing.T) {

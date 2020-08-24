@@ -73,6 +73,14 @@ func randomInquiryStatus() models.InquiryStatus {
 	return gs[seededRand.Intn(len(gs))]
 }
 
+func randomFloats(min, max float64, n int) []float64 {
+	res := make([]float64, n)
+	for i := range res {
+		res[i] = min + seededRand.Float64()*(max-min)
+	}
+	return res
+}
+
 func GenTestInquiryParams(inquirerID int64) (*models.CreateInquiryParams, error) {
 	p := &models.CreateInquiryParams{}
 	if err := faker.FakeData(p); err != nil {
@@ -85,6 +93,7 @@ func GenTestInquiryParams(inquirerID int64) (*models.CreateInquiryParams, error)
 	}
 	p.ServiceType = randomServiceType()
 	p.InquiryStatus = randomInquiryStatus()
+	p.Budget = fmt.Sprintf("%.2f", randomFloats(1.00, 102.99, 1)[0])
 
 	return p, nil
 }

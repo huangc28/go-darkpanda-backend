@@ -42,7 +42,7 @@ RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, upd
 type CreateInquiryParams struct {
 	Uuid          string        `json:"uuid"`
 	InquirerID    sql.NullInt32 `json:"inquirer_id"`
-	Budget        float64       `json:"budget"`
+	Budget        string        `json:"budget"`
 	ServiceType   ServiceType   `json:"service_type"`
 	InquiryStatus InquiryStatus `json:"inquiry_status"`
 }

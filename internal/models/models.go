@@ -88,6 +88,32 @@ func (e *RefCodeType) Scan(src interface{}) error {
 	return nil
 }
 
+type ServiceStatus string
+
+const (
+	ServiceStatusUnpaid          ServiceStatus = "unpaid"
+	ServiceStatusToBeFulfilled   ServiceStatus = "to_be_fulfilled"
+	ServiceStatusCanceled        ServiceStatus = "canceled"
+	ServiceStatusFailedDueToBoth ServiceStatus = "failed_due_to_both"
+	ServiceStatusGirlWaiting     ServiceStatus = "girl_waiting"
+	ServiceStatusFufilling       ServiceStatus = "fufilling"
+	ServiceStatusFailedDueToGirl ServiceStatus = "failed_due_to_girl"
+	ServiceStatusFailedDueToMan  ServiceStatus = "failed_due_to_man"
+	ServiceStatusCompleted       ServiceStatus = "completed"
+)
+
+func (e *ServiceStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ServiceStatus(s)
+	case string:
+		*e = ServiceStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ServiceStatus: %T", src)
+	}
+	return nil
+}
+
 type ServiceType string
 
 const (
@@ -123,27 +149,30 @@ type Payment struct {
 }
 
 type Service struct {
-	ID                int64         `json:"id"`
-	Uuid              uuid.UUID     `json:"uuid"`
-	CustomerID        sql.NullInt32 `json:"customer_id"`
-	ServiceProviderID sql.NullInt32 `json:"service_provider_id"`
-	Price             float64       `json:"price"`
-	Duration          int32         `json:"duration"`
-	AppointmentTime   time.Time     `json:"appointment_time"`
-	Lng               string        `json:"lng"`
-	Lat               string        `json:"lat"`
-	ServiceType       ServiceType   `json:"service_type"`
-	GirlReady         sql.NullBool  `json:"girl_ready"`
-	ManReady          sql.NullBool  `json:"man_ready"`
-	CreatedAt         time.Time     `json:"created_at"`
-	UpdatedAt         sql.NullTime  `json:"updated_at"`
-	DeletedAt         sql.NullTime  `json:"deleted_at"`
+	ID                int64          `json:"id"`
+	Uuid              uuid.UUID      `json:"uuid"`
+	CustomerID        sql.NullInt32  `json:"customer_id"`
+	ServiceProviderID sql.NullInt32  `json:"service_provider_id"`
+	Price             sql.NullString `json:"price"`
+	Duration          sql.NullInt32  `json:"duration"`
+	AppointmentTime   sql.NullTime   `json:"appointment_time"`
+	Lng               sql.NullString `json:"lng"`
+	Lat               sql.NullString `json:"lat"`
+	ServiceType       ServiceType    `json:"service_type"`
+	GirlReady         sql.NullBool   `json:"girl_ready"`
+	ManReady          sql.NullBool   `json:"man_ready"`
+	CreatedAt         time.Time      `json:"created_at"`
+	UpdatedAt         sql.NullTime   `json:"updated_at"`
+	DeletedAt         sql.NullTime   `json:"deleted_at"`
+	Budget            sql.NullString `json:"budget"`
+	InquiryID         int32          `json:"inquiry_id"`
+	ServiceStatus     ServiceStatus  `json:"service_status"`
 }
 
 type ServiceInquiry struct {
 	ID            int64         `json:"id"`
 	InquirerID    sql.NullInt32 `json:"inquirer_id"`
-	Budget        float64       `json:"budget"`
+	Budget        string        `json:"budget"`
 	ServiceType   ServiceType   `json:"service_type"`
 	InquiryStatus InquiryStatus `json:"inquiry_status"`
 	CreatedAt     time.Time     `json:"created_at"`

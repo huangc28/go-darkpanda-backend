@@ -76,20 +76,28 @@ func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid strin
 	return nil, nil
 }
 
-func (dao *UserDAO) CheckIsMaleByUuid(uuid string) (bool, error) {
+func (dao *UserDAO) checkGender(uuid string, gender models.Gender) (bool, error) {
 	sql := `
 		SELECT EXISTS (
 			SELECT 1 FROM users
 			WHERE uuid = $1
-			AND gender = 'male'
+			AND gender = $2
 		) AS exists;
 `
 
 	var exists bool
 
-	if err := dao.db.QueryRow(sql, uuid).Scan(&exists); err != nil {
+	if err := dao.db.QueryRow(sql, uuid, string(gender)).Scan(&exists); err != nil {
 		return false, err
 	}
 
 	return exists, nil
+}
+
+func (dao *UserDAO) CheckIsMaleByUuid(uuid string) (bool, error) {
+	return dao.checkGender(uuid, models.GenderMale)
+}
+
+func (dao *UserDAO) CheckIsFeMaleByUuid(uuid string) (bool, error) {
+	return dao.checkGender(uuid, models.GenderFemale)
 }

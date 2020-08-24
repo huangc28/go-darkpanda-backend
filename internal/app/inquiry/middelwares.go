@@ -46,9 +46,12 @@ func IsMale(dao UserDaoer) gin.HandlerFunc {
 	}
 }
 
+func IsFemale(dao UserDaoer) gin.HandlerFunc {
+	return func(c *gin.Context) {}
+}
+
 func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
 	return func(c *gin.Context) {
-
 		ctx := context.Background()
 		usrUuid := c.GetString("uuid")
 		uriParams := &CancelInquiryUriParam{}
@@ -101,5 +104,6 @@ func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
 		}
 
 		c.Set("next_fsm_state", fsm)
+		c.Set("inquiry", iq)
 	}
 }

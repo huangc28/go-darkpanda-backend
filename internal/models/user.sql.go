@@ -62,6 +62,31 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 	return i, err
 }
 
+const getUserByID = `-- name: GetUserByID :one
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code FROM users
+WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
+	row := q.queryRow(ctx, q.getUserByIDStmt, getUserByID, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Username,
+		&i.PhoneVerified,
+		&i.AuthSmsCode,
+		&i.Gender,
+		&i.PremiumType,
+		&i.PremiumExpiryDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Uuid,
+		&i.PhoneVerifyCode,
+	)
+	return i, err
+}
+
 const getUserByUsername = `-- name: GetUserByUsername :one
 SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code FROM users
 WHERE username = $1 LIMIT 1

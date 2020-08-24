@@ -31,6 +31,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createRefcodeStmt, err = db.PrepareContext(ctx, createRefcode); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateRefcode: %w", err)
 	}
+	if q.createServiceStmt, err = db.PrepareContext(ctx, createService); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateService: %w", err)
+	}
 	if q.createUserStmt, err = db.PrepareContext(ctx, createUser); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateUser: %w", err)
 	}
@@ -42,6 +45,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.getReferCodeInfoByRefcodeStmt, err = db.PrepareContext(ctx, getReferCodeInfoByRefcode); err != nil {
 		return nil, fmt.Errorf("error preparing query GetReferCodeInfoByRefcode: %w", err)
+	}
+	if q.getUserByIDStmt, err = db.PrepareContext(ctx, getUserByID); err != nil {
+		return nil, fmt.Errorf("error preparing query GetUserByID: %w", err)
 	}
 	if q.getUserByUsernameStmt, err = db.PrepareContext(ctx, getUserByUsername); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByUsername: %w", err)
@@ -87,6 +93,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing createRefcodeStmt: %w", cerr)
 		}
 	}
+	if q.createServiceStmt != nil {
+		if cerr := q.createServiceStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createServiceStmt: %w", cerr)
+		}
+	}
 	if q.createUserStmt != nil {
 		if cerr := q.createUserStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createUserStmt: %w", cerr)
@@ -105,6 +116,11 @@ func (q *Queries) Close() error {
 	if q.getReferCodeInfoByRefcodeStmt != nil {
 		if cerr := q.getReferCodeInfoByRefcodeStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getReferCodeInfoByRefcodeStmt: %w", cerr)
+		}
+	}
+	if q.getUserByIDStmt != nil {
+		if cerr := q.getUserByIDStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing getUserByIDStmt: %w", cerr)
 		}
 	}
 	if q.getUserByUsernameStmt != nil {
@@ -189,10 +205,12 @@ type Queries struct {
 	checkUserOwnsInquiryStmt      *sql.Stmt
 	createInquiryStmt             *sql.Stmt
 	createRefcodeStmt             *sql.Stmt
+	createServiceStmt             *sql.Stmt
 	createUserStmt                *sql.Stmt
 	getInquiryByInquirerIDStmt    *sql.Stmt
 	getInquiryByUuidStmt          *sql.Stmt
 	getReferCodeInfoByRefcodeStmt *sql.Stmt
+	getUserByIDStmt               *sql.Stmt
 	getUserByUsernameStmt         *sql.Stmt
 	getUserByUuidStmt             *sql.Stmt
 	getUserByVerifyCodeStmt       *sql.Stmt
@@ -210,10 +228,12 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		checkUserOwnsInquiryStmt:      q.checkUserOwnsInquiryStmt,
 		createInquiryStmt:             q.createInquiryStmt,
 		createRefcodeStmt:             q.createRefcodeStmt,
+		createServiceStmt:             q.createServiceStmt,
 		createUserStmt:                q.createUserStmt,
 		getInquiryByInquirerIDStmt:    q.getInquiryByInquirerIDStmt,
 		getInquiryByUuidStmt:          q.getInquiryByUuidStmt,
 		getReferCodeInfoByRefcodeStmt: q.getReferCodeInfoByRefcodeStmt,
+		getUserByIDStmt:               q.getUserByIDStmt,
 		getUserByUsernameStmt:         q.getUserByUsernameStmt,
 		getUserByUuidStmt:             q.getUserByUuidStmt,
 		getUserByVerifyCodeStmt:       q.getUserByVerifyCodeStmt,
