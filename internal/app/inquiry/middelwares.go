@@ -42,18 +42,6 @@ func IsMale(dao UserDaoer) gin.HandlerFunc {
 
 		isMale, err := dao.CheckIsMaleByUuid(uuid)
 
-		if !isMale {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(
-					apperr.OnlyMaleCanEmitInquiry,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
 		if err != nil {
 			c.AbortWithError(
 				http.StatusInternalServerError,
@@ -64,7 +52,15 @@ func IsMale(dao UserDaoer) gin.HandlerFunc {
 			)
 
 			return
+		}
 
+		if !isMale {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(apperr.OnlyMaleCanBookService),
+			)
+
+			return
 		}
 
 		c.Next()
@@ -87,7 +83,6 @@ func IsFemale(dao UserDaoer) gin.HandlerFunc {
 			)
 
 			return
-
 		}
 
 		if !isFemale {

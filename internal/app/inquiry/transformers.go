@@ -127,3 +127,42 @@ func (t *InquiryTransform) TransformGirlApproveInquiry(iq models.ServiceInquiry)
 		lngDec.String(),
 	}, nil
 }
+
+// TransformBookService response with the information of booked service and the information about
+// the service provider.
+// @TODO information of service provider should include provider image.
+type TransformedServiceProvider struct {
+	Uuid     string `json:"uuid"`
+	Username string `json:"username"`
+}
+
+type TransformedBookedService struct {
+	Uuid            string                     `json:"uuid"`
+	ServiceProvider TransformedServiceProvider `json:"service_provider"`
+	Price           string                     `json:"price"`
+	Duration        int32                      `json:"duration"`
+	AppointmentTime time.Time                  `json:"appointment_time"`
+	Lng             string                     `json:"lng"`
+	Lat             string                     `json:"lat"`
+	ServiceType     string                     `json:"service_type"`
+	CreatedAt       time.Time                  `json:"created_at"`
+}
+
+func (t *InquiryTransform) TransformBookedService(srv models.Service, userProvider models.User) *TransformedBookedService {
+	tsrv := &TransformedBookedService{
+		Uuid:            srv.Uuid.String(),
+		Price:           srv.Price.String,
+		Duration:        srv.Duration.Int32,
+		AppointmentTime: srv.AppointmentTime.Time,
+		Lng:             srv.Lng.String,
+		Lat:             srv.Lat.String,
+		ServiceType:     string(srv.ServiceType),
+		CreatedAt:       srv.CreatedAt,
+		ServiceProvider: TransformedServiceProvider{
+			Uuid:     userProvider.Uuid,
+			Username: userProvider.Username,
+		},
+	}
+
+	return tsrv
+}

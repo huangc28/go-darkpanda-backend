@@ -376,12 +376,13 @@ func GirlApproveInquiryHandler(c *gin.Context) {
 
 // Emit event to girl for the purpose of notifying them the iquiry is booked by the man
 type ManApproveInquiryBody struct {
-	Price           float64   `json:"price"`
-	Duration        int       `json:"duration"`
-	AppointmentTime time.Time `json:appointment_time`
-	Lng             float64   `json:"lng"`
-	Lat             float64   `json:"lat"`
-	ServiceType     string    `json:"service_type"`
+	Price               float64   `json:"price"`
+	Duration            int       `json:"duration"`
+	AppointmentTime     time.Time `json:"appointment_time"`
+	Lng                 float64   `json:"lng"`
+	Lat                 float64   `json:"lat"`
+	ServiceType         string    `json:"service_type"`
+	ServiceProviderUuid string    `json:"service_provider_uuid"`
 }
 
 func ManApproveInquiry(c *gin.Context) {
@@ -409,6 +410,7 @@ func ManApproveInquiry(c *gin.Context) {
 
 		return
 	}
+
 	// Alter inquiry status to "booked"
 	// Create a new service with "pending"
 	ctx := context.Background()
@@ -428,10 +430,79 @@ func ManApproveInquiry(c *gin.Context) {
 			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
 		)
 
+		tx.Rollback()
 		return
 	}
 
-	log.Printf("DEBUG 1 %v", iq)
+	srvProvider, err := q.GetUserByUuid(ctx, body.ServiceProviderUuid)
 
-	c.JSON(http.StatusOK, struct{}{})
+	log.Printf("DEBUG srv provider %v", srvProvider)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserIDByUuid,
+				err.Error(),
+			),
+		)
+
+		tx.Rollback()
+		return
+	}
+
+	srv, err := q.CreateService(
+		ctx,
+		models.CreateServiceParams{
+			Price: sql.NullString{
+				String: decimal.NewFromFloat(body.Price).String(),
+				Valid:  true,
+			},
+			Duration: sql.NullInt32{
+				Int32: int32(body.Duration),
+				Valid: true,
+			},
+			AppointmentTime: sql.NullTime{
+				Time:  body.AppointmentTime,
+				Valid: true,
+			},
+			Lng: sql.NullString{
+				String: decimal.NewFromFloat(body.Lng).String(),
+
+				Valid: true,
+			},
+			Lat: sql.NullString{
+				String: decimal.NewFromFloat(body.Lat).String(),
+				Valid:  true,
+			},
+			ServiceStatus: models.ServiceStatusUnpaid,
+			ServiceType:   iq.ServiceType,
+			InquiryID:     int32(iq.ID),
+			CustomerID: sql.NullInt32{
+				Int32: iq.InquirerID.Int32,
+				Valid: true,
+			},
+			ServiceProviderID: sql.NullInt32{
+				Int32: int32(srvProvider.ID),
+				Valid: true,
+			},
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateService,
+				err.Error(),
+			),
+		)
+
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+
+	c.JSON(http.StatusOK, NewTransform().TransformBookedService(srv, srvProvider))
 }

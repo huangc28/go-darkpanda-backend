@@ -302,7 +302,7 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 
 	femaleUserParams, _ := util.GenTestUserParams(ctx)
 	femaleUserParams.Gender = models.GenderFemale
-	_, err := q.CreateUser(ctx, *femaleUserParams)
+	femaleUser, err := q.CreateUser(ctx, *femaleUserParams)
 
 	if err != nil {
 		suite.T().Fatal(err)
@@ -318,8 +318,28 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 	}
 
 	// ------------------- request API -------------------
-	body := struct{}{}
-	headers := util.CreateJwtHeaderMap(maleUser.Uuid, config.GetAppConf().JwtSecret)
+	body := struct {
+		Price               float64   `json:"price"`
+		Duration            int       `json:"duration"`
+		AppointmentTime     time.Time `json:"appointment_time"`
+		Lng                 float64   `json:"lng"`
+		Lat                 float64   `json:"lat"`
+		ServiceType         string    `json:"service_type"`
+		ServiceProviderUuid string    `json:"service_provider_uuid"`
+	}{
+		3600,
+		180,
+		time.Now().Add(time.Hour * 24 * 4),
+		25.0806874,
+		121.5495119,
+		string(models.ServiceTypeSex),
+		femaleUser.Uuid,
+	}
+
+	headers := util.CreateJwtHeaderMap(
+		maleUser.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
 
 	resp, err := suite.sendRequest(
 		"POST",
@@ -328,12 +348,30 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 		headers,
 	)
 
-	if err != nil || resp.Result().StatusCode != http.StatusOK {
-		bbody, _ := ioutil.ReadAll(resp.Result().Body)
-		suite.T().Fatalf("request failed %s %s", err.Error(), string(bbody))
+	if err != nil {
+		suite.T().Fatalf("request failed: %s", err.Error())
 	}
 
-	log.Printf("DEBUG iq %v", iq)
+	if resp.Result().StatusCode != http.StatusOK {
+		bbody, _ := ioutil.ReadAll(resp.Result().Body)
+		suite.T().Fatalf("request failed %s", string(bbody))
+	}
+
+	// ------------------- assert test case -------------------
+	assert := assert.New(suite.T())
+	respBody := &inquiry.TransformedBookedService{}
+
+	dec := json.NewDecoder(resp.Result().Body)
+	if err := dec.Decode(respBody); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	log.Printf("DEBUG username %s %s", femaleUser.Username, respBody.ServiceProvider.Username)
+	assert.Equal(femaleUser.Username, respBody.ServiceProvider.Username)
+	log.Printf("resp body %v", respBody)
+
+	//bbody, _ := ioutil.ReadAll(resp.Result().Body)
+	//log.Printf("DEBUG bbody %s", string(bbody))
 }
 
 func TestInquirySuites(t *testing.T) {

@@ -22,6 +22,7 @@ const (
 	FailedToTransformGirlApproveInquiry = "3000019"
 	OnlyFemaleCanApproveInquiry         = "3000020"
 	FailedToValidateBookInquiryParams   = "3000021"
+	OnlyMaleCanBookService              = "3000022"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
@@ -34,4 +35,5 @@ var InquiryErrCodeMsgMap = map[string]string{
 	ParamsNotProperlySetInTheMiddleware: "Params not properly set to the context in the previous middleware, please check",
 	CanNotPickupExpiredInquiry:          "Can not pickup expired inquiry",
 	FailedToCreateService:               "Failed to create service",
+	OnlyMaleCanBookService:              "Only male can book service",
 }
