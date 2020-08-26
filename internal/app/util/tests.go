@@ -87,6 +87,9 @@ func GenTestInquiryParams(inquirerID int64) (*models.CreateInquiryParams, error)
 		return nil, err
 	}
 
+	sid, _ := shortid.Generate()
+
+	p.Uuid = sid
 	p.InquirerID = sql.NullInt32{
 		Int32: int32(inquirerID),
 		Valid: true,
@@ -94,6 +97,16 @@ func GenTestInquiryParams(inquirerID int64) (*models.CreateInquiryParams, error)
 	p.ServiceType = randomServiceType()
 	p.InquiryStatus = randomInquiryStatus()
 	p.Budget = fmt.Sprintf("%.2f", randomFloats(1.00, 102.99, 1)[0])
+	p.Price = sql.NullString{
+		String: fmt.Sprintf("%.2f", randomFloats(1.00, 102.99, 1)[0]),
+		Valid:  true,
+	}
+	p.Lat = sql.NullString{
+		Valid: false,
+	}
+	p.Lng = sql.NullString{
+		Valid: false,
+	}
 
 	return p, nil
 }

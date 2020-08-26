@@ -67,6 +67,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.patchInquiryStatusByUuidStmt, err = db.PrepareContext(ctx, patchInquiryStatusByUuid); err != nil {
 		return nil, fmt.Errorf("error preparing query PatchInquiryStatusByUuid: %w", err)
 	}
+	if q.updateInquiryByUuidStmt, err = db.PrepareContext(ctx, updateInquiryByUuid); err != nil {
+		return nil, fmt.Errorf("error preparing query UpdateInquiryByUuid: %w", err)
+	}
 	if q.updateVerifyCodeByIdStmt, err = db.PrepareContext(ctx, updateVerifyCodeById); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateVerifyCodeById: %w", err)
 	}
@@ -153,6 +156,11 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing patchInquiryStatusByUuidStmt: %w", cerr)
 		}
 	}
+	if q.updateInquiryByUuidStmt != nil {
+		if cerr := q.updateInquiryByUuidStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing updateInquiryByUuidStmt: %w", cerr)
+		}
+	}
 	if q.updateVerifyCodeByIdStmt != nil {
 		if cerr := q.updateVerifyCodeByIdStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateVerifyCodeByIdStmt: %w", cerr)
@@ -217,6 +225,7 @@ type Queries struct {
 	getUserIDByUuidStmt           *sql.Stmt
 	patchInquiryStatusStmt        *sql.Stmt
 	patchInquiryStatusByUuidStmt  *sql.Stmt
+	updateInquiryByUuidStmt       *sql.Stmt
 	updateVerifyCodeByIdStmt      *sql.Stmt
 	updateVerifyStatusByIdStmt    *sql.Stmt
 }
@@ -240,6 +249,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getUserIDByUuidStmt:           q.getUserIDByUuidStmt,
 		patchInquiryStatusStmt:        q.patchInquiryStatusStmt,
 		patchInquiryStatusByUuidStmt:  q.patchInquiryStatusByUuidStmt,
+		updateInquiryByUuidStmt:       q.updateInquiryByUuidStmt,
 		updateVerifyCodeByIdStmt:      q.updateVerifyCodeByIdStmt,
 		updateVerifyStatusByIdStmt:    q.updateVerifyStatusByIdStmt,
 	}

@@ -18,6 +18,7 @@ require (
 	github.com/looplab/fsm v0.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/prometheus/common v0.9.1
+	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304 // indirect
 	github.com/spf13/afero v1.2.2 // indirect

@@ -10,9 +10,11 @@ import (
 type InquiryActions string
 
 var (
-	Cancel InquiryActions = "cancel"
-	Expire InquiryActions = "expire"
-	Pickup InquiryActions = "pickup"
+	Cancel      InquiryActions = "cancel"
+	Expire      InquiryActions = "expire"
+	Pickup      InquiryActions = "pickup"
+	GirlApprove InquiryActions = "girl_approve"
+	Book        InquiryActions = "book"
 )
 
 func (a *InquiryActions) ToString() string {
@@ -38,6 +40,20 @@ func NewInquiryFSM(initial models.InquiryStatus) (*fsm.FSM, error) {
 				Name: Pickup.ToString(),
 				Src: []string{
 					string(models.InquiryStatusInquiring),
+				},
+				Dst: string(models.InquiryStatusChatting),
+			},
+			{
+				Name: GirlApprove.ToString(),
+				Src: []string{
+					string(models.InquiryStatusChatting),
+				},
+				Dst: string(models.InquiryStatusWaitForInquirerApprove),
+			},
+			{
+				Name: Book.ToString(),
+				Src: []string{
+					string(models.InquiryStatusWaitForInquirerApprove),
 				},
 				Dst: string(models.InquiryStatusBooked),
 			},

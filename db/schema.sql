@@ -233,3 +233,16 @@ ALTER TABLE services
 ADD COLUMN service_status service_status NOT NULL DEFAULT 'unpaid';
 
 COMMIT;
+ALTER TYPE inquiry_status ADD VALUE 'chatting';
+ALTER TYPE inquiry_status ADD VALUE 'wait_for_inquirer_approve';
+BEGIN;
+
+ALTER TABLE service_inquiries
+ADD COLUMN price numeric(12, 2),
+ADD COLUMN duration int,
+ADD COLUMN appointment_time timestamp,
+ADD COLUMN lng numeric(17, 8),
+ADD COLUMN lat numeric(17, 8);
+
+COMMIT;
+

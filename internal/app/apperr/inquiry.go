@@ -17,10 +17,15 @@ const (
 	CanNotPickupExpiredInquiry          = "3000014"
 	FailedToCreateService               = "3000015"
 	FailedToGetInquiererByID            = "3000016"
+	GirlApproveInquiry                  = "3000017"
+	FailedToUpdateInquiryContent        = "3000018"
+	FailedToTransformGirlApproveInquiry = "3000019"
+	OnlyFemaleCanApproveInquiry         = "3000020"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
 	OnlyMaleCanEmitInquiry:              "Only male user can emit inquiry",
+	OnlyFemaleCanApproveInquiry:         "Only male user can approve inquiry",
 	FailedToGetInquiryByInquirerID:      "Failed to get inquiry by inquirer ID",
 	UserAlreadyHasActiveInquiry:         "User already has active inquiry",
 	UserNotOwnInquiry:                   "User does not own the inquiry",

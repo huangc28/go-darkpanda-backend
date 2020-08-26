@@ -77,6 +77,7 @@ func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid strin
 }
 
 func (dao *UserDAO) checkGender(uuid string, gender models.Gender) (bool, error) {
+
 	sql := `
 		SELECT EXISTS (
 			SELECT 1 FROM users
@@ -98,6 +99,6 @@ func (dao *UserDAO) CheckIsMaleByUuid(uuid string) (bool, error) {
 	return dao.checkGender(uuid, models.GenderMale)
 }
 
-func (dao *UserDAO) CheckIsFeMaleByUuid(uuid string) (bool, error) {
+func (dao *UserDAO) CheckIsFemaleByUuid(uuid string) (bool, error) {
 	return dao.checkGender(uuid, models.GenderFemale)
 }

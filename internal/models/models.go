@@ -32,10 +32,12 @@ func (e *Gender) Scan(src interface{}) error {
 type InquiryStatus string
 
 const (
-	InquiryStatusInquiring InquiryStatus = "inquiring"
-	InquiryStatusCanceled  InquiryStatus = "canceled"
-	InquiryStatusExpired   InquiryStatus = "expired"
-	InquiryStatusBooked    InquiryStatus = "booked"
+	InquiryStatusInquiring              InquiryStatus = "inquiring"
+	InquiryStatusCanceled               InquiryStatus = "canceled"
+	InquiryStatusExpired                InquiryStatus = "expired"
+	InquiryStatusBooked                 InquiryStatus = "booked"
+	InquiryStatusChatting               InquiryStatus = "chatting"
+	InquiryStatusWaitForInquirerApprove InquiryStatus = "wait_for_inquirer_approve"
 )
 
 func (e *InquiryStatus) Scan(src interface{}) error {
@@ -170,15 +172,20 @@ type Service struct {
 }
 
 type ServiceInquiry struct {
-	ID            int64         `json:"id"`
-	InquirerID    sql.NullInt32 `json:"inquirer_id"`
-	Budget        string        `json:"budget"`
-	ServiceType   ServiceType   `json:"service_type"`
-	InquiryStatus InquiryStatus `json:"inquiry_status"`
-	CreatedAt     time.Time     `json:"created_at"`
-	UpdatedAt     sql.NullTime  `json:"updated_at"`
-	DeletedAt     sql.NullTime  `json:"deleted_at"`
-	Uuid          string        `json:"uuid"`
+	ID              int64          `json:"id"`
+	InquirerID      sql.NullInt32  `json:"inquirer_id"`
+	Budget          string         `json:"budget"`
+	ServiceType     ServiceType    `json:"service_type"`
+	InquiryStatus   InquiryStatus  `json:"inquiry_status"`
+	CreatedAt       time.Time      `json:"created_at"`
+	UpdatedAt       sql.NullTime   `json:"updated_at"`
+	DeletedAt       sql.NullTime   `json:"deleted_at"`
+	Uuid            string         `json:"uuid"`
+	Price           sql.NullString `json:"price"`
+	Duration        sql.NullInt32  `json:"duration"`
+	AppointmentTime sql.NullTime   `json:"appointment_time"`
+	Lng             sql.NullString `json:"lng"`
+	Lat             sql.NullString `json:"lat"`
 }
 
 type User struct {

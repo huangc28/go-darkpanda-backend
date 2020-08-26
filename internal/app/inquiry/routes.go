@@ -44,4 +44,14 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 		ValidateBeforeAlterInquiryStatus(Pickup),
 		PickupInquiryHandler,
 	)
+
+	// After chatting, inquiry can be approved by girl
+	g.POST(
+		"/:inquiry_uuid/girl-approve",
+		IsFemale(userDao),
+		ValidateBeforeAlterInquiryStatus(GirlApprove),
+		GirlApproveInquiryHandler,
+	)
+
+	// Man book the inquiry
 }

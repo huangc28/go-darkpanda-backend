@@ -1,6 +1,9 @@
 package util
 
-import "time"
+import (
+	"math"
+	"time"
+)
 
 // ExpTimeRange check source time criteria against this number to makesure
 const ExpTimeRange = 27
@@ -11,4 +14,8 @@ func IsExpired(srcT time.Time) bool {
 	expectExp := srcT.Add(ExpTimeRange * time.Minute)
 
 	return time.Now().After(expectExp)
+}
+
+func RoundDown2Deci(num float64) float64 {
+	return math.Floor(num*100) / 100
 }

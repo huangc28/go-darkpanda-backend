@@ -3,7 +3,9 @@ package inquiry
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -11,10 +13,13 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/looplab/fsm"
+	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 	"github.com/teris-io/shortid"
 )
 
+// @TODO budget received from client should be type float instead of string.
+//       budget should be converted to type string before stored in DB.
 type EmitInquiryBody struct {
 	Budget      string `json:"budget" binding:"required"`
 	ServiceType string `json:"service_type" binding:"required"`
@@ -232,10 +237,9 @@ func PickupInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	// ------------------- create inquiry and service -------------------
+	// ------------------- patch inquiry status -------------------
 	ctx := context.Background()
-	tx, _ := db.GetDB().Begin()
-	q := models.New(tx)
+	q := models.New(db.GetDB())
 
 	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
 		InquiryStatus: models.InquiryStatus(fsm.Current()),
@@ -248,44 +252,6 @@ func PickupInquiryHandler(c *gin.Context) {
 			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
 		)
 
-		tx.Rollback()
-		return
-	}
-
-	serviceProviderID, _ := q.GetUserIDByUuid(ctx, c.GetString("uuid"))
-
-	nsrv, err := q.CreateService(ctx, models.CreateServiceParams{
-		CustomerID: sql.NullInt32{
-			Int32: uiq.InquirerID.Int32,
-			Valid: true,
-		},
-		ServiceProviderID: sql.NullInt32{
-			Int32: int32(serviceProviderID),
-			Valid: true,
-		},
-		Budget: sql.NullString{
-			String: uiq.Budget,
-			Valid:  true,
-		},
-		ServiceType:   uiq.ServiceType,
-		InquiryID:     int32(uiq.ID),
-		ServiceStatus: models.ServiceStatusUnpaid,
-	})
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"inqiury_id": iq.ID,
-		}).Fatalf("Failed to create service %s", err.Error())
-
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToCreateService,
-				err.Error(),
-			),
-		)
-
-		tx.Rollback()
 		return
 	}
 
@@ -305,10 +271,109 @@ func PickupInquiryHandler(c *gin.Context) {
 			),
 		)
 
-		tx.Rollback()
 		return
 	}
 
-	tx.Commit()
-	c.JSON(http.StatusOK, NewTransform().TransformService(nsrv, inquirer))
+	c.JSON(http.StatusOK, NewTransform().TransformPickupInquiry(uiq, inquirer))
+}
+
+// Girl has approved the inquiry, thus, update the inquiry content.
+//   - price
+//   - duration
+//   - appointment time
+//   - lng
+//   - lat
+type GirlApproveInquiryBody struct {
+	Price           float64   `json:"price"`
+	Duration        int       `json:"duration"`
+	AppointmentTime time.Time `json:"appointment_time"`
+	Lat             float64   `json:"lat"`
+	Lng             float64   `json:"lng"`
+}
+
+func GirlApproveInquiryHandler(c *gin.Context) {
+	ctx := context.Background()
+	body := GirlApproveInquiryBody{}
+	eup, _ := c.Get("uri_params")
+	uriParams := eup.(*CancelInquiryUriParam)
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.GirlApproveInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- Updates inquiry content -------------------
+	q := models.New(db.GetDB())
+	efsm, _ := c.Get("next_fsm_state")
+	fsm := efsm.(*fsm.FSM)
+
+	latDec := decimal.NewFromFloat(body.Lng)
+	lngDec := decimal.NewFromFloat(body.Lat)
+
+	iq, err := q.UpdateInquiryByUuid(ctx, models.UpdateInquiryByUuidParams{
+		Price: sql.NullString{
+			String: fmt.Sprintf("%f", body.Price),
+			Valid:  true,
+		},
+
+		Duration: sql.NullInt32{
+			Int32: int32(body.Duration),
+			Valid: true,
+		},
+
+		AppointmentTime: sql.NullTime{
+			Time:  body.AppointmentTime,
+			Valid: true,
+		},
+
+		Lng: sql.NullString{
+			String: latDec.String(),
+			Valid:  true,
+		},
+
+		Lat: sql.NullString{
+			String: lngDec.String(),
+			Valid:  true,
+		},
+
+		Uuid: uriParams.InquiryUuid,
+
+		InquiryStatus: models.InquiryStatus(fsm.Current()),
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateInquiryContent,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- Emit message to chatroom -------------------
+	res, err := NewTransform().TransformGirlApproveInquiry(iq)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformGirlApproveInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, res)
 }

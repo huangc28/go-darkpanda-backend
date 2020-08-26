@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -205,19 +206,91 @@ func (suite *InquiryTestSuite) TestPickupInquirySuccess() {
 	// ------------------- Assert test cases -------------------
 	assert.Equal(suite.T(), http.StatusOK, resp.Result().StatusCode)
 
-	respBody := inquiry.TransformedService{}
+	respBody := inquiry.TransformedPickupInquiry{}
 	dec := json.NewDecoder(resp.Body)
 	if err := dec.Decode(&respBody); err != nil {
 		suite.T().Fatal(err)
 	}
 
 	assert.NotEmpty(suite.T(), respBody.Uuid)
-	assert.Equal(suite.T(), string(models.ServiceStatusUnpaid), respBody.ServiceStatus)
 	assert.Equal(suite.T(), string(models.ServiceTypeSex), respBody.ServiceType)
+	assert.Equal(suite.T(), string(models.InquiryStatusChatting), respBody.InquiryStatus)
 
-	assert.NotEmpty(suite.T(), respBody.User.Uuid)
-	assert.Equal(suite.T(), maleUser.Username, respBody.User.Username)
-	assert.Equal(suite.T(), string(maleUser.PremiumType), respBody.User.PremiumType)
+	assert.NotEmpty(suite.T(), respBody.Inquirer.Uuid)
+	assert.Equal(suite.T(), maleUser.Username, respBody.Inquirer.Username)
+	assert.Equal(suite.T(), string(maleUser.PremiumType), respBody.Inquirer.PremiumType)
+}
+
+func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
+	// Create male / female user
+	ctx := context.Background()
+	maleUserParams := suite.newUserParams
+	maleUserParams.Gender = models.GenderMale
+
+	q := models.New(db.GetDB())
+	maleUser, _ := q.CreateUser(ctx, *maleUserParams)
+
+	log.Printf("DEBUG male user %v", maleUser)
+
+	femaleUserParams, _ := util.GenTestUserParams(ctx)
+	femaleUserParams.Gender = models.GenderFemale
+	femaleUser, _ := q.CreateUser(ctx, *femaleUserParams)
+
+	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
+
+	log.Printf("DEBUG iqParams %v", iqParams.Uuid)
+
+	iqParams.InquiryStatus = models.InquiryStatusChatting
+	iq, err := q.CreateInquiry(ctx, *iqParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	headers := util.CreateJwtHeaderMap(
+		femaleUser.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+
+	body := struct {
+		Price           float64   `json:"price"`
+		Duration        int       `json:"duration"`
+		AppointmentTime time.Time `json:"appointment_time"`
+		Lng             float64   `json:"lng"`
+		Lat             float64   `json:"lat"`
+	}{
+		3500,
+		120,
+		time.Now().Add(time.Hour * 48),
+		25.0806874,
+		121.5495119,
+	}
+
+	resp, err := suite.sendRequest(
+		"POST",
+		fmt.Sprintf("/v1/inquiries/%s/girl-approve", iq.Uuid),
+		&body,
+		headers,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// ------------------- assert test cases -------------------
+	respBody := inquiry.TransformedGirlApproveInquiry{}
+	dec := json.NewDecoder(resp.Result().Body)
+	if err := dec.Decode(&respBody); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert := assert.New(suite.T())
+	assert.Equal(http.StatusOK, resp.Result().StatusCode)
+	assert.Equal(string(models.InquiryStatusWaitForInquirerApprove), respBody.InquiryStatus)
+
+	assert.Equal("3500.00", respBody.Price)
+	assert.Equal("25.0806874", respBody.Lng)
+	assert.Equal("121.5495119", respBody.Lat)
 }
 
 func TestInquirySuites(t *testing.T) {

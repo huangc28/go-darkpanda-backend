@@ -3,6 +3,7 @@ package inquiry
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -47,7 +48,39 @@ func IsMale(dao UserDaoer) gin.HandlerFunc {
 }
 
 func IsFemale(dao UserDaoer) gin.HandlerFunc {
-	return func(c *gin.Context) {}
+	return func(c *gin.Context) {
+		uuid := c.GetString("uuid")
+
+		log.Printf("DEBUG 91 %s", uuid)
+
+		isFemale, err := dao.CheckIsFemaleByUuid(uuid)
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToCheckGender,
+					err.Error(),
+				),
+			)
+
+			return
+
+		}
+
+		//log.Printf("DEBUG 87 %t", isFemale)
+
+		if !isFemale {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(apperr.OnlyFemaleCanApproveInquiry),
+			)
+
+			return
+		}
+
+		c.Next()
+	}
 }
 
 func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
@@ -91,6 +124,7 @@ func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
 		// ------------------- try to emit transition event  -------------------
 		iq, err := q.GetInquiryByUuid(ctx, uriParams.InquiryUuid)
 		fsm, _ := NewInquiryFSM(iq.InquiryStatus)
+
 		if err := fsm.Event(action.ToString()); err != nil {
 			c.AbortWithError(
 				http.StatusBadRequest,
@@ -105,5 +139,7 @@ func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
 
 		c.Set("next_fsm_state", fsm)
 		c.Set("inquiry", iq)
+
+		c.Next()
 	}
 }
