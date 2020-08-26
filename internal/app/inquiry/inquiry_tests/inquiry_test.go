@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"testing"
@@ -230,15 +231,11 @@ func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
 	q := models.New(db.GetDB())
 	maleUser, _ := q.CreateUser(ctx, *maleUserParams)
 
-	log.Printf("DEBUG male user %v", maleUser)
-
 	femaleUserParams, _ := util.GenTestUserParams(ctx)
 	femaleUserParams.Gender = models.GenderFemale
 	femaleUser, _ := q.CreateUser(ctx, *femaleUserParams)
 
 	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
-
-	log.Printf("DEBUG iqParams %v", iqParams.Uuid)
 
 	iqParams.InquiryStatus = models.InquiryStatusChatting
 	iq, err := q.CreateInquiry(ctx, *iqParams)
@@ -291,6 +288,52 @@ func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
 	assert.Equal("3500.00", respBody.Price)
 	assert.Equal("25.0806874", respBody.Lng)
 	assert.Equal("121.5495119", respBody.Lat)
+}
+
+func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
+	// ------------------- create test data -------------------
+	// Create male / female user
+	ctx := context.Background()
+	maleUserParams := suite.newUserParams
+	maleUserParams.Gender = models.GenderMale
+
+	q := models.New(db.GetDB())
+	maleUser, _ := q.CreateUser(ctx, *maleUserParams)
+
+	femaleUserParams, _ := util.GenTestUserParams(ctx)
+	femaleUserParams.Gender = models.GenderFemale
+	_, err := q.CreateUser(ctx, *femaleUserParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
+
+	iqParams.InquiryStatus = models.InquiryStatusWaitForInquirerApprove
+	iq, err := q.CreateInquiry(ctx, *iqParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- request API -------------------
+	body := struct{}{}
+	headers := util.CreateJwtHeaderMap(maleUser.Uuid, config.GetAppConf().JwtSecret)
+
+	resp, err := suite.sendRequest(
+		"POST",
+		fmt.Sprintf("/v1/inquiries/%s/book", iq.Uuid),
+		&body,
+		headers,
+	)
+
+	if err != nil || resp.Result().StatusCode != http.StatusOK {
+		bbody, _ := ioutil.ReadAll(resp.Result().Body)
+		suite.T().Fatalf("request failed %s %s", err.Error(), string(bbody))
+	}
+
+	log.Printf("DEBUG iq %v", iq)
 }
 
 func TestInquirySuites(t *testing.T) {

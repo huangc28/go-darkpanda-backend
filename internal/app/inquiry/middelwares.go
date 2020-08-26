@@ -3,7 +3,6 @@ package inquiry
 import (
 	"context"
 	"database/sql"
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +10,31 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 )
+
+type InquiryUriParams struct {
+	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
+}
+
+func ValidateInqiuryURIParams() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		uriParams := &InquiryUriParams{}
+
+		if err := c.ShouldBindUri(uriParams); err != nil {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.FailedToValidateCancelInquiryParams,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		c.Set("uri_params", uriParams)
+		c.Next()
+	}
+}
 
 func IsMale(dao UserDaoer) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -51,8 +75,6 @@ func IsFemale(dao UserDaoer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uuid := c.GetString("uuid")
 
-		log.Printf("DEBUG 91 %s", uuid)
-
 		isFemale, err := dao.CheckIsFemaleByUuid(uuid)
 
 		if err != nil {
@@ -67,8 +89,6 @@ func IsFemale(dao UserDaoer) gin.HandlerFunc {
 			return
 
 		}
-
-		//log.Printf("DEBUG 87 %t", isFemale)
 
 		if !isFemale {
 			c.AbortWithError(
@@ -87,25 +107,12 @@ func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := context.Background()
 		usrUuid := c.GetString("uuid")
-		uriParams := &CancelInquiryUriParam{}
 
-		if err := c.ShouldBindUri(uriParams); err != nil {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(
-					apperr.FailedToValidateCancelInquiryParams,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		c.Set("uri_params", uriParams)
-
-		q := models.New(db.GetDB())
+		eup, _ := c.Get("uri_params")
+		uriParams := eup.(*InquiryUriParams)
 
 		// ------------------- makesure the user owns the inquiry -------------------
+		q := models.New(db.GetDB())
 		err := q.CheckUserOwnsInquiry(ctx, models.CheckUserOwnsInquiryParams{
 
 			Uuid:   usrUuid,

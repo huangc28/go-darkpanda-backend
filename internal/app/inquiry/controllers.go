@@ -130,10 +130,6 @@ func EmitInquiryHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, NewTransform().TransformInquiry(iq))
 }
 
-type CancelInquiryUriParam struct {
-	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
-}
-
 func CancelInquiryHandler(c *gin.Context) {
 	// ------------------- gather information from middleware -------------------
 	eup, uriParamExists := c.Get("uri_params")
@@ -148,7 +144,7 @@ func CancelInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	uriParams := eup.(*CancelInquiryUriParam)
+	uriParams := eup.(*InquiryUriParams)
 	fsm := efsm.(*fsm.FSM)
 
 	// ------------------- Update inquiry status to cancel  -------------------
@@ -185,7 +181,7 @@ func ExpireInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	uriParams := eup.(*CancelInquiryUriParam)
+	uriParams := eup.(*InquiryUriParams)
 	fsm := efsm.(*fsm.FSM)
 
 	// ------------------- Update inquiry status to expire  -------------------
@@ -223,7 +219,7 @@ func PickupInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	uriParams := eup.(*CancelInquiryUriParam)
+	uriParams := eup.(*InquiryUriParams)
 	fsm := efsm.(*fsm.FSM)
 	iq := eiq.(models.ServiceInquiry)
 
@@ -295,7 +291,7 @@ func GirlApproveInquiryHandler(c *gin.Context) {
 	ctx := context.Background()
 	body := GirlApproveInquiryBody{}
 	eup, _ := c.Get("uri_params")
-	uriParams := eup.(*CancelInquiryUriParam)
+	uriParams := eup.(*InquiryUriParams)
 
 	if err := c.ShouldBindJSON(&body); err != nil {
 		c.AbortWithError(
@@ -376,4 +372,66 @@ func GirlApproveInquiryHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, res)
+}
+
+// Emit event to girl for the purpose of notifying them the iquiry is booked by the man
+type ManApproveInquiryBody struct {
+	Price           float64   `json:"price"`
+	Duration        int       `json:"duration"`
+	AppointmentTime time.Time `json:appointment_time`
+	Lng             float64   `json:"lng"`
+	Lat             float64   `json:"lat"`
+	ServiceType     string    `json:"service_type"`
+}
+
+func ManApproveInquiry(c *gin.Context) {
+	eup, exists := c.Get("uri_params")
+
+	if !exists {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
+		)
+
+		return
+	}
+
+	body := ManApproveInquiryBody{}
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToValidateBookInquiryParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+	// Alter inquiry status to "booked"
+	// Create a new service with "pending"
+	ctx := context.Background()
+	uriParams := eup.(*InquiryUriParams)
+
+	tx, _ := db.GetDB().Begin()
+	q := models.New(tx)
+
+	iq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
+		Uuid:          uriParams.InquiryUuid,
+		InquiryStatus: models.InquiryStatusBooked,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
+		)
+
+		return
+	}
+
+	log.Printf("DEBUG 1 %v", iq)
+
+	c.JSON(http.StatusOK, struct{}{})
 }

@@ -12,6 +12,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 			Secret: config.GetAppConf().JwtSecret,
 		}),
+		ValidateInqiuryURIParams(),
 	)
 
 	// create inquiry
@@ -54,4 +55,10 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	)
 
 	// Man book the inquiry
+	g.POST(
+		"/:inquiry_uuid/book",
+		IsMale(userDao),
+		ValidateBeforeAlterInquiryStatus(Book),
+		ManApproveInquiry,
+	)
 }

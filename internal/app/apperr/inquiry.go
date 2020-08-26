@@ -21,6 +21,7 @@ const (
 	FailedToUpdateInquiryContent        = "3000018"
 	FailedToTransformGirlApproveInquiry = "3000019"
 	OnlyFemaleCanApproveInquiry         = "3000020"
+	FailedToValidateBookInquiryParams   = "3000021"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
