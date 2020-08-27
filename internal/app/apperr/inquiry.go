@@ -23,6 +23,8 @@ const (
 	OnlyFemaleCanApproveInquiry         = "3000020"
 	FailedToValidateBookInquiryParams   = "3000021"
 	OnlyMaleCanBookService              = "3000022"
+	FSMNotSetInMiddleware               = "3000023"
+	FailedToCheckActiveInquiry          = "3000024"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{

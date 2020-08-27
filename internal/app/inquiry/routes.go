@@ -12,7 +12,6 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 			Secret: config.GetAppConf().JwtSecret,
 		}),
-		ValidateInqiuryURIParams(),
 	)
 
 	// create inquiry
@@ -25,6 +24,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	// cancel inquiry
 	g.PATCH(
 		"/:inquiry_uuid/cancel",
+		ValidateInqiuryURIParams(),
 		IsMale(userDao),
 		ValidateBeforeAlterInquiryStatus(Cancel),
 		CancelInquiryHandler,
@@ -33,6 +33,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	// expire an inquiry
 	g.PATCH(
 		"/:inquiry_uuid/expire",
+		ValidateInqiuryURIParams(),
 		IsMale(userDao),
 		ValidateBeforeAlterInquiryStatus(Expire),
 		ExpireInquiryHandler,
@@ -41,6 +42,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	// pickup an inquiry
 	g.POST(
 		"/:inquiry_uuid/pickup",
+		ValidateInqiuryURIParams(),
 		IsFemale(userDao),
 		ValidateBeforeAlterInquiryStatus(Pickup),
 		PickupInquiryHandler,
@@ -49,6 +51,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	// After chatting, inquiry can be approved by girl
 	g.POST(
 		"/:inquiry_uuid/girl-approve",
+		ValidateInqiuryURIParams(),
 		IsFemale(userDao),
 		ValidateBeforeAlterInquiryStatus(GirlApprove),
 		GirlApproveInquiryHandler,
@@ -57,6 +60,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	// Man book the inquiry
 	g.POST(
 		"/:inquiry_uuid/book",
+		ValidateInqiuryURIParams(),
 		IsMale(userDao),
 		ValidateBeforeAlterInquiryStatus(Book),
 		ManApproveInquiry,

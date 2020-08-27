@@ -19,6 +19,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -62,7 +63,7 @@ func (suite *InquiryTestSuite) TestEmitInquirySuccess() {
 		suite.T().Fatal(err)
 	}
 	body := struct {
-		Budget      float32 `json:"budget"`
+		Budget      float64 `json:"budget"`
 		ServiceType string  `json:"service_type"`
 	}{
 		100.10,
@@ -82,14 +83,14 @@ func (suite *InquiryTestSuite) TestEmitInquirySuccess() {
 	resp, _ := suite.sendRequest(
 		"POST",
 		"/v1/inquiries",
-		body,
+		&body,
 		header,
 	)
 
 	// ------------------- assert test case -------------------
 	respBody := struct {
 		Uuid          string               `json:"uuid"`
-		Budget        float64              `json:"budget"`
+		Budget        string               `json:"budget"`
 		ServiceType   models.ServiceType   `json:"service_type"`
 		InquiryStatus models.InquiryStatus `json:"inquiry_status"`
 		CreatedAt     time.Time            `json:"created_at"`
@@ -98,7 +99,7 @@ func (suite *InquiryTestSuite) TestEmitInquirySuccess() {
 	dec.Decode(&respBody)
 
 	assert.NotEmpty(suite.T(), respBody.Uuid)
-	assert.Equal(suite.T(), respBody.Budget, 100.10)
+	assert.Equal(suite.T(), respBody.Budget, "100.10")
 	assert.Equal(suite.T(), respBody.ServiceType, models.ServiceTypeSex)
 	assert.Equal(suite.T(), respBody.InquiryStatus, models.InquiryStatusInquiring)
 }
@@ -366,12 +367,11 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 		suite.T().Fatal(err)
 	}
 
-	log.Printf("DEBUG username %s %s", femaleUser.Username, respBody.ServiceProvider.Username)
 	assert.Equal(femaleUser.Username, respBody.ServiceProvider.Username)
-	log.Printf("resp body %v", respBody)
+	assert.Equal(femaleUser.Uuid, respBody.ServiceProvider.Uuid)
 
-	//bbody, _ := ioutil.ReadAll(resp.Result().Body)
-	//log.Printf("DEBUG bbody %s", string(bbody))
+	assert.Equal(respBody.Lat, fmt.Sprintf("%s0", decimal.NewFromFloat(body.Lat).String()))
+	assert.Equal(respBody.Lng, fmt.Sprintf("%s0", decimal.NewFromFloat(body.Lng).String()))
 }
 
 func TestInquirySuites(t *testing.T) {

@@ -21,8 +21,8 @@ import (
 // @TODO budget received from client should be type float instead of string.
 //       budget should be converted to type string before stored in DB.
 type EmitInquiryBody struct {
-	Budget      string `json:"budget" binding:"required"`
-	ServiceType string `json:"service_type" binding:"required"`
+	Budget      float64 `json:"budget" binding:"required"`
+	ServiceType string  `json:"service_type" binding:"required"`
 }
 
 func EmitInquiryHandler(c *gin.Context) {
@@ -60,46 +60,63 @@ func EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	// ------------------- only male user can emit inquiry -------------------
-	if usr.Gender != models.GenderMale {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.OnlyMaleCanEmitInquiry),
-		)
-
-		return
-	}
-
 	// ------------------- check if the user already has active inquiry -------------------
-	resIq, err := q.GetInquiryByInquirerID(ctx, models.GetInquiryByInquirerIDParams{
-		InquirerID: sql.NullInt32{
-			Int32: int32(usr.ID),
-			Valid: true,
-		},
-		InquiryStatus: models.InquiryStatusInquiring,
-	})
+	dao := NewInquiryDAO(db.GetDB())
+	activeIqExists, err := dao.CheckHasActiveInquiryByID(usr.ID)
 
-	if err != nil && err != sql.ErrNoRows {
-		log.WithFields(log.Fields{
-			"uuid":  usr.Uuid,
-			"error": err.Error(),
-		}).Debug("User has active inquiry.")
-
+	if err != nil {
 		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.UserAlreadyHasActiveInquiry),
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckActiveInquiry,
+				err.Error(),
+			),
 		)
 
 		return
 	}
 
-	// we have to makesure the retrieved inquiry it's still within 27 mins.
-	// if it is not, change the inquiry status to expired.
-	if util.IsExpired(resIq.CreatedAt) {
-		q.PatchInquiryStatus(ctx, models.PatchInquiryStatusParams{
+	if activeIqExists {
+		resIq, err := q.GetInquiryByInquirerID(ctx, models.GetInquiryByInquirerIDParams{
+			InquirerID: sql.NullInt32{
+				Int32: int32(usr.ID),
+				Valid: true,
+			},
+			InquiryStatus: models.InquiryStatusInquiring,
+		})
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(apperr.FailedToGetInquiryByInquirerID),
+			)
+
+			return
+		}
+
+		if !util.IsExpired(resIq.CreatedAt) {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(apperr.UserAlreadyHasActiveInquiry),
+			)
+
+			return
+		}
+
+		if err := q.PatchInquiryStatus(ctx, models.PatchInquiryStatusParams{
 			ID:            resIq.ID,
 			InquiryStatus: models.InquiryStatusExpired,
-		})
+		}); err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToPatchInquiryStatus,
+					err.Error(),
+				),
+			)
+
+			return
+		}
 	}
 
 	// ------------------- create a new inquiry -------------------
@@ -110,12 +127,17 @@ func EmitInquiryHandler(c *gin.Context) {
 			Int32: int32(usr.ID),
 			Valid: true,
 		},
-		Budget:        body.Budget,
+		Budget:        decimal.NewFromFloat(body.Budget).String(),
 		ServiceType:   models.ServiceType(body.ServiceType),
 		InquiryStatus: models.InquiryStatusInquiring,
 	})
 
 	if err != nil {
+		log.WithFields(log.Fields{
+			"uuid":  usr.Uuid,
+			"error": err.Error(),
+		}).Debug("User has active inquiry.")
+
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -435,8 +457,6 @@ func ManApproveInquiry(c *gin.Context) {
 	}
 
 	srvProvider, err := q.GetUserByUuid(ctx, body.ServiceProviderUuid)
-
-	log.Printf("DEBUG srv provider %v", srvProvider)
 
 	if err != nil {
 		c.AbortWithError(
