@@ -3,6 +3,8 @@ module github.com/huangc28/go-darkpanda-backend
 go 1.14
 
 require (
+	cloud.google.com/go v0.64.0 // indirect
+	cloud.google.com/go/storage v1.10.0
 	github.com/DATA-DOG/go-txdb v0.1.3
 	github.com/bxcodec/faker/v3 v3.5.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -29,9 +31,12 @@ require (
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/ventu-io/go-shortid v0.0.0-20171029131806-771a37caa5cf
 	go.opentelemetry.io/otel v0.10.0 // indirect
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381
-	golang.org/x/sys v0.0.0-20200810151505-1b9f1253b3ed // indirect
-	google.golang.org/grpc v1.31.0 // indirect
+	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6 // indirect
+	golang.org/x/tools v0.0.0-20200827010519-17fd2f27a9e3 // indirect
+	google.golang.org/api v0.30.0
+	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
+	google.golang.org/grpc v1.31.1 // indirect
 	gopkg.in/yaml.v2 v2.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200615113413-eeeca48fe776 // indirect
 	gotest.tools v2.2.0+incompatible

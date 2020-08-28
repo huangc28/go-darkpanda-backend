@@ -35,18 +35,25 @@ type TwilioConf struct {
 	From      string `mapstructure:"from"`
 }
 
+// GCSCredentials for manipulating google cloud storage.
+type GCSCredentials struct {
+	GoogleServiceAccountName string `mapstructure:"google_service_account_name"`
+	BucketName               string `mapstructure:"bucket_name"`
+}
+
 type AppConf struct {
-	Port       string      `mapstructure:"port"`
-	JwtSecret  string      `mapstructure:"jwt_secret"`
-	DBConf     *DBConf     `mapstructure:"db"`
-	RedisConf  *RedisConf  `mapstructure:"redis"`
-	TwilioConf *TwilioConf `mapstructure:"twilio"`
+	Port           string          `mapstructure:"port"`
+	JwtSecret      string          `mapstructure:"jwt_secret"`
+	DBConf         *DBConf         `mapstructure:"db"`
+	RedisConf      *RedisConf      `mapstructure:"redis"`
+	TwilioConf     *TwilioConf     `mapstructure:"twilio"`
+	GCSCredentials *GCSCredentials `mapstructure:"gcs"`
 }
 
 var appConf AppConf
 
-// getProjRootPath gets project root directory relative to `config/config.go`
-func getProjRootPath() string {
+// GetProjRootPath gets project root directory relative to `config/config.go`
+func GetProjRootPath() string {
 	var (
 		_, b, _, _ = runtime.Caller(0)
 		basepath   = filepath.Dir(b)
@@ -74,7 +81,7 @@ func InitConfig() {
 
 	viper.AddConfigPath(cwd)
 	viper.AddConfigPath(".")
-	viper.AddConfigPath(getProjRootPath())
+	viper.AddConfigPath(GetProjRootPath())
 	viper.AllowEmptyEnv(true)
 	viper.AutomaticEnv()
 
