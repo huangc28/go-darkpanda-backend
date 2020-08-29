@@ -7,7 +7,9 @@ import (
 	"mime/multipart"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"sync"
+	"time"
 
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
@@ -73,6 +75,14 @@ func (e *GCSEnhancer) Upload(ctx context.Context, file io.Reader, uploadFilename
 	return e.ObjectLink(attr), nil
 }
 
+//timeFactor = time.Now().Format("20060102150405")
+func appendUnixTimeStampToFilename(filename string) string {
+	secs := strings.Split(filename, ".")
+	timeFactor := time.Now().Format("20060102150405")
+
+	return fmt.Sprintf("%s.%s.%s", secs[0], timeFactor, secs[len(secs)-1])
+}
+
 func (e *GCSEnhancer) UploadMultiple(ctx context.Context, headers []*multipart.FileHeader) ([]string, error) {
 	quit := make(chan struct{}, 1)
 	defer close(quit)
@@ -95,7 +105,11 @@ func (e *GCSEnhancer) UploadMultiple(ctx context.Context, headers []*multipart.F
 					errChan <- err
 				}
 
-				objectLink, err := e.Upload(ctx, file, filepath.Base(header.Filename))
+				objectLink, err := e.Upload(
+					ctx,
+					file,
+					appendUnixTimeStampToFilename(filepath.Base(header.Filename)),
+				)
 
 				if err != nil {
 					boolChan <- false
