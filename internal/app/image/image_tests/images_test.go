@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -141,7 +140,19 @@ func (suite *ImageTestSuite) TestUploadMultipleImages() {
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
 	app.StartApp(gin.Default()).ServeHTTP(res, req)
 
-	log.Printf("status code %v", res.Result().StatusCode)
+	respBody := struct {
+		Links []string `json:"links"`
+	}{}
+
+	assert := assert.New(suite.T())
+
+	assert.Equal(http.StatusOK, res.Result().StatusCode)
+	dec := json.NewDecoder(res.Result().Body)
+	if err := dec.Decode(&respBody); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Equal(2, len(respBody.Links))
 }
 
 func TestImageSuite(t *testing.T) {

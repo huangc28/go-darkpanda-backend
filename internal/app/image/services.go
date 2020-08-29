@@ -13,6 +13,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// TODO: Add timestamp in file name before upload to GCS.
+
 const GCSPublicHost = "storage.googleapis.com"
 
 type GCSEnhancer struct {

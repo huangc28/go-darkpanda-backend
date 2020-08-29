@@ -121,7 +121,5 @@ func UploadImagesHandler(c *gin.Context) {
 		log.Fatalf("Failed to upload multiple files %s", err.Error())
 	}
 
-	log.Printf("link list %v", linkList)
-
-	c.JSON(http.StatusOK, struct{}{})
+	c.JSON(http.StatusOK, NewTransformer().TransformLinks(linkList))
 }
