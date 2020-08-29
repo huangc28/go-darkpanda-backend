@@ -76,3 +76,74 @@ func UploadAvatarHandler(c *gin.Context) {
 		pubLink,
 	})
 }
+
+func UploadImagesHandler(c *gin.Context) {
+	// ------------------- Limit upload size to 20 MB -------------------
+	if err := c.Request.ParseMultipartForm(20E6); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+
+				apperr.FailedToParseMultipartForm,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	fileHeaders := c.Request.MultipartForm.File["image"]
+
+	gcsCreds := config.GetAppConf().GCSCredentials
+
+	ctx := context.Background()
+	client, err := storage.NewClient(
+		ctx,
+		option.WithServiceAccountFile(fmt.Sprintf("%s/%s", config.GetProjRootPath(), gcsCreds.GoogleServiceAccountName)),
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToInitGCSClient,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	enhancer := NewGCSEnhancer(client, gcsCreds.BucketName)
+	linkList, err := enhancer.UploadMultiple(ctx, fileHeaders)
+
+	if err != nil {
+		log.Fatalf("Failed to upload multiple files %s", err.Error())
+	}
+
+	log.Printf("link list %v", linkList)
+
+	// @TODO the following logic should be encapsulated in GCSEnhancer
+	//for _, fh := range fileHeaders {
+	//file, err := fh.Open()
+	//defer file.Close()
+
+	//if err != nil {
+	//c.AbortWithError(
+	//http.StatusInternalServerError,
+	//apperr.NewErr(
+	//apperr.FailedToOpenMultipartFile,
+	//err.Error(),
+	//),
+	//)
+
+	//return
+	//}
+
+	//enhancer.Upload(ctx, file, fh.Filename)
+	//}
+
+	//log.Printf("DEBUG fileheaders %d", len(fileHeaders))
+
+	c.JSON(http.StatusOK, struct{}{})
+}

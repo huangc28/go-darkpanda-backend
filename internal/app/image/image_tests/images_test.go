@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
@@ -26,16 +27,15 @@ import (
 
 type ImageTestSuite struct {
 	suite.Suite
-
-	sendRequest util.SendRequest
 }
 
 func (suite *ImageTestSuite) SetupSuite() {
 	manager.NewDefaultManager()
-	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 }
 
-func (suite *ImageTestSuite) TestUploadImage() {
+// Refer to this [article](https://stackoverflow.com/questions/26063271/how-to-create-a-http-request-that-contains-multiple-fileheaders)
+// to test multiple file upload in a request.
+func (suite *ImageTestSuite) TestUploadAvatar() {
 	file, _ := os.Open("./download.png")
 	defer file.Close()
 
@@ -63,7 +63,7 @@ func (suite *ImageTestSuite) TestUploadImage() {
 	res := httptest.NewRecorder()
 	req, _ := http.NewRequest(
 		"POST",
-		"/v1/images",
+		"/v1/images/avatar",
 		body,
 	)
 
@@ -89,6 +89,59 @@ func (suite *ImageTestSuite) TestUploadImage() {
 	}
 
 	assert.Equal("https://storage.googleapis.com/petu-love.appspot.com/download.png", respBody.PublicLink)
+}
+
+func (suite *ImageTestSuite) TestUploadMultipleImages() {
+	// ------------------- create multiparts -------------------
+	file1, _ := os.Open("./download.png")
+	defer file1.Close()
+
+	file2, _ := os.Open("./download3.png")
+	defer file2.Close()
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	p1, _ := writer.CreateFormFile("image", file1.Name())
+
+	if _, err := io.Copy(p1, file1); err != nil {
+		suite.T().Fatalf("failed to copy file1 to part 1 %s", err.Error())
+	}
+
+	p2, _ := writer.CreateFormFile("image", file2.Name())
+	if _, err := io.Copy(p2, file2); err != nil {
+		suite.T().Fatalf("failed to copy file2 to part 2 %s", err.Error())
+	}
+
+	writer.Close()
+
+	// ------------------- create test users -------------------
+	ctx := context.Background()
+	femaleUserParam, _ := util.GenTestUserParams(ctx)
+	femaleUserParam.Gender = models.GenderFemale
+	q := models.New(db.GetDB())
+	femaleUser, err := q.CreateUser(ctx, *femaleUserParam)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- send API -------------------
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest(
+		"POST",
+		"/v1/images",
+		body,
+	)
+
+	jwtToken, _ := jwtactor.CreateToken(
+		femaleUser.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", jwtToken))
+	app.StartApp(gin.Default()).ServeHTTP(res, req)
+
+	log.Printf("status code %v", res.Result().StatusCode)
 }
 
 func TestImageSuite(t *testing.T) {

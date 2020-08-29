@@ -14,5 +14,6 @@ func Routes(r *gin.RouterGroup) {
 		}),
 	)
 
-	g.POST("", UploadAvatarHandler)
+	g.POST("", UploadImagesHandler)
+	g.POST("/avatar", UploadAvatarHandler)
 }
