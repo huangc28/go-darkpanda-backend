@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"cloud.google.com/go/storage"
+	log "github.com/sirupsen/logrus"
 )
 
 const GCSPublicHost = "storage.googleapis.com"
@@ -71,22 +72,51 @@ func (e *GCSEnhancer) Upload(ctx context.Context, file io.Reader, uploadFilename
 }
 
 func (e *GCSEnhancer) UploadMultiple(ctx context.Context, headers []*multipart.FileHeader) ([]string, error) {
+	quit := make(chan struct{}, 1)
+	defer close(quit)
+
+	errChan := make(chan error, 1)
+	boolChan := make(chan bool, 1)
+	linkChan := make(chan string, 1)
+
 	for _, header := range headers {
-		//log.Printf("DEBUG 8 %s", header.Filename)
-		file, err := header.Open()
-		defer file.Close()
+		select {
+		case <-quit:
+			break
+		default:
+			go func(header *multipart.FileHeader) {
+				file, err := header.Open()
+				defer file.Close()
 
-		if err != nil {
-			return []string{}, err
+				if err != nil {
+					boolChan <- false
+					errChan <- err
+				}
+
+				objectLink, err := e.Upload(ctx, file, filepath.Base(header.Filename))
+
+				if err != nil {
+					boolChan <- false
+					errChan <- err
+				}
+
+				boolChan <- true
+				linkChan <- objectLink
+			}(header)
 		}
-
-		objectLink, err := e.Upload(ctx, file, filepath.Base(header.Filename))
-		if err != nil {
-			return []string{}, err
-		}
-
-		e.linkList = append(e.linkList, objectLink)
 	}
+
+	for range headers {
+		if <-boolChan == false {
+			close(quit)
+
+			return []string{}, <-errChan
+		}
+
+		e.linkList = append(e.linkList, <-linkChan)
+	}
+
+	log.Infof("All file uploaded success %v", e.linkList)
 
 	return e.linkList, nil
 }

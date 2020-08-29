@@ -123,27 +123,5 @@ func UploadImagesHandler(c *gin.Context) {
 
 	log.Printf("link list %v", linkList)
 
-	// @TODO the following logic should be encapsulated in GCSEnhancer
-	//for _, fh := range fileHeaders {
-	//file, err := fh.Open()
-	//defer file.Close()
-
-	//if err != nil {
-	//c.AbortWithError(
-	//http.StatusInternalServerError,
-	//apperr.NewErr(
-	//apperr.FailedToOpenMultipartFile,
-	//err.Error(),
-	//),
-	//)
-
-	//return
-	//}
-
-	//enhancer.Upload(ctx, file, fh.Filename)
-	//}
-
-	//log.Printf("DEBUG fileheaders %d", len(fileHeaders))
-
 	c.JSON(http.StatusOK, struct{}{})
 }
