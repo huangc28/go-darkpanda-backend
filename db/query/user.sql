@@ -38,3 +38,9 @@ WHERE phone_verify_code = $1 LIMIT 1;
 -- name: UpdateVerifyStatusById :exec
 UPDATE users SET phone_verified = $2
 WHERE id = $1;
+
+-- name: PatchUserInfoByUuid :one
+UPDATE users
+SET avatar_url = $1
+WHERE uuid = $2
+RETURNING *;

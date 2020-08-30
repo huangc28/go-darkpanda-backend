@@ -7,7 +7,11 @@ import (
 )
 
 func Routes(r *gin.RouterGroup) {
-	r.POST("/me", jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
+	g := r.Group("/users", jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 		Secret: config.GetAppConf().JwtSecret,
-	}), GetUserInfo)
+	}))
+
+	g.POST("/me", GetUserInfo)
+
+	g.PUT("/:uuid", PutUserInfo)
 }

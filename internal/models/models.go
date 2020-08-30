@@ -138,6 +138,15 @@ func (e *ServiceType) Scan(src interface{}) error {
 	return nil
 }
 
+type Image struct {
+	ID        int64        `json:"id"`
+	UserID    int32        `json:"user_id"`
+	Url       string       `json:"url"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+	DeletedAt sql.NullTime `json:"deleted_at"`
+}
+
 type Payment struct {
 	ID         int64          `json:"id"`
 	PayerID    int32          `json:"payer_id"`
@@ -201,6 +210,7 @@ type User struct {
 	DeletedAt         sql.NullTime   `json:"deleted_at"`
 	Uuid              string         `json:"uuid"`
 	PhoneVerifyCode   sql.NullString `json:"phone_verify_code"`
+	AvatarUrl         sql.NullString `json:"avatar_url"`
 }
 
 type UserRating struct {

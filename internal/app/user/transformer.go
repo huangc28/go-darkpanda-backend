@@ -31,3 +31,20 @@ func (ut *UserTransform) TransformUserWithInquiry(m *models.User, si []*models.S
 
 	return t
 }
+
+type TransformedPatchedUser struct {
+	Uuid      string  `json:"uuid"`
+	AvatarURL *string `json:"avatar_url"`
+}
+
+func (ut *UserTransform) TransformPatchedUser(user *models.User) *TransformedPatchedUser {
+	t := &TransformedPatchedUser{
+		Uuid: user.Uuid,
+	}
+
+	if user.AvatarUrl.Valid {
+		t.AvatarURL = &user.AvatarUrl.String
+	}
+
+	return t
+}

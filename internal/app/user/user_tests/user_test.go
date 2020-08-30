@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"testing"
 
@@ -16,8 +17,8 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"gotest.tools/assert"
 )
 
 type UserAPITestsSuite struct {
@@ -57,7 +58,7 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfo() {
 	header := make(map[string]string)
 	header["Authorization"] = fmt.Sprintf("Bearer %s", jwt)
 
-	resp, _ := suite.sendRequest("POST", "/v1/me", struct{}{}, header)
+	resp, _ := suite.sendRequest("POST", "/v1/users/me", struct{}{}, header)
 
 	// ------------------- assert test cases  -------------------
 	assert.Equal(suite.T(), resp.Result().StatusCode, http.StatusOK)
@@ -110,7 +111,7 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfoWithActiveInquiry() {
 
 	header := make(map[string]string)
 	header["Authorization"] = fmt.Sprintf("Bearer %s", jwt)
-	resp, _ := suite.sendRequest("POST", "/v1/me", struct{}{}, header)
+	resp, _ := suite.sendRequest("POST", "/v1/users/me", struct{}{}, header)
 
 	// ------------------- assert test cases -------------------
 	respStruct := &user.TransformUserWithInquiryData{}
@@ -120,6 +121,82 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfoWithActiveInquiry() {
 	}
 
 	assert.Equal(suite.T(), len(respStruct.Inquiries), 1)
+}
+
+func (suite *UserAPITestsSuite) TestPutUserInfoSuccess() {
+	// ------------------- create male user -------------------
+	ctx := context.Background()
+	maleUserParams, _ := util.GenTestUserParams(ctx)
+	maleUserParams.Gender = models.GenderMale
+	q := models.New(db.GetDB())
+	maleUser, err := q.CreateUser(ctx, *maleUserParams)
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- send API -------------------
+	headers := util.CreateJwtHeaderMap(
+		maleUser.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+
+	body := struct {
+		AvatarURL string `json:"avatar_url"`
+	}{
+		AvatarURL: "https://somecloud.com/a.png",
+	}
+
+	res, err := suite.sendRequest(
+		"PUT",
+		fmt.Sprintf("/v1/users/%s", maleUser.Uuid),
+		body,
+		headers,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	if res.Result().StatusCode != http.StatusOK {
+		bbody, _ := ioutil.ReadAll(res.Result().Body)
+		suite.T().Fatalf("%s", string(bbody))
+	}
+
+	// ------------------- test asserts -------------------
+	assert := assert.New(suite.T())
+	dec := json.NewDecoder(res.Result().Body)
+	resBody := struct {
+		AvatarURL string `json:"avatar_url"`
+	}{}
+
+	if err := dec.Decode(&resBody); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Equal(resBody.AvatarURL, "https://somecloud.com/a.png")
+
+	// ------------------- test nil update -------------------
+	resTwo, err := suite.sendRequest(
+		"PUT",
+		fmt.Sprintf("/v1/users/%s", maleUser.Uuid),
+		struct{}{},
+		headers,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	resTwoBody := struct {
+		AvatarURL *string `json:"avatar_url"`
+	}{}
+
+	dec = json.NewDecoder(resTwo.Result().Body)
+	if err := dec.Decode(&resTwoBody); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Nil(resTwoBody.AvatarURL, nil)
 }
 
 func TestUserAPISuite(t *testing.T) {

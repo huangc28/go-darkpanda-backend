@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -123,4 +124,40 @@ func GatherMaleInfo(ctx context.Context, q *models.Queries, usr *models.User) (*
 	}
 
 	return NewTransform().TransformUserWithInquiry(usr, inquiries), nil
+}
+
+type PutUserInfoBody struct {
+	AvatarURL *string `json:"avatar_url"`
+}
+
+func PutUserInfo(c *gin.Context) {
+	body := &PutUserInfoBody{}
+
+	if err := c.ShouldBindJSON(body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidatePutUserParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- Update user info -------------------
+	ctx := context.Background()
+	uuid := c.GetString("uuid")
+
+	q := models.New(db.GetDB())
+	user, err := q.PatchUserInfoByUuid(ctx, models.PatchUserInfoByUuidParams{
+		AvatarUrl: util.SQLNilString(body.AvatarURL),
+		Uuid:      uuid,
+	})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c.JSON(http.StatusOK, NewTransform().TransformPatchedUser(&user))
 }
