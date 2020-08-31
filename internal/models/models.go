@@ -10,6 +10,30 @@ import (
 	"github.com/google/uuid"
 )
 
+type BreastSize string
+
+const (
+	BreastSizeA BreastSize = "a"
+	BreastSizeB BreastSize = "b"
+	BreastSizeC BreastSize = "c"
+	BreastSizeD BreastSize = "d"
+	BreastSizeE BreastSize = "e"
+	BreastSizeF BreastSize = "f"
+	BreastSizeG BreastSize = "g"
+)
+
+func (e *BreastSize) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = BreastSize(s)
+	case string:
+		*e = BreastSize(s)
+	default:
+		return fmt.Errorf("unsupported scan type for BreastSize: %T", src)
+	}
+	return nil
+}
+
 type Gender string
 
 const (
@@ -211,6 +235,14 @@ type User struct {
 	Uuid              string         `json:"uuid"`
 	PhoneVerifyCode   sql.NullString `json:"phone_verify_code"`
 	AvatarUrl         sql.NullString `json:"avatar_url"`
+	Nationality       sql.NullString `json:"nationality"`
+	Region            sql.NullString `json:"region"`
+	Age               sql.NullInt32  `json:"age"`
+	Height            sql.NullString `json:"height"`
+	Weight            sql.NullString `json:"weight"`
+	Habbits           sql.NullString `json:"habbits"`
+	Description       sql.NullString `json:"description"`
+	BreastSize        sql.NullString `json:"breast_size"`
 }
 
 type UserRating struct {

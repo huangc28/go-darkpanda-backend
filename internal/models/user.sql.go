@@ -19,7 +19,7 @@ INSERT INTO users (
 	premium_type,
 	premium_expiry_date
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url
+RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size
 `
 
 type CreateUserParams struct {
@@ -59,12 +59,20 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Uuid,
 		&i.PhoneVerifyCode,
 		&i.AvatarUrl,
+		&i.Nationality,
+		&i.Region,
+		&i.Age,
+		&i.Height,
+		&i.Weight,
+		&i.Habbits,
+		&i.Description,
+		&i.BreastSize,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url FROM users
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -85,12 +93,20 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.Uuid,
 		&i.PhoneVerifyCode,
 		&i.AvatarUrl,
+		&i.Nationality,
+		&i.Region,
+		&i.Age,
+		&i.Height,
+		&i.Weight,
+		&i.Habbits,
+		&i.Description,
+		&i.BreastSize,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url FROM users
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -111,12 +127,20 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.Uuid,
 		&i.PhoneVerifyCode,
 		&i.AvatarUrl,
+		&i.Nationality,
+		&i.Region,
+		&i.Age,
+		&i.Height,
+		&i.Weight,
+		&i.Habbits,
+		&i.Description,
+		&i.BreastSize,
 	)
 	return i, err
 }
 
 const getUserByUuid = `-- name: GetUserByUuid :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url FROM users
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size FROM users
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -137,12 +161,20 @@ func (q *Queries) GetUserByUuid(ctx context.Context, uuid string) (User, error) 
 		&i.Uuid,
 		&i.PhoneVerifyCode,
 		&i.AvatarUrl,
+		&i.Nationality,
+		&i.Region,
+		&i.Age,
+		&i.Height,
+		&i.Weight,
+		&i.Habbits,
+		&i.Description,
+		&i.BreastSize,
 	)
 	return i, err
 }
 
 const getUserByVerifyCode = `-- name: GetUserByVerifyCode :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url FROM users
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size FROM users
 WHERE phone_verify_code = $1 LIMIT 1
 `
 
@@ -163,6 +195,14 @@ func (q *Queries) GetUserByVerifyCode(ctx context.Context, phoneVerifyCode sql.N
 		&i.Uuid,
 		&i.PhoneVerifyCode,
 		&i.AvatarUrl,
+		&i.Nationality,
+		&i.Region,
+		&i.Age,
+		&i.Height,
+		&i.Weight,
+		&i.Habbits,
+		&i.Description,
+		&i.BreastSize,
 	)
 	return i, err
 }
@@ -181,18 +221,35 @@ func (q *Queries) GetUserIDByUuid(ctx context.Context, uuid string) (int64, erro
 
 const patchUserInfoByUuid = `-- name: PatchUserInfoByUuid :one
 UPDATE users
-SET avatar_url = $1
-WHERE uuid = $2
-RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url
+SET avatar_url = $1, nationality = $2, region = $3, age = $4, height = $5, weight = $6, description = $7, breast_size = $8
+WHERE uuid = $9
+RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size
 `
 
 type PatchUserInfoByUuidParams struct {
-	AvatarUrl sql.NullString `json:"avatar_url"`
-	Uuid      string         `json:"uuid"`
+	AvatarUrl   sql.NullString `json:"avatar_url"`
+	Nationality sql.NullString `json:"nationality"`
+	Region      sql.NullString `json:"region"`
+	Age         sql.NullInt32  `json:"age"`
+	Height      sql.NullString `json:"height"`
+	Weight      sql.NullString `json:"weight"`
+	Description sql.NullString `json:"description"`
+	BreastSize  sql.NullString `json:"breast_size"`
+	Uuid        string         `json:"uuid"`
 }
 
 func (q *Queries) PatchUserInfoByUuid(ctx context.Context, arg PatchUserInfoByUuidParams) (User, error) {
-	row := q.queryRow(ctx, q.patchUserInfoByUuidStmt, patchUserInfoByUuid, arg.AvatarUrl, arg.Uuid)
+	row := q.queryRow(ctx, q.patchUserInfoByUuidStmt, patchUserInfoByUuid,
+		arg.AvatarUrl,
+		arg.Nationality,
+		arg.Region,
+		arg.Age,
+		arg.Height,
+		arg.Weight,
+		arg.Description,
+		arg.BreastSize,
+		arg.Uuid,
+	)
 	var i User
 	err := row.Scan(
 		&i.ID,
@@ -208,6 +265,14 @@ func (q *Queries) PatchUserInfoByUuid(ctx context.Context, arg PatchUserInfoByUu
 		&i.Uuid,
 		&i.PhoneVerifyCode,
 		&i.AvatarUrl,
+		&i.Nationality,
+		&i.Region,
+		&i.Age,
+		&i.Height,
+		&i.Weight,
+		&i.Habbits,
+		&i.Description,
+		&i.BreastSize,
 	)
 	return i, err
 }

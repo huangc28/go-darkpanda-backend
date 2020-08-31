@@ -141,9 +141,23 @@ func (suite *UserAPITestsSuite) TestPutUserInfoSuccess() {
 	)
 
 	body := struct {
-		AvatarURL string `json:"avatar_url"`
+		AvatarURL   string  `json:"avatar_url"`
+		Nationality string  `json:"nationality"`
+		Region      string  `json:"region"`
+		Height      float32 `json:"height"`
+		Weight      float32 `json:"weight"`
+		Age         int     `json:"age"`
+		Description string  `json:"description"`
+		BreastSize  string  `json:"breast_size"`
 	}{
-		AvatarURL: "https://somecloud.com/a.png",
+		AvatarURL:   "https://somecloud.com/a.png",
+		Nationality: "Taiwan",
+		Region:      "Taipei",
+		Height:      170,
+		Weight:      68,
+		Age:         18,
+		Description: "I am rich and have big dick",
+		BreastSize:  "z",
 	}
 
 	res, err := suite.sendRequest(
@@ -166,20 +180,28 @@ func (suite *UserAPITestsSuite) TestPutUserInfoSuccess() {
 	assert := assert.New(suite.T())
 	dec := json.NewDecoder(res.Result().Body)
 	resBody := struct {
-		AvatarURL string `json:"avatar_url"`
+		AvatarURL   *string `json:"avatar_url"`
+		Nationality *string `json:"nationality"`
+		Age         *int    `json:"age"`
 	}{}
 
 	if err := dec.Decode(&resBody); err != nil {
 		suite.T().Fatal(err)
 	}
 
-	assert.Equal(resBody.AvatarURL, "https://somecloud.com/a.png")
+	assert.Equal(*resBody.AvatarURL, body.AvatarURL)
+	assert.Equal(*resBody.Nationality, "Taiwan")
+	assert.Equal(*resBody.Age, 18)
 
 	// ------------------- test nil update -------------------
 	resTwo, err := suite.sendRequest(
 		"PUT",
 		fmt.Sprintf("/v1/users/%s", maleUser.Uuid),
-		struct{}{},
+		struct {
+			Age int `json:"age"`
+		}{
+			19,
+		},
 		headers,
 	)
 
@@ -188,15 +210,18 @@ func (suite *UserAPITestsSuite) TestPutUserInfoSuccess() {
 	}
 
 	resTwoBody := struct {
-		AvatarURL *string `json:"avatar_url"`
+		AvatarURL   *string `json:"avatar_url"`
+		Nationality *string `json:"nationality"`
+		Age         *int    `json:"age"`
 	}{}
-
 	dec = json.NewDecoder(resTwo.Result().Body)
 	if err := dec.Decode(&resTwoBody); err != nil {
 		suite.T().Fatal(err)
 	}
 
-	assert.Nil(resTwoBody.AvatarURL, nil)
+	assert.Equal(*resBody.AvatarURL, body.AvatarURL)
+	assert.Equal(*resBody.Nationality, "Taiwan")
+	assert.Equal(*resTwoBody.Age, 19)
 }
 
 func TestUserAPISuite(t *testing.T) {

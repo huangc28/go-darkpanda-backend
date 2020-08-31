@@ -8,7 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -127,7 +126,15 @@ func GatherMaleInfo(ctx context.Context, q *models.Queries, usr *models.User) (*
 }
 
 type PutUserInfoBody struct {
-	AvatarURL *string `json:"avatar_url"`
+	AvatarURL   *string  `json:"avatar_url"`
+	Nationality *string  `json:"nationality"`
+	Region      *string  `json:"region"`
+	Age         *int     `json:"age"`
+	Height      *float64 `json:"height"`
+	Weight      *float64 `json:"weight"`
+	Habbits     *string  `json:"habbits"`
+	Description *string  `json:"description"`
+	BreastSize  *string  `json:"breast_size"`
 }
 
 func PutUserInfo(c *gin.Context) {
@@ -148,16 +155,34 @@ func PutUserInfo(c *gin.Context) {
 	// ------------------- Update user info -------------------
 	ctx := context.Background()
 	uuid := c.GetString("uuid")
-
-	q := models.New(db.GetDB())
-	user, err := q.PatchUserInfoByUuid(ctx, models.PatchUserInfoByUuidParams{
-		AvatarUrl: util.SQLNilString(body.AvatarURL),
-		Uuid:      uuid,
+	dao := NewUserDAO(db.GetDB())
+	user, err := dao.UpdateUserInfoByUuid(ctx, UpdateUserInfoParams{
+		AvatarURL:   body.AvatarURL,
+		Nationality: body.Nationality,
+		Region:      body.Region,
+		Age:         body.Age,
+		Height:      body.Height,
+		Weight:      body.Weight,
+		Description: body.Description,
+		BreastSize:  body.BreastSize,
+		Uuid:        uuid,
 	})
 
 	if err != nil {
-		log.Fatal(err)
+		log.WithFields(log.Fields{
+			"uuid": uuid,
+		}).Errorf("Failed to patch user info by uuid %s", err.Error())
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToPatchUserInfo,
+				err.Error(),
+			),
+		)
+
+		return
 	}
 
-	c.JSON(http.StatusOK, NewTransform().TransformPatchedUser(&user))
+	c.JSON(http.StatusOK, NewTransform().TransformPatchedUser(user))
 }

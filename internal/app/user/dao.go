@@ -14,14 +14,17 @@ type User struct {
 }
 
 type UserDAOer interface {
-	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string) (User, error)
+	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*User, error)
+	UpdateUserInfoByUuid(ctx context.Context, p UpdateUserInfoParams) (*models.User, error)
+	CheckIsMaleByUuid(uuid string) (bool, error)
+	CheckIsFemaleByUuid(uuid string) (bool, error)
 }
 
 type UserDAO struct {
 	db *sql.DB
 }
 
-func NewUserDAO(db *sql.DB) *UserDAO {
+func NewUserDAO(db *sql.DB) UserDAOer {
 	return &UserDAO{
 		db: db,
 	}
@@ -71,9 +74,89 @@ func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid strin
 		user.Inquiries = append(user.Inquiries, inquiry)
 	}
 
-	log.Printf("DEBUG 999 %v", user.Inquiries[0].Budget)
-
 	return nil, nil
+}
+
+type UpdateUserInfoParams struct {
+	AvatarURL   *string
+	Nationality *string
+	Region      *string
+	Age         *int
+	Height      *float64
+	Weight      *float64
+	Description *string
+	BreastSize  *string
+	Uuid        string
+}
+
+// https://stackoverflow.com/questions/13305878/dont-update-column-if-update-value-is-null
+func (dao *UserDAO) UpdateUserInfoByUuid(ctx context.Context, p UpdateUserInfoParams) (*models.User, error) {
+	sql := `
+UPDATE users SET
+	avatar_url = COALESCE($1, avatar_url),
+	nationality = COALESCE($2, nationality),
+	region = COALESCE($3, region),
+	age = COALESCE($4, age),
+	height = COALESCE($5, height),
+	weight = COALESCE($6, weight),
+	description = COALESCE($7, description),
+	breast_size = COALESCE($8, breast_size)
+WHERE uuid = $9
+RETURNING
+	id,
+	username,
+	phone_verified,
+	gender,
+	premium_type,
+	premium_expiry_date,
+	uuid,
+	avatar_url,
+	nationality,
+	region,
+	age,
+	height,
+	weight,
+	habbits,
+	description,
+	breast_size;
+`
+	u := &models.User{}
+
+	if err := dao.db.QueryRow(
+		sql,
+		p.AvatarURL,
+		p.Nationality,
+		p.Region,
+		p.Age,
+		p.Height,
+		p.Weight,
+		p.Description,
+		p.BreastSize,
+		p.Uuid,
+	).Scan(
+		&u.ID,
+		&u.Username,
+		&u.PhoneVerified,
+		&u.Gender,
+		&u.PremiumType,
+		&u.PremiumExpiryDate,
+		&u.Uuid,
+		&u.AvatarUrl,
+		&u.Nationality,
+		&u.Region,
+		&u.Age,
+		&u.Height,
+		&u.Weight,
+		&u.Habbits,
+		&u.Description,
+		&u.BreastSize,
+	); err != nil {
+		log.Errorf("Failed to update user info %s", err.Error())
+
+		return nil, err
+	}
+
+	return u, nil
 }
 
 func (dao *UserDAO) checkGender(uuid string, gender models.Gender) (bool, error) {
