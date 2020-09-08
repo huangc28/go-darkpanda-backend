@@ -1,6 +1,8 @@
 package app
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
@@ -12,8 +14,19 @@ import (
 
 func StartApp(e *gin.Engine) *gin.Engine {
 	e.Use(gin.Logger())
+
+	// Log the response so frontend can better normalize the result.
+	e.Use(ResponseLogger)
 	e.Use(gin.Recovery())
 	e.Use(apperr.HandleError())
+
+	e.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, struct {
+			Health string `json:"health"`
+		}{
+			"OK",
+		})
+	})
 
 	rv1 := e.Group("/v1")
 

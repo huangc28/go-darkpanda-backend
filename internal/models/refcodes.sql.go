@@ -71,3 +71,21 @@ func (q *Queries) GetReferCodeInfoByRefcode(ctx context.Context, refCode string)
 	)
 	return i, err
 }
+
+const updateInviteeIDByRefCode = `-- name: UpdateInviteeIDByRefCode :exec
+UPDATE user_refcodes
+SET
+	invitee_id = $1
+WHERE
+	ref_code = $2
+`
+
+type UpdateInviteeIDByRefCodeParams struct {
+	InviteeID sql.NullInt32 `json:"invitee_id"`
+	RefCode   string        `json:"ref_code"`
+}
+
+func (q *Queries) UpdateInviteeIDByRefCode(ctx context.Context, arg UpdateInviteeIDByRefCodeParams) error {
+	_, err := q.exec(ctx, q.updateInviteeIDByRefCodeStmt, updateInviteeIDByRefCode, arg.InviteeID, arg.RefCode)
+	return err
+}

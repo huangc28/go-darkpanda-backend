@@ -186,3 +186,7 @@ func PutUserInfo(c *gin.Context) {
 
 	c.JSON(http.StatusOK, NewTransform().TransformPatchedUser(user))
 }
+
+func PatchUserImages(c *gin.Context) {
+	c.JSON(http.StatusOK, struct{}{})
+}

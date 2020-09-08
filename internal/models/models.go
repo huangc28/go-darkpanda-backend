@@ -10,30 +10,6 @@ import (
 	"github.com/google/uuid"
 )
 
-type BreastSize string
-
-const (
-	BreastSizeA BreastSize = "a"
-	BreastSizeB BreastSize = "b"
-	BreastSizeC BreastSize = "c"
-	BreastSizeD BreastSize = "d"
-	BreastSizeE BreastSize = "e"
-	BreastSizeF BreastSize = "f"
-	BreastSizeG BreastSize = "g"
-)
-
-func (e *BreastSize) Scan(src interface{}) error {
-	switch s := src.(type) {
-	case []byte:
-		*e = BreastSize(s)
-	case string:
-		*e = BreastSize(s)
-	default:
-		return fmt.Errorf("unsupported scan type for BreastSize: %T", src)
-	}
-	return nil
-}
-
 type Gender string
 
 const (

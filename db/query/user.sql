@@ -44,3 +44,4 @@ UPDATE users
 SET avatar_url = $1, nationality = $2, region = $3, age = $4, height = $5, weight = $6, description = $7, breast_size = $8
 WHERE uuid = $9
 RETURNING *;
+

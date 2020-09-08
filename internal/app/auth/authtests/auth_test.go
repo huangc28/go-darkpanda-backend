@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strconv"
+	"strings"
 	"testing"
 
 	log "github.com/sirupsen/logrus"
@@ -178,17 +181,14 @@ func (suite *UserRegistrationTestSuite) TestSendVerifyCodeViaTwilioSuccess() {
 	if err != nil {
 		suite.T().Fatal(err)
 	}
+	data := url.Values{}
+	data.Set("uuid", usr.Uuid)
+	data.Set("mobile", "+886988272727")
 
-	body := struct {
-		Username string `json:"username"`
-		Mobile   string `json:"mobile"`
-	}{
-		usr.Username,
-		"+886988272727",
-	}
-
-	bodyByte, _ := json.Marshal(&body)
-	req, err := http.NewRequest("POST", "/v1/send-verify-code", bytes.NewBuffer(bodyByte))
+	//bodyByte, _ := json.Marshal(&body)
+	req, err := http.NewRequest("POST", "/v1/send-verify-code", strings.NewReader(data.Encode()))
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Add("Content-Length", strconv.Itoa(len(data.Encode())))
 
 	if err != nil {
 		suite.

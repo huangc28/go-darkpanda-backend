@@ -15,3 +15,12 @@ INSERT INTO user_refcodes (
 	$4
 )
 RETURNING *;
+
+-- name: UpdateInviteeIDByRefCode :exec
+UPDATE user_refcodes
+SET
+	invitee_id = $1
+WHERE
+	ref_code = $2;
+
+

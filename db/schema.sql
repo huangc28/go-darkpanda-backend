@@ -267,16 +267,6 @@ ADD COLUMN avatar_url varchar(255);
 COMMIT;
 BEGIN;
 
-CREATE TYPE breast_size AS ENUM (
-	'a',
-	'b',
-	'c',
-	'd',
-	'e',
-	'f',
-	'g'
-);
-
 ALTER TABLE users
 
 ADD COLUMN nationality varchar(255),
@@ -286,6 +276,13 @@ ADD COLUMN height numeric(5, 2),
 ADD COLUMN weight numeric(5, 2),
 ADD COLUMN habbits varchar(40),
 ADD COLUMN description varchar(255),
-ADD COLUMN breast_size varchar(1) CHECK (breast_size like '^[a-zA-Z]$');
+ADD COLUMN breast_size varchar(40),
+ADD CONSTRAINT breast_size_regex CHECK (breast_size ~ '^[a-zA-Z]$');
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE users
+ALTER COLUMN uuid TYPE varchar(60);
 
 COMMIT;

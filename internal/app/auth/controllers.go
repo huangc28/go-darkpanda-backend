@@ -14,6 +14,7 @@ import (
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/spf13/viper"
@@ -21,9 +22,9 @@ import (
 )
 
 type RegisterBody struct {
-	ReferCode string `json:"refer_code" binding:"required"`
-	Username  string `json:"username" binding:"required"`
-	Gender    string `json:"gender" binding:"oneof='male' 'female'"`
+	Username  string `form:"username" uri:"username" json:"username" binding:"required"`
+	Gender    string `form:"gender" uri:"gender" json:"gender" binding:"oneof='male' 'female'"`
+	ReferCode string `form:"refer_code" uri:"refer_code" json:"refer_code" binding:"required"`
 }
 
 // We need the following to register new user
@@ -36,7 +37,7 @@ func RegisterHandler(c *gin.Context) {
 		ctx  context.Context = context.Background()
 	)
 
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -104,7 +105,6 @@ func RegisterHandler(c *gin.Context) {
 		body.ReferCode,
 	)
 
-	// @TODO handle error using middleware
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
@@ -141,12 +141,36 @@ func RegisterHandler(c *gin.Context) {
 		)
 	}
 
-	newUser, err := q.CreateUser(c, models.CreateUserParams{
+	// @TODO Update refer code alone with invitee ID. Should wrap operations in transactions.
+	tx, err := db.GetDB().Begin()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBeginTx,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	newUser, err := q.WithTx(tx).CreateUser(c, models.CreateUserParams{
 		Username:      body.Username,
 		Gender:        models.Gender(body.Gender),
 		Uuid:          uuid,
 		PremiumType:   models.PremiumTypeNormal,
 		PhoneVerified: sql.NullBool{Bool: false, Valid: true},
+	})
+
+	q.WithTx(tx).UpdateInviteeIDByRefCode(ctx, models.UpdateInviteeIDByRefCodeParams{
+		InviteeID: sql.NullInt32{
+			Int32: int32(newUser.ID),
+			Valid: true,
+		},
+
+		RefCode: body.ReferCode,
 	})
 
 	if err != nil {
@@ -158,9 +182,11 @@ func RegisterHandler(c *gin.Context) {
 			),
 		)
 
+		tx.Rollback()
 		return
 	}
 
+	tx.Commit()
 	c.JSON(http.StatusOK, NewTransform().TransformUser(&newUser))
 }
 
@@ -169,8 +195,8 @@ func RegisterHandler(c *gin.Context) {
 //   - mobile number
 // from the client.
 type SendVerifyCodeBody struct {
-	Username string `json:"username" binding:"required,gt=0"`
-	Mobile   string `json:"mobile" binding:"required,numeric,gt=0"`
+	Uuid   string `form:"uuid" binding:"required,gt=0"`
+	Mobile string `form:"mobile" json:"mobile" binding:"required,numeric,gt=0"`
 }
 
 func SendVerifyCodeHandler(c *gin.Context) {
@@ -179,7 +205,7 @@ func SendVerifyCodeHandler(c *gin.Context) {
 		ctx  context.Context = context.Background()
 	)
 
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -191,9 +217,8 @@ func SendVerifyCodeHandler(c *gin.Context) {
 		return
 	}
 
-	// retrieve user by uuid
 	q := models.New(db.GetDB())
-	usr, err := q.GetUserByUsername(ctx, body.Username)
+	usr, err := q.GetUserByUuid(ctx, body.Uuid)
 
 	if err != nil {
 		c.AbortWithError(

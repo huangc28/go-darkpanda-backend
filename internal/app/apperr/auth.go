@@ -33,7 +33,7 @@ const (
 
 var AuthErrCodeMsgMap = map[string]string{
 	ReferCodeOccupied:                "refer code already occupied",
-	UsernameNotAvailable:             "username is has been registered",
+	UsernameNotAvailable:             "username is not available",
 	ReferCodeNotExist:                "refer code does't exist",
 	UserHasPhoneVerified:             "user is phone verified",
 	UserNotFoundByVerifyCode:         "user not found by the given verify code",

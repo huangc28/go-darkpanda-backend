@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE users
+ALTER COLUMN uuid TYPE varchar(60);
+
+COMMIT;
