@@ -58,7 +58,7 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfo() {
 	header := make(map[string]string)
 	header["Authorization"] = fmt.Sprintf("Bearer %s", jwt)
 
-	resp, _ := suite.sendRequest("POST", "/v1/users/me", struct{}{}, header)
+	resp, _ := suite.sendRequest("GET", "/v1/users/me", struct{}{}, header)
 
 	// ------------------- assert test cases  -------------------
 	assert.Equal(suite.T(), resp.Result().StatusCode, http.StatusOK)
@@ -80,11 +80,12 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfoWithActiveInquiry() {
 	// create a male user along with active inquiries
 	ctx := context.Background()
 	newUserParams, err := util.GenTestUserParams(ctx)
-	newUserParams.Gender = models.GenderMale
 
 	if err != nil {
 		suite.T().Fatal(err)
 	}
+
+	newUserParams.Gender = models.GenderMale
 
 	q := models.New(db.GetDB())
 	newUser, err := q.CreateUser(ctx, *newUserParams)
@@ -111,7 +112,7 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfoWithActiveInquiry() {
 
 	header := make(map[string]string)
 	header["Authorization"] = fmt.Sprintf("Bearer %s", jwt)
-	resp, _ := suite.sendRequest("POST", "/v1/users/me", struct{}{}, header)
+	resp, _ := suite.sendRequest("GET", "/v1/users/me", struct{}{}, header)
 
 	// ------------------- assert test cases -------------------
 	respStruct := &user.TransformUserWithInquiryData{}
@@ -121,6 +122,41 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfoWithActiveInquiry() {
 	}
 
 	assert.Equal(suite.T(), len(respStruct.Inquiries), 1)
+}
+
+func (suite *UserAPITestsSuite) TestGetFemaleUserInfo() {
+	ctx := context.Background()
+	userParams, _ := util.GenTestUserParams(ctx)
+	userParams.Gender = models.GenderFemale
+
+	q := models.New(db.GetDB())
+	newUser, err := q.CreateUser(ctx, *userParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// request the api
+
+	header := util.CreateJwtHeaderMap(
+		newUser.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+
+	resp, _ := suite.sendRequest("GET", "/v1/users/me", struct{}{}, header)
+
+	// ------------------- assert test cases -------------------
+	respStruct := &user.TransformedUser{}
+	dec := json.NewDecoder(resp.Result().Body)
+	if err := dec.Decode(respStruct); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert := assert.New(suite.T())
+	assert.Equal(respStruct.Uuid, newUser.Uuid)
+	assert.Equal(respStruct.AvatarUrl, newUser.AvatarUrl.String)
+	assert.Equal(respStruct.Username, newUser.Username)
+	assert.Equal(respStruct.Gender, newUser.Gender)
 }
 
 func (suite *UserAPITestsSuite) TestPutUserInfoSuccess() {

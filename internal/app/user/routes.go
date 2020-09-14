@@ -11,7 +11,7 @@ func Routes(r *gin.RouterGroup) {
 		Secret: config.GetAppConf().JwtSecret,
 	}))
 
-	g.POST("/me", GetUserInfo)
+	g.GET("/me", GetUserInfo)
 
 	g.PUT("/:uuid", PutUserInfo)
 }

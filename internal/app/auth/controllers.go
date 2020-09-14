@@ -193,6 +193,13 @@ func RegisterHandler(c *gin.Context) {
 // sends verification code to specified mobile number
 //   - receive user uuid
 //   - mobile number
+//
+// @TODOs
+//   - verify code should be stored in redis instead of DB. It should stored in a key value pair like below:
+//
+//     {USER_UUID}: {verify_code}
+//
+//     Set the TTL to 1.5 mintues before expired.
 // from the client.
 type SendVerifyCodeBody struct {
 	Uuid   string `form:"uuid" binding:"required,gt=0"`
@@ -247,6 +254,7 @@ func SendVerifyCodeHandler(c *gin.Context) {
 	verPrefix := util.GenRandStringRune(3)
 	verfDigs := util.Gen4DigitNum(1000, 9999)
 
+	// @TODO verify code should be stored in redis instead of DB.
 	// store verify prefix and verify digits to db in a form of ccc-3333
 	err = q.UpdateVerifyCodeById(ctx, models.UpdateVerifyCodeByIdParams{
 		PhoneVerifyCode: sql.NullString{
@@ -317,11 +325,9 @@ func SendVerifyCodeHandler(c *gin.Context) {
 	res := struct {
 		Uuid         string `json:"uuid"`
 		VerifyPrefix string `json:"verify_prefix"`
-		VerifySuffix int    `json:"verify_suffix"`
 	}{
 		usr.Uuid,
 		verPrefix,
-		verfDigs,
 	}
 
 	c.JSON(http.StatusOK, &res)
@@ -335,8 +341,8 @@ func SendVerifyCodeHandler(c *gin.Context) {
 //   - phone_verify_code is the same as the one received from client
 // Sends jwt token back to client once its validated
 type VerifyPhoneBody struct {
-	Uuid       string `json:"uuid" binding:"required,gt=0"`
-	VerifyCode string `json:"verify_code" binding:"required,gt=0"`
+	Uuid       string `form:"uuid" json:"uuid" binding:"required,gt=0"`
+	VerifyCode string `form:"verify_code" json:"verify_code" binding:"required,gt=0"`
 }
 
 func VerifyPhoneHandler(c *gin.Context) {
@@ -345,7 +351,7 @@ func VerifyPhoneHandler(c *gin.Context) {
 		body VerifyPhoneBody
 	)
 
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -356,6 +362,8 @@ func VerifyPhoneHandler(c *gin.Context) {
 
 		return
 	}
+
+	//log.Printf("DEBUG verify code %s", body.VerifyCode)
 
 	// ------------------- check if the given verify code exists in DB -------------------
 	q := models.New(db.GetDB())
@@ -395,25 +403,33 @@ func VerifyPhoneHandler(c *gin.Context) {
 		return
 	}
 
-	// ------------------- set the user to be phone verified -------------------
-	if user.PhoneVerified.Bool == false {
-		if err := q.UpdateVerifyStatusById(ctx, models.UpdateVerifyStatusByIdParams{
-			ID: user.ID,
-			PhoneVerified: sql.NullBool{
-				Bool:  true,
-				Valid: true,
-			},
-		}); err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToUpdateVerifyStatus,
-					err.Error(),
-				),
-			)
+	// ------------------- if user is already verified, return error -------------------
+	if user.PhoneVerified.Bool {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.UserHasPhoneVerified),
+		)
 
-			return
-		}
+		return
+	}
+
+	// ------------------- set the user to be phone verified -------------------
+	if err := q.UpdateVerifyStatusById(ctx, models.UpdateVerifyStatusByIdParams{
+		ID: user.ID,
+		PhoneVerified: sql.NullBool{
+			Bool:  true,
+			Valid: true,
+		},
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateVerifyStatus,
+				err.Error(),
+			),
+		)
+
+		return
 	}
 
 	// ------------------- generate jwt token and return it -------------------

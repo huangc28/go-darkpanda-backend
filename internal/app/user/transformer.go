@@ -14,6 +14,22 @@ func NewTransform() *UserTransform {
 	return &UserTransform{}
 }
 
+type TransformedUser struct {
+	Username  string        `json:"username"`
+	Gender    models.Gender `json:"gender"`
+	Uuid      string        `json:"uuid"`
+	AvatarUrl string        `json:"avatar_url"`
+}
+
+func (ut *UserTransform) TransformUser(m *models.User) *TransformedUser {
+	return &TransformedUser{
+		Username:  m.Username,
+		Gender:    m.Gender,
+		Uuid:      m.Uuid,
+		AvatarUrl: m.AvatarUrl.String,
+	}
+}
+
 type TransformUserWithInquiryData struct {
 	Username  string                   `json:"username"`
 	Gender    models.Gender            `json:"gender"`

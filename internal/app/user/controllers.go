@@ -93,7 +93,14 @@ func GetUserInfo(c *gin.Context) {
 		c.JSON(http.StatusOK, data)
 
 	case models.GenderFemale:
-		log.Printf("gather female info")
+		// gather the following female information.
+		//   - username
+		//   - gender
+		//   - uuid
+		//   - avatar url
+
+		log.Printf("DEBUG ctrl 1 %v", usr.AvatarUrl.String)
+		c.JSON(http.StatusOK, NewTransform().TransformUser(&usr))
 	}
 
 }

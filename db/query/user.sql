@@ -11,8 +11,9 @@ INSERT INTO users (
 	auth_sms_code,
 	gender,
 	premium_type,
-	premium_expiry_date
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	premium_expiry_date,
+	avatar_url
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *;
 
 -- name: GetUserByUuid :one

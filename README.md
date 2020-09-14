@@ -25,6 +25,14 @@ run docker compose environment
 docker-compose -f build/package/docker-compose.yaml --env-file build/package/.docker.env up -d
 ```
 
+
+**list of docker services**
+
+```
+docker-compose -f build/package/docker-compose.yaml --env-file build/package/.docker.env ps -a
+
+```
+
 # Migrations and model generation
 
 We use [go-migration](https://github.com/golang-migrate/migrate) to manage migrations for this project.
