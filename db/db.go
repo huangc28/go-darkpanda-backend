@@ -7,13 +7,21 @@ import (
 	"github.com/DATA-DOG/go-txdb"
 	_ "github.com/lib/pq"
 
-	"github.com/huangc28/go-darkpanda-backend/config"
 	log "github.com/sirupsen/logrus"
 )
 
 var db *sql.DB
 
-func InitDB(conf *config.DBConf, isTestEnv bool) {
+type DBConf struct {
+	Host     string
+	Port     uint
+	User     string
+	Password string
+	Dbname   string
+}
+
+//func InitDB(conf *config.DBConf, isTestEnv bool) {
+func InitDB(conf DBConf, isTestEnv bool) {
 	log.Printf("is test %t", isTestEnv)
 
 	// we need to recognize the running environment

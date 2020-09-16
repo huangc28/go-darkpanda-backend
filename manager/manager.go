@@ -61,7 +61,13 @@ func (m *Manager) ExecDBInit() *Manager {
 
 		log.Printf("app conf %v", conf.DBConf)
 
-		db.InitDB(conf.DBConf, flag.Lookup("test.v") != nil)
+		db.InitDB(db.DBConf{
+			Host:     conf.DBConf.Host,
+			Port:     conf.DBConf.Port,
+			User:     conf.DBConf.User,
+			Password: conf.DBConf.Password,
+			Dbname:   conf.DBConf.Dbname,
+		}, flag.Lookup("test.v") != nil)
 
 		return nil
 	})

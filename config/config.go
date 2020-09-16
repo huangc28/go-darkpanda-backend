@@ -98,6 +98,10 @@ func InitConfig() {
 	}
 }
 
+func GetDBConf() *DBConf {
+	return GetAppConf().DBConf
+}
+
 func GetAppConf() *AppConf {
 	return &appConf
 }
