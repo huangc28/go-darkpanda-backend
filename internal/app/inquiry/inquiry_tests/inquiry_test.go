@@ -15,7 +15,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
@@ -74,12 +73,11 @@ func (suite *InquiryTestSuite) TestEmitInquirySuccess() {
 		suite.T().Fatal(err)
 	}
 
-	jwt, err := jwtactor.CreateToken(
+	header := util.CreateJwtHeaderMap(
 		newUser.Uuid,
 		config.GetAppConf().JwtSecret,
 	)
-	header := make(map[string]string)
-	header["Authorization"] = fmt.Sprintf("Bearer %s", jwt)
+
 	resp, _ := suite.sendRequest(
 		"POST",
 		"/v1/inquiries",
@@ -374,6 +372,103 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 	assert.Equal(respBody.Lng, fmt.Sprintf("%s0", decimal.NewFromFloat(body.Lng).String()))
 }
 
+// GetInquiriesSuite test cases when retrieving inquiries.
+type GetInquiriesSuite struct {
+	suite.Suite
+	sendRequest util.SendRequest
+}
+
+func (suite *GetInquiriesSuite) SetupSuite() {
+	manager.NewDefaultManager()
+	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
+}
+
+func (s *GetInquiriesSuite) TestGetInquiriesSuccess() {
+	// create 5 male users with phone verified.
+	ctx := context.Background()
+	q := models.New(db.GetDB())
+	maleUsers := make([]*models.User, 5)
+
+	for i := range maleUsers {
+		p, err := util.GenTestUserParams(ctx)
+
+		if err != nil {
+			s.T().Fatal(err)
+		}
+
+		p.Gender = models.GenderMale
+		p.PhoneVerified = true
+
+		maleUser, err := q.CreateUser(ctx, *p)
+
+		if err != nil {
+			s.T().Fatal("failed to create user", err)
+		}
+
+		maleUsers[i] = &maleUser
+	}
+
+	// create an female user
+	femaleParams, _ := util.GenTestUserParams(ctx)
+	femaleParams.Gender = models.GenderFemale
+	femaleParams.Username = "girlP"
+	femaleUser, err := q.CreateUser(ctx, *femaleParams)
+
+	if err != nil {
+		s.T().Fatal("failed to create female user", err)
+	}
+
+	// each male user emits an inquiry.
+	inquiries := make([]models.ServiceInquiry, 0)
+	for _, maleUser := range maleUsers {
+		iqParams, err := util.GenTestInquiryParams(maleUser.ID)
+		iqParams.InquiryStatus = models.InquiryStatusInquiring
+
+		if err != nil {
+			s.T().Fatal(err)
+		}
+
+		inquiry, err := q.CreateInquiry(ctx, *iqParams)
+
+		if err != nil {
+			s.T().Fatal(err)
+		}
+
+		inquiries = append(inquiries, inquiry)
+	}
+
+	// female user searches for active inquiries...
+	headers := util.CreateJwtHeaderMap(
+		femaleUser.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+
+	resp, _ := s.sendRequest(
+		"GET",
+		"/v1/inquiries",
+		&struct{}{},
+		headers,
+	)
+
+	// ------------------- assert test case -------------------
+	respBody := &inquiry.TransformedInquiries{}
+	dec := json.NewDecoder(resp.Result().Body)
+	if err := dec.Decode(respBody); err != nil {
+		s.T().Fatal(err)
+	}
+
+	// pick an element to assert value matches
+	assert := assert.New(s.T())
+
+	assert.Equal(5, len(respBody.Inquiries))
+	assert.Equal(inquiries[0].Uuid, respBody.Inquiries[0].Uuid)
+	assert.Equal(inquiries[1].Uuid, respBody.Inquiries[1].Uuid)
+
+	assert.Equal(maleUsers[0].Uuid, respBody.Inquiries[0].Inquirer.Uuid)
+	assert.Equal(maleUsers[1].Uuid, respBody.Inquiries[1].Inquirer.Uuid)
+}
+
 func TestInquirySuites(t *testing.T) {
 	suite.Run(t, new(InquiryTestSuite))
+	suite.Run(t, new(GetInquiriesSuite))
 }

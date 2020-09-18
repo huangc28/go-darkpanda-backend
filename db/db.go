@@ -20,8 +20,15 @@ type DBConf struct {
 	Dbname   string
 }
 
-//func InitDB(conf *config.DBConf, isTestEnv bool) {
-func InitDB(conf DBConf, isTestEnv bool) {
+type TestDBConf struct {
+	Host     string
+	Port     uint
+	User     string
+	Password string
+	Dbname   string
+}
+
+func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 	log.Printf("is test %t", isTestEnv)
 
 	// we need to recognize the running environment
@@ -35,6 +42,15 @@ func InitDB(conf DBConf, isTestEnv bool) {
 	)
 
 	if isTestEnv {
+		dsn := fmt.Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			testConf.Host,
+			testConf.Port,
+			testConf.User,
+			testConf.Password,
+			testConf.Dbname,
+		)
+
 		txdb.Register("txdb", "postgres", dsn)
 		testdriver, err := sql.Open("txdb", dsn)
 

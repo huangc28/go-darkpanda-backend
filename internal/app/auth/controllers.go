@@ -161,7 +161,7 @@ func RegisterHandler(c *gin.Context) {
 		Gender:        models.Gender(body.Gender),
 		Uuid:          uuid,
 		PremiumType:   models.PremiumTypeNormal,
-		PhoneVerified: sql.NullBool{Bool: false, Valid: true},
+		PhoneVerified: false,
 	})
 
 	q.WithTx(tx).UpdateInviteeIDByRefCode(ctx, models.UpdateInviteeIDByRefCodeParams{
@@ -240,7 +240,7 @@ func SendVerifyCodeHandler(c *gin.Context) {
 	}
 
 	// -------------------  user is not phone verified -------------------
-	if usr.PhoneVerified.Bool {
+	if usr.PhoneVerified {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.UserHasPhoneVerified),
@@ -404,7 +404,7 @@ func VerifyPhoneHandler(c *gin.Context) {
 	}
 
 	// ------------------- if user is already verified, return error -------------------
-	if user.PhoneVerified.Bool {
+	if user.PhoneVerified {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.UserHasPhoneVerified),
@@ -415,11 +415,8 @@ func VerifyPhoneHandler(c *gin.Context) {
 
 	// ------------------- set the user to be phone verified -------------------
 	if err := q.UpdateVerifyStatusById(ctx, models.UpdateVerifyStatusByIdParams{
-		ID: user.ID,
-		PhoneVerified: sql.NullBool{
-			Bool:  true,
-			Valid: true,
-		},
+		ID:            user.ID,
+		PhoneVerified: true,
 	}); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,

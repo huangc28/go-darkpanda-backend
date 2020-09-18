@@ -29,13 +29,25 @@ func init() {
 	// initialize database
 	config.InitConfig()
 	dbConf := config.GetDBConf()
-	db.InitDB(db.DBConf{
-		Host:     dbConf.Host,
-		Port:     dbConf.Port,
-		User:     dbConf.User,
-		Password: dbConf.Password,
-		Dbname:   dbConf.Dbname,
-	}, false)
+	testDBConf := config.GetTestDBConf()
+
+	db.InitDB(
+		db.DBConf{
+			Host:     dbConf.Host,
+			Port:     dbConf.Port,
+			User:     dbConf.User,
+			Password: dbConf.Password,
+			Dbname:   dbConf.Dbname,
+		},
+		db.TestDBConf{
+			Host:     testDBConf.Host,
+			Port:     testDBConf.Port,
+			User:     testDBConf.User,
+			Password: testDBConf.Password,
+			Dbname:   testDBConf.Dbname,
+		},
+		false,
+	)
 }
 
 func GenJwtTokenByNameFunc(cmd *cobra.Command, args []string) error {

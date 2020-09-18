@@ -1,6 +1,10 @@
 package inquiry
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/huangc28/go-darkpanda-backend/internal/models"
+)
 
 type UserDaoer interface {
 	CheckIsMaleByUuid(uuid string) (bool, error)
@@ -9,6 +13,7 @@ type UserDaoer interface {
 
 type InquiryDAOer interface {
 	CheckHasActiveInquiryByID(id int64) (bool, error)
+	GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error)
 }
 
 type InquiryDAO struct {
@@ -35,4 +40,71 @@ SELECT EXISTS(
 	err := dao.db.QueryRow(sql, id).Scan(&exists)
 
 	return exists, err
+}
+
+type InquiryInfo struct {
+	models.ServiceInquiry
+	Inquirer models.User
+}
+
+// GetInquiries get list of inquiries with 7 records per page.
+func (dao *InquiryDAO) GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error) {
+	sql := `
+SELECT
+	si.uuid,
+	si.budget,
+	si.service_type,
+	si.price,
+	si.duration,
+	si.appointment_time,
+	si.lng,
+	si.lat,
+	users.uuid,
+	users.username,
+	users.avatar_url,
+	users.nationality
+FROM service_inquiries AS si
+INNER JOIN users
+	ON si.inquirer_id = users.id
+WHERE
+	si.inquiry_status = $1
+LIMIT $2
+OFFSET $3;
+`
+	inquiries := make([]*InquiryInfo, 0)
+	rows, err := dao.db.Query(sql, status, perpage, offset)
+	defer rows.Close()
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		iq := InquiryInfo{}
+		inquirer := models.User{}
+
+		err := rows.Scan(
+			&iq.Uuid,
+			&iq.Budget,
+			&iq.ServiceType,
+			&iq.Price,
+			&iq.Duration,
+			&iq.AppointmentTime,
+			&iq.Lng,
+			&iq.Lat,
+			&inquirer.Uuid,
+			&inquirer.Username,
+			&inquirer.AvatarUrl,
+			&inquirer.Nationality,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		iq.Inquirer = inquirer
+		inquiries = append(inquiries, &iq)
+	}
+
+	return inquiries, nil
 }

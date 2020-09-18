@@ -200,7 +200,7 @@ type ServiceInquiry struct {
 type User struct {
 	ID                int64          `json:"id"`
 	Username          string         `json:"username"`
-	PhoneVerified     sql.NullBool   `json:"phone_verified"`
+	PhoneVerified     bool           `json:"phone_verified"`
 	AuthSmsCode       sql.NullInt32  `json:"auth_sms_code"`
 	Gender            Gender         `json:"gender"`
 	PremiumType       PremiumType    `json:"premium_type"`

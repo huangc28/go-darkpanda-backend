@@ -286,3 +286,9 @@ ALTER TABLE users
 ALTER COLUMN uuid TYPE varchar(60);
 
 COMMIT;
+BEGIN;
+
+ALTER TABLE users
+ALTER COLUMN phone_verified SET NOT NULL;
+
+COMMIT;

@@ -23,6 +23,14 @@ type DBConf struct {
 	Dbname   string
 }
 
+type TestDBConf struct {
+	Host     string
+	Port     uint
+	User     string
+	Password string
+	Dbname   string
+}
+
 type RedisConf struct {
 	Addr     string `mapstructure:"addr"`
 	Password string `mapstructure:"password"`
@@ -45,6 +53,7 @@ type AppConf struct {
 	Port           string          `mapstructure:"port"`
 	JwtSecret      string          `mapstructure:"jwt_secret"`
 	DBConf         *DBConf         `mapstructure:"db"`
+	TestDBConf     *TestDBConf     `mapstructure:"test_db"`
 	RedisConf      *RedisConf      `mapstructure:"redis"`
 	TwilioConf     *TwilioConf     `mapstructure:"twilio"`
 	GCSCredentials *GCSCredentials `mapstructure:"gcs"`
@@ -100,6 +109,10 @@ func InitConfig() {
 
 func GetDBConf() *DBConf {
 	return GetAppConf().DBConf
+}
+
+func GetTestDBConf() *TestDBConf {
+	return GetAppConf().TestDBConf
 }
 
 func GetAppConf() *AppConf {

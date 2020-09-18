@@ -23,7 +23,7 @@ func (at *AuthTransform) TransformUser(m *models.User) *TransformedUser {
 	tu := &TransformedUser{
 		Uuid:          m.Uuid,
 		Username:      m.Username,
-		PhoneVerified: m.PhoneVerified.Bool,
+		PhoneVerified: m.PhoneVerified,
 		Gender:        string(m.Gender),
 	}
 

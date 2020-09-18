@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -22,5 +23,8 @@ func ResponseLogger(c *gin.Context) {
 	c.Writer = blw
 	c.Next()
 
-	fmt.Println("Response body: " + blw.body.String())
+	dst := &bytes.Buffer{}
+	json.Indent(dst, blw.body.Bytes(), "", "  ")
+
+	fmt.Println("Response body: " + string(dst.String()))
 }

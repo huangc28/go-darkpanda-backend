@@ -27,7 +27,7 @@ type CreateUserParams struct {
 	Username          string         `json:"username"`
 	Uuid              string         `json:"uuid"`
 	PhoneVerifyCode   sql.NullString `json:"phone_verify_code"`
-	PhoneVerified     sql.NullBool   `json:"phone_verified"`
+	PhoneVerified     bool           `json:"phone_verified"`
 	AuthSmsCode       sql.NullInt32  `json:"auth_sms_code"`
 	Gender            Gender         `json:"gender"`
 	PremiumType       PremiumType    `json:"premium_type"`
@@ -301,8 +301,8 @@ WHERE id = $1
 `
 
 type UpdateVerifyStatusByIdParams struct {
-	ID            int64        `json:"id"`
-	PhoneVerified sql.NullBool `json:"phone_verified"`
+	ID            int64 `json:"id"`
+	PhoneVerified bool  `json:"phone_verified"`
 }
 
 func (q *Queries) UpdateVerifyStatusById(ctx context.Context, arg UpdateVerifyStatusByIdParams) error {

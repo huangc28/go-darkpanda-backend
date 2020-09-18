@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE users
+ALTER COLUMN phone_verified SET NOT NULL;
+
+COMMIT;

@@ -11,6 +11,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/looplab/fsm"
 	"github.com/shopspring/decimal"
@@ -150,6 +151,52 @@ func EmitInquiryHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, NewTransform().TransformInquiry(iq))
+}
+
+// Fetch nearby(?) inquiries information. Only female user can fetch inquiries info.
+// Each inquiry should also contains inquier's base information.
+// @TODO offset should be passed from client via query param.
+type GetInquiriesBody struct {
+	Offset  int `form:"offset,default=0"`
+	PerPage int `form:"perpage,default=10"`
+}
+
+func GetInquiriesHandler(c *gin.Context) {
+	dao := NewInquiryDAO(db.GetDB())
+	body := &GetInquiriesBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateGetInquiryListParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// offset should be passed from client
+	inquiries, err := dao.GetInquiries(
+		models.InquiryStatusInquiring,
+		body.Offset,
+		body.PerPage,
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusOK,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryList,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, NewTransform().TransformInquiryList(inquiries))
 }
 
 func CancelInquiryHandler(c *gin.Context) {

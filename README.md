@@ -75,5 +75,6 @@ The content in `db/migrations/schema.sql` will be truncated everytime running th
 
 - [x] docker environment with postgres and redis
 - [x] dotenv files
+- []  Implement an API to return inquiries, only female user can fetch inquiries
 - [] Add image relative APIs
 

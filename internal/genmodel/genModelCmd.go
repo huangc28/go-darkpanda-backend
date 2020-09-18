@@ -86,7 +86,7 @@ func appendFileContentToDestFile(files []os.FileInfo, src string, dest string) {
 	}
 }
 
-func Gen(cmd *cobra.Command, args []string) {
+func Gen(cmd *cobra.Command, args []string) error {
 	// read latest migration info from database
 	appConf := config.GetAppConf()
 
@@ -103,18 +103,25 @@ func Gen(cmd *cobra.Command, args []string) {
 
 	if err != nil {
 		log.Fatalf("Failed to connect to psql %v", err.Error())
+		return err
 	}
 
 	// ---------- read migration info of the project  ----------
 	// read version info from schema_migrations table
 	version, dirty, err := GetMigrationInfo(db)
 
+	log.Printf("\n\n version: %d\n dirty: %t", version, dirty)
+
 	if err != nil {
 		log.Fatalf("Failed to read migration info %s", err.Error())
+
+		return err
 	}
 
 	if dirty {
 		log.Fatal("Migration seems dirty! Please fix the migration first")
+
+		return err
 	}
 
 	// ---------- read `migration up` files from migration directory ----------
@@ -125,6 +132,8 @@ func Gen(cmd *cobra.Command, args []string) {
 
 	if err != nil {
 		log.Fatalf("failed to read migrations %s, %s", dirPath, err.Error())
+
+		return err
 	}
 
 	mFiles := pickMigrationsByVersion(files, version)
@@ -139,13 +148,17 @@ func Gen(cmd *cobra.Command, args []string) {
 
 	if err := osCmd.Run(); err != nil {
 		log.Fatalf("Failed to run 'sqlc generate' command %s", err.Error())
+
+		return err
 	}
 
 	fmt.Printf("go models generated successfully from %s %s\n", dirPath, out.String())
+
+	return nil
 }
 
 var genModelCmd = &cobra.Command{
 	Use:   "gen",
 	Short: "read / collect SQL from list of migrations files to genderate models in go code.",
-	Run:   Gen,
+	RunE:  Gen,
 }

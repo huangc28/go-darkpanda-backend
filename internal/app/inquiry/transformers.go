@@ -166,3 +166,55 @@ func (t *InquiryTransform) TransformBookedService(srv models.Service, userProvid
 
 	return tsrv
 }
+
+// Transformed object for GET /v1/inquiries
+type TransformedGetInquiryInquirer struct {
+	Uuid        string `json:"uuid"`
+	Username    string `json:"username"`
+	AvatarURL   string `json:"avatar_url"`
+	Nationality string `json:"nationality"`
+}
+
+type TransformedGetInquiry struct {
+	Uuid        string                        `json:"uuid"`
+	Budget      string                        `json:"budget"`
+	ServiceType string                        `json:"service_type"`
+	Price       string                        `json:"price"`
+	Duration    int32                         `json:"duration"`
+	Appointment time.Time                     `json:"appoinment_time"`
+	Lng         string                        `json:"lng"`
+	Lat         string                        `json:"lat"`
+	Inquirer    TransformedGetInquiryInquirer `json:"inquirer"`
+}
+
+type TransformedInquiries struct {
+	Inquiries []TransformedGetInquiry `json:"inquiries"`
+}
+
+func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo) TransformedInquiries {
+	trfedIqs := make([]TransformedGetInquiry, 0)
+	for _, oi := range inquiryList {
+		trfedIq := TransformedGetInquiry{
+			Uuid:        oi.Uuid,
+			Budget:      oi.Budget,
+			ServiceType: oi.ServiceType.ToString(),
+			Price:       oi.Price.String,
+			Duration:    oi.Duration.Int32,
+			Appointment: oi.AppointmentTime.Time,
+			Lng:         oi.Lng.String,
+			Lat:         oi.Lat.String,
+			Inquirer: TransformedGetInquiryInquirer{
+				Uuid:        oi.Inquirer.Uuid,
+				Username:    oi.Inquirer.Username,
+				AvatarURL:   oi.Inquirer.AvatarUrl.String,
+				Nationality: oi.Inquirer.Nationality.String,
+			},
+		}
+
+		trfedIqs = append(trfedIqs, trfedIq)
+	}
+
+	return TransformedInquiries{
+		Inquiries: trfedIqs,
+	}
+}
