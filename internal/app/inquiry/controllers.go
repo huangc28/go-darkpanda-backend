@@ -158,7 +158,7 @@ func EmitInquiryHandler(c *gin.Context) {
 // @TODO offset should be passed from client via query param.
 type GetInquiriesBody struct {
 	Offset  int `form:"offset,default=0"`
-	PerPage int `form:"perpage,default=10"`
+	PerPage int `form:"perpage,default=7"`
 }
 
 func GetInquiriesHandler(c *gin.Context) {
@@ -196,7 +196,21 @@ func GetInquiriesHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, NewTransform().TransformInquiryList(inquiries))
+	tres, err := NewTransform().TransformInquiryList(inquiries)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformGetInquiriesResponse,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, tres)
 }
 
 func CancelInquiryHandler(c *gin.Context) {

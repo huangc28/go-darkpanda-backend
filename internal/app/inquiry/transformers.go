@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
+	convertnullsql "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/convert_null_sql"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/shopspring/decimal"
 )
@@ -177,13 +178,13 @@ type TransformedGetInquiryInquirer struct {
 
 type TransformedGetInquiry struct {
 	Uuid        string                        `json:"uuid"`
-	Budget      string                        `json:"budget"`
+	Budget      float64                       `json:"budget"`
 	ServiceType string                        `json:"service_type"`
-	Price       string                        `json:"price"`
+	Price       *float64                      `json:"price"`
 	Duration    int32                         `json:"duration"`
 	Appointment time.Time                     `json:"appoinment_time"`
-	Lng         string                        `json:"lng"`
-	Lat         string                        `json:"lat"`
+	Lng         *float32                      `json:"lng"`
+	Lat         *float32                      `json:"lat"`
 	Inquirer    TransformedGetInquiryInquirer `json:"inquirer"`
 }
 
@@ -191,18 +192,42 @@ type TransformedInquiries struct {
 	Inquiries []TransformedGetInquiry `json:"inquiries"`
 }
 
-func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo) TransformedInquiries {
+func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo) (TransformedInquiries, error) {
 	trfedIqs := make([]TransformedGetInquiry, 0)
 	for _, oi := range inquiryList {
+		price, err := convertnullsql.ConvertSqlNullStringToFloat64(oi.Price)
+
+		if err != nil {
+			return TransformedInquiries{}, err
+		}
+
+		budget, err := strconv.ParseFloat(oi.Budget, 64)
+
+		if err != nil {
+			return TransformedInquiries{}, err
+		}
+
+		lng, err := convertnullsql.ConvertSqlNullStringToFloat32(oi.Lng)
+
+		if err != nil {
+			return TransformedInquiries{}, err
+		}
+
+		lat, err := convertnullsql.ConvertSqlNullStringToFloat32(oi.Lat)
+
+		if err != nil {
+			return TransformedInquiries{}, err
+		}
+
 		trfedIq := TransformedGetInquiry{
 			Uuid:        oi.Uuid,
-			Budget:      oi.Budget,
+			Budget:      budget,
 			ServiceType: oi.ServiceType.ToString(),
-			Price:       oi.Price.String,
+			Price:       price,
 			Duration:    oi.Duration.Int32,
 			Appointment: oi.AppointmentTime.Time,
-			Lng:         oi.Lng.String,
-			Lat:         oi.Lat.String,
+			Lng:         lng,
+			Lat:         lat,
 			Inquirer: TransformedGetInquiryInquirer{
 				Uuid:        oi.Inquirer.Uuid,
 				Username:    oi.Inquirer.Username,
@@ -216,5 +241,5 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo) Tran
 
 	return TransformedInquiries{
 		Inquiries: trfedIqs,
-	}
+	}, nil
 }

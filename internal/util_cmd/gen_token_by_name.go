@@ -76,7 +76,7 @@ func GenJwtTokenByNameFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("generated token %s", jwtToken)
+	fmt.Printf("generated token \n%s", jwtToken)
 
 	return nil
 }

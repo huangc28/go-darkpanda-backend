@@ -88,7 +88,7 @@ func IsFemale(dao UserDaoer) gin.HandlerFunc {
 		if !isFemale {
 			c.AbortWithError(
 				http.StatusBadRequest,
-				apperr.NewErr(apperr.OnlyFemaleCanApproveInquiry),
+				apperr.NewErr(apperr.OnlyFemaleUserCanAccessAPI),
 			)
 
 			return

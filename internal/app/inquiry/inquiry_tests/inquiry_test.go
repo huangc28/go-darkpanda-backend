@@ -2,6 +2,7 @@ package inquirytests
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -428,6 +429,10 @@ func (s *GetInquiriesSuite) TestGetInquiriesSuccess() {
 			s.T().Fatal(err)
 		}
 
+		iqParams.Price = sql.NullString{
+			String: "1.1",
+			Valid:  true,
+		}
 		inquiry, err := q.CreateInquiry(ctx, *iqParams)
 
 		if err != nil {
