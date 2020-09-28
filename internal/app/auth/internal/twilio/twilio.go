@@ -9,6 +9,8 @@ import (
 	"path"
 	"strings"
 
+	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -125,4 +127,34 @@ func (tc *TwilioClient) SendSMS(from string, to string, content string) (*SMSRes
 	return nil, NewSMSError(resp.Body)
 }
 
-//func (tc *TwilioClientN)
+// HandleSendTwilioError Parse the error from requesting twilio. Normalize the error
+// into darkpanda application repliable response and send the response to the client
+func HandleSendTwilioError(c *gin.Context, err error) error {
+	if err != nil {
+		if _, isTwilioErr := err.(*SMSError); isTwilioErr {
+			log.Fatalf("twilio sends back failed response %s", err.Error())
+
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.TwilioRespErr,
+					err.Error(),
+				),
+			)
+
+			return err
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendTwilioSMSErr,
+				err.Error(),
+			),
+		)
+
+		return err
+	}
+
+	return nil
+}

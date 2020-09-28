@@ -292,3 +292,7 @@ ALTER TABLE users
 ALTER COLUMN phone_verified SET NOT NULL;
 
 COMMIT;
+BEGIN;
+	ALTER TABLE users
+	ADD COLUMN mobile varchar(20);
+COMMIT;

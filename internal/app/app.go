@@ -30,7 +30,11 @@ func StartApp(e *gin.Engine) *gin.Engine {
 
 	rv1 := e.Group("/v1")
 
-	auth.Routes(rv1)
+	auth.Routes(
+		rv1,
+		user.NewUserDAO(db.GetDB()),
+	)
+
 	user.Routes(rv1)
 	inquiry.Routes(
 		rv1,

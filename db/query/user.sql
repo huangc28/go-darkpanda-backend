@@ -12,8 +12,9 @@ INSERT INTO users (
 	gender,
 	premium_type,
 	premium_expiry_date,
-	avatar_url
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	avatar_url,
+	mobile
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING *;
 
 -- name: GetUserByUuid :one
@@ -37,7 +38,9 @@ SELECT * FROM users
 WHERE phone_verify_code = $1 LIMIT 1;
 
 -- name: UpdateVerifyStatusById :exec
-UPDATE users SET phone_verified = $2
+UPDATE users
+SET phone_verified = $2,
+    mobile = $3
 WHERE id = $1;
 
 -- name: PatchUserInfoByUuid :one

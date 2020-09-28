@@ -16,6 +16,7 @@ type User struct {
 type UserDAOer interface {
 	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*User, error)
 	UpdateUserInfoByUuid(ctx context.Context, p UpdateUserInfoParams) (*models.User, error)
+	GetUserByUuid(ctx context.Context, uuid string) (*models.User, error)
 	CheckIsMaleByUuid(uuid string) (bool, error)
 	CheckIsFemaleByUuid(uuid string) (bool, error)
 }
@@ -184,4 +185,40 @@ func (dao *UserDAO) CheckIsMaleByUuid(uuid string) (bool, error) {
 
 func (dao *UserDAO) CheckIsFemaleByUuid(uuid string) (bool, error) {
 	return dao.checkGender(uuid, models.GenderFemale)
+}
+
+func (dao *UserDAO) GetUserByUuid(ctx context.Context, uuid string) (*models.User, error) {
+	sql := `
+SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
+WHERE uuid = $1 LIMIT 1
+	`
+	i := models.User{}
+	if err := dao.db.QueryRow(sql, uuid).Scan(
+		&i.ID,
+		&i.Username,
+		&i.PhoneVerified,
+		&i.AuthSmsCode,
+		&i.Gender,
+		&i.PremiumType,
+		&i.PremiumExpiryDate,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.DeletedAt,
+		&i.Uuid,
+		&i.PhoneVerifyCode,
+		&i.AvatarUrl,
+		&i.Nationality,
+		&i.Region,
+		&i.Age,
+		&i.Height,
+		&i.Weight,
+		&i.Habbits,
+		&i.Description,
+		&i.BreastSize,
+		&i.Mobile,
+	); err != nil {
+		return nil, err
+	}
+
+	return &i, nil
 }

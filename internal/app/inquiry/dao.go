@@ -14,6 +14,7 @@ type UserDaoer interface {
 type InquiryDAOer interface {
 	CheckHasActiveInquiryByID(id int64) (bool, error)
 	GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error)
+	hasMoreInquiries(offset int, perPage int) (bool, error)
 }
 
 type InquiryDAO struct {
@@ -68,6 +69,7 @@ INNER JOIN users
 	ON si.inquirer_id = users.id
 WHERE
 	si.inquiry_status = $1
+ORDER BY si.created_at DESC
 LIMIT $2
 OFFSET $3;
 `
@@ -107,4 +109,23 @@ OFFSET $3;
 	}
 
 	return inquiries, nil
+}
+
+func (dao *InquiryDAO) hasMoreInquiries(offset int, perPage int) (bool, error) {
+	sql := `
+SELECT count(full_count) as num_records FROM (
+	SELECT COUNT(si.id) OVER() AS full_count
+	FROM service_inquiries AS si
+	WHERE si.inquiry_status = 'inquiring'
+	LIMIT $1
+	OFFSET $2
+) AS records;
+`
+	var recordNum int
+
+	if err := dao.db.QueryRow(sql, perPage, offset+perPage).Scan(&recordNum); err != nil {
+		return false, err
+	}
+
+	return recordNum > 0, nil
 }

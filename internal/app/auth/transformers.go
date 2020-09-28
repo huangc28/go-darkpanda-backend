@@ -29,3 +29,15 @@ func (at *AuthTransform) TransformUser(m *models.User) *TransformedUser {
 
 	return tu
 }
+
+type TransformedSendLoginMobileVerifyCode struct {
+	UUID         string `json:"uuid"`
+	VerifyPrefix string `json:"verify_prefix"`
+}
+
+func (at *AuthTransform) TransformSendLoginMobileVerifyCode(uuid string, verifyPrefix string) TransformedSendLoginMobileVerifyCode {
+	return TransformedSendLoginMobileVerifyCode{
+		UUID:         uuid,
+		VerifyPrefix: verifyPrefix,
+	}
+}

@@ -190,9 +190,10 @@ type TransformedGetInquiry struct {
 
 type TransformedInquiries struct {
 	Inquiries []TransformedGetInquiry `json:"inquiries"`
+	HasMore   bool                    `json:"has_more"`
 }
 
-func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo) (TransformedInquiries, error) {
+func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo, hasMore bool) (TransformedInquiries, error) {
 	trfedIqs := make([]TransformedGetInquiry, 0)
 	for _, oi := range inquiryList {
 		price, err := convertnullsql.ConvertSqlNullStringToFloat64(oi.Price)
@@ -241,5 +242,6 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo) (Tra
 
 	return TransformedInquiries{
 		Inquiries: trfedIqs,
+		HasMore:   hasMore,
 	}, nil
 }

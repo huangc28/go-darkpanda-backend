@@ -219,6 +219,7 @@ type User struct {
 	Habbits           sql.NullString `json:"habbits"`
 	Description       sql.NullString `json:"description"`
 	BreastSize        sql.NullString `json:"breast_size"`
+	Mobile            sql.NullString `json:"mobile"`
 }
 
 type UserRating struct {

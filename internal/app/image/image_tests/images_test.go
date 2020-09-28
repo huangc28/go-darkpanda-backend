@@ -49,7 +49,7 @@ func (suite *ImageTestSuite) TestUploadAvatar() {
 	writer.Close()
 
 	ctx := context.Background()
-	femaleUserParam, _ := util.GenTestUserParams(ctx)
+	femaleUserParam, _ := util.GenTestUserParams()
 	femaleUserParam.Gender = models.GenderFemale
 	q := models.New(db.GetDB())
 	femaleUser, err := q.CreateUser(ctx, *femaleUserParam)
@@ -115,7 +115,7 @@ func (suite *ImageTestSuite) TestUploadMultipleImages() {
 
 	// ------------------- create test users -------------------
 	ctx := context.Background()
-	femaleUserParam, _ := util.GenTestUserParams(ctx)
+	femaleUserParam, _ := util.GenTestUserParams()
 	femaleUserParam.Gender = models.GenderFemale
 	q := models.New(db.GetDB())
 	femaleUser, err := q.CreateUser(ctx, *femaleUserParam)

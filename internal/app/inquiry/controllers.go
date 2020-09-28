@@ -155,7 +155,9 @@ func EmitInquiryHandler(c *gin.Context) {
 
 // Fetch nearby(?) inquiries information. Only female user can fetch inquiries info.
 // Each inquiry should also contains inquier's base information.
-// @TODO offset should be passed from client via query param.
+// @TODO
+//   - Offset should be passed from client via query param.
+//   - If no record exists, `has_more` indicator should set to false. Client request should be based on this indicator
 type GetInquiriesBody struct {
 	Offset  int `form:"offset,default=0"`
 	PerPage int `form:"perpage,default=7"`
@@ -196,7 +198,29 @@ func GetInquiriesHandler(c *gin.Context) {
 		return
 	}
 
-	tres, err := NewTransform().TransformInquiryList(inquiries)
+	// DB has no more records if number of retrieved records is less then the value of `perPage`.
+	// In which case, we should set `has_more` indicator to `false`
+	hasMoreRecord, err := dao.hasMoreInquiries(
+		body.Offset,
+		body.PerPage,
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckHasMoreInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	tres, err := NewTransform().TransformInquiryList(
+		inquiries,
+		hasMoreRecord,
+	)
 
 	if err != nil {
 		c.AbortWithError(

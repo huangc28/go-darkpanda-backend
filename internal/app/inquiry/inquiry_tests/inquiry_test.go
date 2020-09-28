@@ -38,7 +38,7 @@ func (suite *InquiryTestSuite) SetupSuite() {
 
 func (suite *InquiryTestSuite) BeforeTest(suiteName, testName string) {
 	// generate new user params before test
-	newUserParams, err := util.GenTestUserParams(context.Background())
+	newUserParams, err := util.GenTestUserParams()
 
 	if err != nil {
 		suite.T().Fatal(err)
@@ -49,7 +49,7 @@ func (suite *InquiryTestSuite) BeforeTest(suiteName, testName string) {
 
 func (suite *InquiryTestSuite) TestEmitInquirySuccess() {
 	ctx := context.Background()
-	newUserParams, err := util.GenTestUserParams(ctx)
+	newUserParams, err := util.GenTestUserParams()
 
 	if err != nil {
 		suite.T().Fatal(err)
@@ -174,7 +174,7 @@ func (suite *InquiryTestSuite) TestPickupInquirySuccess() {
 	}
 
 	// create a male that hosts the inquiry
-	maleUserParams, _ := util.GenTestUserParams(ctx)
+	maleUserParams, _ := util.GenTestUserParams()
 	maleUserParams.Gender = models.GenderMale
 	maleUser, err := q.CreateUser(ctx, *maleUserParams)
 
@@ -231,7 +231,7 @@ func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
 	q := models.New(db.GetDB())
 	maleUser, _ := q.CreateUser(ctx, *maleUserParams)
 
-	femaleUserParams, _ := util.GenTestUserParams(ctx)
+	femaleUserParams, _ := util.GenTestUserParams()
 	femaleUserParams.Gender = models.GenderFemale
 	femaleUser, _ := q.CreateUser(ctx, *femaleUserParams)
 
@@ -300,7 +300,7 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 	q := models.New(db.GetDB())
 	maleUser, _ := q.CreateUser(ctx, *maleUserParams)
 
-	femaleUserParams, _ := util.GenTestUserParams(ctx)
+	femaleUserParams, _ := util.GenTestUserParams()
 	femaleUserParams.Gender = models.GenderFemale
 	femaleUser, err := q.CreateUser(ctx, *femaleUserParams)
 
@@ -391,7 +391,7 @@ func (s *GetInquiriesSuite) TestGetInquiriesSuccess() {
 	maleUsers := make([]*models.User, 5)
 
 	for i := range maleUsers {
-		p, err := util.GenTestUserParams(ctx)
+		p, err := util.GenTestUserParams()
 
 		if err != nil {
 			s.T().Fatal(err)
@@ -410,7 +410,7 @@ func (s *GetInquiriesSuite) TestGetInquiriesSuccess() {
 	}
 
 	// create an female user
-	femaleParams, _ := util.GenTestUserParams(ctx)
+	femaleParams, _ := util.GenTestUserParams()
 	femaleParams.Gender = models.GenderFemale
 	femaleParams.Username = "girlP"
 	femaleUser, err := q.CreateUser(ctx, *femaleParams)

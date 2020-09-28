@@ -2,12 +2,13 @@ package util
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"strings"
 
 	faker "github.com/bxcodec/faker/v3"
 	"github.com/gin-gonic/gin"
@@ -26,7 +27,9 @@ func randomGender() models.Gender {
 }
 
 // GenTestUser generate randomized data on user fields but now create it.
-func GenTestUserParams(ctx context.Context) (*models.CreateUserParams, error) {
+// @TODO
+//   - remove unecessary argument `ctx`
+func GenTestUserParams() (*models.CreateUserParams, error) {
 	p := &models.CreateUserParams{}
 	if err := faker.FakeData(p); err != nil {
 		return nil, err
@@ -115,14 +118,17 @@ type SendRequest func(method string, url string, body interface{}, header map[st
 
 func SendRequestToApp(e *gin.Engine) SendRequest {
 	return func(method string, url string, body interface{}, header map[string]string) (*httptest.ResponseRecorder, error) {
-
 		bbody, err := json.Marshal(&body)
 
 		if err != nil {
 			return nil, err
 		}
 
-		req, err := http.NewRequest(method, url, bytes.NewBuffer(bbody))
+		req, err := http.NewRequest(
+			method,
+			url,
+			bytes.NewBuffer(bbody),
+		)
 
 		for headerKey, headerVal := range header {
 			req.Header.Set(headerKey, headerVal)
@@ -134,6 +140,29 @@ func SendRequestToApp(e *gin.Engine) SendRequest {
 
 		rr := httptest.NewRecorder()
 
+		e.ServeHTTP(rr, req)
+
+		return rr, nil
+	}
+}
+
+type SendUrlEncodedRequest func(method string, url string, params *url.Values, headers map[string]string) (*httptest.ResponseRecorder, error)
+
+func SendUrlEncodedRequestToApp(e *gin.Engine) SendUrlEncodedRequest {
+	return func(method string, url string, params *url.Values, headers map[string]string) (*httptest.ResponseRecorder, error) {
+		req, err := http.NewRequest(
+			method,
+			url,
+			strings.NewReader(params.Encode()),
+		)
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+		if err != nil {
+			return nil, err
+		}
+
+		rr := httptest.NewRecorder()
 		e.ServeHTTP(rr, req)
 
 		return rr, nil

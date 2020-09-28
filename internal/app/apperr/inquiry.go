@@ -29,6 +29,7 @@ const (
 	FailedToValidateGetInquiryListParams  = "3000026"
 	FailedToTransformGetInquiriesResponse = "3000027"
 	OnlyFemaleUserCanAccessAPI            = "3000028"
+	FailedToCheckHasMoreInquiry           = "3000029"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{

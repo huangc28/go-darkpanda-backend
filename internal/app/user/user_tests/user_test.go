@@ -34,7 +34,7 @@ func (suite *UserAPITestsSuite) SetupSuite() {
 func (suite *UserAPITestsSuite) TestGetMaleUserInfo() {
 	// create a male user that has no related active inquiry
 	ctx := context.Background()
-	newUserParams, err := util.GenTestUserParams(ctx)
+	newUserParams, err := util.GenTestUserParams()
 	newUserParams.Gender = models.GenderMale
 
 	if err != nil {
@@ -79,7 +79,7 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfo() {
 func (suite *UserAPITestsSuite) TestGetMaleUserInfoWithActiveInquiry() {
 	// create a male user along with active inquiries
 	ctx := context.Background()
-	newUserParams, err := util.GenTestUserParams(ctx)
+	newUserParams, err := util.GenTestUserParams()
 
 	if err != nil {
 		suite.T().Fatal(err)
@@ -126,7 +126,7 @@ func (suite *UserAPITestsSuite) TestGetMaleUserInfoWithActiveInquiry() {
 
 func (suite *UserAPITestsSuite) TestGetFemaleUserInfo() {
 	ctx := context.Background()
-	userParams, _ := util.GenTestUserParams(ctx)
+	userParams, _ := util.GenTestUserParams()
 	userParams.Gender = models.GenderFemale
 
 	q := models.New(db.GetDB())
@@ -162,7 +162,7 @@ func (suite *UserAPITestsSuite) TestGetFemaleUserInfo() {
 func (suite *UserAPITestsSuite) TestPutUserInfoSuccess() {
 	// ------------------- create male user -------------------
 	ctx := context.Background()
-	maleUserParams, _ := util.GenTestUserParams(ctx)
+	maleUserParams, _ := util.GenTestUserParams()
 	maleUserParams.Gender = models.GenderMale
 	q := models.New(db.GetDB())
 	maleUser, err := q.CreateUser(ctx, *maleUserParams)
