@@ -464,7 +464,6 @@ func (ac *AuthController) RevokeJwtHandler(c *gin.Context) {
 
 type SendLoginVerifyCodeBody struct {
 	Username string `form:"username"  json:"username" binding:"required,gt=0"`
-	Mobile   string `form:"mobile"`
 }
 
 func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
@@ -489,8 +488,6 @@ func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
 	// try finding username
 	q := models.New(db.GetDB())
 	user, err := q.GetUserByUsername(ctx, body.Username)
-
-	// log.Printf("DEBUG GetUserByUsername %v", user)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -569,7 +566,7 @@ func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
 			log.
 				WithFields(log.Fields{
 					"user_uuid": user.Uuid,
-					"mobile":    body.Mobile,
+					"mobile":    user.Mobile.String,
 				}).
 				Infof("sends twilio SMS success, login verify code created ! %v", smsResp.SID)
 
@@ -623,7 +620,7 @@ func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
 	// send verify code via twilio
 	smsResp, err := ac.TwilioClient.SendSMS(
 		viper.GetString("twilio.from"),
-		body.Mobile,
+		user.Mobile.String,
 		fmt.Sprintf("your darkpanda verify code: \n\n %d", verifyCode.BuildCode()),
 	)
 
@@ -634,7 +631,7 @@ func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
 	log.
 		WithFields(log.Fields{
 			"user_uuid": user.Uuid,
-			"mobile":    body.Mobile,
+			"mobile":    user.Mobile.String,
 		}).
 		Infof("sends twilio SMS success, login verify code updated ! %v", smsResp.SID)
 

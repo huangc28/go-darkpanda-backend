@@ -132,7 +132,10 @@ func (tc *TwilioClient) SendSMS(from string, to string, content string) (*SMSRes
 func HandleSendTwilioError(c *gin.Context, err error) error {
 	if err != nil {
 		if _, isTwilioErr := err.(*SMSError); isTwilioErr {
-			log.Fatalf("twilio sends back failed response %s", err.Error())
+			log.Debugf(
+				"twilio sends back failed response %s",
+				err.Error(),
+			)
 
 			c.AbortWithError(
 				http.StatusBadRequest,
