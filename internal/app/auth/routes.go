@@ -29,7 +29,7 @@ func Routes(r *gin.RouterGroup, userDAO UserDAO) {
 	// to verify their SMS.
 	r.POST("/send-verify-code", authController.SendVerifyCodeHandler)
 
-	// // Send verify code to user that attempts to login to the application
+	// Send verify code to user that attempts to login to the application
 	r.POST("/send-login-verify-code", authController.SendLoginVerifyCode)
 
 	// // Client attempt to verify login code he / she received via SMS from `/send-verify-code`. If the

@@ -304,7 +304,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context) {
 		Infof("sends twilio SMS success! %v", smsResp.SID)
 
 	// ------------------- send sms code back -------------------
-	c.JSON(http.StatusOK, NewTransform().TransformSendLoginMobileVerifyCode(
+	c.JSON(http.StatusOK, NewTransform().TransformSendMobileVerifyCode(
 		usr.Uuid,
 		verPrefix,
 	))
@@ -573,6 +573,7 @@ func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
 			c.JSON(http.StatusOK, NewTransform().TransformSendLoginMobileVerifyCode(
 				user.Uuid,
 				verifyCode.Chars,
+				user.Mobile.String,
 			))
 
 			return
@@ -638,6 +639,7 @@ func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
 	c.JSON(http.StatusOK, NewTransform().TransformSendLoginMobileVerifyCode(
 		user.Uuid,
 		verifyCode.Chars,
+		user.Mobile.String,
 	))
 }
 
