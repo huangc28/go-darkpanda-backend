@@ -2,10 +2,12 @@ package usertests
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -23,12 +25,15 @@ import (
 
 type UserAPITestsSuite struct {
 	suite.Suite
-	sendRequest util.SendRequest
+	sendRequest           util.SendRequest
+	sendUrlEncodedRequest util.SendUrlEncodedRequest
 }
 
 func (suite *UserAPITestsSuite) SetupSuite() {
 	manager.NewDefaultManager()
-	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
+	tApp := app.StartApp(gin.Default())
+	suite.sendRequest = util.SendRequestToApp(tApp)
+	suite.sendUrlEncodedRequest = util.SendUrlEncodedRequestToApp(tApp)
 }
 
 func (suite *UserAPITestsSuite) TestGetMaleUserInfo() {
@@ -258,6 +263,68 @@ func (suite *UserAPITestsSuite) TestPutUserInfoSuccess() {
 	assert.Equal(*resBody.AvatarURL, body.AvatarURL)
 	assert.Equal(*resBody.Nationality, "Taiwan")
 	assert.Equal(*resTwoBody.Age, 19)
+}
+
+func (suite *UserAPITestsSuite) TestGetUserProfileByUuid() {
+	// create a female user
+	ctx := context.Background()
+	q := models.New(db.GetDB())
+
+	femaleUserParams, _ := util.GenTestUserParams()
+	femaleUserParams.Gender = "female"
+	femaleUserParams.PhoneVerified = true
+	femaleUserParams.Mobile = sql.NullString{
+		Valid:  true,
+		String: "+886988272727",
+	}
+
+	femaleUser, err := q.CreateUser(ctx, *femaleUserParams)
+
+	if err != nil {
+		suite.T().Fatalf("create female user %s", err.Error())
+	}
+
+	// create a male user
+	maleUserParams, _ := util.GenTestUserParams()
+	maleUserParams.Gender = "male"
+	maleUser, err := q.CreateUser(ctx, *maleUserParams)
+	maleUser.PhoneVerified = true
+	maleUser.Mobile = sql.NullString{
+		Valid:  true,
+		String: "+886986900050",
+	}
+
+	if err != nil {
+		suite.T().Fatalf("create male user %s", err.Error())
+	}
+
+	// female user wants to view the profile of a male user
+	headers := util.CreateJwtHeaderMap(
+		femaleUser.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+
+	resp, err := suite.sendUrlEncodedRequest(
+		"GET",
+		fmt.Sprintf("/v1/users/%s", maleUser.Uuid),
+		&url.Values{},
+		headers,
+	)
+
+	if resp.Code != http.StatusOK {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- test cases -------------------
+	respStruct := &user.TransformedMaleUser{}
+	dec := json.NewDecoder(resp.Result().Body)
+	if err := dec.Decode(respStruct); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert := assert.New(suite.T())
+	assert.Equal(maleUser.Uuid, respStruct.Uuid)
+	assert.Equal(maleUser.Username, respStruct.Username)
 }
 
 func TestUserAPISuite(t *testing.T) {

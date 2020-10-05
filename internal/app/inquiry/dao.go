@@ -14,7 +14,8 @@ type UserDaoer interface {
 type InquiryDAOer interface {
 	CheckHasActiveInquiryByID(id int64) (bool, error)
 	GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error)
-	hasMoreInquiries(offset int, perPage int) (bool, error)
+	HasMoreInquiries(offset int, perPage int) (bool, error)
+	GetInquiryByUuid(iqUuid string) (*models.ServiceInquiry, error)
 }
 
 type InquiryDAO struct {
@@ -111,7 +112,32 @@ OFFSET $3;
 	return inquiries, nil
 }
 
-func (dao *InquiryDAO) hasMoreInquiries(offset int, perPage int) (bool, error) {
+func (dao *InquiryDAO) GetInquiryByUuid(iqUuid string) (*models.ServiceInquiry, error) {
+
+	sql := `
+SELECT
+	uuid,
+	budget,
+	service_type,
+	inquiry_status,
+	price,
+	duration,
+	appointment_time,
+	lng,
+	lat,
+FROM service_inquiries
+WHERE uuid = $1;
+	`
+	var inquiry *models.ServiceInquiry
+
+	if err := dao.db.QueryRow(sql, iqUuid).Scan(inquiry); err != nil {
+		return nil, err
+	}
+
+	return inquiry, nil
+}
+
+func (dao *InquiryDAO) HasMoreInquiries(offset int, perPage int) (bool, error) {
 	sql := `
 SELECT count(full_count) as num_records FROM (
 	SELECT COUNT(si.id) OVER() AS full_count

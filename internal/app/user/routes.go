@@ -11,7 +11,14 @@ func Routes(r *gin.RouterGroup) {
 		Secret: config.GetAppConf().JwtSecret,
 	}))
 
-	g.GET("/me", GetUserInfo)
+	g.GET("/:uuid", func(c *gin.Context) {
+		switch c.Param("uuid") {
+		case "me":
+			GetMyProfileHandler(c)
+		default:
+			GetUserProfileHandler(c)
+		}
+	})
 
 	g.PUT("/:uuid", PutUserInfo)
 }

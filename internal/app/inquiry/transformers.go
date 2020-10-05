@@ -176,7 +176,7 @@ type TransformedGetInquiryInquirer struct {
 	Nationality string `json:"nationality"`
 }
 
-type TransformedGetInquiry struct {
+type TransformedGetInquiryWithInquirer struct {
 	Uuid        string                        `json:"uuid"`
 	Budget      float64                       `json:"budget"`
 	ServiceType string                        `json:"service_type"`
@@ -189,12 +189,12 @@ type TransformedGetInquiry struct {
 }
 
 type TransformedInquiries struct {
-	Inquiries []TransformedGetInquiry `json:"inquiries"`
-	HasMore   bool                    `json:"has_more"`
+	Inquiries []TransformedGetInquiryWithInquirer `json:"inquiries"`
+	HasMore   bool                                `json:"has_more"`
 }
 
 func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo, hasMore bool) (TransformedInquiries, error) {
-	trfedIqs := make([]TransformedGetInquiry, 0)
+	trfedIqs := make([]TransformedGetInquiryWithInquirer, 0)
 	for _, oi := range inquiryList {
 		price, err := convertnullsql.ConvertSqlNullStringToFloat64(oi.Price)
 
@@ -220,7 +220,7 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo, hasM
 			return TransformedInquiries{}, err
 		}
 
-		trfedIq := TransformedGetInquiry{
+		trfedIq := TransformedGetInquiryWithInquirer{
 			Uuid:        oi.Uuid,
 			Budget:      budget,
 			ServiceType: oi.ServiceType.ToString(),
@@ -243,5 +243,54 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo, hasM
 	return TransformedInquiries{
 		Inquiries: trfedIqs,
 		HasMore:   hasMore,
+	}, nil
+}
+
+type TransformedGetInquiry struct {
+	Uuid        string    `json:"uuid"`
+	Budget      float64   `json:"budget"`
+	ServiceType string    `json:"service_type"`
+	Price       *float64  `json:"price"`
+	Duration    int32     `json:"duration"`
+	Appointment time.Time `json:"appoinment_time"`
+	Lng         *float32  `json:"lng"`
+	Lat         *float32  `json:"lat"`
+}
+
+func (t *InquiryTransform) TransformGetInquiry(iq models.ServiceInquiry) (*TransformedGetInquiry, error) {
+
+	budget, err := strconv.ParseFloat(iq.Budget, 64)
+
+	if err != nil {
+		return nil, err
+	}
+
+	price, err := strconv.ParseFloat(iq.Budget, 64)
+
+	if err != nil {
+		return nil, err
+	}
+
+	lng, err := convertnullsql.ConvertSqlNullStringToFloat32(iq.Lng)
+
+	if err != nil {
+		return nil, err
+	}
+
+	lat, err := convertnullsql.ConvertSqlNullStringToFloat32(iq.Lat)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &TransformedGetInquiry{
+		iq.Uuid,
+		budget,
+		iq.ServiceType.ToString(),
+		&price,
+		iq.Duration.Int32,
+		iq.AppointmentTime.Time,
+		lng,
+		lat,
 	}, nil
 }

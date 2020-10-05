@@ -158,6 +158,7 @@ func EmitInquiryHandler(c *gin.Context) {
 // @TODO
 //   - Offset should be passed from client via query param.
 //   - If no record exists, `has_more` indicator should set to false. Client request should be based on this indicator
+//   - wrap `GetInquiries` and `HasMore` should be wrapped in a transaction.
 type GetInquiriesBody struct {
 	Offset  int `form:"offset,default=0"`
 	PerPage int `form:"perpage,default=7"`
@@ -200,7 +201,7 @@ func GetInquiriesHandler(c *gin.Context) {
 
 	// DB has no more records if number of retrieved records is less then the value of `perPage`.
 	// In which case, we should set `has_more` indicator to `false`
-	hasMoreRecord, err := dao.hasMoreInquiries(
+	hasMoreRecord, err := dao.HasMoreInquiries(
 		body.Offset,
 		body.PerPage,
 	)
@@ -235,6 +236,42 @@ func GetInquiriesHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, tres)
+}
+
+func GetInquiryHandler(c *gin.Context) {
+	var inquiryUuid string = c.Param("uuid")
+
+	// Retrieve inquiry along with inquirer by inquiry uuid
+	dao := NewInquiryDAO(db.GetDB())
+	iq, err := dao.GetInquiryByUuid(inquiryUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	trfIq, err := NewTransform().TransformGetInquiry(*iq)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformGetInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, trfIq)
 }
 
 func CancelInquiryHandler(c *gin.Context) {

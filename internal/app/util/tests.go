@@ -17,6 +17,10 @@ import (
 	"github.com/ventu-io/go-shortid"
 )
 
+func randomBool() bool {
+	return seededRand.Intn(2) == 1
+}
+
 func randomGender() models.Gender {
 	gs := []models.Gender{
 		models.GenderFemale,
@@ -44,6 +48,11 @@ func GenTestUserParams() (*models.CreateUserParams, error) {
 	p.Username = faker.Username()
 	p.Uuid = sid
 	p.Gender = randomGender()
+	p.PhoneVerified = randomBool()
+	p.Mobile = sql.NullString{
+		Valid:  randomBool(),
+		String: faker.Phonenumber(),
+	}
 	p.PremiumType = models.PremiumTypeNormal
 	p.PhoneVerifyCode = sql.NullString{
 		String: fmt.Sprintf("%s-%d", GenRandStringRune(3), Gen4DigitNum(1000, 9999)),
@@ -156,11 +165,15 @@ func SendUrlEncodedRequestToApp(e *gin.Engine) SendUrlEncodedRequest {
 			strings.NewReader(params.Encode()),
 		)
 
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
 		if err != nil {
 			return nil, err
 		}
+
+		for headerKey, headerVal := range headers {
+			req.Header.Set(headerKey, headerVal)
+		}
+
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
 		rr := httptest.NewRecorder()
 		e.ServeHTTP(rr, req)

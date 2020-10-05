@@ -20,6 +20,12 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 		GetInquiriesHandler,
 	)
 
+	g.GET(
+		"/:uuid",
+		IsFemale(userDao),
+		GetInquiryHandler,
+	)
+
 	// create inquiry
 	g.POST(
 		"",

@@ -64,7 +64,6 @@ func JwtValidator(opt JwtMiddlewareOptions) gin.HandlerFunc {
 		// retrieve jwt token from either header or url
 		// header:
 		//   Authorization: Bearer ${JWT}
-		// url:
 		token, err := ExtractTokenFromRequest(c.Request)
 
 		if err != nil {

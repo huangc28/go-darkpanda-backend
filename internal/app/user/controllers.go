@@ -16,7 +16,7 @@ import (
 //   - Gender
 //   - Username
 //   - Active inquiry
-func GetUserInfo(c *gin.Context) {
+func GetMyProfileHandler(c *gin.Context) {
 	// ------------------- retrieve user model -------------------
 	var (
 		uuid string          = c.GetString("uuid")
@@ -58,7 +58,7 @@ func GetUserInfo(c *gin.Context) {
 	// ------------------- get user relative info base on gender -------------------
 	switch usr.Gender {
 	case models.GenderMale:
-		data, err := GatherMaleInfo(
+		data, err := gatherMaleInfo(
 			ctx,
 			q,
 			&usr,
@@ -105,7 +105,7 @@ func GetUserInfo(c *gin.Context) {
 
 }
 
-func GatherMaleInfo(ctx context.Context, q *models.Queries, usr *models.User) (*TransformUserWithInquiryData, error) {
+func gatherMaleInfo(ctx context.Context, q *models.Queries, usr *models.User) (*TransformUserWithInquiryData, error) {
 	// ------------------- check if user has an active service -------------------
 	inquiry, err := q.GetInquiryByInquirerID(ctx, models.GetInquiryByInquirerIDParams{
 		InquirerID: sql.NullInt32{
@@ -130,6 +130,40 @@ func GatherMaleInfo(ctx context.Context, q *models.Queries, usr *models.User) (*
 	}
 
 	return NewTransform().TransformUserWithInquiry(usr, inquiries), nil
+}
+
+type GetUserProfileBody struct {
+	UUID string `form:"uuid" json:"uuid" binding:"required,gt=0"`
+}
+
+func GetUserProfileHandler(c *gin.Context) {
+	var (
+		uuid string          = c.Param("uuid")
+		ctx  context.Context = context.Background()
+	)
+
+	q := models.New(db.GetDB())
+	user, err := q.GetUserByUuid(ctx, uuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	tResp, err := NewTransform().TransformMaleUser(user)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c.JSON(http.StatusOK, tResp)
 }
 
 type PutUserInfoBody struct {

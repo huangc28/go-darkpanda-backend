@@ -2,6 +2,8 @@ package user
 
 import (
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+
+	convertnullsql "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/convert_null_sql"
 )
 
 type UserTransformer interface {
@@ -15,10 +17,16 @@ func NewTransform() *UserTransform {
 }
 
 type TransformedUser struct {
-	Username  string        `json:"username"`
-	Gender    models.Gender `json:"gender"`
-	Uuid      string        `json:"uuid"`
-	AvatarUrl string        `json:"avatar_url"`
+	Username    string        `json:"username"`
+	Gender      models.Gender `json:"gender"`
+	Uuid        string        `json:"uuid"`
+	AvatarUrl   string        `json:"avatar_url"`
+	Nationality string        `json:"nationality"`
+	Region      string        `json:"region"`
+	Age         int           `json:"age"`
+	Height      float32       `json:"height"`
+	Weight      float32       `json:"weight"`
+	Description string        `json:"description"`
 }
 
 func (ut *UserTransform) TransformUser(m *models.User) *TransformedUser {
@@ -93,4 +101,54 @@ func (ut *UserTransform) TransformPatchedUser(user *models.User) *TransformedPat
 	}
 
 	return t
+}
+
+type TransformedMaleUser struct {
+	Username    string        `json:"username"`
+	Gender      models.Gender `json:"gender"`
+	Uuid        string        `json:"uuid"`
+	AvatarUrl   string        `json:"avatar_url"`
+	Nationality string        `json:"nationality"`
+	Region      string        `json:"region"`
+	Age         int           `json:"age"`
+	Height      *float32      `json:"height"`
+	Weight      *float32      `json:"weight"`
+	Description string        `json:"description"`
+}
+
+func (ut *UserTransform) TransformMaleUser(user models.User) (*TransformedMaleUser, error) {
+	var (
+		weightF *float32
+		heightF *float32
+		err     error
+	)
+
+	if user.Weight.Valid {
+		weightF, err = convertnullsql.ConvertSqlNullStringToFloat32(user.Weight)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if user.Height.Valid {
+		heightF, err = convertnullsql.ConvertSqlNullStringToFloat32(user.Height)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &TransformedMaleUser{
+		Uuid:        user.Uuid,
+		Username:    user.Username,
+		Gender:      user.Gender,
+		AvatarUrl:   user.AvatarUrl.String,
+		Nationality: user.Nationality.String,
+		Region:      user.Region.String,
+		Age:         int(user.Age.Int32),
+		Height:      heightF,
+		Weight:      weightF,
+		Description: user.Description.String,
+	}, nil
 }

@@ -16,7 +16,7 @@ func CreateToken(uUuid string, jwtSecret string) (string, error) {
 	claim := &Claim{
 		Uuid: uUuid,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 6).Unix(),
+			ExpiresAt: time.Now().Add(time.Hour * 30).Unix(),
 		},
 	}
 
