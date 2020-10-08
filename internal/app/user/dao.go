@@ -19,6 +19,7 @@ type UserDAOer interface {
 	GetUserByUuid(ctx context.Context, uuid string) (*models.User, error)
 	CheckIsMaleByUuid(uuid string) (bool, error)
 	CheckIsFemaleByUuid(uuid string) (bool, error)
+	GetUserImagesByUuid(uuid string, offset int, perPage int) ([]models.Image, error)
 }
 
 type UserDAO struct {
@@ -221,4 +222,43 @@ WHERE uuid = $1 LIMIT 1
 	}
 
 	return &i, nil
+}
+
+func (dao *UserDAO) GetUserImagesByUuid(uuid string, offset int, perPage int) ([]models.Image, error) {
+
+	sql := `
+SELECT images.url
+FROM images
+LEFT JOIN users
+	ON images.user_id = users.id
+WHERE users.uuid = $1
+ORDER BY images.created_at DESC
+LIMIT $2
+OFFSET $3;
+
+`
+	rows, err := dao.db.Query(
+		sql,
+		uuid,
+		perPage,
+		offset,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+	images := make([]models.Image, 0)
+	for rows.Next() {
+		var image models.Image
+
+		if err := rows.Scan(&image.Url); err != nil {
+			return nil, err
+		}
+
+		images = append(images, image)
+	}
+
+	return images, nil
 }

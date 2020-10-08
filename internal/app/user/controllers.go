@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	log "github.com/sirupsen/logrus"
 )
@@ -230,4 +231,48 @@ func PutUserInfo(c *gin.Context) {
 
 func PatchUserImages(c *gin.Context) {
 	c.JSON(http.StatusOK, struct{}{})
+}
+
+type GetUserImagesBody struct {
+	Offset  int `form:"offset,default=0"`
+	PerPage int `form:"perpage,default=9"`
+}
+
+func GetUserImagesHandler(c *gin.Context) {
+	uuid := c.Param("uuid")
+
+	body := &GetUserImagesBody{}
+
+	if err := requestbinder.Bind(c, body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateGetUserImagesParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Get image link by user uuid
+	images, err := NewUserDAO(db.GetDB()).GetUserImagesByUuid(
+		uuid,
+		body.Offset,
+		body.PerPage,
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetImagesByUserUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, NewTransform().TransformUserImages(images))
 }

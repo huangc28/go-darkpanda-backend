@@ -11,6 +11,10 @@ func Routes(r *gin.RouterGroup) {
 		Secret: config.GetAppConf().JwtSecret,
 	}))
 
+	g.GET("/:uuid/images", GetUserImagesHandler)
+
+	// issue: https://github.com/gin-gonic/gin/issues/205
+	// issue: https://github.com/julienschmidt/httprouter/issues/12
 	g.GET("/:uuid", func(c *gin.Context) {
 		switch c.Param("uuid") {
 		case "me":
@@ -18,6 +22,7 @@ func Routes(r *gin.RouterGroup) {
 		default:
 			GetUserProfileHandler(c)
 		}
+
 	})
 
 	g.PUT("/:uuid", PutUserInfo)

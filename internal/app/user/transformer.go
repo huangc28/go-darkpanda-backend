@@ -110,7 +110,7 @@ type TransformedMaleUser struct {
 	AvatarUrl   string        `json:"avatar_url"`
 	Nationality string        `json:"nationality"`
 	Region      string        `json:"region"`
-	Age         int           `json:"age"`
+	Age         *int          `json:"age"`
 	Height      *float32      `json:"height"`
 	Weight      *float32      `json:"weight"`
 	Description string        `json:"description"`
@@ -118,10 +118,15 @@ type TransformedMaleUser struct {
 
 func (ut *UserTransform) TransformMaleUser(user models.User) (*TransformedMaleUser, error) {
 	var (
+		ageI    *int
 		weightF *float32
 		heightF *float32
 		err     error
 	)
+
+	if user.Age.Valid {
+		*ageI = int(user.Age.Int32)
+	}
 
 	if user.Weight.Valid {
 		weightF, err = convertnullsql.ConvertSqlNullStringToFloat32(user.Weight)
@@ -146,9 +151,33 @@ func (ut *UserTransform) TransformMaleUser(user models.User) (*TransformedMaleUs
 		AvatarUrl:   user.AvatarUrl.String,
 		Nationality: user.Nationality.String,
 		Region:      user.Region.String,
-		Age:         int(user.Age.Int32),
+		Age:         ageI,
 		Height:      heightF,
 		Weight:      weightF,
 		Description: user.Description.String,
 	}, nil
+}
+
+type TransformedUserImage struct {
+	Url string `json:"url"`
+}
+
+type TransformedUserImages struct {
+	Images []TransformedUserImage `json:"images"`
+}
+
+func (ut *UserTransform) TransformUserImages(imgs []models.Image) TransformedUserImages {
+	trfImgs := make([]TransformedUserImage, 0)
+
+	for _, img := range imgs {
+		trfImg := TransformedUserImage{
+			Url: img.Url,
+		}
+
+		trfImgs = append(trfImgs, trfImg)
+	}
+
+	return TransformedUserImages{
+		trfImgs,
+	}
 }

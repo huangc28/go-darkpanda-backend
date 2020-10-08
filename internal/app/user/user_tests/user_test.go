@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"testing"
@@ -14,6 +15,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
@@ -325,6 +327,66 @@ func (suite *UserAPITestsSuite) TestGetUserProfileByUuid() {
 	assert := assert.New(suite.T())
 	assert.Equal(maleUser.Uuid, respStruct.Uuid)
 	assert.Equal(maleUser.Username, respStruct.Username)
+}
+
+func (suite *UserAPITestsSuite) TestGetUserImagesByUuid() {
+	// create a male user
+	maleUserParams, err := util.GenTestUserParams()
+	ctx := context.Background()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	maleUserParams.Gender = "male"
+	q := models.New(db.GetDB())
+	maleUser, err := q.CreateUser(ctx, *maleUserParams)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	imgDao := image.ImageDAO{
+		DB: db.GetDB(),
+	}
+
+	// create images and relate those images to that user
+	imagesParams := make([]image.CreateImageParams, 0)
+	for i := 0; i < 12; i++ {
+		imagesParams = append(imagesParams, image.CreateImageParams{
+			UserID: maleUser.ID,
+			URL:    fmt.Sprintf("https://foo.com/bar%d.png", i),
+		})
+	}
+
+	if err := imgDao.CreateImages(imagesParams); err != nil {
+		log.Fatalf("Failed to insert images %s", err.Error())
+	}
+
+	// ------------------- request API -------------------
+	headers := util.CreateJwtHeaderMap(maleUser.Uuid, config.GetAppConf().JwtSecret)
+	resp, err := suite.sendUrlEncodedRequest(
+		"GET",
+		fmt.Sprintf("/v1/users/%s/images", maleUser.Uuid),
+		&url.Values{},
+		headers,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	imgsStruct := user.TransformedUserImages{}
+	if err := json.Unmarshal(resp.Body.Bytes(), &imgsStruct); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert := assert.New(suite.T())
+	assert.Equal(http.StatusOK, resp.Result().StatusCode)
+
+	// 9 images per request
+	assert.Equal(9, len(imgsStruct.Images))
+
 }
 
 func TestUserAPISuite(t *testing.T) {
