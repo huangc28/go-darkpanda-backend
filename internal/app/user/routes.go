@@ -6,24 +6,30 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
-func Routes(r *gin.RouterGroup) {
+func Routes(r *gin.RouterGroup, paymentDAO PaymentDAOer) {
 	g := r.Group("/users", jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 		Secret: config.GetAppConf().JwtSecret,
 	}))
 
-	g.GET("/:uuid/images", GetUserImagesHandler)
+	handlers := UserHandlers{
+		PaymentDAO: paymentDAO,
+	}
+
+	g.GET("/:uuid/payments", handlers.GetUserPayments)
+
+	g.GET("/:uuid/images", handlers.GetUserImagesHandler)
 
 	// issue: https://github.com/gin-gonic/gin/issues/205
 	// issue: https://github.com/julienschmidt/httprouter/issues/12
 	g.GET("/:uuid", func(c *gin.Context) {
 		switch c.Param("uuid") {
 		case "me":
-			GetMyProfileHandler(c)
+			handlers.GetMyProfileHandler(c)
 		default:
-			GetUserProfileHandler(c)
+			handlers.GetUserProfileHandler(c)
 		}
 
 	})
 
-	g.PUT("/:uuid", PutUserInfo)
+	g.PUT("/:uuid", handlers.PutUserInfo)
 }

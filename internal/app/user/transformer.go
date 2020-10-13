@@ -181,3 +181,63 @@ func (ut *UserTransform) TransformUserImages(imgs []models.Image) TransformedUse
 		trfImgs,
 	}
 }
+
+type TransformedPaymentInfos struct {
+	Payments []TransformedPaymentInfo `json:"payments"`
+}
+
+type TransformedPaymentInfo struct {
+	Price      *float32 `json:"price"`
+	RecTradeID string   `json:"rec_trade_id"`
+	Service    TransformedPaymentServiceInfo
+	Payer      TransformedPaymentPayerInfo
+}
+
+type TransformedPaymentServiceInfo struct {
+	Uuid        string `json:"uuid"`
+	ServiceType string `json:"service_type"`
+}
+
+type TransformedPaymentPayerInfo struct {
+	Uuid      string `json:"uuid"`
+	Username  string `json:"username"`
+	AvatarURL string `json:"avatar_url"`
+}
+
+func (ut *UserTransform) TransformPaymentInfo(infos []models.PaymentInfo) (*TransformedPaymentInfos, error) {
+	trfmInfos := make([]TransformedPaymentInfo, 0)
+
+	for _, info := range infos {
+
+		trfmSrv := TransformedPaymentServiceInfo{
+			info.Service.Uuid.String(),
+			info.Service.ServiceType.ToString(),
+		}
+
+		trfmUser := TransformedPaymentPayerInfo{
+			info.Payer.Uuid,
+			info.Payer.Username,
+			info.Payer.AvatarUrl.String,
+		}
+
+		paymentPrice, err := convertnullsql.ConvertSqlNullStringToFloat32(info.Service.Price)
+
+		if err != nil {
+			return nil, err
+		}
+
+		trfmInfo := TransformedPaymentInfo{
+			paymentPrice,
+			info.RecTradeID.String,
+			trfmSrv,
+			trfmUser,
+		}
+
+		trfmInfos = append(trfmInfos, trfmInfo)
+
+	}
+
+	return &TransformedPaymentInfos{
+		trfmInfos,
+	}, nil
+}

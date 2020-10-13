@@ -13,11 +13,15 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+type UserHandlers struct {
+	PaymentDAO PaymentDAOer
+}
+
 // Get the following information from the user:
 //   - Gender
 //   - Username
 //   - Active inquiry
-func GetMyProfileHandler(c *gin.Context) {
+func (h *UserHandlers) GetMyProfileHandler(c *gin.Context) {
 	// ------------------- retrieve user model -------------------
 	var (
 		uuid string          = c.GetString("uuid")
@@ -137,7 +141,7 @@ type GetUserProfileBody struct {
 	UUID string `form:"uuid" json:"uuid" binding:"required,gt=0"`
 }
 
-func GetUserProfileHandler(c *gin.Context) {
+func (h *UserHandlers) GetUserProfileHandler(c *gin.Context) {
 	var (
 		uuid string          = c.Param("uuid")
 		ctx  context.Context = context.Background()
@@ -179,7 +183,7 @@ type PutUserInfoBody struct {
 	BreastSize  *string  `json:"breast_size"`
 }
 
-func PutUserInfo(c *gin.Context) {
+func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 	body := &PutUserInfoBody{}
 
 	if err := c.ShouldBindJSON(body); err != nil {
@@ -229,7 +233,7 @@ func PutUserInfo(c *gin.Context) {
 	c.JSON(http.StatusOK, NewTransform().TransformPatchedUser(user))
 }
 
-func PatchUserImages(c *gin.Context) {
+func (h *UserHandlers) PatchUserImages(c *gin.Context) {
 	c.JSON(http.StatusOK, struct{}{})
 }
 
@@ -238,7 +242,7 @@ type GetUserImagesBody struct {
 	PerPage int `form:"perpage,default=9"`
 }
 
-func GetUserImagesHandler(c *gin.Context) {
+func (h *UserHandlers) GetUserImagesHandler(c *gin.Context) {
 	uuid := c.Param("uuid")
 
 	body := &GetUserImagesBody{}
@@ -275,4 +279,39 @@ func GetUserImagesHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, NewTransform().TransformUserImages(images))
+}
+
+func (h *UserHandlers) GetUserPayments(c *gin.Context) {
+	uuid := c.Param("uuid")
+
+	paymentInfos, err := h.PaymentDAO.GetPaymentsByUuid(uuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserPayments,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	trfmPaymentInfo, err := NewTransform().TransformPaymentInfo(paymentInfos)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformUserPayments,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, trfmPaymentInfo)
 }

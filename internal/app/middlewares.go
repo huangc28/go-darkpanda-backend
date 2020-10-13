@@ -19,7 +19,10 @@ func (w bodyLogWriter) Write(b []byte) (int, error) {
 }
 
 func ResponseLogger(c *gin.Context) {
-	blw := &bodyLogWriter{body: bytes.NewBufferString(""), ResponseWriter: c.Writer}
+	blw := &bodyLogWriter{
+		body:           bytes.NewBufferString(""),
+		ResponseWriter: c.Writer,
+	}
 	c.Writer = blw
 	c.Next()
 

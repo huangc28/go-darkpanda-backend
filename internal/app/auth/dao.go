@@ -63,8 +63,6 @@ SELECT id FROM users WHERE username = $1 LIMIT 1;
 		return err
 	}
 
-	log.Printf("DEBUG 9 GetUserByUuid %v", user)
-
 	return nil
 }
 

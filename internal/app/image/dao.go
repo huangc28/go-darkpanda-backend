@@ -65,7 +65,6 @@ func (dao *ImageDAO) CreateImages(imagesParams []CreateImageParams) error {
 		vals = append(vals, v.UserID, v.URL)
 	}
 
-	//trim the last ,
 	sqlStr = strings.TrimSuffix(sqlStr, ",")
 	pgStr := ReplaceSQLPlaceHolderWithPG(sqlStr, "?")
 

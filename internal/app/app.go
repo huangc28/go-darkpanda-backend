@@ -9,6 +9,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
 )
 
@@ -35,7 +36,13 @@ func StartApp(e *gin.Engine) *gin.Engine {
 		user.NewUserDAO(db.GetDB()),
 	)
 
-	user.Routes(rv1)
+	user.Routes(
+		rv1,
+		&payment.PaymentDAO{
+			DB: db.GetDB(),
+		},
+	)
+
 	inquiry.Routes(
 		rv1,
 		user.NewUserDAO(db.GetDB()),

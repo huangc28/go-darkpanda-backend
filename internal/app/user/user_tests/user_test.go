@@ -32,10 +32,14 @@ type UserAPITestsSuite struct {
 }
 
 func (suite *UserAPITestsSuite) SetupSuite() {
-	manager.NewDefaultManager()
-	tApp := app.StartApp(gin.Default())
-	suite.sendRequest = util.SendRequestToApp(tApp)
-	suite.sendUrlEncodedRequest = util.SendUrlEncodedRequestToApp(tApp)
+	manager.
+		NewDefaultManager().
+		Run(func() {
+			tApp := app.StartApp(gin.Default())
+			suite.sendRequest = util.SendRequestToApp(tApp)
+			suite.sendUrlEncodedRequest = util.SendUrlEncodedRequestToApp(tApp)
+		})
+
 }
 
 func (suite *UserAPITestsSuite) TestGetMaleUserInfo() {
@@ -386,7 +390,86 @@ func (suite *UserAPITestsSuite) TestGetUserImagesByUuid() {
 
 	// 9 images per request
 	assert.Equal(9, len(imgsStruct.Images))
+}
 
+func (suite *UserAPITestsSuite) TestGetUserPaymentSuccess() {
+	// seed male / female user
+	maleUserParams, err := util.GenTestUserParams()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	maleUserParams.Gender = "male"
+
+	femaleUserParams, err := util.GenTestUserParams()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	femaleUserParams.Gender = "female"
+	ctx := context.Background()
+	q := models.New(db.GetDB())
+
+	maleUser, _ := q.CreateUser(ctx, *maleUserParams)
+	femaleUser, _ := q.CreateUser(ctx, *femaleUserParams)
+
+	// seed an inquiry
+	inquiryParams, err := util.GenTestInquiryParams(maleUser.ID)
+	inquiry, err := q.CreateInquiry(ctx, *inquiryParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// seed a service that the female user has completed a service with the male user
+	serviceParams, _ := util.GenTestServiceParams(maleUser.ID, femaleUser.ID, inquiry.ID)
+	serviceParams.ServiceStatus = models.ServiceStatusCompleted
+	service, err := q.CreateService(ctx, *serviceParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// seed a payment
+	paymentParams, err := util.GenTestPayment(
+		maleUser.ID,
+		femaleUser.ID,
+		service.ID,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	newPayment, err := q.CreatePayment(ctx, *paymentParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- sends API -------------------
+	headers := util.CreateJwtHeaderMap(femaleUser.Uuid, config.GetAppConf().JwtSecret)
+	resp, err := suite.sendUrlEncodedRequest(
+		"GET",
+		fmt.Sprintf("/v1/users/%s/payments", maleUser.Uuid),
+		&url.Values{},
+		headers,
+	)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// ------------------- assert test cases -------------------
+	respStruct := user.TransformedPaymentInfos{}
+	if err := json.Unmarshal(resp.Body.Bytes(), &respStruct); err != nil {
+		log.Fatal(err)
+	}
+	assert := assert.New(suite.T())
+	assert.Equal(http.StatusOK, resp.Result().StatusCode)
+	assert.Equal(newPayment.RecTradeID.String, respStruct.Payments[0].RecTradeID)
 }
 
 func TestUserAPISuite(t *testing.T) {

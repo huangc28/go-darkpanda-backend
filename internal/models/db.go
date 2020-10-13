@@ -28,6 +28,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.createInquiryStmt, err = db.PrepareContext(ctx, createInquiry); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateInquiry: %w", err)
 	}
+	if q.createPaymentStmt, err = db.PrepareContext(ctx, createPayment); err != nil {
+		return nil, fmt.Errorf("error preparing query CreatePayment: %w", err)
+	}
 	if q.createRefcodeStmt, err = db.PrepareContext(ctx, createRefcode); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateRefcode: %w", err)
 	}
@@ -95,6 +98,11 @@ func (q *Queries) Close() error {
 	if q.createInquiryStmt != nil {
 		if cerr := q.createInquiryStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing createInquiryStmt: %w", cerr)
+		}
+	}
+	if q.createPaymentStmt != nil {
+		if cerr := q.createPaymentStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createPaymentStmt: %w", cerr)
 		}
 	}
 	if q.createRefcodeStmt != nil {
@@ -228,6 +236,7 @@ type Queries struct {
 	tx                            *sql.Tx
 	checkUserOwnsInquiryStmt      *sql.Stmt
 	createInquiryStmt             *sql.Stmt
+	createPaymentStmt             *sql.Stmt
 	createRefcodeStmt             *sql.Stmt
 	createServiceStmt             *sql.Stmt
 	createUserStmt                *sql.Stmt
@@ -254,6 +263,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		tx:                            tx,
 		checkUserOwnsInquiryStmt:      q.checkUserOwnsInquiryStmt,
 		createInquiryStmt:             q.createInquiryStmt,
+		createPaymentStmt:             q.createPaymentStmt,
 		createRefcodeStmt:             q.createRefcodeStmt,
 		createServiceStmt:             q.createServiceStmt,
 		createUserStmt:                q.createUserStmt,
