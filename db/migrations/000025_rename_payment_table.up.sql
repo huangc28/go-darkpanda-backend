@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE payment
+RENAME TO payments;
+
+COMMIT;

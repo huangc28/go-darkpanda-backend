@@ -450,7 +450,11 @@ func (suite *UserAPITestsSuite) TestGetUserPaymentSuccess() {
 	}
 
 	// ------------------- sends API -------------------
-	headers := util.CreateJwtHeaderMap(femaleUser.Uuid, config.GetAppConf().JwtSecret)
+	headers := util.CreateJwtHeaderMap(
+		femaleUser.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+
 	resp, err := suite.sendUrlEncodedRequest(
 		"GET",
 		fmt.Sprintf("/v1/users/%s/payments", maleUser.Uuid),
@@ -470,6 +474,109 @@ func (suite *UserAPITestsSuite) TestGetUserPaymentSuccess() {
 	assert := assert.New(suite.T())
 	assert.Equal(http.StatusOK, resp.Result().StatusCode)
 	assert.Equal(newPayment.RecTradeID.String, respStruct.Payments[0].RecTradeID)
+}
+
+func (suite *UserAPITestsSuite) TestGetUserHistoricalServices() {
+	// Seed one male users as the customer with multiple completed services
+	ctx := context.Background()
+	q := models.New(db.GetDB())
+
+	maleUserParams, err := util.GenTestUserParams()
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	maleUserParams.Gender = "male"
+	maleUser, err := q.CreateUser(ctx, *maleUserParams)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// seed multiple female users that had hooked up with the male user
+	femaleUsers := make([]models.User, 0)
+	for i := 0; i < 6; i++ {
+		femaleUserParams, err := util.GenTestUserParams()
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		femaleUserParams.Gender = "female"
+		femaleUser, err := q.CreateUser(ctx, *femaleUserParams)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		femaleUsers = append(femaleUsers, femaleUser)
+	}
+
+	// create inquiries for the male user
+	inquiries := make([]models.ServiceInquiry, 0)
+	for range femaleUsers {
+		iqParams, err := util.GenTestInquiryParams(maleUser.ID)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		iq, err := q.CreateInquiry(ctx, *iqParams)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		inquiries = append(inquiries, iq)
+	}
+
+	// create services for the male user
+	for idx, inquiry := range inquiries {
+		serviceParams, err := util.GenTestServiceParams(
+			maleUser.ID,
+			femaleUsers[idx].ID,
+			inquiry.ID,
+		)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		serviceParams.ServiceStatus = models.ServiceStatusCompleted
+		_, err = q.CreateService(ctx, *serviceParams)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	// ------------------- request API -------------------
+	headers := util.CreateJwtHeaderMap(
+		femaleUsers[0].Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+
+	resp, err := suite.sendUrlEncodedRequest(
+		"GET",
+		fmt.Sprintf("/v1/users/%s/services", maleUser.Uuid),
+		&url.Values{},
+		headers,
+	)
+
+	if err != nil {
+		log.Fatalf("DEBUG 2 %s", err.Error())
+	}
+
+	// ------------------- assertions -------------------
+	respStruct := user.TransformedHistoricalServices{}
+	if err := json.Unmarshal(resp.Body.Bytes(), &respStruct); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert := assert.New(suite.T())
+	assert.Equal(http.StatusOK, resp.Result().StatusCode)
+	assert.Equal(5, len(respStruct.Services), "5 records per page")
 }
 
 func TestUserAPISuite(t *testing.T) {

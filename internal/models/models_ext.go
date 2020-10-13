@@ -17,3 +17,7 @@ func (s *InquiryStatus) ToString() string {
 func (st *ServiceType) ToString() string {
 	return string(*st)
 }
+
+func (st *ServiceStatus) ToString() string {
+	return string(*st)
+}

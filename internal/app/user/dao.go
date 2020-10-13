@@ -17,6 +17,10 @@ type PaymentDAOer interface {
 	GetPaymentsByUuid(uuid string) ([]models.PaymentInfo, error)
 }
 
+type ServiceDAOer interface {
+	GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error)
+}
+
 type UserDAOer interface {
 	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*User, error)
 	UpdateUserInfoByUuid(ctx context.Context, p UpdateUserInfoParams) (*models.User, error)

@@ -1,6 +1,8 @@
 package user
 
 import (
+	"time"
+
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 
 	convertnullsql "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/convert_null_sql"
@@ -239,5 +241,42 @@ func (ut *UserTransform) TransformPaymentInfo(infos []models.PaymentInfo) (*Tran
 
 	return &TransformedPaymentInfos{
 		trfmInfos,
+	}, nil
+}
+
+type TransformedHistoricalServices struct {
+	Services []TransformedService `json:"services"`
+}
+
+type TransformedService struct {
+	Uuid          string    `json:"uuid"`
+	Price         *float32  `json:"price"`
+	ServiceType   string    `json:"service_type"`
+	ServiceStatus string    `json:"service_status"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+func (ut *UserTransform) TransformHistoricalServices(services []models.Service) (*TransformedHistoricalServices, error) {
+	trfmServices := make([]TransformedService, 0)
+
+	for _, srv := range services {
+		srvPrice, err := convertnullsql.ConvertSqlNullStringToFloat32(srv.Price)
+
+		if err != nil {
+			return nil, err
+		}
+
+		trfmSrv := TransformedService{
+			Uuid:        srv.Uuid.String(),
+			Price:       srvPrice,
+			ServiceType: srv.ServiceStatus.ToString(),
+			CreatedAt:   srv.CreatedAt,
+		}
+
+		trfmServices = append(trfmServices, trfmSrv)
+	}
+
+	return &TransformedHistoricalServices{
+		Services: trfmServices,
 	}, nil
 }

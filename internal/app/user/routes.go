@@ -6,14 +6,17 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
-func Routes(r *gin.RouterGroup, paymentDAO PaymentDAOer) {
+func Routes(r *gin.RouterGroup, paymentDAO PaymentDAOer, serviceDAO ServiceDAOer) {
 	g := r.Group("/users", jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 		Secret: config.GetAppConf().JwtSecret,
 	}))
 
 	handlers := UserHandlers{
 		PaymentDAO: paymentDAO,
+		ServiceDAO: serviceDAO,
 	}
+
+	g.GET("/:uuid/services", handlers.GetUserServiceHistory)
 
 	g.GET("/:uuid/payments", handlers.GetUserPayments)
 

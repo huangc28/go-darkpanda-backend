@@ -15,6 +15,7 @@ import (
 
 type UserHandlers struct {
 	PaymentDAO PaymentDAOer
+	ServiceDAO ServiceDAOer
 }
 
 // Get the following information from the user:
@@ -314,4 +315,61 @@ func (h *UserHandlers) GetUserPayments(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, trfmPaymentInfo)
+}
+
+type GetUserServiceHistoryRecords struct {
+	Offset  int `form:"offset,default=0"`
+	PerPage int `form:"perpage,default=5"`
+}
+
+func (h *UserHandlers) GetUserServiceHistory(c *gin.Context) {
+	uuid := c.Param("uuid")
+	body := GetUserServiceHistoryRecords{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateGetServiceHistoryParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve past service records.
+	services, err := h.ServiceDAO.GetUserHistoricalServicesByUuid(
+		uuid,
+		body.PerPage,
+		body.Offset,
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToGetHistoricalServices,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	trfmSrvs, err := NewTransform().TransformHistoricalServices(services)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformHistoricalServices,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, trfmSrvs)
 }
