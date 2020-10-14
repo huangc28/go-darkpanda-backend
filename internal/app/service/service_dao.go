@@ -1,13 +1,12 @@
 package service
 
 import (
-	"database/sql"
-
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/jmoiron/sqlx"
 )
 
 type ServiceDAO struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
 func (dao *ServiceDAO) GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error) {

@@ -1,13 +1,12 @@
 package payment
 
 import (
-	"database/sql"
-
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/jmoiron/sqlx"
 )
 
 type PaymentDAO struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
 func (dao *PaymentDAO) Ping() error {

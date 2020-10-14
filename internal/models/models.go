@@ -187,7 +187,7 @@ type ServiceInquiry struct {
 	ServiceType     ServiceType    `json:"service_type"`
 	InquiryStatus   InquiryStatus  `json:"inquiry_status"`
 	CreatedAt       time.Time      `json:"created_at"`
-	UpdatedAt       sql.NullTime   `json:"updated_at"`
+	UpdatedAt       sql.NullTime   `json:"updated_at" db:"updated_at"`
 	DeletedAt       sql.NullTime   `json:"deleted_at"`
 	Uuid            string         `json:"uuid"`
 	Price           sql.NullString `json:"price"`

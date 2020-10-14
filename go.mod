@@ -16,6 +16,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
+	github.com/jmoiron/sqlx v1.2.0
 	github.com/json-iterator/go v1.1.10 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/looplab/fsm v0.1.0

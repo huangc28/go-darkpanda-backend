@@ -5,12 +5,20 @@ import (
 	"fmt"
 
 	"github.com/DATA-DOG/go-txdb"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
 	log "github.com/sirupsen/logrus"
 )
 
-var db *sql.DB
+type Conn interface {
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	QueryRow(query string, args ...interface{}) *sql.Row
+}
+
+var dbInstance *sqlx.DB
 
 type DBConf struct {
 	Host     string
@@ -52,20 +60,20 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 		)
 
 		txdb.Register("txdb", "postgres", dsn)
-		testdriver, err := sql.Open("txdb", dsn)
+		testdriver, err := sqlx.Open("txdb", dsn)
 
 		if err != nil {
 			log.Fatalf("Failed to connect to test db %s", err.Error())
 		}
 
-		db = testdriver
+		dbInstance = testdriver
 
 		log.Info("Database connected!")
 
 		return
 	}
 
-	driver, err := sql.Open("postgres", dsn)
+	driver, err := sqlx.Open("postgres", dsn)
 
 	if err != nil {
 		log.WithFields(log.Fields{
@@ -73,11 +81,11 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 		}).Fatalf("Failed to connect to database %s", err.Error())
 	}
 
-	db = driver
+	dbInstance = driver
 
 	log.Info("Database connected!")
 }
 
-func GetDB() *sql.DB {
-	return db
+func GetDB() *sqlx.DB {
+	return dbInstance
 }

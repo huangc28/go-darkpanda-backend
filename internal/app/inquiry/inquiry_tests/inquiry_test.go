@@ -192,6 +192,9 @@ func (suite *InquiryTestSuite) TestPickupInquirySuccess() {
 		suite.T().Fatalf("Failed to create new inquiry %s", err.Error())
 	}
 
+	//log.Printf("DEBUG 1 iq %v", iq)
+	//log.Printf("DEBUG 1 female user %v", femaleUser)
+
 	headerMap := util.CreateJwtHeaderMap(femaleUser.Uuid, config.GetAppConf().JwtSecret)
 	resp, err := suite.sendRequest(
 		"POST",

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -25,7 +26,7 @@ import (
 
 type AuthController struct {
 	TwilioClient *twilio.TwilioClient
-	DB           *sql.DB
+	DB           *sqlx.DB
 	Redis        *redis.Client
 	UserDAO      UserDAO
 }

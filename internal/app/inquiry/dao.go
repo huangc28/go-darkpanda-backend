@@ -1,9 +1,11 @@
 package inquiry
 
 import (
-	"database/sql"
+	"fmt"
+	"strings"
 
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/jmoiron/sqlx"
 )
 
 type UserDaoer interface {
@@ -15,14 +17,14 @@ type InquiryDAOer interface {
 	CheckHasActiveInquiryByID(id int64) (bool, error)
 	GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error)
 	HasMoreInquiries(offset int, perPage int) (bool, error)
-	GetInquiryByUuid(iqUuid string) (*models.ServiceInquiry, error)
+	GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error)
 }
 
 type InquiryDAO struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewInquiryDAO(db *sql.DB) InquiryDAOer {
+func NewInquiryDAO(db *sqlx.DB) InquiryDAOer {
 	return &InquiryDAO{
 		db: db,
 	}
@@ -112,25 +114,28 @@ OFFSET $3;
 	return inquiries, nil
 }
 
-func (dao *InquiryDAO) GetInquiryByUuid(iqUuid string) (*models.ServiceInquiry, error) {
+func (dao *InquiryDAO) GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error) {
+	if len(fields) == 0 {
+		fields = append(fields, "*")
+	}
 
-	sql := `
-SELECT
-	uuid,
-	budget,
-	service_type,
-	inquiry_status,
-	price,
-	duration,
-	appointment_time,
-	lng,
-	lat,
+	fieldsStr := strings.TrimSuffix(strings.Join(fields, ","), ",")
+
+	baseQuery := `
+SELECT %s
 FROM service_inquiries
 WHERE uuid = $1;
 	`
-	var inquiry *models.ServiceInquiry
+	query := fmt.Sprintf(baseQuery, fieldsStr)
 
-	if err := dao.db.QueryRow(sql, iqUuid).Scan(inquiry); err != nil {
+	var inquiry *models.ServiceInquiry
+	var fieldSlice []interface{}
+
+	for _, fieldName := range fields {
+		fieldSlice = append(fieldSlice, fieldName)
+	}
+
+	if err := dao.db.QueryRowx(query, iqUuid).StructScan(inquiry); err != nil {
 		return nil, err
 	}
 

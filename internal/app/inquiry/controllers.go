@@ -377,9 +377,42 @@ func PickupInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	// ------------------- patch inquiry status -------------------
+	// Before patching the inquiry status, we apply optimistic lock strategy which checks `updated_at` column of that inquiry again
+	// makesure it hasn't been modified by other transactions / processes. If `updated_at` at has been modified, abort the transaction.
+	tx, err := db.GetDB().Begin()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBeginTx,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	ctx := context.Background()
-	q := models.New(db.GetDB())
+	dao := NewInquiryDAO(tx)
+	lastVerIq, err := dao.GetInquiryByUuid(uriParams.InquiryUuid, []string{"updated_at"}...)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	log.Printf("DEBUG 1 %v", lastVerIq)
+	log.Printf("DEBUG 2 %v", lastVerIq.UpdatedAt.Time.Equal(iq.UpdatedAt.Time))
+
+	q := models.New(tx)
 
 	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
 		InquiryStatus: models.InquiryStatus(fsm.Current()),
@@ -411,9 +444,11 @@ func PickupInquiryHandler(c *gin.Context) {
 			),
 		)
 
+		tx.Rollback()
 		return
 	}
 
+	tx.Commit()
 	c.JSON(http.StatusOK, NewTransform().TransformPickupInquiry(uiq, inquirer))
 }
 

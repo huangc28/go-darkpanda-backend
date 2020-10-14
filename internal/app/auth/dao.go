@@ -2,13 +2,13 @@ package auth
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -22,10 +22,10 @@ type UserCheckerDAOer interface {
 }
 
 type UserCheckerDAO struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewUserCheckerDAO(db *sql.DB) *UserCheckerDAO {
+func NewUserCheckerDAO(db *sqlx.DB) *UserCheckerDAO {
 	return &UserCheckerDAO{
 		db: db,
 	}

@@ -1,9 +1,8 @@
 package user
 
 import (
-	"database/sql"
-
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
@@ -31,10 +30,10 @@ type UserDAOer interface {
 }
 
 type UserDAO struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
-func NewUserDAO(db *sql.DB) UserDAOer {
+func NewUserDAO(db *sqlx.DB) UserDAOer {
 	return &UserDAO{
 		db: db,
 	}
