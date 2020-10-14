@@ -267,10 +267,11 @@ func (ut *UserTransform) TransformHistoricalServices(services []models.Service) 
 		}
 
 		trfmSrv := TransformedService{
-			Uuid:        srv.Uuid.String(),
-			Price:       srvPrice,
-			ServiceType: srv.ServiceStatus.ToString(),
-			CreatedAt:   srv.CreatedAt,
+			Uuid:          srv.Uuid.String(),
+			Price:         srvPrice,
+			ServiceType:   srv.ServiceType.ToString(),
+			ServiceStatus: srv.ServiceStatus.ToString(),
+			CreatedAt:     srv.CreatedAt,
 		}
 
 		trfmServices = append(trfmServices, trfmSrv)

@@ -565,7 +565,7 @@ func (suite *UserAPITestsSuite) TestGetUserHistoricalServices() {
 	)
 
 	if err != nil {
-		log.Fatalf("DEBUG 2 %s", err.Error())
+		suite.T().Fatal(err)
 	}
 
 	// ------------------- assertions -------------------
