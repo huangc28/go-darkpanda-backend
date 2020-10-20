@@ -2,8 +2,9 @@ package inquirytests
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-	"log"
+	"net/http"
 	"net/url"
 	"testing"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/huangc28/go-darkpanda-backend/manager"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -73,8 +75,6 @@ func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
 		suite.T().Fatalf("Failed to join lobby %s", err.Error())
 	}
 
-	//log.Printf("DEBUG female user %v", femaleUser)
-
 	headerMap := util.CreateJwtHeaderMap(femaleUser.Uuid, config.GetAppConf().JwtSecret)
 	resp, err := suite.SendUrlEncodedRequest(
 		"POST",
@@ -87,24 +87,62 @@ func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
 		suite.T().Fatal(err)
 	}
 
-	log.Printf("DEBUG 3 %s", string(resp.Body.Bytes()))
-
 	// ------------------- Assert test cases -------------------
-	//assert.Equal(suite.T(), http.StatusOK, resp.Result().StatusCode)
+	assert := assert.New(suite.T())
+	assert.Equal(http.StatusOK, resp.Result().StatusCode)
 
-	//respBody := inquiry.TransformedPickupInquiry{}
-	//dec := json.NewDecoder(resp.Body)
-	//if err := dec.Decode(&respBody); err != nil {
-	//suite.T().Fatal(err)
-	//}
+	// assert that the inquiry has been removed from lobby (soft deleted).
+	db := db.GetDB()
+	var removedUserExists bool
+	if err := db.QueryRow(`
+	SELECT EXISTS(
+	SELECT 1 FROM lobby_users
+	WHERE inquiry_id = $1
+	AND deleted_at IS NOT NULL
+	) AS exists;
+	`, iq.ID).Scan(&removedUserExists); err != nil {
+		suite.T().Fatal(err)
+	}
 
-	//assert.NotEmpty(suite.T(), respBody.Uuid)
-	//assert.Equal(suite.T(), string(models.ServiceTypeSex), respBody.ServiceType)
-	//assert.Equal(suite.T(), string(models.InquiryStatusChatting), respBody.InquiryStatus)
+	assert.True(removedUserExists)
 
-	//assert.NotEmpty(suite.T(), respBody.Inquirer.Uuid)
-	//assert.Equal(suite.T(), maleUser.Username, respBody.Inquirer.Username)
-	//assert.Equal(suite.T(), string(maleUser.PremiumType), respBody.Inquirer.PremiumType)
+	// assert that both male and female user are in the chatroom already.
+	var (
+		maleExistsInChat   bool
+		femaleExistsInChat bool
+	)
+	existenceQuery := `
+SELECT EXISTS(
+	SELECT 1 FROM chatroom_users
+	WHERE user_id = $1
+) AS exists;
+	`
+	if err := db.QueryRow(existenceQuery, maleUser.ID).Scan(&maleExistsInChat); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.True(maleExistsInChat)
+
+	if err := db.QueryRow(existenceQuery, femaleUser.ID).Scan(&femaleExistsInChat); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.True(femaleExistsInChat)
+
+	respBody := inquiry.TransformedPickupInquiry{}
+	dec := json.NewDecoder(resp.Body)
+	if err := dec.Decode(&respBody); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.NotEmpty(respBody.Uuid)
+	assert.Equal(string(models.ServiceTypeSex), respBody.ServiceType)
+	assert.Equal(string(models.InquiryStatusChatting), respBody.InquiryStatus)
+
+	assert.NotEmpty(respBody.Inquirer.Uuid)
+	assert.Equal(maleUser.Username, respBody.Inquirer.Username)
+	assert.Equal(string(maleUser.PremiumType), respBody.Inquirer.PremiumType)
+	assert.NotEmpty(respBody.ChannelUuid)
 }
 
 func TestPickupInquiryTestSuite(t *testing.T) {

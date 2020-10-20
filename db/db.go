@@ -3,9 +3,11 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/DATA-DOG/go-txdb"
 	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/reflectx"
 	_ "github.com/lib/pq"
 
 	log "github.com/sirupsen/logrus"
@@ -38,7 +40,12 @@ type TestDBConf struct {
 }
 
 func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
-	log.Printf("is test %t", isTestEnv)
+	if isTestEnv {
+		log.Printf("is test %t", isTestEnv)
+		initTestDB(testConf)
+
+		return
+	}
 
 	// we need to recognize the running environment
 	dsn := fmt.Sprintf(
@@ -50,30 +57,6 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 		conf.Dbname,
 	)
 
-	if isTestEnv {
-		dsn := fmt.Sprintf(
-			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			testConf.Host,
-			testConf.Port,
-			testConf.User,
-			testConf.Password,
-			testConf.Dbname,
-		)
-
-		txdb.Register("txdb", "postgres", dsn)
-		testdriver, err := sqlx.Open("txdb", dsn)
-
-		if err != nil {
-			log.Fatalf("Failed to connect to test db %s", err.Error())
-		}
-
-		dbInstance = testdriver
-
-		log.Info("Database connected!")
-
-		return
-	}
-
 	driver, err := sqlx.Open("postgres", dsn)
 
 	if err != nil {
@@ -83,6 +66,30 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 	}
 
 	dbInstance = driver
+	dbInstance.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
+
+	log.Info("Database connected!")
+}
+
+func initTestDB(testConf TestDBConf) {
+	dsn := fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		testConf.Host,
+		testConf.Port,
+		testConf.User,
+		testConf.Password,
+		testConf.Dbname,
+	)
+
+	txdb.Register("txdb", "postgres", dsn)
+	testdriver, err := sqlx.Open("txdb", dsn)
+
+	if err != nil {
+		log.Fatalf("Failed to connect to test db %s", err.Error())
+	}
+
+	dbInstance = testdriver
+	dbInstance.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 
 	log.Info("Database connected!")
 }

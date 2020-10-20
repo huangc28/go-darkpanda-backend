@@ -128,10 +128,11 @@ func (dao *InquiryDAO) GetInquiryByUuid(iqUuid string, fields ...string) (*model
 	baseQuery := `
 SELECT %s
 FROM service_inquiries
-WHERE uuid = $1;
+WHERE uuid = $1
 	`
 	query := fmt.Sprintf(baseQuery, fieldsStr)
 
+	//inquiry := models.ServiceInquiry{}
 	var inquiry models.ServiceInquiry
 
 	if err := dao.db.QueryRowx(query, iqUuid).StructScan(&inquiry); err != nil {

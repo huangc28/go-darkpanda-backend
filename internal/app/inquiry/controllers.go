@@ -451,7 +451,7 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	dao := NewInquiryDAO(tx)
 	lastVerIq, err := dao.GetInquiryByUuid(
 		uriParams.InquiryUuid,
-		[]string{"updated_at"}...,
+		"updated_at",
 	)
 
 	if err != nil {
@@ -544,6 +544,7 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	}
 
 	// Both male and Female user should also join private chatroom
+	log.Printf("DEBUG 12 %v %v", inquirer.ID, inquiree.ID)
 	chatroomInfo, err := h.ChatServices.
 		WithTx(tx).
 		CreateAndJoinChatroom(uiq.ID, inquirer.ID, inquiree.ID)
@@ -560,8 +561,6 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 		tx.Rollback()
 		return
 	}
-
-	log.Printf("DEBUG 5 %v", chatroomInfo)
 
 	tx.Commit()
 	c.JSON(http.StatusOK, NewTransform().TransformPickupInquiry(

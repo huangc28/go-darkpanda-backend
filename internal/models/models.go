@@ -138,6 +138,27 @@ func (e *ServiceType) Scan(src interface{}) error {
 	return nil
 }
 
+type Chatroom struct {
+	ID           int64          `json:"id"`
+	InquiryID    int32          `json:"inquiry_id"`
+	ChannelUuid  sql.NullString `json:"channel_uuid"`
+	MessageCount sql.NullInt32  `json:"message_count"`
+	Enabled      sql.NullBool   `json:"enabled"`
+	CreatedAt    time.Time      `json:"created_at"`
+	ExpiredAt    time.Time      `json:"expired_at"`
+	UpdatedAt    sql.NullTime   `json:"updated_at"`
+	DeletedAt    sql.NullTime   `json:"deleted_at"`
+}
+
+type ChatroomUser struct {
+	ID         int64        `json:"id"`
+	ChatroomID int32        `json:"chatroom_id"`
+	UserID     int32        `json:"user_id"`
+	CreatedAt  time.Time    `json:"created_at"`
+	UpdatedAt  sql.NullTime `json:"updated_at"`
+	DeletedAt  sql.NullTime `json:"deleted_at"`
+}
+
 type Image struct {
 	ID        int64        `json:"id"`
 	UserID    int32        `json:"user_id"`
@@ -145,6 +166,16 @@ type Image struct {
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt sql.NullTime `json:"updated_at"`
 	DeletedAt sql.NullTime `json:"deleted_at"`
+}
+
+type LobbyUser struct {
+	ID          int64        `json:"id"`
+	ChannelUuid string       `json:"channel_uuid"`
+	InquiryID   int32        `json:"inquiry_id"`
+	CreatedAt   time.Time    `json:"created_at"`
+	ExpiredAt   time.Time    `json:"expired_at"`
+	UpdatedAt   sql.NullTime `json:"updated_at"`
+	DeletedAt   sql.NullTime `json:"deleted_at"`
 }
 
 type Payment struct {
@@ -187,7 +218,7 @@ type ServiceInquiry struct {
 	ServiceType     ServiceType    `json:"service_type"`
 	InquiryStatus   InquiryStatus  `json:"inquiry_status"`
 	CreatedAt       time.Time      `json:"created_at"`
-	UpdatedAt       sql.NullTime   `json:"updated_at" db:"updated_at"`
+	UpdatedAt       sql.NullTime   `json:"updated_at"`
 	DeletedAt       sql.NullTime   `json:"deleted_at"`
 	Uuid            string         `json:"uuid"`
 	Price           sql.NullString `json:"price"`

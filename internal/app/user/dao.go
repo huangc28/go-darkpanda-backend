@@ -219,9 +219,6 @@ WHERE uuid = $1
 `
 	query := fmt.Sprintf(baseQuery, fieldsStr)
 
-	log.Printf("DEBUG 3 query %s ", query)
-	log.Printf("DEBUG 4 query %s ", uuid)
-
 	var user models.User
 
 	if err := dao.db.QueryRowx(query, uuid).StructScan(&user); err != nil {
