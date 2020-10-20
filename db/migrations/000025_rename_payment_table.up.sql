@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE payment
+ALTER TABLE IF EXISTS payment
 RENAME TO payments;
 
 COMMIT;

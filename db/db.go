@@ -16,6 +16,7 @@ type Conn interface {
 	Prepare(query string) (*sql.Stmt, error)
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
+	QueryRowx(query string, args ...interface{}) *sqlx.Row
 }
 
 var dbInstance *sqlx.DB

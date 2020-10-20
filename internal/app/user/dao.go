@@ -1,16 +1,15 @@
 package user
 
 import (
+	"fmt"
+	"strings"
+
+	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
-
-type User struct {
-	models.User
-	Inquiries []*models.ServiceInquiry `json:"inquiries"`
-}
 
 type PaymentDAOer interface {
 	GetPaymentsByUuid(uuid string) ([]models.PaymentInfo, error)
@@ -20,23 +19,34 @@ type ServiceDAOer interface {
 	GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error)
 }
 
+type User struct {
+	models.User
+	Inquiries []*models.ServiceInquiry `json:"inquiries"`
+}
+
 type UserDAOer interface {
 	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*User, error)
 	UpdateUserInfoByUuid(ctx context.Context, p UpdateUserInfoParams) (*models.User, error)
-	GetUserByUuid(ctx context.Context, uuid string) (*models.User, error)
+	GetUserByUuid(uuid string, fields ...string) (*models.User, error)
+	GetUserByID(ID int64, fields ...string) (*models.User, error)
 	CheckIsMaleByUuid(uuid string) (bool, error)
 	CheckIsFemaleByUuid(uuid string) (bool, error)
 	GetUserImagesByUuid(uuid string, offset int, perPage int) ([]models.Image, error)
+	WithTx(tx *sqlx.Tx)
 }
 
 type UserDAO struct {
-	db *sqlx.DB
+	db db.Conn
 }
 
 func NewUserDAO(db *sqlx.DB) UserDAOer {
 	return &UserDAO{
 		db: db,
 	}
+}
+
+func (dao *UserDAO) WithTx(tx *sqlx.Tx) {
+	dao.db = tx
 }
 
 // https://stackoverflow.com/questions/40093809/why-is-my-t-sql-left-join-not-working/40093841
@@ -195,44 +205,33 @@ func (dao *UserDAO) CheckIsFemaleByUuid(uuid string) (bool, error) {
 	return dao.checkGender(uuid, models.GenderFemale)
 }
 
-func (dao *UserDAO) GetUserByUuid(ctx context.Context, uuid string) (*models.User, error) {
-	sql := `
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
-WHERE uuid = $1 LIMIT 1
-	`
-	i := models.User{}
-	if err := dao.db.QueryRow(sql, uuid).Scan(
-		&i.ID,
-		&i.Username,
-		&i.PhoneVerified,
-		&i.AuthSmsCode,
-		&i.Gender,
-		&i.PremiumType,
-		&i.PremiumExpiryDate,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.DeletedAt,
-		&i.Uuid,
-		&i.PhoneVerifyCode,
-		&i.AvatarUrl,
-		&i.Nationality,
-		&i.Region,
-		&i.Age,
-		&i.Height,
-		&i.Weight,
-		&i.Habbits,
-		&i.Description,
-		&i.BreastSize,
-		&i.Mobile,
-	); err != nil {
+func (dao *UserDAO) GetUserByUuid(uuid string, fields ...string) (*models.User, error) {
+	if len(fields) == 0 {
+		fields = append(fields, "*")
+	}
+
+	fieldsStr := strings.TrimSuffix(strings.Join(fields, ","), ",")
+
+	baseQuery := `
+SELECT %s
+FROM users
+WHERE uuid = $1
+`
+	query := fmt.Sprintf(baseQuery, fieldsStr)
+
+	log.Printf("DEBUG 3 query %s ", query)
+	log.Printf("DEBUG 4 query %s ", uuid)
+
+	var user models.User
+
+	if err := dao.db.QueryRowx(query, uuid).StructScan(&user); err != nil {
 		return nil, err
 	}
 
-	return &i, nil
+	return &user, nil
 }
 
 func (dao *UserDAO) GetUserImagesByUuid(uuid string, offset int, perPage int) ([]models.Image, error) {
-
 	sql := `
 SELECT images.url
 FROM images
@@ -268,4 +267,27 @@ OFFSET $3;
 	}
 
 	return images, nil
+}
+
+func (dao *UserDAO) GetUserByID(ID int64, fields ...string) (*models.User, error) {
+	if len(fields) == 0 {
+		fields = append(fields, "*")
+	}
+
+	fieldsStr := strings.TrimSuffix(strings.Join(fields, ","), ",")
+
+	baseQuery := `
+SELECT %s
+FROM users
+WHERE id = $1
+`
+	query := fmt.Sprintf(baseQuery, fieldsStr)
+
+	var user models.User
+
+	if err := dao.db.QueryRowx(query, ID).StructScan(&user); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
 }

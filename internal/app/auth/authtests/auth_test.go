@@ -25,7 +25,6 @@ import (
 
 type UserAuthTestSuite struct {
 	suite.Suite
-	sendRequest           util.SendRequest
 	sendURLEncodedRequest util.SendUrlEncodedRequest
 }
 

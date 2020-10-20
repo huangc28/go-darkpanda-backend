@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/jmoiron/sqlx"
 )
@@ -11,6 +12,9 @@ import (
 type UserDaoer interface {
 	CheckIsMaleByUuid(uuid string) (bool, error)
 	CheckIsFemaleByUuid(uuid string) (bool, error)
+	GetUserByID(ID int64, fields ...string) (*models.User, error)
+	GetUserByUuid(uuid string, fields ...string) (*models.User, error)
+	WithTx(tx *sqlx.Tx)
 }
 
 type InquiryDAOer interface {
@@ -21,10 +25,10 @@ type InquiryDAOer interface {
 }
 
 type InquiryDAO struct {
-	db *sqlx.DB
+	db db.Conn
 }
 
-func NewInquiryDAO(db *sqlx.DB) InquiryDAOer {
+func NewInquiryDAO(db db.Conn) InquiryDAOer {
 	return &InquiryDAO{
 		db: db,
 	}
@@ -128,18 +132,13 @@ WHERE uuid = $1;
 	`
 	query := fmt.Sprintf(baseQuery, fieldsStr)
 
-	var inquiry *models.ServiceInquiry
-	var fieldSlice []interface{}
+	var inquiry models.ServiceInquiry
 
-	for _, fieldName := range fields {
-		fieldSlice = append(fieldSlice, fieldName)
-	}
-
-	if err := dao.db.QueryRowx(query, iqUuid).StructScan(inquiry); err != nil {
+	if err := dao.db.QueryRowx(query, iqUuid).StructScan(&inquiry); err != nil {
 		return nil, err
 	}
 
-	return inquiry, nil
+	return &inquiry, nil
 }
 
 func (dao *InquiryDAO) HasMoreInquiries(offset int, perPage int) (bool, error) {

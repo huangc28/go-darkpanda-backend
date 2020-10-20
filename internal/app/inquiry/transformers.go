@@ -29,6 +29,18 @@ type TransformedInquiry struct {
 	CreatedAt     time.Time `json:"created_at"`
 }
 
+func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, channelID string) TransformedInquiry {
+	tiq := TransformedInquiry{
+		Uuid:          m.Uuid,
+		Budget:        m.Budget,
+		ServiceType:   string(m.ServiceType),
+		InquiryStatus: string(m.InquiryStatus),
+		CreatedAt:     m.CreatedAt,
+	}
+
+	return tiq
+}
+
 func (t *InquiryTransform) TransformInquiry(m models.ServiceInquiry) TransformedInquiry {
 	tiq := TransformedInquiry{
 		Uuid:          m.Uuid,
@@ -69,14 +81,16 @@ func (t *InquiryTransform) TransformService(m models.Service, iqer models.User) 
 
 type TransformedPickupInquiry struct {
 	TransformedInquiry
-	Inquirer TransformedInquirer `json:"inquirer"`
+	ChannelUuid string              `json:"channel_uuid"`
+	Inquirer    TransformedInquirer `json:"inquirer"`
 }
 
-func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry, iqer models.User) TransformedPickupInquiry {
+func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry, iqer models.User, channelUuid string) TransformedPickupInquiry {
 	tiq := t.TransformInquiry(iq)
 
 	return TransformedPickupInquiry{
 		tiq,
+		channelUuid,
 		TransformedInquirer{
 			Uuid:        iqer.Uuid,
 			Username:    iqer.Username,

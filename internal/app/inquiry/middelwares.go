@@ -36,68 +36,6 @@ func ValidateInqiuryURIParams() gin.HandlerFunc {
 	}
 }
 
-func IsMale(dao UserDaoer) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		uuid := c.GetString("uuid")
-
-		isMale, err := dao.CheckIsMaleByUuid(uuid)
-
-		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToCheckGender,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		if !isMale {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(apperr.OnlyMaleCanBookService),
-			)
-
-			return
-		}
-
-		c.Next()
-	}
-}
-
-func IsFemale(dao UserDaoer) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		uuid := c.GetString("uuid")
-
-		isFemale, err := dao.CheckIsFemaleByUuid(uuid)
-
-		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToCheckGender,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		if !isFemale {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(apperr.OnlyFemaleUserCanAccessAPI),
-			)
-
-			return
-		}
-
-		c.Next()
-	}
-}
-
 func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := context.Background()

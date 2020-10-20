@@ -13,7 +13,7 @@ import (
 )
 
 type UserDAO interface {
-	GetUserByUuid(ctx context.Context, uuid string) (*models.User, error)
+	GetUserByUuid(uuid string, fields ...string) (*models.User, error)
 }
 
 type UserCheckerDAOer interface {

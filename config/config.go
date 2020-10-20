@@ -49,14 +49,21 @@ type GCSCredentials struct {
 	BucketName               string `mapstructure:"bucket_name"`
 }
 
+type PubnubCredentials struct {
+	PublishKey   string `mapstructure:"publish_key"`
+	SubscribeKey string `mapstructure:"subscribe_key"`
+	SecretKey    string `mapstructure:"secret_key"`
+}
+
 type AppConf struct {
-	Port           string          `mapstructure:"port"`
-	JwtSecret      string          `mapstructure:"jwt_secret"`
-	DBConf         *DBConf         `mapstructure:"db"`
-	TestDBConf     *TestDBConf     `mapstructure:"test_db"`
-	RedisConf      *RedisConf      `mapstructure:"redis"`
-	TwilioConf     *TwilioConf     `mapstructure:"twilio"`
-	GCSCredentials *GCSCredentials `mapstructure:"gcs"`
+	Port              string             `mapstructure:"port"`
+	JwtSecret         string             `mapstructure:"jwt_secret"`
+	DBConf            *DBConf            `mapstructure:"db"`
+	TestDBConf        *TestDBConf        `mapstructure:"test_db"`
+	RedisConf         *RedisConf         `mapstructure:"redis"`
+	TwilioConf        *TwilioConf        `mapstructure:"twilio"`
+	GCSCredentials    *GCSCredentials    `mapstructure:"gcs"`
+	PubnubCredentials *PubnubCredentials `mapstructure:"pubnub"`
 }
 
 var appConf AppConf

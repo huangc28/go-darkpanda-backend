@@ -2,9 +2,9 @@ package image
 
 import (
 	"database/sql"
-	"strconv"
 	"strings"
 
+	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
 )
 
@@ -48,14 +48,6 @@ type CreateImageParams struct {
 	URL    string
 }
 
-func ReplaceSQLPlaceHolderWithPG(old, searchPattern string) string {
-	tmpCount := strings.Count(old, searchPattern)
-	for m := 1; m <= tmpCount; m++ {
-		old = strings.Replace(old, searchPattern, "$"+strconv.Itoa(m), 1)
-	}
-	return old
-}
-
 func (dao *ImageDAO) CreateImages(imagesParams []CreateImageParams) error {
 	sqlStr := "INSERT INTO images(user_id, url) VALUES "
 	vals := []interface{}{}
@@ -66,7 +58,7 @@ func (dao *ImageDAO) CreateImages(imagesParams []CreateImageParams) error {
 	}
 
 	sqlStr = strings.TrimSuffix(sqlStr, ",")
-	pgStr := ReplaceSQLPlaceHolderWithPG(sqlStr, "?")
+	pgStr := db.ReplaceSQLPlaceHolderWithPG(sqlStr, "?")
 
 	stmt, _ := dao.DB.Prepare(pgStr)
 	_, err := stmt.Exec(vals...)
