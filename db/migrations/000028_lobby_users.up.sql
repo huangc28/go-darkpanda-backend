@@ -6,7 +6,6 @@ CREATE TABLE IF NOT EXISTS lobby_users (
 	inquiry_id INT REFERENCES service_inquiries(id) NOT NULL,
 
 	created_at timestamp NOT NULL DEFAULT NOW(),
-	expired_at timestamp NOT NULL DEFAULT NOW(),
 	updated_at timestamp NULL DEFAULT current_timestamp,
 	deleted_at timestamp
 );

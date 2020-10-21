@@ -6,7 +6,6 @@ import (
 
 type LobbyServicer interface {
 	JoinLobby(inquiryID int64) (string, error)
-	IsLobbyExpired(inquiryID int64) (bool, error)
 	LeaveLobby(inquiryID int64) error
 	WithTx(tx *sqlx.Tx) LobbyServicer
 }
@@ -33,11 +32,6 @@ func (l *LobbyServices) WithTx(tx *sqlx.Tx) LobbyServicer {
 func (l *LobbyServices) JoinLobby(inquiryID int64) (string, error) {
 	// Generate lobby key
 	return l.LobbyDao.JoinLobby(inquiryID)
-}
-
-// IsLobbyExpired Check if the user has expired in the lobby.
-func (l *LobbyServices) IsLobbyExpired(inquiryID int64) (bool, error) {
-	return l.LobbyDao.IsLobbyExpired(inquiryID)
 }
 
 func (l *LobbyServices) LeaveLobby(inquiryID int64) error {

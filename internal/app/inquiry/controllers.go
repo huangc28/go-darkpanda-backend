@@ -21,6 +21,7 @@ import (
 
 type InquiryHandlers struct {
 	UserDao       UserDaoer
+	InquiryDao    InquiryDAOer
 	LobbyServices LobbyServicer
 	ChatServices  ChatServicer
 }
@@ -134,6 +135,10 @@ func (h *InquiryHandlers) EmitInquiryHandler(c *gin.Context) {
 		Budget:        decimal.NewFromFloat(body.Budget).String(),
 		ServiceType:   models.ServiceType(body.ServiceType),
 		InquiryStatus: models.InquiryStatusInquiring,
+		ExpiredAt: sql.NullTime{
+			Time:  time.Now().Add(InquiryDuration),
+			Valid: true,
+		},
 	})
 
 	if err != nil {
@@ -395,7 +400,7 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	}
 
 	// Check if user in the lobby has already expired
-	expired, err := h.LobbyServices.IsLobbyExpired(iq.ID)
+	expired, err := h.InquiryDao.IsInquiryExpired(iq.ID)
 
 	if err != nil {
 		c.AbortWithError(

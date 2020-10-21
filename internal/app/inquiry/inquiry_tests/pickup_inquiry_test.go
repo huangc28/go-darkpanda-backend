@@ -2,11 +2,13 @@ package inquirytests
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -56,6 +58,10 @@ func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
 	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
 	iqParams.InquiryStatus = models.InquiryStatusInquiring
 	iqParams.ServiceType = models.ServiceTypeSex
+	iqParams.ExpiredAt = sql.NullTime{
+		Time:  time.Now().Add(time.Minute * 27),
+		Valid: true,
+	}
 	iq, err := q.CreateInquiry(ctx, *iqParams)
 
 	if err != nil {

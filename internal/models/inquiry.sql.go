@@ -39,9 +39,10 @@ INSERT INTO service_inquiries(
 	duration,
 	appointment_time,
 	lng,
-	lat
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat
+	lat,
+	expired_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at
 `
 
 type CreateInquiryParams struct {
@@ -55,6 +56,7 @@ type CreateInquiryParams struct {
 	AppointmentTime sql.NullTime   `json:"appointment_time"`
 	Lng             sql.NullString `json:"lng"`
 	Lat             sql.NullString `json:"lat"`
+	ExpiredAt       sql.NullTime   `json:"expired_at"`
 }
 
 func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (ServiceInquiry, error) {
@@ -69,6 +71,7 @@ func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (S
 		arg.AppointmentTime,
 		arg.Lng,
 		arg.Lat,
+		arg.ExpiredAt,
 	)
 	var i ServiceInquiry
 	err := row.Scan(
@@ -86,12 +89,13 @@ func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (S
 		&i.AppointmentTime,
 		&i.Lng,
 		&i.Lat,
+		&i.ExpiredAt,
 	)
 	return i, err
 }
 
 const getInquiryByInquirerID = `-- name: GetInquiryByInquirerID :one
-SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat FROM service_inquiries
+SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at FROM service_inquiries
 WHERE inquirer_id = $1
 AND inquiry_status = $2
 `
@@ -119,12 +123,13 @@ func (q *Queries) GetInquiryByInquirerID(ctx context.Context, arg GetInquiryByIn
 		&i.AppointmentTime,
 		&i.Lng,
 		&i.Lat,
+		&i.ExpiredAt,
 	)
 	return i, err
 }
 
 const getInquiryByUuid = `-- name: GetInquiryByUuid :one
-SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat FROM service_inquiries
+SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at FROM service_inquiries
 WHERE uuid = $1
 `
 
@@ -146,6 +151,7 @@ func (q *Queries) GetInquiryByUuid(ctx context.Context, uuid string) (ServiceInq
 		&i.AppointmentTime,
 		&i.Lng,
 		&i.Lat,
+		&i.ExpiredAt,
 	)
 	return i, err
 }
@@ -170,7 +176,7 @@ const patchInquiryStatusByUuid = `-- name: PatchInquiryStatusByUuid :one
 UPDATE service_inquiries
 SET inquiry_status = $1
 WHERE uuid = $2
-RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat
+RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at
 `
 
 type PatchInquiryStatusByUuidParams struct {
@@ -196,6 +202,7 @@ func (q *Queries) PatchInquiryStatusByUuid(ctx context.Context, arg PatchInquiry
 		&i.AppointmentTime,
 		&i.Lng,
 		&i.Lat,
+		&i.ExpiredAt,
 	)
 	return i, err
 }
@@ -204,7 +211,7 @@ const updateInquiryByUuid = `-- name: UpdateInquiryByUuid :one
 UPDATE  service_inquiries
 SET price = $1, duration = $2, appointment_time = $3, lng = $4, lat = $5, inquiry_status = $6
 WHERE uuid = $7
-RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat
+RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at
 `
 
 type UpdateInquiryByUuidParams struct {
@@ -243,6 +250,7 @@ func (q *Queries) UpdateInquiryByUuid(ctx context.Context, arg UpdateInquiryByUu
 		&i.AppointmentTime,
 		&i.Lng,
 		&i.Lat,
+		&i.ExpiredAt,
 	)
 	return i, err
 }

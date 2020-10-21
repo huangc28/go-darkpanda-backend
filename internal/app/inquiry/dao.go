@@ -3,6 +3,7 @@ package inquiry
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/models"
@@ -22,6 +23,7 @@ type InquiryDAOer interface {
 	GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error)
 	HasMoreInquiries(offset int, perPage int) (bool, error)
 	GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error)
+	IsInquiryExpired(inquiryID int64) (bool, error)
 }
 
 type InquiryDAO struct {
@@ -159,4 +161,24 @@ SELECT count(full_count) as num_records FROM (
 	}
 
 	return recordNum > 0, nil
+}
+
+func (dao *InquiryDAO) IsInquiryExpired(inquiryID int64) (bool, error) {
+	sql := `
+SELECT
+	expired_at
+FROM
+	service_inquiries
+WHERE
+	id = $1
+AND
+	deleted_at IS NULL;
+	`
+	var expiredAt time.Time
+
+	if err := dao.db.QueryRow(sql, inquiryID).Scan(&expiredAt); err != nil {
+		return false, err
+	}
+
+	return time.Now().After(expiredAt), nil
 }

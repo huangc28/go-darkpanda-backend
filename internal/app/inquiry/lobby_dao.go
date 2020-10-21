@@ -11,7 +11,6 @@ import (
 
 type LobbyDaoer interface {
 	JoinLobby(inquiryID int64) (string, error)
-	IsLobbyExpired(inquiryID int64) (bool, error)
 	LeaveLobby(inquiryID int64) error
 	WithTx(tx *sqlx.Tx)
 }
@@ -19,10 +18,6 @@ type LobbyDaoer interface {
 type LobbyDao struct {
 	DB db.Conn
 }
-
-const (
-	ExpireDuration = 27
-)
 
 func (l *LobbyDao) WithTx(tx *sqlx.Tx) {
 	l.DB = tx
@@ -39,44 +34,19 @@ func (l *LobbyDao) JoinLobby(inquiryID int64) (string, error) {
 	query := `
 INSERT INTO lobby_users (
 	channel_uuid,
-	inquiry_id,
-	expired_at
-) VALUES ($1, $2, $3);
+	inquiry_id
+) VALUES ($1, $2);
 	`
-
-	now := time.Now()
-	expiredAt := now.Add(time.Minute * ExpireDuration)
 
 	if _, err := l.DB.Exec(
 		query,
 		chanUuid,
 		inquiryID,
-		expiredAt,
 	); err != nil {
 		return "", err
 	}
 
 	return chanUuid, nil
-}
-
-func (dao *LobbyDao) IsLobbyExpired(inquiryID int64) (bool, error) {
-	sql := `
-SELECT
-	expired_at
-FROM
-	lobby_users
-WHERE
-	inquiry_id = $1
-AND
-	deleted_at IS NULL;
-	`
-	var expiredAt time.Time
-
-	if err := dao.DB.QueryRow(sql, inquiryID).Scan(&expiredAt); err != nil {
-		return false, err
-	}
-
-	return time.Now().After(expiredAt), nil
 }
 
 func (dao *LobbyDao) LeaveLobby(inquiryID int64) error {

@@ -17,7 +17,8 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	)
 
 	handlers := &InquiryHandlers{
-		UserDao: userDao,
+		InquiryDao: NewInquiryDAO(db.GetDB()),
+		UserDao:    userDao,
 		LobbyServices: &LobbyServices{
 			LobbyDao: &LobbyDao{
 				DB: db.GetDB(),
@@ -42,7 +43,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 		GetInquiryHandler,
 	)
 
-	// emit a new inquiry
+	// Emit a new inquiry
 	g.POST(
 		"",
 		middlewares.IsMale(userDao),

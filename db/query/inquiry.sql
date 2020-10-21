@@ -18,8 +18,9 @@ INSERT INTO service_inquiries(
 	duration,
 	appointment_time,
 	lng,
-	lat
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	lat,
+	expired_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING *;
 
 -- name: PatchInquiryStatus :exec
