@@ -187,8 +187,7 @@ type GetInquiriesBody struct {
 	PerPage int `form:"perpage,default=7"`
 }
 
-func GetInquiriesHandler(c *gin.Context) {
-	dao := NewInquiryDAO(db.GetDB())
+func (h *InquiryHandlers) GetInquiriesHandler(c *gin.Context) {
 	body := &GetInquiriesBody{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -204,7 +203,7 @@ func GetInquiriesHandler(c *gin.Context) {
 	}
 
 	// offset should be passed from client
-	inquiries, err := dao.GetInquiries(
+	inquiries, err := h.InquiryDao.GetInquiries(
 		models.InquiryStatusInquiring,
 		body.Offset,
 		body.PerPage,
@@ -224,7 +223,7 @@ func GetInquiriesHandler(c *gin.Context) {
 
 	// DB has no more records if number of retrieved records is less then the value of `perPage`.
 	// In which case, we should set `has_more` indicator to `false`
-	hasMoreRecord, err := dao.HasMoreInquiries(
+	hasMoreRecord, err := h.InquiryDao.HasMoreInquiries(
 		body.Offset,
 		body.PerPage,
 	)

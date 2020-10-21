@@ -107,79 +107,6 @@ func (suite *InquiryTestSuite) TestCancelInquirySuccess() {
 	assert.Equal(fmt.Sprintf("lobby_%s", usr.Uuid), respBody.ChannelID)
 }
 
-func (suite *InquiryTestSuite) TestPickupInquirySuccess() {
-	ctx := context.Background()
-
-	// create a female user to pickup the inquiry
-	femaleUserParams := suite.newUserParams
-	femaleUserParams.Gender = models.GenderFemale
-	q := models.New(db.GetDB())
-	femaleUser, err := q.CreateUser(ctx, *femaleUserParams)
-
-	if err != nil {
-		suite.T().Fatalf("Failed to create female user %s", err.Error())
-	}
-
-	// create a male that hosts the inquiry
-	maleUserParams, _ := util.GenTestUserParams()
-	maleUserParams.Gender = models.GenderMale
-	maleUser, err := q.CreateUser(ctx, *maleUserParams)
-
-	if err != nil {
-		suite.T().Fatalf("Failed to create female user %s", err.Error())
-	}
-
-	// male user joins the lobby
-	lobbySrv := inquiry.LobbyServices{
-		Redis: db.GetRedis(),
-	}
-
-	_, err = lobbySrv.JoinLobby(ctx, maleUser.ID)
-
-	//log.Printf("DEBUG 2 %s", channelID)
-
-	// create an inquiry
-	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
-	iqParams.InquiryStatus = models.InquiryStatusInquiring
-	iqParams.ServiceType = models.ServiceTypeSex
-	iq, err := q.CreateInquiry(ctx, *iqParams)
-
-	if err != nil {
-		suite.T().Fatalf("Failed to create new inquiry %s", err.Error())
-	}
-
-	headerMap := util.CreateJwtHeaderMap(femaleUser.Uuid, config.GetAppConf().JwtSecret)
-	resp, err := suite.sendRequest(
-		"POST",
-		fmt.Sprintf("/v1/inquiries/%s/pickup", iq.Uuid),
-		struct{}{},
-		headerMap,
-	)
-
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	log.Printf("DEBUG 3 %s", string(resp.Body.Bytes()))
-
-	// ------------------- Assert test cases -------------------
-	//assert.Equal(suite.T(), http.StatusOK, resp.Result().StatusCode)
-
-	//respBody := inquiry.TransformedPickupInquiry{}
-	//dec := json.NewDecoder(resp.Body)
-	//if err := dec.Decode(&respBody); err != nil {
-	//suite.T().Fatal(err)
-	//}
-
-	//assert.NotEmpty(suite.T(), respBody.Uuid)
-	//assert.Equal(suite.T(), string(models.ServiceTypeSex), respBody.ServiceType)
-	//assert.Equal(suite.T(), string(models.InquiryStatusChatting), respBody.InquiryStatus)
-
-	//assert.NotEmpty(suite.T(), respBody.Inquirer.Uuid)
-	//assert.Equal(suite.T(), maleUser.Username, respBody.Inquirer.Username)
-	//assert.Equal(suite.T(), string(maleUser.PremiumType), respBody.Inquirer.PremiumType)
-}
-
 func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
 	// Create male / female user
 	ctx := context.Background()
@@ -391,6 +318,11 @@ func (s *GetInquiriesSuite) TestGetInquiriesSuccess() {
 			String: "1.1",
 			Valid:  true,
 		}
+		iqParams.ExpiredAt = sql.NullTime{
+			Valid: true,
+			Time:  time.Now().Add(time.Minute * 27),
+		}
+
 		inquiry, err := q.CreateInquiry(ctx, *iqParams)
 
 		if err != nil {

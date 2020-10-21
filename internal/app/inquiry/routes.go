@@ -34,7 +34,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 	g.GET(
 		"",
 		middlewares.IsFemale(userDao),
-		GetInquiriesHandler,
+		handlers.GetInquiriesHandler,
 	)
 
 	g.GET(
@@ -50,7 +50,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 		handlers.EmitInquiryHandler,
 	)
 
-	// cancel inquiry
+	// Cancel inquiry
 	g.PATCH(
 		"/:inquiry_uuid/cancel",
 		ValidateInqiuryURIParams(),

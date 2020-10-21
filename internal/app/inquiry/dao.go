@@ -76,8 +76,8 @@ SELECT
 FROM service_inquiries AS si
 INNER JOIN users
 	ON si.inquirer_id = users.id
-WHERE
-	si.inquiry_status = $1
+WHERE si.inquiry_status = $1
+AND si.expired_at > now()
 ORDER BY si.created_at DESC
 LIMIT $2
 OFFSET $3;
