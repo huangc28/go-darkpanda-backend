@@ -6,12 +6,13 @@ import (
 	"time"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/teris-io/shortid"
 )
 
 type ChatDaoer interface {
-	CreateChat(inquiryID int64) (*CreateChatResp, error)
+	CreateChat(inquiryID int64) (*models.ChatInfo, error)
 	JoinChat(chatID int64, userIDs ...int64) error
 	WithTx(tx *sqlx.Tx)
 }
@@ -24,21 +25,16 @@ const (
 	PrivateChatKey = "private_chat:%s"
 )
 
-type CreateChatResp struct {
-	ChatroomID  int64
-	ChannelUuid string
-}
-
 func (dao *ChatDao) WithTx(tx *sqlx.Tx) {
 	dao.DB = tx
 }
 
-func (dao *ChatDao) CreateChat(inquiryID int64) (*CreateChatResp, error) {
+func (dao *ChatDao) CreateChat(inquiryID int64) (*models.ChatInfo, error) {
 	// Create chatroom record.
 	sid, err := shortid.Generate()
 
 	if err != nil {
-		return (*CreateChatResp)(nil), err
+		return nil, err
 	}
 
 	channelUuid := fmt.Sprintf(PrivateChatKey, sid)
@@ -61,12 +57,12 @@ RETURNING id;
 
 	if err := dao.
 		DB.QueryRow(query, inquiryID, channelUuid, messageCount, enabled, expiredAt).Scan(&id); err != nil {
-		return (*CreateChatResp)(nil), nil
+		return nil, err
 	}
 
-	return &CreateChatResp{
-		ChatroomID:  id,
-		ChannelUuid: channelUuid,
+	return &models.ChatInfo{
+		ChanelUuid: channelUuid,
+		ChatID:     id,
 	}, nil
 }
 
