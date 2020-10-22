@@ -245,11 +245,7 @@ func SendUrlEncodedRequestToApp(e *gin.Engine) SendUrlEncodedRequest {
 			return nil, err
 		}
 
-		for headerKey, headerVal := range headers {
-			req.Header.Set(headerKey, headerVal)
-		}
-
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		MergeMapToHeader(req, headers)
 
 		rr := httptest.NewRecorder()
 		e.ServeHTTP(rr, req)
@@ -264,4 +260,28 @@ func CreateJwtHeaderMap(uuid, secret string) map[string]string {
 	header["Authorization"] = fmt.Sprintf("Bearer %s", token)
 
 	return header
+}
+
+func MergeMapToHeader(req *http.Request, headers map[string]string) {
+	for headerKey, headerVal := range headers {
+		req.Header.Set(headerKey, headerVal)
+	}
+
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+}
+
+func ComposeTestRequest(method, url string, params *url.Values, headers map[string]string) (*http.Request, error) {
+	req, err := http.NewRequest(
+		method,
+		url,
+		strings.NewReader(params.Encode()),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	MergeMapToHeader(req, headers)
+
+	return req, nil
 }

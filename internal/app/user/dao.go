@@ -267,18 +267,12 @@ OFFSET $3;
 }
 
 func (dao *UserDAO) GetUserByID(ID int64, fields ...string) (*models.User, error) {
-	if len(fields) == 0 {
-		fields = append(fields, "*")
-	}
-
-	fieldsStr := strings.TrimSuffix(strings.Join(fields, ","), ",")
-
 	baseQuery := `
 SELECT %s
 FROM users
 WHERE id = $1
 `
-	query := fmt.Sprintf(baseQuery, fieldsStr)
+	query := fmt.Sprintf(baseQuery, db.ComposeFieldsSQLString(fields...))
 
 	var user models.User
 

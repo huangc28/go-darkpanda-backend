@@ -10,6 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _manager *Manager
+
 type initializer func() error
 
 type Manager struct {
@@ -86,17 +88,22 @@ func (m *Manager) ExecDBInit() *Manager {
 }
 
 func (m *Manager) ExecRedisInit() *Manager {
-	rdsConf := config.GetAppConf().RedisConf
+	m.Exec("init redis", func() error {
 
-	err := db.InitRedis(db.RedisConf{
-		Addr:     rdsConf.Addr,
-		Password: rdsConf.Password,
-		DB:       rdsConf.DB,
+		rdsConf := config.GetAppConf().RedisConf
+
+		err := db.InitRedis(db.RedisConf{
+			Addr:     rdsConf.Addr,
+			Password: rdsConf.Password,
+			DB:       rdsConf.DB,
+		})
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		return nil
 	})
-
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	return m
 }
@@ -137,22 +144,22 @@ func (m *Manager) Run(f func()) {
 }
 
 func NewManager() *Manager {
-	manager := &Manager{
+	_manager := &Manager{
 		initials:     make(map[string]initializer),
 		initialState: make(map[string]bool),
 	}
 
-	return manager
+	return _manager
 }
 
 func NewDefaultManager() *Manager {
-	manager := &Manager{
+	_manager := &Manager{
 		initials:     make(map[string]initializer),
 		initialState: make(map[string]bool),
 	}
 
 	// we need to initialize log register before call log
-	manager.
+	_manager.
 		ExecAppConfig().
 		ExecDBInit().
 		ExecRedisInit()
@@ -163,15 +170,9 @@ func NewDefaultManager() *Manager {
 	//swagger.GenerateDoc()
 	//}
 
-	//manager.RegisterMySQL("init db(mysql)")
+	return _manager
+}
 
-	//manager.Register("init redis", func() error {
-	//err := database.InitRedisConnections()
-	//if err != nil {
-	//return err
-	//}
-	//return nil
-	//})
-
-	return manager
+func GetManager() *Manager {
+	return _manager
 }

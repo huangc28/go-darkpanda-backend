@@ -15,6 +15,7 @@ require (
 	github.com/go-redis/redis/v8 v8.0.0-beta.7
 	github.com/go-sql-driver/mysql v1.5.1-0.20200311113236-681ffa848bae // indirect
 	github.com/golang-migrate/migrate/v4 v4.12.2
+	github.com/golang/mock v1.4.4
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20181103185306-d547d1d9531e // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
@@ -24,7 +25,7 @@ require (
 	github.com/looplab/fsm v0.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
 	github.com/prometheus/common v0.9.1
-	github.com/pubnub/go v4.9.1+incompatible // indirect
+	github.com/pubnub/go v4.9.1+incompatible
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304 // indirect

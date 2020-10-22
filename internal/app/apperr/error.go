@@ -41,6 +41,7 @@ func GetErrorMessage(code string) string {
 		MasterErrorMessageMap = mergeMaps(
 			AuthErrCodeMsgMap,
 			InquiryErrCodeMsgMap,
+			ChatErrorMessageMap,
 			ImageErrCodeMap,
 		)
 	}
