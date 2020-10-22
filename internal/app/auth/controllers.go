@@ -15,11 +15,11 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/db"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/twilio"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
-	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/spf13/viper"
 	"github.com/ventu-io/go-shortid"
 )

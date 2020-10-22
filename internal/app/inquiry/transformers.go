@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	convertnullsql "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/convert_null_sql"
-	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/shopspring/decimal"
 )
 

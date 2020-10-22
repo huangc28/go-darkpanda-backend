@@ -1,15 +1,15 @@
 package image
 
 import (
-	"database/sql"
 	"strings"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
-	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	"github.com/jmoiron/sqlx"
 )
 
 type ImageDAO struct {
-	DB *sql.DB
+	DB *sqlx.DB
 }
 
 type ImageDAOer interface {

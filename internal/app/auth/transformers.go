@@ -1,6 +1,6 @@
 package auth
 
-import "github.com/huangc28/go-darkpanda-backend/internal/models"
+import "github.com/huangc28/go-darkpanda-backend/internal/app/models"
 
 type AuthTransformer interface {
 	TransformUser(m *models.User) *TransformedUser

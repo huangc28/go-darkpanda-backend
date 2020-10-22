@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
-	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
 type ChatDaoer interface {

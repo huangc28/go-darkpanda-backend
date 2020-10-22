@@ -3,7 +3,7 @@ package inquiry
 import (
 	"fmt"
 
-	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/looplab/fsm"
 )
 

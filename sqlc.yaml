@@ -1,7 +1,7 @@
 version: "1"
 packages:
   - name: "models"
-    path: "internal/models"
+    path: "internal/app/models"
     queries: "./db/query/"
     schema: "./db/"
     engine: "postgresql"

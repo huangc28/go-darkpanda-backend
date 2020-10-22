@@ -60,19 +60,19 @@ func (cs *ChatServices) WithTx(tx *sqlx.Tx) ChatServicer {
 
 func (cs *ChatServices) CreateAndJoinChatroom(inquiryID int64, userIDs ...int64) (*ChatroomInfo, error) {
 	// Create chatroom
-	channelUuid, err := cs.ChatDao.CreateChat(inquiryID)
+	chatInfo, err := cs.ChatDao.CreateChat(inquiryID)
 
 	if err != nil {
 		return (*ChatroomInfo)(nil), err
 	}
 
 	// Join chatroom
-	if err := cs.ChatDao.JoinChat(channelUuid, userIDs...); err != nil {
+	if err := cs.ChatDao.JoinChat(chatInfo.ChatID, userIDs...); err != nil {
 		return (*ChatroomInfo)(nil), err
 	}
 
 	return &ChatroomInfo{
-		ChannelUuid: chatroomInfo.ChannelUuid,
-		ChatroomID:  chatroomInfo.ChatroomID,
+		ChannelUuid: chatInfo.ChanelUuid,
+		ChatroomID:  chatInfo.ChatID,
 	}, nil
 }

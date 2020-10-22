@@ -6,7 +6,7 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	models "github.com/huangc28/go-darkpanda-backend/internal/models"
+	models "github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	reflect "reflect"
 )
 

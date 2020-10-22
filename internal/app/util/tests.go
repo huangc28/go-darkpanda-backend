@@ -12,8 +12,8 @@ import (
 
 	faker "github.com/bxcodec/faker/v3"
 	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
-	"github.com/huangc28/go-darkpanda-backend/internal/models"
 	"github.com/ventu-io/go-shortid"
 )
 

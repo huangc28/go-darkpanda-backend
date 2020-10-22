@@ -3,7 +3,7 @@ package user
 import (
 	"time"
 
-	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 
 	convertnullsql "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/convert_null_sql"
 )

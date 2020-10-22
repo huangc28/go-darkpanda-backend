@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/huangc28/go-darkpanda-backend/internal/models"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 )
