@@ -10,6 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
@@ -23,7 +24,7 @@ type InquiryHandlers struct {
 	UserDao       UserDaoer
 	InquiryDao    InquiryDAOer
 	LobbyServices LobbyServicer
-	ChatServices  ChatServicer
+	ChatServices  contracts.ChatServicer
 }
 
 // @TODO budget received from client should be type float instead of string.
@@ -548,7 +549,6 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	}
 
 	// Both male and Female user should also join private chatroom
-	log.Printf("DEBUG 12 %v %v", inquirer.ID, inquiree.ID)
 	chatroomInfo, err := h.ChatServices.
 		WithTx(tx).
 		CreateAndJoinChatroom(uiq.ID, inquirer.ID, inquiree.ID)
@@ -570,7 +570,7 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, NewTransform().TransformPickupInquiry(
 		uiq,
 		inquirer,
-		chatroomInfo.ChannelUuid,
+		chatroomInfo.ChanelUuid,
 	))
 }
 

@@ -4,11 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/middlewares"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
-func Routes(r *gin.RouterGroup, userDao UserDaoer) {
+func Routes(r *gin.RouterGroup, userDao UserDaoer, chatServices contracts.ChatServicer) {
 	g := r.Group(
 		"/inquiries",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
@@ -24,11 +25,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer) {
 				DB: db.GetDB(),
 			},
 		},
-		ChatServices: &ChatServices{
-			ChatDao: &ChatDao{
-				DB: db.GetDB(),
-			},
-		},
+		ChatServices: chatServices,
 	}
 
 	g.GET(

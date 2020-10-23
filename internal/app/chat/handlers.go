@@ -7,12 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/darkpubnub"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 )
 
 type ChatHandlers struct {
-	ChatDao ChatDaoer
+	ChatDao contracts.ChatDaoer
 }
 
 type EmitTextMessageBody struct {

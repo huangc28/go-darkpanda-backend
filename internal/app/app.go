@@ -52,6 +52,7 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	inquiry.Routes(
 		rv1,
 		user.NewUserDAO(db.GetDB()),
+		chat.NewChatServices(chat.NewChatDao(db.GetDB())),
 	)
 
 	image.Routes(rv1)
