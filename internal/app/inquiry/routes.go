@@ -9,7 +9,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
-func Routes(r *gin.RouterGroup, userDao UserDaoer, chatServices contracts.ChatServicer) {
+func Routes(r *gin.RouterGroup, userDao contracts.UserDAOer, chatServices contracts.ChatServicer, chatDao contracts.ChatDaoer) {
 	g := r.Group(
 		"/inquiries",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
@@ -26,6 +26,7 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer, chatServices contracts.ChatSe
 			},
 		},
 		ChatServices: chatServices,
+		ChatDao:      chatDao,
 	}
 
 	g.GET(
@@ -40,20 +41,28 @@ func Routes(r *gin.RouterGroup, userDao UserDaoer, chatServices contracts.ChatSe
 		GetInquiryHandler,
 	)
 
-	// Emit a new inquiry
+	// Emit a new inquiry by male user.
 	g.POST(
 		"",
 		middlewares.IsMale(userDao),
 		handlers.EmitInquiryHandler,
 	)
 
-	// Cancel inquiry
+	// Cancel a inquiry.
 	g.PATCH(
 		"/:inquiry_uuid/cancel",
 		ValidateInqiuryURIParams(),
-		middlewares.IsMale(userDao),
 		ValidateBeforeAlterInquiryStatus(Cancel),
 		CancelInquiryHandler,
+	)
+
+	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
+	g.PATCH(
+		"/:inquiry_uuid/revert-chat",
+		ValidateInqiuryURIParams(),
+		middlewares.IsMale(userDao),
+		ValidateBeforeAlterInquiryStatus(RevertChat),
+		handlers.RevertChat,
 	)
 
 	// expire an inquiry

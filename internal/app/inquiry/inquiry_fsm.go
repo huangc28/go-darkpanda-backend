@@ -15,6 +15,7 @@ var (
 	Pickup      InquiryActions = "pickup"
 	GirlApprove InquiryActions = "girl_approve"
 	Book        InquiryActions = "book"
+	RevertChat  InquiryActions = "revert_chat"
 )
 
 func (a *InquiryActions) ToString() string {
@@ -29,6 +30,13 @@ func NewInquiryFSM(initial models.InquiryStatus) (*fsm.FSM, error) {
 	f := fsm.NewFSM(
 		initial.ToString(),
 		fsm.Events{
+			{
+				Name: RevertChat.ToString(),
+				Src: []string{
+					string(models.InquiryStatusChatting),
+				},
+				Dst: string(models.InquiryStatusInquiring),
+			},
 			{
 				Name: Cancel.ToString(),
 				Src: []string{

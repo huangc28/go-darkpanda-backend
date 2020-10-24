@@ -6,6 +6,10 @@ const (
 	FailedToGetChatRoomByChannelUuid      = "7000003"
 	MessageExceedMaximumCount             = "7000004"
 	ChatRoomHasExpired                    = "7000005"
+	FailedToGetChatRoomByInquiryID        = "7000006"
+	FailedToLeaveChat                     = "7000007"
+	FailedToDeleteChat                    = "7000008"
+	FailedToLeaveAllMembers               = "7000009"
 )
 
 var ChatErrorMessageMap = map[string]string{

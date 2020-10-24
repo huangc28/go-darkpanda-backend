@@ -126,10 +126,44 @@ func (mr *MockChatDaoerMockRecorder) JoinChat(chatID interface{}, userIDs ...int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JoinChat", reflect.TypeOf((*MockChatDaoer)(nil).JoinChat), varargs...)
 }
 
-// GetChatRoomByChannelID mocks base method
-func (m *MockChatDaoer) GetChatRoomByChannelID(channelUuid string, fields ...string) (*models.Chatroom, error) {
+// LeaveChat mocks base method
+func (m *MockChatDaoer) LeaveChat(chatID int64, userIDs ...int64) error {
 	m.ctrl.T.Helper()
-	varargs := []interface{}{channelUuid}
+	varargs := []interface{}{chatID}
+	for _, a := range userIDs {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "LeaveChat", varargs...)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// LeaveChat indicates an expected call of LeaveChat
+func (mr *MockChatDaoerMockRecorder) LeaveChat(chatID interface{}, userIDs ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{chatID}, userIDs...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveChat", reflect.TypeOf((*MockChatDaoer)(nil).LeaveChat), varargs...)
+}
+
+// LeaveAllMemebers mocks base method
+func (m *MockChatDaoer) LeaveAllMemebers(chatroomID int64) ([]models.User, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "LeaveAllMemebers", chatroomID)
+	ret0, _ := ret[0].([]models.User)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// LeaveAllMemebers indicates an expected call of LeaveAllMemebers
+func (mr *MockChatDaoerMockRecorder) LeaveAllMemebers(chatroomID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LeaveAllMemebers", reflect.TypeOf((*MockChatDaoer)(nil).LeaveAllMemebers), chatroomID)
+}
+
+// GetChatRoomByChannelID mocks base method
+func (m *MockChatDaoer) GetChatRoomByChannelID(chanelUUID string, fields ...string) (*models.Chatroom, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{chanelUUID}
 	for _, a := range fields {
 		varargs = append(varargs, a)
 	}
@@ -140,16 +174,52 @@ func (m *MockChatDaoer) GetChatRoomByChannelID(channelUuid string, fields ...str
 }
 
 // GetChatRoomByChannelID indicates an expected call of GetChatRoomByChannelID
-func (mr *MockChatDaoerMockRecorder) GetChatRoomByChannelID(channelUuid interface{}, fields ...interface{}) *gomock.Call {
+func (mr *MockChatDaoerMockRecorder) GetChatRoomByChannelID(chanelUUID interface{}, fields ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	varargs := append([]interface{}{channelUuid}, fields...)
+	varargs := append([]interface{}{chanelUUID}, fields...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatRoomByChannelID", reflect.TypeOf((*MockChatDaoer)(nil).GetChatRoomByChannelID), varargs...)
 }
 
-// WithTx mocks base method
-func (m *MockChatDaoer) WithTx(tx *sqlx.Tx) {
+// GetChatRoomByInquiryID mocks base method
+func (m *MockChatDaoer) GetChatRoomByInquiryID(inquiryID int64, fields ...string) (*models.Chatroom, error) {
 	m.ctrl.T.Helper()
-	m.ctrl.Call(m, "WithTx", tx)
+	varargs := []interface{}{inquiryID}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetChatRoomByInquiryID", varargs...)
+	ret0, _ := ret[0].(*models.Chatroom)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetChatRoomByInquiryID indicates an expected call of GetChatRoomByInquiryID
+func (mr *MockChatDaoerMockRecorder) GetChatRoomByInquiryID(inquiryID interface{}, fields ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{inquiryID}, fields...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChatRoomByInquiryID", reflect.TypeOf((*MockChatDaoer)(nil).GetChatRoomByInquiryID), varargs...)
+}
+
+// DeleteChatRoom mocks base method
+func (m *MockChatDaoer) DeleteChatRoom(ID int64) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "DeleteChatRoom", ID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// DeleteChatRoom indicates an expected call of DeleteChatRoom
+func (mr *MockChatDaoerMockRecorder) DeleteChatRoom(ID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteChatRoom", reflect.TypeOf((*MockChatDaoer)(nil).DeleteChatRoom), ID)
+}
+
+// WithTx mocks base method
+func (m *MockChatDaoer) WithTx(tx *sqlx.Tx) contracts.ChatDaoer {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "WithTx", tx)
+	ret0, _ := ret[0].(contracts.ChatDaoer)
+	return ret0
 }
 
 // WithTx indicates an expected call of WithTx

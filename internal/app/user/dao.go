@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
@@ -39,19 +40,21 @@ type UserDAO struct {
 	db db.Conn
 }
 
-func NewUserDAO(db *sqlx.DB) UserDAOer {
+func NewUserDAO(db *sqlx.DB) contracts.UserDAOer {
 	return &UserDAO{
 		db: db,
 	}
 }
 
-func (dao *UserDAO) WithTx(tx *sqlx.Tx) {
+func (dao *UserDAO) WithTx(tx *sqlx.Tx) contracts.UserDAOer {
 	dao.db = tx
+
+	return dao
 }
 
 // https://stackoverflow.com/questions/40093809/why-is-my-t-sql-left-join-not-working/40093841
 // GetUserInfoWithInquiryByUuid
-func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*User, error) {
+func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*models.UserWithInquiries, error) {
 	sql := `
 		SELECT
 			users.username,
@@ -87,7 +90,7 @@ func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid strin
 			&inquiry.ServiceType,
 			&inquiry.InquiryStatus,
 		); err != nil {
-			return (*User)(nil), err
+			return nil, err
 		}
 
 		user.Inquiries = append(user.Inquiries, inquiry)
@@ -109,7 +112,7 @@ type UpdateUserInfoParams struct {
 }
 
 // https://stackoverflow.com/questions/13305878/dont-update-column-if-update-value-is-null
-func (dao *UserDAO) UpdateUserInfoByUuid(ctx context.Context, p UpdateUserInfoParams) (*models.User, error) {
+func (dao *UserDAO) UpdateUserInfoByUuid(ctx context.Context, p contracts.UpdateUserInfoParams) (*models.User, error) {
 	sql := `
 UPDATE users SET
 	avatar_url = COALESCE($1, avatar_url),

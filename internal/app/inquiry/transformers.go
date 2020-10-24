@@ -308,3 +308,46 @@ func (t *InquiryTransform) TransformGetInquiry(iq models.ServiceInquiry) (*Trans
 		lat,
 	}, nil
 }
+
+type RemovedUser struct {
+	UUID string `json:"uuid"`
+}
+
+type RevertedInquiry struct {
+	UUID          string `json:"uuid"`
+	InquiryStatus string `json:"inquiry_status"`
+}
+
+type RemovedChatRoom struct {
+	ChanelUUID string `json:"chanel_uuid"`
+}
+type TransformedRevertChatting struct {
+	RemovedUsers    []RemovedUser   `json:"removed_users"`
+	RemovedChatRoom RemovedChatRoom `json:"removed_chatroom"`
+	RevertedInquiry RevertedInquiry `json:"reverted_inquiry"`
+	LobbyChannelID  *string         `json:"lobby_channel_id"`
+}
+
+func (t *InquiryTransform) TransformRevertChatting(removedUsers []models.User, inquiry models.ServiceInquiry, chatroom models.Chatroom, lobbyChannelID *string) *TransformedRevertChatting {
+	rusers := make([]RemovedUser, 0)
+
+	for _, removedUser := range removedUsers {
+		ruser := RemovedUser{
+			UUID: removedUser.Uuid,
+		}
+
+		rusers = append(rusers, ruser)
+	}
+
+	return &TransformedRevertChatting{
+		RemovedUsers: rusers,
+		RemovedChatRoom: RemovedChatRoom{
+			ChanelUUID: chatroom.ChannelUuid.String,
+		},
+		RevertedInquiry: RevertedInquiry{
+			UUID:          inquiry.Uuid,
+			InquiryStatus: inquiry.InquiryStatus.ToString(),
+		},
+		LobbyChannelID: lobbyChannelID,
+	}
+}

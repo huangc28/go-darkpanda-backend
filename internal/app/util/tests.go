@@ -183,6 +183,21 @@ func GenTestServiceParams(customerID int64, serviceProviderID int64, inquiryID i
 	return p, nil
 }
 
+func GenTestChat(inquiryID int64, chatUserIDs ...int64) (*models.CreateChatroomParams, error) {
+	m := &models.CreateChatroomParams{}
+	if err := faker.FakeData(m); err != nil {
+		return nil, err
+	}
+
+	m.InquiryID = int32(inquiryID)
+	m.ChannelUuid = sql.NullString{
+		String: shortid.MustGenerate(),
+		Valid:  true,
+	}
+
+	return m, nil
+}
+
 func GenTestPayment(payerID int64, payeeID int64, serviceID int64) (*models.CreatePaymentParams, error) {
 	p := &models.CreatePaymentParams{}
 

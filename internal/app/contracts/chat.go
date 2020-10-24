@@ -13,6 +13,10 @@ type ChatServicer interface {
 type ChatDaoer interface {
 	CreateChat(inquiryID int64) (*models.ChatInfo, error)
 	JoinChat(chatID int64, userIDs ...int64) error
-	GetChatRoomByChannelID(channelUuid string, fields ...string) (*models.Chatroom, error)
-	WithTx(tx *sqlx.Tx)
+	LeaveChat(chatID int64, userIDs ...int64) error
+	LeaveAllMemebers(chatroomID int64) ([]models.User, error)
+	GetChatRoomByChannelID(chanelUUID string, fields ...string) (*models.Chatroom, error)
+	GetChatRoomByInquiryID(inquiryID int64, fields ...string) (*models.Chatroom, error)
+	DeleteChatRoom(ID int64) error
+	WithTx(tx *sqlx.Tx) ChatDaoer
 }

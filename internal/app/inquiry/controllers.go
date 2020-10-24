@@ -21,10 +21,11 @@ import (
 )
 
 type InquiryHandlers struct {
-	UserDao       UserDaoer
+	UserDao       contracts.UserDAOer
 	InquiryDao    InquiryDAOer
 	LobbyServices LobbyServicer
 	ChatServices  contracts.ChatServicer
+	ChatDao       contracts.ChatDaoer
 }
 
 // @TODO budget received from client should be type float instead of string.
@@ -548,7 +549,7 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	// Both male and Female user should also join private chatroom
+	// Both male and Female user should also join private chatroom.
 	chatroomInfo, err := h.ChatServices.
 		WithTx(tx).
 		CreateAndJoinChatroom(uiq.ID, inquirer.ID, inquiree.ID)
@@ -804,4 +805,174 @@ func ManApproveInquiry(c *gin.Context) {
 	tx.Commit()
 
 	c.JSON(http.StatusOK, NewTransform().TransformBookedService(srv, srvProvider))
+}
+
+// @TODO
+//   - Emit both chat participants that the chat is closed.
+//   - All chat participants should be removed from the chat.
+func (h *InquiryHandlers) RevertChat(c *gin.Context) {
+	eiiq, exists := c.Get("inquiry")
+
+	if !exists {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.FSMNotSetInMiddleware),
+		)
+		return
+	}
+
+	iq := (eiiq).(*models.ServiceInquiry)
+
+	// Find chatroom by inquiry_id, find inquiry_id by inquiry_uuid
+	chatroom, err := h.ChatDao.GetChatRoomByInquiryID(
+		iq.ID,
+		"id",
+		"channel_uuid",
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToGetChatRoomByInquiryID,
+				err.Error(),
+			),
+		)
+		return
+
+	}
+
+	// Leave chat.
+	ctx := context.Background()
+	tx := db.GetDB().MustBegin()
+
+	removedUsers, err := h.ChatDao.WithTx(tx).LeaveAllMemebers(chatroom.ID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToLeaveAllMembers,
+				err.Error(),
+			),
+		)
+
+		tx.Rollback()
+		return
+	}
+
+	// Soft delete chatroom
+	if err := h.ChatDao.
+		WithTx(tx).
+		DeleteChatRoom(chatroom.ID); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToDeleteChat,
+				err.Error(),
+			),
+		)
+
+		tx.Rollback()
+		return
+	}
+
+	// Change inquiry status to `inquiring` if inquiry has not expired.
+	q := models.New(tx)
+
+	var lobbyChannelID *string
+	if IsInquiryExpired(iq.ExpiredAt.Time) {
+		*iq, err = q.PatchInquiryStatusByUuid(
+			ctx,
+			models.PatchInquiryStatusByUuidParams{
+				Uuid:          iq.Uuid,
+				InquiryStatus: models.InquiryStatusExpired,
+			},
+		)
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToPatchInquiryStatus,
+					err.Error(),
+				),
+			)
+
+			tx.Rollback()
+			return
+		}
+	} else {
+		*iq, err = q.PatchInquiryStatusByUuid(
+			ctx,
+			models.PatchInquiryStatusByUuidParams{
+				Uuid:          iq.Uuid,
+				InquiryStatus: models.InquiryStatusInquiring,
+			},
+		)
+
+		log.Printf("DEBUG iq 88 %v ", iq)
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToPatchInquiryStatus,
+					err.Error(),
+				),
+			)
+
+			tx.Rollback()
+			return
+		}
+
+		// If requester is male user. Rejoin the user to lobby
+		isMale, err := h.UserDao.
+			WithTx(tx).
+			CheckIsMaleByUuid(c.GetString("uuid"))
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToCheckGender,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		if isMale {
+			*lobbyChannelID, err = h.LobbyServices.
+				WithTx(tx).
+				JoinLobby(iq.ID)
+
+			if err != nil {
+				c.AbortWithError(
+					http.StatusInternalServerError,
+					apperr.NewErr(
+						apperr.FailedToJoinLobby,
+						err.Error(),
+					),
+				)
+
+				tx.Rollback()
+				return
+			}
+		}
+	}
+
+	tx.Commit()
+
+	// Returns:
+	//   - [x]Removed users
+	//   - [x]Inquiry info
+	//   - [x]Deleted chatroom
+	c.JSON(http.StatusOK, NewTransform().TransformRevertChatting(
+		removedUsers,
+		*iq,
+		*chatroom,
+		lobbyChannelID,
+	))
 }

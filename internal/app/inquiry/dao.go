@@ -7,16 +7,7 @@ import (
 
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
-	"github.com/jmoiron/sqlx"
 )
-
-type UserDaoer interface {
-	CheckIsMaleByUuid(uuid string) (bool, error)
-	CheckIsFemaleByUuid(uuid string) (bool, error)
-	GetUserByID(ID int64, fields ...string) (*models.User, error)
-	GetUserByUuid(uuid string, fields ...string) (*models.User, error)
-	WithTx(tx *sqlx.Tx)
-}
 
 type InquiryDAOer interface {
 	CheckHasActiveInquiryByID(id int64) (bool, error)

@@ -70,6 +70,10 @@ func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
 		),
 	)
 
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
 	ctrl := gomock.NewController(suite.T())
 	mChatDao := mock.NewMockChatDaoer(ctrl)
 	mChatDao.
@@ -89,10 +93,6 @@ func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
 
 	handlers := chat.ChatHandlers{
 		ChatDao: mChatDao,
-	}
-
-	if err != nil {
-		suite.T().Fatal(err)
 	}
 
 	c.Request = req

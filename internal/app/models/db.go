@@ -25,6 +25,9 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.checkUserOwnsInquiryStmt, err = db.PrepareContext(ctx, checkUserOwnsInquiry); err != nil {
 		return nil, fmt.Errorf("error preparing query CheckUserOwnsInquiry: %w", err)
 	}
+	if q.createChatroomStmt, err = db.PrepareContext(ctx, createChatroom); err != nil {
+		return nil, fmt.Errorf("error preparing query CreateChatroom: %w", err)
+	}
 	if q.createInquiryStmt, err = db.PrepareContext(ctx, createInquiry); err != nil {
 		return nil, fmt.Errorf("error preparing query CreateInquiry: %w", err)
 	}
@@ -93,6 +96,11 @@ func (q *Queries) Close() error {
 	if q.checkUserOwnsInquiryStmt != nil {
 		if cerr := q.checkUserOwnsInquiryStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing checkUserOwnsInquiryStmt: %w", cerr)
+		}
+	}
+	if q.createChatroomStmt != nil {
+		if cerr := q.createChatroomStmt.Close(); cerr != nil {
+			err = fmt.Errorf("error closing createChatroomStmt: %w", cerr)
 		}
 	}
 	if q.createInquiryStmt != nil {
@@ -235,6 +243,7 @@ type Queries struct {
 	db                            DBTX
 	tx                            *sql.Tx
 	checkUserOwnsInquiryStmt      *sql.Stmt
+	createChatroomStmt            *sql.Stmt
 	createInquiryStmt             *sql.Stmt
 	createPaymentStmt             *sql.Stmt
 	createRefcodeStmt             *sql.Stmt
@@ -262,6 +271,7 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		db:                            tx,
 		tx:                            tx,
 		checkUserOwnsInquiryStmt:      q.checkUserOwnsInquiryStmt,
+		createChatroomStmt:            q.createChatroomStmt,
 		createInquiryStmt:             q.createInquiryStmt,
 		createPaymentStmt:             q.createPaymentStmt,
 		createRefcodeStmt:             q.createRefcodeStmt,

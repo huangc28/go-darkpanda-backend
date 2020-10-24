@@ -173,7 +173,6 @@ type LobbyUser struct {
 	ChannelUuid string       `json:"channel_uuid"`
 	InquiryID   int32        `json:"inquiry_id"`
 	CreatedAt   time.Time    `json:"created_at"`
-	ExpiredAt   time.Time    `json:"expired_at"`
 	UpdatedAt   sql.NullTime `json:"updated_at"`
 	DeletedAt   sql.NullTime `json:"deleted_at"`
 }

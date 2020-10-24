@@ -26,8 +26,10 @@ const (
 	PrivateChatKey = "private_chat:%s"
 )
 
-func (dao *ChatDao) WithTx(tx *sqlx.Tx) {
+func (dao *ChatDao) WithTx(tx *sqlx.Tx) contracts.ChatDaoer {
 	dao.DB = tx
+
+	return dao
 }
 
 func (dao *ChatDao) CreateChat(inquiryID int64) (*models.ChatInfo, error) {
@@ -99,6 +101,27 @@ INSERT INTO chatroom_users (
 	return nil
 }
 
+func (dao *ChatDao) LeaveChat(chatID int64, userIDs ...int64) error {
+	baseQuery := `
+UPDATE chatroom_users SET deleted_at = now()	
+WHERE user_id IN (%s) 
+AND chatroom_id = $1;
+	`
+	idStr := ""
+	for _, id := range userIDs {
+		idStr += fmt.Sprintf("%d,", id)
+	}
+
+	idStr = strings.TrimSuffix(idStr, ",")
+	query := fmt.Sprintf(baseQuery, idStr)
+
+	if _, err := dao.DB.Exec(query, chatID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (dao *ChatDao) GetChatRoomByChannelID(channelUuid string, fields ...string) (*models.Chatroom, error) {
 	query := `
 SELECT %s
@@ -108,12 +131,112 @@ WHERE channel_uuid = $1;
 
 	var chatroom models.Chatroom
 
-	if err := dao.DB.QueryRow(
+	if err := dao.DB.QueryRowx(
 		fmt.Sprintf(query, db.ComposeFieldsSQLString(fields...)),
 		channelUuid,
-	).Scan(&chatroom); err != nil {
+	).StructScan(&chatroom); err != nil {
 		return (*models.Chatroom)(nil), err
 	}
 
 	return &chatroom, nil
 }
+
+func (dao *ChatDao) GetChatRoomByInquiryID(inquiryID int64, fields ...string) (*models.Chatroom, error) {
+	query := `
+SELECT %s
+FROM chatrooms
+WHERE inquiry_id = $1;
+	`
+
+	var chatroom models.Chatroom
+
+	if err := dao.DB.QueryRowx(
+		fmt.Sprintf(query, db.ComposeFieldsSQLString(fields...)),
+		inquiryID,
+	).StructScan(&chatroom); err != nil {
+		return (*models.Chatroom)(nil), err
+	}
+
+	return &chatroom, nil
+}
+
+func (dao *ChatDao) DeleteChatRoom(ID int64) error {
+	sql := `
+UPDATE chatrooms 
+SET deleted_at = now()
+WHERE id = $1;
+	`
+	if _, err := dao.DB.Exec(sql, ID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (dao *ChatDao) LeaveAllMemebers(chatroomID int64) ([]models.User, error) {
+	sql := `
+UPDATE chatroom_users 	
+SET deleted_at = now()
+WHERE chatroom_id = $1 
+RETURNING user_id
+	`
+	var ids []int
+	rows, err := dao.DB.Query(sql, chatroomID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var id int
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+
+		ids = append(ids, id)
+	}
+
+	// log.Printf("DEBUG & 2 %v ", users)
+	return dao.GetUserUUIDsByIDs(ids...)
+}
+
+func (dao *ChatDao) GetUserUUIDsByIDs(IDs ...int) ([]models.User, error) {
+	baseQuery := `
+SELECT 
+	id,
+	uuid 
+FROM 
+	users	
+WHERE
+	id IN (%s)
+	`
+	idStr := ""
+
+	for _, id := range IDs {
+		idStr += fmt.Sprintf("%d,", id)
+	}
+
+	idStr = strings.TrimSuffix(idStr, ",")
+	query := fmt.Sprintf(baseQuery, idStr)
+
+	rows, err := dao.DB.Query(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var users []models.User
+	for rows.Next() {
+		var user models.User
+
+		if err := rows.Scan(&user.ID, &user.Uuid); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
+}
+
+// func (dao *ChatDao) RevertChatByInquiryUuid(inquiryUuid string)

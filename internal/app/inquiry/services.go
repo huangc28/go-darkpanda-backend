@@ -1,6 +1,8 @@
 package inquiry
 
 import (
+	"time"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -10,16 +12,13 @@ type LobbyServicer interface {
 	WithTx(tx *sqlx.Tx) LobbyServicer
 }
 
+func IsInquiryExpired(expT time.Time) bool {
+	return expT.Before(time.Now())
+}
+
 type LobbyServices struct {
 	LobbyDao LobbyDaoer
 }
-
-// LobbyKey lobby key is composed of user uuid and current unix timestamp
-const (
-	LobbyKey     = "lobby_%s"
-	JoinedAtKey  = "joined_at"
-	ExpiredAtKey = "expired_at"
-)
 
 func (l *LobbyServices) WithTx(tx *sqlx.Tx) LobbyServicer {
 	l.LobbyDao.WithTx(tx)

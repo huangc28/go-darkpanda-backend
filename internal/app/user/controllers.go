@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	log "github.com/sirupsen/logrus"
@@ -203,7 +204,7 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 	ctx := context.Background()
 	uuid := c.GetString("uuid")
 	dao := NewUserDAO(db.GetDB())
-	user, err := dao.UpdateUserInfoByUuid(ctx, UpdateUserInfoParams{
+	user, err := dao.UpdateUserInfoByUuid(ctx, contracts.UpdateUserInfoParams{
 		AvatarURL:   body.AvatarURL,
 		Nationality: body.Nationality,
 		Region:      body.Region,
