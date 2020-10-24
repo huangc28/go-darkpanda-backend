@@ -2,7 +2,6 @@ package chat
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -79,21 +78,18 @@ func (h *ChatHandlers) EmitTextMessage(c *gin.Context) {
 	pubnubConf := config.GetAppConf().PubnubCredentials
 	uuid := c.GetString("uuid")
 
-	pubnub := darkpubnub.NewPubnub(darkpubnub.Config{
-		PublishKey:   pubnubConf.PublishKey,
-		SubscribeKey: pubnubConf.SubscribeKey,
-		SecretKey:    pubnubConf.SecretKey,
-		UUID:         uuid,
-	})
+	dp := darkpubnub.NewDarkPubNub(
+		darkpubnub.Config{
+			PublishKey:   pubnubConf.PublishKey,
+			SubscribeKey: pubnubConf.SubscribeKey,
+			SecretKey:    pubnubConf.SecretKey,
+			UUID:         uuid,
+		},
+	)
 
-	msg := darkpubnub.FormatTextMessage(darkpubnub.TextMessage{
+	sentTime, err := dp.SendTextMessage(body.ChannelID, darkpubnub.TextMessage{
 		Content: body.Content,
 	})
-
-	pubResp, _, err := pubnub.Publish().
-		Channel(body.ChannelID).
-		Message(msg).
-		Execute()
 
 	if err != nil {
 		c.AbortWithError(
@@ -110,7 +106,7 @@ func (h *ChatHandlers) EmitTextMessage(c *gin.Context) {
 	// Emit message to channel
 	c.JSON(http.StatusOK, NewTransformer().TransformEmitTextMessage(
 		TransformEmitTextMessageParams{
-			Timestamp: time.Unix(darkpubnub.PubnubTimestampToUnix(pubResp.Timestamp), 0),
+			Timestamp: sentTime,
 			Content:   body.Content,
 		},
 	))

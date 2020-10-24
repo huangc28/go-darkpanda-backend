@@ -1,10 +1,12 @@
 package darkpubnub
 
 import (
+	"time"
+
 	pubnub "github.com/pubnub/go"
 )
 
-var _pubnubInstance *pubnub.PubNub
+var _darkPubNubInstance *DarkPubNub
 
 type Config struct {
 	PublishKey   string
@@ -13,24 +15,41 @@ type Config struct {
 	UUID         string
 }
 
-func NewPubnub(config Config) *pubnub.PubNub {
-	initPubnub(config)
-
-	return _pubnubInstance
+type DarkPubNub struct {
+	pn *pubnub.PubNub
 }
 
-func initPubnub(config Config) {
+func NewDarkPubNub(config Config) *DarkPubNub {
+	initDarkPubNub(config)
+
+	return _darkPubNubInstance
+}
+
+func initDarkPubNub(config Config) {
 	punubConfig := pubnub.NewConfig()
 	punubConfig.PublishKey = config.PublishKey
 	punubConfig.SubscribeKey = config.SubscribeKey
 	punubConfig.SecretKey = config.SecretKey
 	punubConfig.UUID = config.UUID
 
-	_pubnubInstance = pubnub.NewPubNub(punubConfig)
+	_darkPubNubInstance = &DarkPubNub{
+		pn: pubnub.NewPubNub(punubConfig),
+	}
 }
 
-func GetPubnub() *pubnub.PubNub {
-	return _pubnubInstance
+func (p *DarkPubNub) SendTextMessage(channel string, m TextMessage) (time.Time, error) {
+	tm := FormatTextMessage(m)
+	pubResp, _, err := p.pn.
+		Publish().
+		Channel(channel).
+		Message(tm).
+		Execute()
+
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	return time.Unix(PubnubTimestampToUnix(pubResp.Timestamp), 0), nil
 }
 
 type TextMessage struct {
