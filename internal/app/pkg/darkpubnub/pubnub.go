@@ -6,6 +6,10 @@ import (
 	pubnub "github.com/pubnub/go"
 )
 
+type DarkPubNuber interface {
+	SendTextMessage(channel string, m TextMessage) (time.Time, error)
+}
+
 var _darkPubNubInstance *DarkPubNub
 
 type Config struct {
@@ -19,7 +23,7 @@ type DarkPubNub struct {
 	pn *pubnub.PubNub
 }
 
-func NewDarkPubNub(config Config) *DarkPubNub {
+func NewDarkPubNub(config Config) DarkPubNuber {
 	initDarkPubNub(config)
 
 	return _darkPubNubInstance
