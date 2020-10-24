@@ -911,8 +911,6 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 			},
 		)
 
-		log.Printf("DEBUG iq 88 %v ", iq)
-
 		if err != nil {
 			c.AbortWithError(
 				http.StatusInternalServerError,

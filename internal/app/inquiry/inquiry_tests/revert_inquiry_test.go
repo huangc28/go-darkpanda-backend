@@ -158,7 +158,7 @@ SELECT EXISTS (
 		suite.T().Fatal(err)
 	}
 
-	log.Printf("DEBUG body %v ", trf)
+	assert.NotEmpty(trf.LobbyChannelID)
 }
 
 func TestRevertInquiryTestSuite(t *testing.T) {

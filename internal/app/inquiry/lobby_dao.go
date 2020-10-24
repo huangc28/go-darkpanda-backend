@@ -68,5 +68,3 @@ AND
 
 	return nil
 }
-
-//func (dao *LobbyDao) GetLobbyByID (id int64)
