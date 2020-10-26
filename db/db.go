@@ -44,6 +44,7 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 		log.Printf("is test %t", isTestEnv)
 		initTestDB(testConf)
 
+		log.Info("Test database connected!")
 		return
 	}
 
@@ -68,7 +69,7 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 	dbInstance = driver
 	dbInstance.Mapper = reflectx.NewMapperFunc("json", strings.ToLower)
 
-	log.Info("Database connected!")
+	log.Info("DEV database connected!")
 }
 
 func initTestDB(testConf TestDBConf) {

@@ -25,6 +25,7 @@ LIMIT $2
 OFFSET $3;
 	`
 	rows, err := dao.DB.Query(query, uuid, perPage, offset)
+	defer rows.Close()
 
 	if err != nil {
 		return nil, err

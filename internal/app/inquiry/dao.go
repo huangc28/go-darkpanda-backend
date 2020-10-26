@@ -2,6 +2,7 @@ package inquiry
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -50,6 +51,7 @@ type InquiryInfo struct {
 
 // GetInquiries get list of inquiries with 7 records per page.
 func (dao *InquiryDAO) GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error) {
+	log.Printf("DEBUG  GetInquiries %v %v", offset, perpage)
 	sql := `
 SELECT
 	si.uuid,
@@ -68,7 +70,10 @@ FROM service_inquiries AS si
 INNER JOIN users
 	ON si.inquirer_id = users.id
 WHERE si.inquiry_status = $1
-AND si.expired_at > now()
+AND (
+	si.expired_at > now() 
+	OR  si.expired_at IS NULL
+)
 ORDER BY si.created_at DESC
 LIMIT $2
 OFFSET $3;
@@ -125,7 +130,6 @@ WHERE uuid = $1
 	`
 	query := fmt.Sprintf(baseQuery, fieldsStr)
 
-	//inquiry := models.ServiceInquiry{}
 	var inquiry models.ServiceInquiry
 
 	if err := dao.db.QueryRowx(query, iqUuid).StructScan(&inquiry); err != nil {

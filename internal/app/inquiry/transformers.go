@@ -11,10 +11,6 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-type InquiryTransformer interface {
-	TransformInquiry(m models.ServiceInquiry) InquiryTransform
-}
-
 type InquiryTransform struct{}
 
 func NewTransform() *InquiryTransform {
@@ -22,35 +18,51 @@ func NewTransform() *InquiryTransform {
 }
 
 type TransformedInquiry struct {
-	Uuid          string    `json:"uuid"`
-	Budget        string    `json:"budget"`
+	Uuid string `json:"uuid"`
+	// Budget        string    `json:"budget"`
+	Budget        float64   `json:"budget"`
 	ServiceType   string    `json:"service_type"`
 	InquiryStatus string    `json:"inquiry_status"`
 	CreatedAt     time.Time `json:"created_at"`
 }
 
-func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, channelID string) TransformedInquiry {
+func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, channelID string) (TransformedInquiry, error) {
+	budget, err := strconv.ParseFloat(m.Budget, 64)
+
+	if err != nil {
+		return TransformedInquiry{}, err
+
+	}
+
 	tiq := TransformedInquiry{
 		Uuid:          m.Uuid,
-		Budget:        m.Budget,
+		Budget:        budget,
 		ServiceType:   string(m.ServiceType),
 		InquiryStatus: string(m.InquiryStatus),
 		CreatedAt:     m.CreatedAt,
 	}
 
-	return tiq
+	return tiq, nil
 }
 
-func (t *InquiryTransform) TransformInquiry(m models.ServiceInquiry) TransformedInquiry {
+func (t *InquiryTransform) TransformInquiry(m models.ServiceInquiry) (TransformedInquiry, error) {
+	// Convert string to float.
+	badget, err := strconv.ParseFloat(m.Budget, 64)
+
+	if err != nil {
+		return TransformedInquiry{}, err
+
+	}
+
 	tiq := TransformedInquiry{
 		Uuid:          m.Uuid,
-		Budget:        m.Budget,
+		Budget:        badget,
 		ServiceType:   string(m.ServiceType),
 		InquiryStatus: string(m.InquiryStatus),
 		CreatedAt:     m.CreatedAt,
 	}
 
-	return tiq
+	return tiq, nil
 }
 
 type TransformedService struct {
@@ -85,8 +97,12 @@ type TransformedPickupInquiry struct {
 	Inquirer    TransformedInquirer `json:"inquirer"`
 }
 
-func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry, iqer models.User, channelUuid string) TransformedPickupInquiry {
-	tiq := t.TransformInquiry(iq)
+func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry, iqer models.User, channelUuid string) (TransformedPickupInquiry, error) {
+	tiq, err := t.TransformInquiry(iq)
+
+	if err != nil {
+		return TransformedPickupInquiry{}, nil
+	}
 
 	return TransformedPickupInquiry{
 		tiq,
@@ -96,8 +112,7 @@ func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry, iqer
 			Username:    iqer.Username,
 			PremiumType: string(iqer.PremiumType),
 		},
-	}
-
+	}, nil
 }
 
 type TransformedGirlApproveInquiry struct {
@@ -110,7 +125,11 @@ type TransformedGirlApproveInquiry struct {
 }
 
 func (t *InquiryTransform) TransformGirlApproveInquiry(iq models.ServiceInquiry) (*TransformedGirlApproveInquiry, error) {
-	tiq := t.TransformInquiry(iq)
+	tiq, err := t.TransformInquiry(iq)
+
+	if err != nil {
+		return nil, err
+	}
 
 	tPrice, err := strconv.ParseFloat(
 		iq.Price.String,
@@ -272,7 +291,6 @@ type TransformedGetInquiry struct {
 }
 
 func (t *InquiryTransform) TransformGetInquiry(iq models.ServiceInquiry) (*TransformedGetInquiry, error) {
-
 	budget, err := strconv.ParseFloat(iq.Budget, 64)
 
 	if err != nil {

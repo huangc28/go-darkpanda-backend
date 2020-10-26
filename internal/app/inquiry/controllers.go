@@ -14,6 +14,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
+	"github.com/jmoiron/sqlx"
 	"github.com/looplab/fsm"
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
@@ -175,7 +176,20 @@ func (h *InquiryHandlers) EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, NewTransform().TransformEmitInquiry(iq, channelID))
+	trf, err := NewTransform().TransformEmitInquiry(iq, channelID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformResponse,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	c.JSON(http.StatusOK, trf)
 }
 
 // Fetch nearby(?) inquiries information. Only female user can fetch inquiries info.
@@ -333,7 +347,21 @@ func CancelInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, NewTransform().TransformInquiry(uiq))
+	trf, err := NewTransform().TransformInquiry(uiq)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformResponse,
+				err.Error(),
+			),
+		)
+		return
+
+	}
+
+	c.JSON(http.StatusOK, trf)
 }
 
 func ExpireInquiryHandler(c *gin.Context) {
@@ -370,7 +398,21 @@ func ExpireInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, NewTransform().TransformInquiry(uiq))
+	trf, err := NewTransform().TransformInquiry(uiq)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformResponse,
+				err.Error(),
+			),
+		)
+		return
+
+	}
+
+	c.JSON(http.StatusOK, trf)
 }
 
 func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
@@ -439,109 +481,89 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	tx, err := db.GetDB().Beginx()
+	var (
+		uiq          models.ServiceInquiry
+		chatroomInfo *models.ChatInfo
+	)
+
+	err, errCode := db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
+		dao := NewInquiryDAO(tx)
+		lastVerIq, err := dao.GetInquiryByUuid(
+			uriParams.InquiryUuid,
+			"updated_at",
+		)
+
+		if err != nil {
+			return err, apperr.FailedToGetInquiryByUuid
+		}
+
+		// Before patching the inquiry status, we apply optimistic lock strategy which checks `updated_at` column of that inquiry again
+		// makesure it hasn't been modified by other transactions / processes. If `updated_at` at has been modified, abort the transaction.
+		if !lastVerIq.UpdatedAt.Time.Equal(iq.UpdatedAt.Time) {
+			return apperr.NewErr(apperr.FailedToPickupInquiryDueToDirtyVersion), apperr.FailedToPickupInquiryDueToDirtyVersion
+		}
+
+		uiq, err = q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
+			InquiryStatus: models.InquiryStatus(fsm.Current()),
+			Uuid:          uriParams.InquiryUuid,
+		})
+
+		if err != nil {
+			return err, apperr.FailedToPatchInquiryStatus
+		}
+
+		// @TODO
+		//   - We would need to notify the male user waiting in the lobby to enter the chatroom that the female user has created for him.
+		//   - Male user should leave lobby
+		if err := h.LobbyServices.
+			WithTx(tx).
+			LeaveLobby(uiq.ID); err != nil {
+			return err, apperr.FailedToLeaveLobby
+		}
+
+		servicePicker, err := h.UserDao.
+			WithTx(tx).
+			GetUserByUuid(c.GetString("uuid"))
+
+		if err != nil {
+			return err, apperr.FailedToGetUserByUuid
+		}
+
+		// Both male and Female user should also join private chatroom.
+		chatroomInfo, err = h.ChatServices.
+			WithTx(tx).
+			CreateAndJoinChatroom(uiq.ID, inquirer.ID, servicePicker.ID)
+
+		if err != nil {
+			return err, apperr.FailedToCreateAndJoinLobby
+		}
+
+		return nil, nil
+	})
 
 	if err != nil {
 		c.AbortWithError(
-			http.StatusInternalServerError,
+			http.StatusBadRequest,
 			apperr.NewErr(
-				apperr.FailedToBeginTx,
+				fmt.Sprintf("%v", errCode),
 				err.Error(),
 			),
 		)
 
-		tx.Rollback()
 		return
 	}
 
-	dao := NewInquiryDAO(tx)
-	lastVerIq, err := dao.GetInquiryByUuid(
-		uriParams.InquiryUuid,
-		"updated_at",
+	trf, err := NewTransform().TransformPickupInquiry(
+		uiq,
+		inquirer,
+		chatroomInfo.ChanelUuid,
 	)
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetInquiryByUuid,
-				err.Error(),
-			),
-		)
-
-		tx.Rollback()
-		return
-	}
-
-	// Before patching the inquiry status, we apply optimistic lock strategy which checks `updated_at` column of that inquiry again
-	// makesure it hasn't been modified by other transactions / processes. If `updated_at` at has been modified, abort the transaction.
-	if !lastVerIq.UpdatedAt.Time.Equal(iq.UpdatedAt.Time) {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(apperr.FailedToPickupInquiryDueToDirtyVersion),
-		)
-
-		tx.Rollback()
-		return
-	}
-
-	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
-		InquiryStatus: models.InquiryStatus(fsm.Current()),
-		Uuid:          uriParams.InquiryUuid,
-	})
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
-		)
-
-		return
-	}
-
-	if err != nil {
-		log.WithFields(log.Fields{
-			"inquirer_id": inquirer.ID,
-		}).Debugf("Failed to retrieve inquirer information %s", err.Error())
-
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetInquiererByID,
-				err.Error(),
-			),
-		)
-
-		tx.Rollback()
-		return
-	}
-
-	// @TODO
-	//   - We would need to notify the male user waiting in the lobby to enter the chatroom that the female user has created for him.
-	//   - Male user should leave lobby
-	if err := h.LobbyServices.
-		WithTx(tx).
-		LeaveLobby(uiq.ID); err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToLeaveLobby,
-				err.Error(),
-			),
-		)
-
-		tx.Rollback()
-		return
-	}
-
-	h.UserDao.WithTx(tx)
-	inquiree, err := h.UserDao.GetUserByUuid(c.GetString("uuid"), "id")
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
+				apperr.FailedToTransformResponse,
 				err.Error(),
 			),
 		)
@@ -549,30 +571,7 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	// Both male and Female user should also join private chatroom.
-	chatroomInfo, err := h.ChatServices.
-		WithTx(tx).
-		CreateAndJoinChatroom(uiq.ID, inquirer.ID, inquiree.ID)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToCreateAndJoinLobby,
-				err.Error(),
-			),
-		)
-
-		tx.Rollback()
-		return
-	}
-
-	tx.Commit()
-	c.JSON(http.StatusOK, NewTransform().TransformPickupInquiry(
-		uiq,
-		inquirer,
-		chatroomInfo.ChanelUuid,
-	))
+	c.JSON(http.StatusOK, trf)
 }
 
 // Girl has approved the inquiry, thus, update the inquiry content.
@@ -879,7 +878,6 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 
 	// Change inquiry status to `inquiring` if inquiry has not expired.
 	q := models.New(tx)
-
 	var lobbyChannelID *string
 	if IsInquiryExpired(iq.ExpiredAt.Time) {
 		*iq, err = q.PatchInquiryStatusByUuid(
@@ -938,6 +936,7 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 				),
 			)
 
+			tx.Rollback()
 			return
 		}
 

@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/prometheus/common/log"
 	"github.com/spf13/viper"
@@ -20,6 +21,9 @@ func main() {
 	manager.
 		NewDefaultManager().
 		Run(func() {
+			// Initialize IoC container.
+			deps.Get().Run()
+
 			r := gin.New()
 			app.StartApp(r)
 

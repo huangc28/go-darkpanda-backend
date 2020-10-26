@@ -52,6 +52,12 @@ func (dao *UserDAO) WithTx(tx *sqlx.Tx) contracts.UserDAOer {
 	return dao
 }
 
+func (dao *UserDAO) WithDB(db *sqlx.DB) contracts.UserDAOer {
+	dao.db = db
+
+	return dao
+}
+
 // https://stackoverflow.com/questions/40093809/why-is-my-t-sql-left-join-not-working/40093841
 // GetUserInfoWithInquiryByUuid
 func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*models.UserWithInquiries, error) {

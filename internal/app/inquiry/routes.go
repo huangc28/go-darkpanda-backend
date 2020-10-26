@@ -1,6 +1,8 @@
 package inquiry
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -10,6 +12,9 @@ import (
 )
 
 func Routes(r *gin.RouterGroup, userDao contracts.UserDAOer, chatServices contracts.ChatServicer, chatDao contracts.ChatDaoer) {
+
+	log.Printf("DEBUG 001 userDao addr %p ", userDao)
+
 	g := r.Group(
 		"/inquiries",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
@@ -31,20 +36,20 @@ func Routes(r *gin.RouterGroup, userDao contracts.UserDAOer, chatServices contra
 
 	g.GET(
 		"",
-		middlewares.IsFemale(userDao),
+		middlewares.IsFemale(),
 		handlers.GetInquiriesHandler,
 	)
 
 	g.GET(
 		"/:uuid",
-		middlewares.IsFemale(userDao),
+		middlewares.IsFemale(),
 		GetInquiryHandler,
 	)
 
 	// Emit a new inquiry by male user.
 	g.POST(
 		"",
-		middlewares.IsMale(userDao),
+		middlewares.IsMale(),
 		handlers.EmitInquiryHandler,
 	)
 
@@ -60,7 +65,7 @@ func Routes(r *gin.RouterGroup, userDao contracts.UserDAOer, chatServices contra
 	g.PATCH(
 		"/:inquiry_uuid/revert-chat",
 		ValidateInqiuryURIParams(),
-		middlewares.IsMale(userDao),
+		middlewares.IsMale(),
 		ValidateBeforeAlterInquiryStatus(RevertChat),
 		handlers.RevertChat,
 	)
@@ -69,7 +74,7 @@ func Routes(r *gin.RouterGroup, userDao contracts.UserDAOer, chatServices contra
 	g.PATCH(
 		"/:inquiry_uuid/expire",
 		ValidateInqiuryURIParams(),
-		middlewares.IsMale(userDao),
+		middlewares.IsMale(),
 		ValidateBeforeAlterInquiryStatus(Expire),
 		ExpireInquiryHandler,
 	)
@@ -78,7 +83,7 @@ func Routes(r *gin.RouterGroup, userDao contracts.UserDAOer, chatServices contra
 	g.POST(
 		"/:inquiry_uuid/pickup",
 		ValidateInqiuryURIParams(),
-		middlewares.IsFemale(userDao),
+		middlewares.IsFemale(),
 		ValidateBeforeAlterInquiryStatus(Pickup),
 		handlers.PickupInquiryHandler,
 	)
@@ -87,7 +92,7 @@ func Routes(r *gin.RouterGroup, userDao contracts.UserDAOer, chatServices contra
 	g.POST(
 		"/:inquiry_uuid/girl-approve",
 		ValidateInqiuryURIParams(),
-		middlewares.IsFemale(userDao),
+		middlewares.IsFemale(),
 		ValidateBeforeAlterInquiryStatus(GirlApprove),
 		GirlApproveInquiryHandler,
 	)
@@ -96,7 +101,7 @@ func Routes(r *gin.RouterGroup, userDao contracts.UserDAOer, chatServices contra
 	g.POST(
 		"/:inquiry_uuid/book",
 		ValidateInqiuryURIParams(),
-		middlewares.IsMale(userDao),
+		middlewares.IsMale(),
 		ValidateBeforeAlterInquiryStatus(Book),
 		ManApproveInquiry,
 	)

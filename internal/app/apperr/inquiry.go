@@ -38,6 +38,7 @@ const (
 	FailedToLeaveLobby         = "3000033"
 	FailedToCheckLobbyExpiry   = "3000034"
 	FailedToCreateAndJoinLobby = "3000035"
+	FailedToTransformResponse  = "3000036"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
