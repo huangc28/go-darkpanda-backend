@@ -33,7 +33,7 @@ type UserAPITestsSuite struct {
 
 func (suite *UserAPITestsSuite) SetupSuite() {
 	manager.
-		NewDefaultManager().
+		NewDefaultManager(context.Background()).
 		Run(func() {
 			tApp := app.StartApp(gin.Default())
 			suite.sendRequest = util.SendRequestToApp(tApp)

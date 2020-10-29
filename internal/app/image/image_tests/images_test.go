@@ -29,7 +29,7 @@ type ImageTestSuite struct {
 }
 
 func (suite *ImageTestSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
 }
 
 // Refer to this [article](https://stackoverflow.com/questions/26063271/how-to-create-a-http-request-that-contains-multiple-fileheaders)

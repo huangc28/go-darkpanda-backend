@@ -32,7 +32,7 @@ type InquiryTestSuite struct {
 }
 
 func (suite *InquiryTestSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
 	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 }
 
@@ -265,7 +265,7 @@ type GetInquiriesSuite struct {
 }
 
 func (suite *GetInquiriesSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
 	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 }
 

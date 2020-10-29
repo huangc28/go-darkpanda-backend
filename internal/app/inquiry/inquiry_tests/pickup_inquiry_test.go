@@ -14,6 +14,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
@@ -28,7 +29,9 @@ type PickupInquiryTestSuite struct {
 }
 
 func (suite *PickupInquiryTestSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
+	deps.Get().Run()
+
 	suite.SendUrlEncodedRequest = util.SendUrlEncodedRequestToApp(app.StartApp(gin.Default()))
 }
 

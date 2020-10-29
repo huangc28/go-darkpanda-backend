@@ -272,7 +272,7 @@ func (h *UserHandlers) GetUserImagesHandler(c *gin.Context) {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetImagesByUserUuid,
+				apperr.FailedToGetImagesByUserUUID,
 				err.Error(),
 			),
 		)

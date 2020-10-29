@@ -10,6 +10,7 @@ const (
 	FailedToLeaveChat                     = "7000007"
 	FailedToDeleteChat                    = "7000008"
 	FailedToLeaveAllMembers               = "7000009"
+	FailedToCreatePrivateChatRoom         = "7000010"
 )
 
 var ChatErrorMessageMap = map[string]string{

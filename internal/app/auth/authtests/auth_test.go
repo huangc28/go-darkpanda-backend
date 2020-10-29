@@ -30,7 +30,7 @@ type UserAuthTestSuite struct {
 
 func (suite *UserAuthTestSuite) SetupSuite() {
 	manager.
-		NewDefaultManager().
+		NewDefaultManager(context.Background()).
 		Run(func() {
 			suite.sendURLEncodedRequest = util.SendUrlEncodedRequestToApp(app.StartApp(gin.Default()))
 		})

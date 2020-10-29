@@ -1,12 +1,14 @@
 package manager
 
 import (
+	"context"
 	"flag"
 	"strings"
 	"sync"
 
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -19,6 +21,7 @@ type Manager struct {
 	initialState map[string]bool
 	initialNames []string
 	initComplete bool
+	ctx          context.Context
 	sync.RWMutex
 }
 
@@ -108,6 +111,21 @@ func (m *Manager) ExecRedisInit() *Manager {
 	return m
 }
 
+func (m *Manager) ExecFireStoreInit() *Manager {
+	err := darkfirestore.InitFireStore(
+		m.ctx,
+		darkfirestore.InitOptions{
+			CredentialFile: config.GetAppConf().Firestore.CredentialFile,
+		},
+	)
+
+	if err != nil {
+		log.Fatalf("Failed to initialize firestore client: \n%s", err.Error())
+	}
+
+	return m
+}
+
 func (m *Manager) Initialize() error {
 	log.Debugf("initializers: %s", strings.Join(m.initialNames, ", "))
 
@@ -143,26 +161,24 @@ func (m *Manager) Run(f func()) {
 	f()
 }
 
-func NewManager() *Manager {
+func NewManager(ctx context.Context) *Manager {
 	_manager := &Manager{
 		initials:     make(map[string]initializer),
 		initialState: make(map[string]bool),
+		ctx:          ctx,
 	}
 
 	return _manager
 }
 
-func NewDefaultManager() *Manager {
-	_manager := &Manager{
-		initials:     make(map[string]initializer),
-		initialState: make(map[string]bool),
-	}
-
+func NewDefaultManager(ctx context.Context) *Manager {
+	_manager := NewManager(ctx)
 	// we need to initialize log register before call log
 	_manager.
 		ExecAppConfig().
 		ExecDBInit().
-		ExecRedisInit()
+		ExecRedisInit().
+		ExecFireStoreInit()
 
 	// In the future, we can use condition build to make
 	// swagger not be compiled in the production environment.

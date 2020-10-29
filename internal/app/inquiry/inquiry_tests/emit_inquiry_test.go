@@ -24,7 +24,7 @@ type EmitInquiryTestSuite struct {
 }
 
 func (suite *EmitInquiryTestSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
 	suite.SendUrlEncodedRequest = util.SendUrlEncodedRequestToApp(app.StartApp(gin.Default()))
 }
 

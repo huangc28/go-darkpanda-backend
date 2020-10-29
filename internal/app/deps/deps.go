@@ -18,6 +18,8 @@ type DepContainer struct {
 	Container cintrnal.Container
 }
 
+type DepRegistrar func() error
+
 var (
 	_depContainer *DepContainer
 	once          sync.Once
@@ -33,12 +35,26 @@ func Get() *DepContainer {
 	return _depContainer
 }
 
-func (dep *DepContainer) RegisterUserDAO() {
-	dep.Container.Transient(func() contracts.UserDAOer {
-		return user.NewUserDAO(db.GetDB())
-	})
+func (dep *DepContainer) RegisterUserDAO() DepRegistrar {
+	return func() error {
+		dep.Container.Transient(func() contracts.UserDAOer {
+			return user.NewUserDAO(db.GetDB())
+		})
+
+		return nil
+	}
 }
 
-func (dep *DepContainer) Run() {
-	dep.RegisterUserDAO()
+func (dep *DepContainer) Run() error {
+	depRegistrars := []DepRegistrar{
+		dep.RegisterUserDAO(),
+	}
+
+	for _, depRegistrar := range depRegistrars {
+		if err := depRegistrar(); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

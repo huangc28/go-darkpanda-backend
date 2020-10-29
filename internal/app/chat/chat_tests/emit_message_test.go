@@ -30,7 +30,7 @@ type EmitMessageTestSuite struct {
 }
 
 func (suite *EmitMessageTestSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
 }
 
 func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
@@ -102,6 +102,11 @@ func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
 	// assertions
 	assert := assert.New(suite.T())
 	assert.Equal(http.StatusOK, w.Code)
+}
+
+func (suite *EmitMessageTestSuite) TestEmitPubNubMessageToSpecificChannel() {
+	//dpnConfig := config.
+	//pn := darkpubnub.NewDarkPubNub()
 }
 
 func TestEmitMessageTestSuite(t *testing.T) {

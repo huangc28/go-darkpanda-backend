@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"context"
 	"testing"
 
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -19,7 +20,7 @@ type TwilioTestSuite struct {
 }
 
 func (suite *TwilioTestSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
 
 	twilioConf := config.GetAppConf().TwilioConf
 	suite.twilioClient = twilio.New(twilio.TwilioConf{

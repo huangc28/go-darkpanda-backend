@@ -49,21 +49,30 @@ type GCSCredentials struct {
 	BucketName               string `mapstructure:"bucket_name"`
 }
 
+// @deprecated
 type PubnubCredentials struct {
 	PublishKey   string `mapstructure:"publish_key"`
 	SubscribeKey string `mapstructure:"subscribe_key"`
 	SecretKey    string `mapstructure:"secret_key"`
 }
 
+type FirestoreCredentials struct {
+	CredentialFile string `mapstructure:"credential_file"`
+}
+
 type AppConf struct {
-	Port              string             `mapstructure:"port"`
-	JwtSecret         string             `mapstructure:"jwt_secret"`
-	DBConf            *DBConf            `mapstructure:"db"`
-	TestDBConf        *TestDBConf        `mapstructure:"test_db"`
-	RedisConf         *RedisConf         `mapstructure:"redis"`
-	TwilioConf        *TwilioConf        `mapstructure:"twilio"`
-	GCSCredentials    *GCSCredentials    `mapstructure:"gcs"`
+	Port           string          `mapstructure:"port"`
+	JwtSecret      string          `mapstructure:"jwt_secret"`
+	DBConf         *DBConf         `mapstructure:"db"`
+	TestDBConf     *TestDBConf     `mapstructure:"test_db"`
+	RedisConf      *RedisConf      `mapstructure:"redis"`
+	TwilioConf     *TwilioConf     `mapstructure:"twilio"`
+	GCSCredentials *GCSCredentials `mapstructure:"gcs"`
+
+	// @deprecated
 	PubnubCredentials *PubnubCredentials `mapstructure:"pubnub"`
+
+	Firestore *FirestoreCredentials `mapstructure:"firestore"`
 }
 
 var appConf AppConf

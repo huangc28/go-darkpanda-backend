@@ -34,7 +34,7 @@ type UserRegistrationTestSuite struct {
 }
 
 func (suite *UserRegistrationTestSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
 	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 }
 

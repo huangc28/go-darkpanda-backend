@@ -31,7 +31,7 @@ type RevertRevertInquiryTestSuite struct {
 }
 
 func (suite *RevertRevertInquiryTestSuite) SetupSuite() {
-	manager.NewDefaultManager()
+	manager.NewDefaultManager(context.Background())
 }
 
 func (suite *RevertRevertInquiryTestSuite) TestRevertInquiry() {

@@ -13,6 +13,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
 	"github.com/looplab/fsm"
@@ -439,7 +440,14 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	inquirer, err := q.GetUserByID(ctx, int64(iq.InquirerID.Int32))
 
 	if err != nil {
-		log.Fatal(err)
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByID,
+				err.Error(),
+			),
+		)
+		return
 	}
 
 	// Check if user in the lobby has already expired
@@ -536,6 +544,30 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 
 		if err != nil {
 			return err, apperr.FailedToCreateAndJoinLobby
+		}
+
+		// Create a new private chatroom for client to subscribe.
+		// @TODOs:
+		//   - Abstract this logic into a method of darkfirestore instance.
+		df := darkfirestore.Get()
+		err = df.CreatePrivateChatRoom(ctx, darkfirestore.CreatePrivateChatRoomParams{
+			ChatRoomName: chatroomInfo.ChanelUuid,
+			Data: darkfirestore.ChatMessage{
+				From: servicePicker.Uuid,
+				To:   inquirer.Uuid,
+			},
+		})
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToCreatePrivateChatRoom,
+					err.Error(),
+				),
+			)
+
+			return err, apperr.FailedToCreatePrivateChatRoom
 		}
 
 		return nil, nil
