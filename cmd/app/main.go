@@ -14,7 +14,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
-	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/spf13/viper"
 )
@@ -28,15 +27,6 @@ func main() {
 			// Initialize IoC container.
 			if err := deps.Get().Run(); err != nil {
 				log.Fatalf("failed to initialize dependency container %s", err.Error())
-			}
-
-			fireClient := darkfirestore.Get()
-			_, _, err := fireClient.Collection("users").Add(context.Background(), map[string]interface{}{
-				"name": "jason huang",
-			})
-
-			if err != nil {
-				log.Fatal(err)
 			}
 
 			r := gin.New()

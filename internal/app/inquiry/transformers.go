@@ -91,6 +91,12 @@ func (t *InquiryTransform) TransformService(m models.Service, iqer models.User) 
 	}
 }
 
+//   final String serviceType;
+//   final String username;
+//   final String avatarURL;
+//   final String channelUUID;
+//   final DateTime expiredAt;
+//   final DateTime createdAt;
 type TransformedPickupInquiry struct {
 	TransformedInquiry
 	ChannelUuid string              `json:"channel_uuid"`

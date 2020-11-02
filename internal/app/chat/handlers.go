@@ -1,18 +1,21 @@
 package chat
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/darkpubnub"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 )
 
 type ChatHandlers struct {
 	ChatDao contracts.ChatDaoer
+	UserDao contracts.UserDAOer
 }
 
 type EmitTextMessageBody struct {
@@ -110,4 +113,48 @@ func (h *ChatHandlers) EmitTextMessage(c *gin.Context) {
 			Content:   body.Content,
 		},
 	))
+
+}
+
+// If the requester is female find all chatrooms that qualify the following conditions:
+//   - Those chatrooms's related inquiry status is chatting
+//   - Those chatrooms's related inquiry picker_id equals requester's id
+func (h *ChatHandlers) GetInquiryChatRooms(c *gin.Context) {
+	// Recognize the gender of the requester
+	userUUID := c.GetString("uuid")
+	user, err := h.UserDao.GetUserByUuid(userUUID, "id", "gender")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	var chatrooms []models.InquiryChatRoom
+
+	if user.Gender == models.GenderFemale {
+		chatrooms, err = h.ChatDao.GetFemaleInquiryChatRooms(user.ID)
+
+	} else {
+		// Retrieve inquiry chatrooms for male user.
+		log.Println("DEBUG * 3")
+	}
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetFemaleChatRooms,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	c.JSON(http.StatusOK, NewTransformer().TransformInquiryChats(chatrooms))
 }

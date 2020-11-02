@@ -16,6 +16,7 @@ type InquiryDAOer interface {
 	HasMoreInquiries(offset int, perPage int) (bool, error)
 	GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error)
 	IsInquiryExpired(inquiryID int64) (bool, error)
+	PickupInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error)
 }
 
 type InquiryDAO struct {
@@ -176,4 +177,24 @@ AND
 	}
 
 	return time.Now().After(expiredAt), nil
+}
+
+func (dao *InquiryDAO) PickupInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error) {
+	sql := `
+UPDATE service_inquiries 	
+SET 
+	inquiry_status = $1,
+	picker_id = $2
+WHERE
+	id = $3
+RETURNING *;
+	`
+
+	var pickedInquiry models.ServiceInquiry
+
+	if err := dao.db.QueryRowx(sql, models.InquiryStatusChatting, pickerID, inquiryID).StructScan(&pickedInquiry); err != nil {
+		return nil, err
+	}
+
+	return &pickedInquiry, nil
 }

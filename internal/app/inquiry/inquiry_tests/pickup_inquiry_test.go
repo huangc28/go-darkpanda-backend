@@ -59,6 +59,10 @@ func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
 
 	// create an inquiry
 	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
+	iqParams.PickerID = sql.NullInt32{
+		Valid: true,
+		Int32: int32(femaleUser.ID),
+	}
 	iqParams.InquiryStatus = models.InquiryStatusInquiring
 	iqParams.ServiceType = models.ServiceTypeSex
 	iqParams.ExpiredAt = sql.NullTime{
@@ -104,11 +108,11 @@ func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
 	db := db.GetDB()
 	var removedUserExists bool
 	if err := db.QueryRow(`
-	SELECT EXISTS(
+SELECT EXISTS(
 	SELECT 1 FROM lobby_users
 	WHERE inquiry_id = $1
 	AND deleted_at IS NOT NULL
-	) AS exists;
+) AS exists;
 	`, iq.ID).Scan(&removedUserExists); err != nil {
 		suite.T().Fatal(err)
 	}
@@ -117,8 +121,9 @@ func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
 
 	// assert that both male and female user are in the chatroom already.
 	var (
-		maleExistsInChat   bool
-		femaleExistsInChat bool
+		maleExistsInChat     bool
+		femaleExistsInChat   bool
+		pickerIDIsFemaleUser bool
 	)
 	existenceQuery := `
 SELECT EXISTS(
@@ -137,6 +142,19 @@ SELECT EXISTS(
 	}
 
 	assert.True(femaleExistsInChat)
+
+	// assert the value of picker_id on inquiry is female user
+	if err := db.QueryRow(`
+SELECT EXISTS(
+	SELECT 1 FROM service_inquiries
+	WHERE id = $1 
+	AND picker_id = $2
+) AS exists;
+	`, iq.ID, femaleUser.ID).Scan(&pickerIDIsFemaleUser); err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.True(pickerIDIsFemaleUser)
 
 	respBody := inquiry.TransformedPickupInquiry{}
 	dec := json.NewDecoder(resp.Body)

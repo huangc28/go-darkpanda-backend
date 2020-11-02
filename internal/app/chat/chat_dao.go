@@ -32,7 +32,7 @@ func (dao *ChatDao) WithTx(tx *sqlx.Tx) contracts.ChatDaoer {
 	return dao
 }
 
-func (dao *ChatDao) CreateChat(inquiryID int64) (*models.ChatInfo, error) {
+func (dao *ChatDao) CreateChat(inquiryID int64) (*models.Chatroom, error) {
 	// Create chatroom record.
 	sid, err := shortid.Generate()
 
@@ -45,7 +45,8 @@ func (dao *ChatDao) CreateChat(inquiryID int64) (*models.ChatInfo, error) {
 	enabled := true
 	expiredAt := time.Now().Add(time.Minute * 27)
 
-	var id int64
+	// var id int64
+	var chatroom models.Chatroom
 
 	query := `
 INSERT INTO chatrooms (
@@ -55,18 +56,15 @@ INSERT INTO chatrooms (
 	enabled,
 	expired_at
 ) VALUES ($1, $2, $3, $4, $5)
-RETURNING id;
+RETURNING *;
 	`
 
 	if err := dao.
-		DB.QueryRow(query, inquiryID, channelUuid, messageCount, enabled, expiredAt).Scan(&id); err != nil {
+		DB.QueryRowx(query, inquiryID, channelUuid, messageCount, enabled, expiredAt).StructScan(&chatroom); err != nil {
 		return nil, err
 	}
 
-	return &models.ChatInfo{
-		ChanelUuid: channelUuid,
-		ChatID:     id,
-	}, nil
+	return &chatroom, nil
 }
 
 func (dao *ChatDao) JoinChat(chatID int64, userIDs ...int64) error {
@@ -239,4 +237,54 @@ WHERE
 	return users, nil
 }
 
-// func (dao *ChatDao) RevertChatByInquiryUuid(inquiryUuid string)
+// GetFemaleInquiryChatRooms retrieve all inquiry chatrooms of a female user.
+//   - Those chatrooms's related inquiry status is chatting
+//   - Those chatrooms's related inquiry picker_id equals requester's id
+// Inquiry title --- not exists yet
+// Inquiry type
+// inquirer name
+// inquirer avatar
+// chatroom channel uuid
+// chatroom created_at
+// @TODOs Add pagination.
+func (dao *ChatDao) GetFemaleInquiryChatRooms(userID int64) ([]models.InquiryChatRoom, error) {
+	query := `
+SELECT 
+	si.service_type,
+	inquirer.username,
+	inquirer.avatar_url,
+	chatrooms.channel_uuid,
+	chatrooms.expired_at,
+	chatrooms.created_at
+FROM service_inquiries	AS si
+INNER JOIN chatrooms
+	ON chatrooms.inquiry_id = si.id  
+	AND chatrooms.deleted_at IS NULL
+INNER JOIN users AS inquirer 
+	ON inquirer.id = si.inquirer_id
+WHERE inquiry_status = $1
+AND picker_id = $2;
+	`
+
+	rows, err := dao.DB.Queryx(
+		query,
+		models.InquiryStatusChatting,
+		userID,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	chatrooms := make([]models.InquiryChatRoom, 0)
+	for rows.Next() {
+		cr := models.InquiryChatRoom{}
+		if err := rows.StructScan(&cr); err != nil {
+			return nil, err
+		}
+
+		chatrooms = append(chatrooms, cr)
+	}
+
+	return chatrooms, nil
+}

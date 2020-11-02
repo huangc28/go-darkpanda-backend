@@ -36,14 +36,14 @@ func (m *MockChatServicer) EXPECT() *MockChatServicerMockRecorder {
 }
 
 // CreateAndJoinChatroom mocks base method
-func (m *MockChatServicer) CreateAndJoinChatroom(inquiryID int64, userIDs ...int64) (*models.ChatInfo, error) {
+func (m *MockChatServicer) CreateAndJoinChatroom(inquiryID int64, userIDs ...int64) (*models.Chatroom, error) {
 	m.ctrl.T.Helper()
 	varargs := []interface{}{inquiryID}
 	for _, a := range userIDs {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "CreateAndJoinChatroom", varargs...)
-	ret0, _ := ret[0].(*models.ChatInfo)
+	ret0, _ := ret[0].(*models.Chatroom)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -93,10 +93,10 @@ func (m *MockChatDaoer) EXPECT() *MockChatDaoerMockRecorder {
 }
 
 // CreateChat mocks base method
-func (m *MockChatDaoer) CreateChat(inquiryID int64) (*models.ChatInfo, error) {
+func (m *MockChatDaoer) CreateChat(inquiryID int64) (*models.Chatroom, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateChat", inquiryID)
-	ret0, _ := ret[0].(*models.ChatInfo)
+	ret0, _ := ret[0].(*models.Chatroom)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -226,4 +226,19 @@ func (m *MockChatDaoer) WithTx(tx *sqlx.Tx) contracts.ChatDaoer {
 func (mr *MockChatDaoerMockRecorder) WithTx(tx interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WithTx", reflect.TypeOf((*MockChatDaoer)(nil).WithTx), tx)
+}
+
+// GetFemaleInquiryChatRooms mocks base method
+func (m *MockChatDaoer) GetFemaleInquiryChatRooms(userID int64) ([]models.InquiryChatRoom, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetFemaleInquiryChatRooms", userID)
+	ret0, _ := ret[0].([]models.InquiryChatRoom)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetFemaleInquiryChatRooms indicates an expected call of GetFemaleInquiryChatRooms
+func (mr *MockChatDaoerMockRecorder) GetFemaleInquiryChatRooms(userID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFemaleInquiryChatRooms", reflect.TypeOf((*MockChatDaoer)(nil).GetFemaleInquiryChatRooms), userID)
 }

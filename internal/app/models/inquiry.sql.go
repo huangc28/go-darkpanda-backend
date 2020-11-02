@@ -32,6 +32,7 @@ const createInquiry = `-- name: CreateInquiry :one
 INSERT INTO service_inquiries(
 	uuid,
 	inquirer_id,
+	picker_id,	
 	budget,
 	service_type,
 	inquiry_status,
@@ -41,13 +42,14 @@ INSERT INTO service_inquiries(
 	lng,
 	lat,
 	expired_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at, picker_id
 `
 
 type CreateInquiryParams struct {
 	Uuid            string         `json:"uuid"`
 	InquirerID      sql.NullInt32  `json:"inquirer_id"`
+	PickerID        sql.NullInt32  `json:"picker_id"`
 	Budget          string         `json:"budget"`
 	ServiceType     ServiceType    `json:"service_type"`
 	InquiryStatus   InquiryStatus  `json:"inquiry_status"`
@@ -63,6 +65,7 @@ func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (S
 	row := q.queryRow(ctx, q.createInquiryStmt, createInquiry,
 		arg.Uuid,
 		arg.InquirerID,
+		arg.PickerID,
 		arg.Budget,
 		arg.ServiceType,
 		arg.InquiryStatus,
@@ -90,12 +93,13 @@ func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (S
 		&i.Lng,
 		&i.Lat,
 		&i.ExpiredAt,
+		&i.PickerID,
 	)
 	return i, err
 }
 
 const getInquiryByInquirerID = `-- name: GetInquiryByInquirerID :one
-SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at FROM service_inquiries
+SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at, picker_id FROM service_inquiries
 WHERE inquirer_id = $1
 AND inquiry_status = $2
 `
@@ -124,12 +128,13 @@ func (q *Queries) GetInquiryByInquirerID(ctx context.Context, arg GetInquiryByIn
 		&i.Lng,
 		&i.Lat,
 		&i.ExpiredAt,
+		&i.PickerID,
 	)
 	return i, err
 }
 
 const getInquiryByUuid = `-- name: GetInquiryByUuid :one
-SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at FROM service_inquiries
+SELECT id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at, picker_id FROM service_inquiries
 WHERE uuid = $1
 `
 
@@ -152,6 +157,7 @@ func (q *Queries) GetInquiryByUuid(ctx context.Context, uuid string) (ServiceInq
 		&i.Lng,
 		&i.Lat,
 		&i.ExpiredAt,
+		&i.PickerID,
 	)
 	return i, err
 }
@@ -176,7 +182,7 @@ const patchInquiryStatusByUuid = `-- name: PatchInquiryStatusByUuid :one
 UPDATE service_inquiries
 SET inquiry_status = $1
 WHERE uuid = $2
-RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at
+RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at, picker_id
 `
 
 type PatchInquiryStatusByUuidParams struct {
@@ -203,6 +209,7 @@ func (q *Queries) PatchInquiryStatusByUuid(ctx context.Context, arg PatchInquiry
 		&i.Lng,
 		&i.Lat,
 		&i.ExpiredAt,
+		&i.PickerID,
 	)
 	return i, err
 }
@@ -211,7 +218,7 @@ const updateInquiryByUuid = `-- name: UpdateInquiryByUuid :one
 UPDATE  service_inquiries
 SET price = $1, duration = $2, appointment_time = $3, lng = $4, lat = $5, inquiry_status = $6
 WHERE uuid = $7
-RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at
+RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at, picker_id
 `
 
 type UpdateInquiryByUuidParams struct {
@@ -251,6 +258,7 @@ func (q *Queries) UpdateInquiryByUuid(ctx context.Context, arg UpdateInquiryByUu
 		&i.Lng,
 		&i.Lat,
 		&i.ExpiredAt,
+		&i.PickerID,
 	)
 	return i, err
 }

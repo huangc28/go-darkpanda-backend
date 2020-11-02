@@ -34,7 +34,6 @@ func (suite *EmitMessageTestSuite) SetupSuite() {
 }
 
 func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
-
 	// seed a male user
 	// the male user send a message to specified channel
 	maleUserParams, err := util.GenTestUserParams()
@@ -102,11 +101,6 @@ func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
 	// assertions
 	assert := assert.New(suite.T())
 	assert.Equal(http.StatusOK, w.Code)
-}
-
-func (suite *EmitMessageTestSuite) TestEmitPubNubMessageToSpecificChannel() {
-	//dpnConfig := config.
-	//pn := darkpubnub.NewDarkPubNub()
 }
 
 func TestEmitMessageTestSuite(t *testing.T) {

@@ -34,21 +34,18 @@ func (cs *ChatServices) WithTx(tx *sqlx.Tx) contracts.ChatServicer {
 	return cs
 }
 
-func (cs *ChatServices) CreateAndJoinChatroom(inquiryID int64, userIDs ...int64) (*models.ChatInfo, error) {
+func (cs *ChatServices) CreateAndJoinChatroom(inquiryID int64, userIDs ...int64) (*models.Chatroom, error) {
 	// Create chatroom
-	chatInfo, err := cs.ChatDao.CreateChat(inquiryID)
+	chatroom, err := cs.ChatDao.CreateChat(inquiryID)
 
 	if err != nil {
-		return (*models.ChatInfo)(nil), err
+		return (*models.Chatroom)(nil), err
 	}
 
 	// Join chatroom
-	if err := cs.ChatDao.JoinChat(chatInfo.ChatID, userIDs...); err != nil {
-		return (*models.ChatInfo)(nil), err
+	if err := cs.ChatDao.JoinChat(chatroom.ID, userIDs...); err != nil {
+		return (*models.Chatroom)(nil), err
 	}
 
-	return &models.ChatInfo{
-		ChanelUuid: chatInfo.ChanelUuid,
-		ChatID:     chatInfo.ChatID,
-	}, nil
+	return chatroom, nil
 }

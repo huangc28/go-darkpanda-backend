@@ -419,9 +419,8 @@ func ExpireInquiryHandler(c *gin.Context) {
 func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	eup, uriParamExists := c.Get("uri_params")
 	eiq, inquiryExists := c.Get("inquiry")
-	efsm, nFsmExists := c.Get("next_fsm_state")
 
-	if !uriParamExists || !nFsmExists || !inquiryExists {
+	if !uriParamExists || !inquiryExists {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
@@ -431,7 +430,6 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	}
 
 	uriParams := eup.(*InquiryUriParams)
-	fsm := efsm.(*fsm.FSM)
 	iq := eiq.(models.ServiceInquiry)
 	ctx := context.Background()
 
@@ -490,8 +488,8 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	}
 
 	var (
-		uiq          models.ServiceInquiry
-		chatroomInfo *models.ChatInfo
+		uiq          *models.ServiceInquiry
+		chatroomInfo *models.Chatroom
 	)
 
 	err, errCode := db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
@@ -511,13 +509,18 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 			return apperr.NewErr(apperr.FailedToPickupInquiryDueToDirtyVersion), apperr.FailedToPickupInquiryDueToDirtyVersion
 		}
 
-		uiq, err = q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
-			InquiryStatus: models.InquiryStatus(fsm.Current()),
-			Uuid:          uriParams.InquiryUuid,
-		})
+		servicePicker, err := h.UserDao.
+			WithTx(tx).
+			GetUserByUuid(c.GetString("uuid"))
 
 		if err != nil {
-			return err, apperr.FailedToPatchInquiryStatus
+			return err, apperr.FailedToGetUserByUuid
+		}
+
+		uiq, err = dao.PickupInquiry(servicePicker.ID, iq.ID)
+
+		if err != nil {
+			return err, apperr.FailedToPickupInquiry
 		}
 
 		// @TODO
@@ -529,14 +532,6 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 			return err, apperr.FailedToLeaveLobby
 		}
 
-		servicePicker, err := h.UserDao.
-			WithTx(tx).
-			GetUserByUuid(c.GetString("uuid"))
-
-		if err != nil {
-			return err, apperr.FailedToGetUserByUuid
-		}
-
 		// Both male and Female user should also join private chatroom.
 		chatroomInfo, err = h.ChatServices.
 			WithTx(tx).
@@ -546,12 +541,14 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 			return err, apperr.FailedToCreateAndJoinLobby
 		}
 
+		log.Printf("DEBUG * 1 %v", chatroomInfo.ChannelUuid)
+
 		// Create a new private chatroom for client to subscribe.
 		// @TODOs:
 		//   - Abstract this logic into a method of darkfirestore instance.
 		df := darkfirestore.Get()
 		err = df.CreatePrivateChatRoom(ctx, darkfirestore.CreatePrivateChatRoomParams{
-			ChatRoomName: chatroomInfo.ChanelUuid,
+			ChatRoomName: chatroomInfo.ChannelUuid.String,
 			Data: darkfirestore.ChatMessage{
 				From: servicePicker.Uuid,
 				To:   inquirer.Uuid,
@@ -585,10 +582,20 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 		return
 	}
 
+	//   final String serviceType;
+	//   final String username;
+	//   final String avatarURL;
+	//   final String channelUUID;
+	//   final DateTime expiredAt;
+	//   final DateTime createdAt;
+	log.Printf("DEBUG 1 %v ", uiq.ServiceType)
+	log.Printf("DEBUG 2 %v, %v ", inquirer.Username, inquirer.AvatarUrl.String)
+	log.Printf("DEBUG 3 %v, %v, %v ", chatroomInfo.ChannelUuid.String, chatroomInfo.ExpiredAt, chatroomInfo.CreatedAt)
+
 	trf, err := NewTransform().TransformPickupInquiry(
-		uiq,
+		*uiq,
 		inquirer,
-		chatroomInfo.ChanelUuid,
+		chatroomInfo.ChannelUuid.String,
 	)
 
 	if err != nil {

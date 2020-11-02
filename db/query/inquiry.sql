@@ -11,6 +11,7 @@ WHERE uuid = $1;
 INSERT INTO service_inquiries(
 	uuid,
 	inquirer_id,
+	picker_id,	
 	budget,
 	service_type,
 	inquiry_status,
@@ -20,7 +21,7 @@ INSERT INTO service_inquiries(
 	lng,
 	lat,
 	expired_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING *;
 
 -- name: PatchInquiryStatus :exec
