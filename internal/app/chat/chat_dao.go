@@ -45,7 +45,6 @@ func (dao *ChatDao) CreateChat(inquiryID int64) (*models.Chatroom, error) {
 	enabled := true
 	expiredAt := time.Now().Add(time.Minute * 27)
 
-	// var id int64
 	var chatroom models.Chatroom
 
 	query := `
@@ -251,7 +250,9 @@ func (dao *ChatDao) GetFemaleInquiryChatRooms(userID int64) ([]models.InquiryCha
 	query := `
 SELECT 
 	si.service_type,
+	si.inquiry_status,
 	inquirer.username,
+	inquirer.uuid AS inquirer_uuid,
 	inquirer.avatar_url,
 	chatrooms.channel_uuid,
 	chatrooms.expired_at,

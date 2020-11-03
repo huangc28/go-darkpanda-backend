@@ -12,10 +12,12 @@ type UserWithInquiries struct {
 
 // InquiryChatRooms data models to be returned for method `GetFemaleInquiryChatRooms1.
 type InquiryChatRoom struct {
-	ServiceType InquiryStatus  `json:"service_type"`
-	Username    string         `json:"username"`
-	AvatarURL   sql.NullString `json:"avatar_url"`
-	ChannelUUID string         `json:"channel_uuid"`
-	ExpiredAt   time.Time      `json:"expired_at"`
-	CreatedAt   time.Time      `json:"created_at"`
+	ServiceType   InquiryStatus  `json:"service_type"`
+	InquiryStatus string         `json:"inquiry_status"`
+	Username      string         `json:"username"`
+	ChannelUUID   string         `json:"channel_uuid"`
+	InquirerUUID  string         `json:"inquirer_uuid"`
+	AvatarURL     sql.NullString `json:"avatar_url"`
+	ExpiredAt     time.Time      `json:"expired_at"`
+	CreatedAt     time.Time      `json:"created_at"`
 }

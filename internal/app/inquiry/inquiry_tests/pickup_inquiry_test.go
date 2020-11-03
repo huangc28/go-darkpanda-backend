@@ -162,14 +162,12 @@ SELECT EXISTS(
 		suite.T().Fatal(err)
 	}
 
-	assert.NotEmpty(respBody.Uuid)
+	assert.NotEmpty(respBody.ChannelUUID)
 	assert.Equal(string(models.ServiceTypeSex), respBody.ServiceType)
 	assert.Equal(string(models.InquiryStatusChatting), respBody.InquiryStatus)
 
-	assert.NotEmpty(respBody.Inquirer.Uuid)
-	assert.Equal(maleUser.Username, respBody.Inquirer.Username)
-	assert.Equal(string(maleUser.PremiumType), respBody.Inquirer.PremiumType)
-	assert.NotEmpty(respBody.ChannelUuid)
+	assert.NotEmpty(respBody.InquirerUUID)
+	assert.Equal(maleUser.Username, respBody.Username)
 }
 
 func TestPickupInquiryTestSuite(t *testing.T) {

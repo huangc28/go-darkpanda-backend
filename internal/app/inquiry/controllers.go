@@ -582,35 +582,11 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	//   final String serviceType;
-	//   final String username;
-	//   final String avatarURL;
-	//   final String channelUUID;
-	//   final DateTime expiredAt;
-	//   final DateTime createdAt;
-	log.Printf("DEBUG 1 %v ", uiq.ServiceType)
-	log.Printf("DEBUG 2 %v, %v ", inquirer.Username, inquirer.AvatarUrl.String)
-	log.Printf("DEBUG 3 %v, %v, %v ", chatroomInfo.ChannelUuid.String, chatroomInfo.ExpiredAt, chatroomInfo.CreatedAt)
-
-	trf, err := NewTransform().TransformPickupInquiry(
+	c.JSON(http.StatusOK, NewTransform().TransformPickupInquiry(
 		*uiq,
 		inquirer,
 		chatroomInfo.ChannelUuid.String,
-	)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToTransformResponse,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	c.JSON(http.StatusOK, trf)
+	))
 }
 
 // Girl has approved the inquiry, thus, update the inquiry content.

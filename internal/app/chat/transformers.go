@@ -42,7 +42,7 @@ type TransformedInquiryChats struct {
 	Chats []TransformedInquiryChat `json:"chats"`
 }
 
-func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatRoom) []TransformedInquiryChat {
+func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatRoom) TransformedInquiryChats {
 	chats := make([]TransformedInquiryChat, 0)
 
 	for _, m := range chatModels {
@@ -61,5 +61,7 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 		chats = append(chats, trfm)
 	}
 
-	return chats
+	return TransformedInquiryChats{
+		Chats: chats,
+	}
 }

@@ -91,34 +91,28 @@ func (t *InquiryTransform) TransformService(m models.Service, iqer models.User) 
 	}
 }
 
-//   final String serviceType;
-//   final String username;
-//   final String avatarURL;
-//   final String channelUUID;
-//   final DateTime expiredAt;
-//   final DateTime createdAt;
 type TransformedPickupInquiry struct {
-	TransformedInquiry
-	ChannelUuid string              `json:"channel_uuid"`
-	Inquirer    TransformedInquirer `json:"inquirer"`
+	ServiceType   string    `json:"service_type"`
+	InquiryStatus string    `json:"inquiry_status"`
+	Username      string    `json:"username"`
+	InquirerUUID  string    `json:"inquirer_uuid"`
+	AvatarURL     string    `json:"avatar_url"`
+	ChannelUUID   string    `json:"channel_uuid"`
+	ExpiredAt     time.Time `json:"expired_at"`
+	CreatedAt     time.Time `json:"created_at"`
 }
 
-func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry, iqer models.User, channelUuid string) (TransformedPickupInquiry, error) {
-	tiq, err := t.TransformInquiry(iq)
-
-	if err != nil {
-		return TransformedPickupInquiry{}, nil
-	}
-
+func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry, iqer models.User, channelUuid string) TransformedPickupInquiry {
 	return TransformedPickupInquiry{
-		tiq,
-		channelUuid,
-		TransformedInquirer{
-			Uuid:        iqer.Uuid,
-			Username:    iqer.Username,
-			PremiumType: string(iqer.PremiumType),
-		},
-	}, nil
+		ServiceType:   iq.ServiceType.ToString(),
+		InquiryStatus: iq.InquiryStatus.ToString(),
+		Username:      iqer.Username,
+		AvatarURL:     iqer.AvatarUrl.String,
+		ChannelUUID:   channelUuid,
+		InquirerUUID:  iqer.Uuid,
+		ExpiredAt:     iq.ExpiredAt.Time,
+		CreatedAt:     iq.CreatedAt,
+	}
 }
 
 type TransformedGirlApproveInquiry struct {
