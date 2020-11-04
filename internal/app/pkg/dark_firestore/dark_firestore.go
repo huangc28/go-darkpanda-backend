@@ -9,6 +9,7 @@ import (
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
 	"github.com/huangc28/go-darkpanda-backend/config"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
@@ -78,6 +79,16 @@ func structToMap(data interface{}) (map[string]interface{}, error) {
 	return mapData, nil
 }
 
+func mapToStruct(data map[string]interface{}, ts interface{}) error {
+	dataByte, err := json.Marshal(data)
+
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(dataByte, ts)
+}
+
 func (df *DarkFirestore) CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error {
 	if params.Data.Content == "" {
 		params.Data.Content = CreatePrivateChatBotContent
@@ -98,4 +109,70 @@ func (df *DarkFirestore) CreatePrivateChatRoom(ctx context.Context, params Creat
 		Add(ctx, dataMap)
 
 	return err
+}
+
+func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string]ChatMessage, error) {
+	privateChatCollection := df.
+		Client.
+		Collection(PrivateChatsCollectionName)
+
+	errChan := make(chan error)
+	quitChan := make(chan struct{})
+	dataChan := make(chan map[string]interface{})
+
+	for _, channelUUID := range channelUUIDs {
+		select {
+		case <-quitChan:
+			break
+		default:
+			go func(channelUUID string) {
+				iter := privateChatCollection.
+					Doc(channelUUID).
+					Collection(MessageSubCollectionName).
+					Limit(1).
+					Documents(ctx)
+				for {
+					doc, err := iter.Next()
+
+					if err == iterator.Done {
+						break
+					}
+
+					if err != nil {
+						errChan <- err
+
+						break
+					}
+
+					data := doc.Data()
+					data["channel_uuid"] = channelUUID
+
+					dataChan <- data
+				}
+
+			}(channelUUID)
+		}
+	}
+
+	channelMessageMap := make(map[string]ChatMessage)
+
+	for range channelUUIDs {
+		select {
+		case err := <-errChan:
+			close(quitChan)
+
+			return nil, err
+		case data := <-dataChan:
+			m := ChatMessage{}
+			if err := mapToStruct(data, &m); err != nil {
+				close(quitChan)
+
+				return nil, err
+			}
+
+			channelMessageMap[fmt.Sprintf("%s", data["channel_uuid"])] = m
+		}
+	}
+
+	return channelMessageMap, nil
 }

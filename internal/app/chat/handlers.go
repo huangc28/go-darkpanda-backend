@@ -1,14 +1,17 @@
 package chat
 
 import (
-	"log"
+	"context"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/darkpubnub"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 )
@@ -153,8 +156,32 @@ func (h *ChatHandlers) GetInquiryChatRooms(c *gin.Context) {
 				err.Error(),
 			),
 		)
+
 		return
 	}
 
-	c.JSON(http.StatusOK, NewTransformer().TransformInquiryChats(chatrooms))
+	// Retrieve first message of each chatroom from firestore
+	channelUUIDs := []string{}
+	for _, chatroom := range chatrooms {
+		channelUUIDs = append(channelUUIDs, chatroom.ChannelUUID)
+	}
+
+	ctx := context.Background()
+	channelUUIDMessageMap, err := darkfirestore.
+		Get().
+		GetLatestMessageForEachChatroom(ctx, channelUUIDs)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMessageFromFireStore,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, NewTransformer().TransformInquiryChats(chatrooms, channelUUIDMessageMap))
 }
