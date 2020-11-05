@@ -79,17 +79,8 @@ type TransformedGetHistoricalMessages struct {
 	Messages []darkfirestore.ChatMessage `json:"messages"`
 }
 
-func (t *ChatTransformer) TransformGetHistoricalMessages(messageData []map[string]interface{}) TransformedGetHistoricalMessages {
-	chatMsgs := make([]darkfirestore.ChatMessage, 0)
-
-	for _, msg := range messageData {
-		cm := darkfirestore.ChatMessage{}
-		darkfirestore.MapToStruct(msg, &cm)
-
-		chatMsgs = append(chatMsgs, cm)
-	}
-
+func (t *ChatTransformer) TransformGetHistoricalMessages(messageData []darkfirestore.ChatMessage) TransformedGetHistoricalMessages {
 	return TransformedGetHistoricalMessages{
-		Messages: chatMsgs,
+		Messages: messageData,
 	}
 }

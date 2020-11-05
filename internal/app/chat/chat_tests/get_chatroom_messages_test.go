@@ -41,9 +41,9 @@ func (suite *GetChatroomMessagesTestSuite) TestGetChatroomMessagesSuccess() {
 		_, err := darkfirestore.
 			Get().
 			Client.
-			Collection("private_chats").
+			Collection(darkfirestore.PrivateChatsCollectionName).
 			Doc("test_chat").
-			Collection("messages").
+			Collection(darkfirestore.MessageSubCollectionName).
 			Doc(fmt.Sprintf("message#%d", i)).
 			Set(ctx, darkfirestore.ChatMessage{
 				Content:   fmt.Sprintf("message #%d", i),

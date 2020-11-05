@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"cloud.google.com/go/firestore"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -222,18 +221,13 @@ func (h *ChatHandlers) GetHistoricalMessages(c *gin.Context) {
 
 	// Retrieve the last record of the previous page.
 	ctx := context.Background()
-	currBatch := darkfirestore.
+	msgs, err := darkfirestore.
 		Get().
-		Client.
-		Collection("private_chats").
-		Doc(channelUUID).
-		Collection("messages").
-		OrderBy("created_at", firestore.Desc).
-		Offset(offset).
-		Limit(body.PerPage).
-		Documents(ctx)
-
-	currDocs, err := currBatch.GetAll()
+		GetHistoricalMessages(ctx, darkfirestore.GetHistoricalMessagesParams{
+			Offset:      offset,
+			Limit:       body.PerPage,
+			ChannelUUID: channelUUID,
+		})
 
 	if err != nil {
 		c.AbortWithError(
@@ -247,11 +241,5 @@ func (h *ChatHandlers) GetHistoricalMessages(c *gin.Context) {
 		return
 	}
 
-	dataArr := make([]map[string]interface{}, 0)
-
-	for _, doc := range currDocs {
-		dataArr = append(dataArr, doc.Data())
-	}
-
-	c.JSON(http.StatusOK, NewTransformer().TransformGetHistoricalMessages(dataArr))
+	c.JSON(http.StatusOK, NewTransformer().TransformGetHistoricalMessages(msgs))
 }

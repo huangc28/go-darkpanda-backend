@@ -171,3 +171,37 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 
 	return channelMessageMap, nil
 }
+
+type GetHistoricalMessagesParams struct {
+	Offset      int
+	Limit       int
+	ChannelUUID string
+}
+
+func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]ChatMessage, error) {
+	currBatch := df.
+		Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(params.ChannelUUID).
+		Collection(MessageSubCollectionName).
+		OrderBy("created_at", firestore.Desc).
+		Offset(params.Offset).
+		Limit(params.Limit).
+		Documents(ctx)
+
+	currDocs, err := currBatch.GetAll()
+
+	if err != nil {
+		return nil, err
+	}
+
+	msgs := make([]ChatMessage, 0)
+
+	for _, doc := range currDocs {
+		msg := ChatMessage{}
+		MapToStruct(doc.Data(), &msg)
+		msgs = append(msgs, msg)
+	}
+
+	return msgs, nil
+}
