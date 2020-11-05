@@ -74,3 +74,22 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 		Chats: chats,
 	}
 }
+
+type TransformedGetHistoricalMessages struct {
+	Messages []darkfirestore.ChatMessage `json:"messages"`
+}
+
+func (t *ChatTransformer) TransformGetHistoricalMessages(messageData []map[string]interface{}) TransformedGetHistoricalMessages {
+	chatMsgs := make([]darkfirestore.ChatMessage, 0)
+
+	for _, msg := range messageData {
+		cm := darkfirestore.ChatMessage{}
+		darkfirestore.MapToStruct(msg, &cm)
+
+		chatMsgs = append(chatMsgs, cm)
+	}
+
+	return TransformedGetHistoricalMessages{
+		Messages: chatMsgs,
+	}
+}

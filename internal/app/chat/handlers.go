@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"cloud.google.com/go/firestore"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -14,6 +15,7 @@ import (
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/darkpubnub"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 )
 
 type ChatHandlers struct {
@@ -184,4 +186,72 @@ func (h *ChatHandlers) GetInquiryChatRooms(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, NewTransformer().TransformInquiryChats(chatrooms, channelUUIDMessageMap))
+}
+
+// Add pagination for firestore. We have to get `page` and `limit` from client.
+//   - page
+//   - perpage
+// Calculate offset from page number and perpage .
+type GetMessagesBody struct {
+	PerPage int `form:"perpage,default=10"`
+	Page    int `form:"page,default=0"`
+}
+
+func (h *ChatHandlers) GetHistoricalMessages(c *gin.Context) {
+	channelUUID := c.Param("channel_uuid")
+
+	body := GetMessagesBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedGetHistoricalMessagesFromFireStore,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Calculate offset from `perpage` and `page`.
+	offset := util.CalcPaginateOffset(
+		body.Page,
+		body.PerPage,
+	)
+
+	// Retrieve the last record of the previous page.
+	ctx := context.Background()
+	currBatch := darkfirestore.
+		Get().
+		Client.
+		Collection("private_chats").
+		Doc(channelUUID).
+		Collection("messages").
+		OrderBy("created_at", firestore.Desc).
+		Offset(offset).
+		Limit(body.PerPage).
+		Documents(ctx)
+
+	currDocs, err := currBatch.GetAll()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedGetHistoricalMessagesFromFireStore,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	dataArr := make([]map[string]interface{}, 0)
+
+	for _, doc := range currDocs {
+		dataArr = append(dataArr, doc.Data())
+	}
+
+	c.JSON(http.StatusOK, NewTransformer().TransformGetHistoricalMessages(dataArr))
 }

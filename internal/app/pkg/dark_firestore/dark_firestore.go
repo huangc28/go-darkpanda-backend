@@ -55,10 +55,10 @@ const (
 )
 
 type ChatMessage struct {
-	Content   string    `json:"content"`
-	From      string    `json:"from"`
-	To        string    `json:"to"`
-	CreatedAt time.Time `json:"created_at"`
+	Content   string    `firestore:"content,omitempty" json:"content"`
+	From      string    `firestore:"from,omitempty" json:"from"`
+	To        string    `firestore:"to,omitempty" json:"to"`
+	CreatedAt time.Time `firestore:"created_at,omitempty" json:"created_at"`
 }
 
 type CreatePrivateChatRoomParams struct {
@@ -66,7 +66,7 @@ type CreatePrivateChatRoomParams struct {
 	Data         ChatMessage
 }
 
-func structToMap(data interface{}) (map[string]interface{}, error) {
+func StructToMap(data interface{}) (map[string]interface{}, error) {
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -79,7 +79,7 @@ func structToMap(data interface{}) (map[string]interface{}, error) {
 	return mapData, nil
 }
 
-func mapToStruct(data map[string]interface{}, ts interface{}) error {
+func MapToStruct(data map[string]interface{}, ts interface{}) error {
 	dataByte, err := json.Marshal(data)
 
 	if err != nil {
@@ -96,17 +96,11 @@ func (df *DarkFirestore) CreatePrivateChatRoom(ctx context.Context, params Creat
 
 	params.Data.CreatedAt = time.Now()
 
-	dataMap, err := structToMap(params.Data)
-
-	if err != nil {
-		return err
-	}
-
-	_, _, err = df.Client.
+	_, _, err := df.Client.
 		Collection(PrivateChatsCollectionName).
 		Doc(params.ChatRoomName).
 		Collection(MessageSubCollectionName).
-		Add(ctx, dataMap)
+		Add(ctx, params.Data)
 
 	return err
 }
@@ -129,6 +123,7 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 				iter := privateChatCollection.
 					Doc(channelUUID).
 					Collection(MessageSubCollectionName).
+					OrderBy("created_at", firestore.Desc).
 					Limit(1).
 					Documents(ctx)
 				for {
@@ -164,7 +159,7 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 			return nil, err
 		case data := <-dataChan:
 			m := ChatMessage{}
-			if err := mapToStruct(data, &m); err != nil {
+			if err := MapToStruct(data, &m); err != nil {
 				close(quitChan)
 
 				return nil, err

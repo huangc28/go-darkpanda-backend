@@ -541,8 +541,6 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 			return err, apperr.FailedToCreateAndJoinLobby
 		}
 
-		log.Printf("DEBUG * 1 %v", chatroomInfo.ChannelUuid)
-
 		// Create a new private chatroom for client to subscribe.
 		// @TODOs:
 		//   - Abstract this logic into a method of darkfirestore instance.

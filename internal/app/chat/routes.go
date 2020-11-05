@@ -27,5 +27,8 @@ func Routes(r *gin.RouterGroup) {
 	// Get list of inquiry chatrooms
 	g.GET("/inquiry-chatrooms", handlers.GetInquiryChatRooms)
 
+	// Fetch message from inquiry chat
+	g.GET("/:channel_uuid/messages", handlers.GetHistoricalMessages)
+
 	g.POST("/emit-text-message", handlers.EmitTextMessage)
 }
