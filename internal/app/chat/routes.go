@@ -10,9 +10,12 @@ import (
 )
 
 func Routes(r *gin.RouterGroup) {
-	g := r.Group("/chat", jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
-		Secret: config.GetAppConf().JwtSecret,
-	}))
+	g := r.Group(
+		"/chat",
+		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
+			Secret: config.GetAppConf().JwtSecret,
+		}),
+	)
 
 	var userDao contracts.UserDAOer
 	deps.Get().Container.Make(&userDao)
@@ -24,11 +27,18 @@ func Routes(r *gin.RouterGroup) {
 		UserDao: userDao,
 	}
 
-	// Get list of inquiry chatrooms
-	g.GET("/inquiry-chatrooms", handlers.GetInquiryChatRooms)
+	g.GET("/:channel_uuid", func(c *gin.Context) {
+		switch c.Param(":channel_uuid") {
 
-	// Fetch message from inquiry chat
-	g.GET("/:channel_uuid/messages", handlers.GetHistoricalMessages)
+		// Get list of inquiry chatrooms
+		case "inquiry-chatrooms":
+			handlers.GetInquiryChatRooms(c)
+
+		// Fetch message from inquiry chat
+		default:
+			handlers.GetHistoricalMessages(c)
+		}
+	})
 
 	g.POST("/emit-text-message", handlers.EmitTextMessage)
 }
