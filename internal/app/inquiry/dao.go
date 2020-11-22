@@ -6,7 +6,9 @@ import (
 	"strings"
 	"time"
 
+	cintrnal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
@@ -26,6 +28,16 @@ type InquiryDAO struct {
 func NewInquiryDAO(db db.Conn) InquiryDAOer {
 	return &InquiryDAO{
 		db: db,
+	}
+}
+
+func InquiryDaoServiceProvider(c cintrnal.Container) func() error {
+	return func() error {
+		c.Transient(func() contracts.InquiryDAOer {
+			return NewInquiryDAO(db.GetDB())
+		})
+
+		return nil
 	}
 }
 
@@ -72,7 +84,7 @@ INNER JOIN users
 	ON si.inquirer_id = users.id
 WHERE si.inquiry_status = $1
 AND (
-	si.expired_at > now() 
+	si.expired_at > now()
 	OR  si.expired_at IS NULL
 )
 ORDER BY si.created_at DESC
@@ -181,8 +193,8 @@ AND
 
 func (dao *InquiryDAO) PickupInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error) {
 	sql := `
-UPDATE service_inquiries 	
-SET 
+UPDATE service_inquiries
+SET
 	inquiry_status = $1,
 	picker_id = $2
 WHERE

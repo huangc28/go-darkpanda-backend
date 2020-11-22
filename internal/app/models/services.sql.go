@@ -6,13 +6,10 @@ package models
 import (
 	"context"
 	"database/sql"
-
-	"github.com/google/uuid"
 )
 
 const createService = `-- name: CreateService :one
 INSERT INTO services(
-	uuid,
 	customer_id,
 	service_provider_id,
 	price,
@@ -26,12 +23,11 @@ INSERT INTO services(
 	service_type,
 	girl_ready,
 	man_ready
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 RETURNING id, uuid, customer_id, service_provider_id, price, duration, appointment_time, lng, lat, service_type, girl_ready, man_ready, created_at, updated_at, deleted_at, budget, inquiry_id, service_status
 `
 
 type CreateServiceParams struct {
-	Uuid              uuid.UUID      `json:"uuid"`
 	CustomerID        sql.NullInt32  `json:"customer_id"`
 	ServiceProviderID sql.NullInt32  `json:"service_provider_id"`
 	Price             sql.NullString `json:"price"`
@@ -49,7 +45,6 @@ type CreateServiceParams struct {
 
 func (q *Queries) CreateService(ctx context.Context, arg CreateServiceParams) (Service, error) {
 	row := q.queryRow(ctx, q.createServiceStmt, createService,
-		arg.Uuid,
 		arg.CustomerID,
 		arg.ServiceProviderID,
 		arg.Price,

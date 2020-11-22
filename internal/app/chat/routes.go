@@ -17,28 +17,30 @@ func Routes(r *gin.RouterGroup) {
 		}),
 	)
 
-	var userDao contracts.UserDAOer
+	var (
+		userDao    contracts.UserDAOer
+		serviceDao contracts.ServiceDAOer
+		inquiryDao contracts.InquiryDAOer
+	)
+
 	deps.Get().Container.Make(&userDao)
+	deps.Get().Container.Make(&serviceDao)
+	deps.Get().Container.Make(&inquiryDao)
 
 	handlers := ChatHandlers{
 		ChatDao: &ChatDao{
 			db.GetDB(),
 		},
-		UserDao: userDao,
+		UserDao:    userDao,
+		ServiceDao: serviceDao,
+		InquiryDao: inquiryDao,
 	}
 
-	g.GET("/:channel_uuid", func(c *gin.Context) {
-		switch c.Param(":channel_uuid") {
-
-		// Get list of inquiry chatrooms
-		case "inquiry-chatrooms":
-			handlers.GetInquiryChatRooms(c)
-
-		// Fetch message from inquiry chat
-		default:
-			handlers.GetHistoricalMessages(c)
-		}
-	})
+	g.GET("", handlers.GetChatrooms)
 
 	g.POST("/emit-text-message", handlers.EmitTextMessage)
+
+	g.POST("/emit-service-message", handlers.EmitServiceSettingMessage)
+
+	g.GET("/:channel_uuid/messages", handlers.GetHistoricalMessages)
 }

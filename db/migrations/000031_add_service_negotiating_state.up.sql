@@ -1,0 +1,1 @@
+ALTER TYPE service_status ADD VALUE 'negotiating';

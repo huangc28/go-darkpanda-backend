@@ -77,7 +77,7 @@ func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
 	mChatDao := mock.NewMockChatDaoer(ctrl)
 	mChatDao.
 		EXPECT().
-		GetChatRoomByChannelID(
+		GetChatRoomByChannelUUID(
 			gomock.Any(),
 			gomock.Eq("expired_at"),
 			gomock.Eq("message_count"),

@@ -11,6 +11,8 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var _darkFirestore *DarkFirestore
@@ -54,6 +56,7 @@ const (
 	CreatePrivateChatBotContent = "Welcome! %s has picked up your inquiry."
 )
 
+// @TODO remove `To` column.
 type ChatMessage struct {
 	Content   string    `firestore:"content,omitempty" json:"content"`
 	From      string    `firestore:"from,omitempty" json:"from"`
@@ -94,15 +97,38 @@ func (df *DarkFirestore) CreatePrivateChatRoom(ctx context.Context, params Creat
 		params.Data.Content = CreatePrivateChatBotContent
 	}
 
+	chat, err := df.SendTextMessageToChatroom(ctx, SendTextMessageParams{
+		ChatroomName: params.ChatRoomName,
+		Data:         params.Data,
+	})
+
+	log.WithFields(log.Fields{
+		"chatroom_name": params.ChatRoomName,
+		"updated_time":  chat.CreatedAt,
+	}).Debug("Inquiry Chatroom created!")
+
+	return err
+}
+
+type SendTextMessageParams struct {
+	ChatroomName string
+	Data         ChatMessage
+}
+
+func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error) {
 	params.Data.CreatedAt = time.Now()
 
 	_, _, err := df.Client.
 		Collection(PrivateChatsCollectionName).
-		Doc(params.ChatRoomName).
+		Doc(params.ChatroomName).
 		Collection(MessageSubCollectionName).
 		Add(ctx, params.Data)
 
-	return err
+	if err != nil {
+		return params.Data, err
+	}
+
+	return params.Data, err
 }
 
 func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string]ChatMessage, error) {

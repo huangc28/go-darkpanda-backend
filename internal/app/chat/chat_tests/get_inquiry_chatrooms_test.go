@@ -42,8 +42,6 @@ func (suite *GetInquiryChatTestSuite) TestGetInquiryChatSuccess() {
 			suite.T().Fatal(err)
 		}
 
-		log.Printf("DEBUG 8 %s", maleUser.AvatarUrl.String)
-
 		inquirers = append(inquirers, maleUser)
 	}
 

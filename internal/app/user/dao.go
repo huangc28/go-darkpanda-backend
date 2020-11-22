@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	cintrnal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
@@ -43,6 +44,16 @@ type UserDAO struct {
 func NewUserDAO(db *sqlx.DB) contracts.UserDAOer {
 	return &UserDAO{
 		db: db,
+	}
+}
+
+func UserDaoServiceProvider(c cintrnal.Container) func() error {
+	return func() error {
+		c.Transient(func() contracts.UserDAOer {
+			return NewUserDAO(db.GetDB())
+		})
+
+		return nil
 	}
 }
 

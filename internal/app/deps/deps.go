@@ -9,8 +9,8 @@ import (
 
 	"github.com/golobby/container"
 	cintrnal "github.com/golobby/container/pkg/container"
-	"github.com/huangc28/go-darkpanda-backend/db"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/service"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
 )
 
@@ -19,6 +19,7 @@ type DepContainer struct {
 }
 
 type DepRegistrar func() error
+type ServiceProvider func(cintrnal.Container) DepRegistrar
 
 var (
 	_depContainer *DepContainer
@@ -35,19 +36,11 @@ func Get() *DepContainer {
 	return _depContainer
 }
 
-func (dep *DepContainer) RegisterUserDAO() DepRegistrar {
-	return func() error {
-		dep.Container.Transient(func() contracts.UserDAOer {
-			return user.NewUserDAO(db.GetDB())
-		})
-
-		return nil
-	}
-}
-
 func (dep *DepContainer) Run() error {
 	depRegistrars := []DepRegistrar{
-		dep.RegisterUserDAO(),
+		user.UserDaoServiceProvider(dep.Container),
+		service.ServiceDAOServiceProvider(dep.Container),
+		inquiry.InquiryDaoServiceProvider(dep.Container),
 	}
 
 	for _, depRegistrar := range depRegistrars {

@@ -1,6 +1,5 @@
 -- name: CreateService :one
 INSERT INTO services(
-	uuid,
 	customer_id,
 	service_provider_id,
 	price,
@@ -14,5 +13,5 @@ INSERT INTO services(
 	service_type,
 	girl_ready,
 	man_ready
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 RETURNING *;

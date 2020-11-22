@@ -15,7 +15,6 @@ const (
 	FailedToCheckGender                    = "3000012"
 	ParamsNotProperlySetInTheMiddleware    = "3000013"
 	CanNotPickupExpiredInquiry             = "3000014"
-	FailedToCreateService                  = "3000015"
 	FailedToGetInquiererByID               = "3000016"
 	GirlApproveInquiry                     = "3000017"
 	FailedToUpdateInquiryContent           = "3000018"
@@ -51,7 +50,6 @@ var InquiryErrCodeMsgMap = map[string]string{
 	FailedToPatchInquiryStatus:             "Failed to patch inquiry status",
 	ParamsNotProperlySetInTheMiddleware:    "Params not properly set to the context in the previous middleware, please check",
 	CanNotPickupExpiredInquiry:             "Can not pickup expired inquiry",
-	FailedToCreateService:                  "Failed to create service",
 	OnlyMaleCanBookService:                 "Only male can book service",
 	OnlyFemaleUserCanAccessAPI:             "Only female user can access API",
 	FailedToPickupInquiryDueToDirtyVersion: "Inquiry has been modified by other requests. Please pick another request or try again later",

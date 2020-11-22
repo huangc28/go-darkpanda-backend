@@ -14,19 +14,14 @@ func NewTransformer() *ChatTransformer {
 }
 
 type TransformedEmitTextMessage struct {
-	Timestamp time.Time
-	Content   string
+	ChannelUUID string                    `json:"channel_uuid"`
+	Message     darkfirestore.ChatMessage `json:"message"`
 }
 
-type TransformEmitTextMessageParams struct {
-	Timestamp time.Time
-	Content   string
-}
-
-func (t *ChatTransformer) TransformEmitTextMessage(params TransformEmitTextMessageParams) TransformedEmitTextMessage {
+func (t *ChatTransformer) TransformEmitTextMessage(channelUUID string, msg darkfirestore.ChatMessage) TransformedEmitTextMessage {
 	return TransformedEmitTextMessage{
-		Timestamp: params.Timestamp,
-		Content:   params.Content,
+		ChannelUUID: channelUUID,
+		Message:     msg,
 	}
 }
 
@@ -38,6 +33,7 @@ type TransformedInquiryChat struct {
 	ExpiredAt     time.Time                 `json:"expired_at"`
 	CreatedAt     time.Time                 `json:"created_at"`
 	LatestMessage darkfirestore.ChatMessage `json:"latest_message"`
+	InquiryUUID   string                    `json:"inquiry_uuid"`
 }
 
 type TransformedInquiryChats struct {
@@ -61,6 +57,7 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 			ExpiredAt:     m.ExpiredAt,
 			CreatedAt:     m.CreatedAt,
 			LatestMessage: chatMsg,
+			InquiryUUID:   m.InquiryUUID,
 		}
 
 		if m.AvatarURL.Valid {

@@ -102,6 +102,7 @@ const (
 	ServiceStatusFailedDueToGirl ServiceStatus = "failed_due_to_girl"
 	ServiceStatusFailedDueToMan  ServiceStatus = "failed_due_to_man"
 	ServiceStatusCompleted       ServiceStatus = "completed"
+	ServiceStatusNegotiating     ServiceStatus = "negotiating"
 )
 
 func (e *ServiceStatus) Scan(src interface{}) error {

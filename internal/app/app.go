@@ -1,7 +1,6 @@
 package app
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -51,8 +50,6 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	)
 
 	userDao := user.NewUserDAO(db.GetDB())
-
-	log.Printf("DEBUG 000 userDao addr %p ", userDao)
 
 	inquiry.Routes(
 		rv1,

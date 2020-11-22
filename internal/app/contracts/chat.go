@@ -15,7 +15,7 @@ type ChatDaoer interface {
 	JoinChat(chatID int64, userIDs ...int64) error
 	LeaveChat(chatID int64, userIDs ...int64) error
 	LeaveAllMemebers(chatroomID int64) ([]models.User, error)
-	GetChatRoomByChannelID(chanelUUID string, fields ...string) (*models.Chatroom, error)
+	GetChatRoomByChannelUUID(chanelUUID string, fields ...string) (*models.Chatroom, error)
 	GetChatRoomByInquiryID(inquiryID int64, fields ...string) (*models.Chatroom, error)
 	DeleteChatRoom(ID int64) error
 	WithTx(tx *sqlx.Tx) ChatDaoer

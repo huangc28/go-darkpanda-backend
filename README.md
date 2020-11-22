@@ -64,7 +64,7 @@ migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/
 Run the following command to generate models in go code from migration contents:
 
 ```
-go run cmd/genmodel/main.go
+go run cmd/genmodel/main.go gen
 ```
 
 It reads and collect migration SQL from `db/migrations`. The collected content will be written to `db/schema.sql`. Moreover, it generate go code via [sqlc](https://github.com/kyleconroy/sqlc) based on SQL in `db/migrations/schema.sql`.

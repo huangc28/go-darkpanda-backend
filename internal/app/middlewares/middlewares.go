@@ -9,7 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 )
 
 type UserDaoer interface {
@@ -66,14 +65,9 @@ func ValidateInqiuryURIParams() gin.HandlerFunc {
 	}
 }
 
-func IsMale() gin.HandlerFunc {
+func IsMale(userDao contracts.UserDAOer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uuid := c.GetString("uuid")
-
-		var userDao contracts.UserDAOer
-		deps.Get().
-			Container.
-			Make(&userDao)
 
 		isMale, err := userDao.CheckIsMaleByUuid(uuid)
 
@@ -102,12 +96,9 @@ func IsMale() gin.HandlerFunc {
 	}
 }
 
-func IsFemale() gin.HandlerFunc {
+func IsFemale(userDao contracts.UserDAOer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		uuid := c.GetString("uuid")
-
-		var userDao contracts.UserDAOer
-		deps.Get().Container.Make(&userDao)
 
 		isFemale, err := userDao.CheckIsFemaleByUuid(uuid)
 

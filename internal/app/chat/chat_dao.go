@@ -100,8 +100,8 @@ INSERT INTO chatroom_users (
 
 func (dao *ChatDao) LeaveChat(chatID int64, userIDs ...int64) error {
 	baseQuery := `
-UPDATE chatroom_users SET deleted_at = now()	
-WHERE user_id IN (%s) 
+UPDATE chatroom_users SET deleted_at = now()
+WHERE user_id IN (%s)
 AND chatroom_id = $1;
 	`
 	idStr := ""
@@ -119,7 +119,7 @@ AND chatroom_id = $1;
 	return nil
 }
 
-func (dao *ChatDao) GetChatRoomByChannelID(channelUuid string, fields ...string) (*models.Chatroom, error) {
+func (dao *ChatDao) GetChatRoomByChannelUUID(channelUuid string, fields ...string) (*models.Chatroom, error) {
 	query := `
 SELECT %s
 FROM chatrooms
@@ -159,7 +159,7 @@ WHERE inquiry_id = $1;
 
 func (dao *ChatDao) DeleteChatRoom(ID int64) error {
 	sql := `
-UPDATE chatrooms 
+UPDATE chatrooms
 SET deleted_at = now()
 WHERE id = $1;
 	`
@@ -172,9 +172,9 @@ WHERE id = $1;
 
 func (dao *ChatDao) LeaveAllMemebers(chatroomID int64) ([]models.User, error) {
 	sql := `
-UPDATE chatroom_users 	
+UPDATE chatroom_users
 SET deleted_at = now()
-WHERE chatroom_id = $1 
+WHERE chatroom_id = $1
 RETURNING user_id
 	`
 	var ids []int
@@ -199,11 +199,11 @@ RETURNING user_id
 
 func (dao *ChatDao) GetUserUUIDsByIDs(IDs ...int) ([]models.User, error) {
 	baseQuery := `
-SELECT 
+SELECT
 	id,
-	uuid 
-FROM 
-	users	
+	uuid
+FROM
+	users
 WHERE
 	id IN (%s)
 	`
@@ -248,9 +248,10 @@ WHERE
 // @TODOs Add pagination.
 func (dao *ChatDao) GetFemaleInquiryChatRooms(userID int64) ([]models.InquiryChatRoom, error) {
 	query := `
-SELECT 
+SELECT
 	si.service_type,
 	si.inquiry_status,
+	si.uuid AS inquiry_uuid,
 	inquirer.username,
 	inquirer.uuid AS inquirer_uuid,
 	inquirer.avatar_url,
@@ -259,12 +260,13 @@ SELECT
 	chatrooms.created_at
 FROM service_inquiries	AS si
 INNER JOIN chatrooms
-	ON chatrooms.inquiry_id = si.id  
+	ON chatrooms.inquiry_id = si.id
 	AND chatrooms.deleted_at IS NULL
-INNER JOIN users AS inquirer 
+	AND CURRENT_TIMESTAMP < chatrooms.expired_at
+INNER JOIN users AS inquirer
 	ON inquirer.id = si.inquirer_id
 WHERE inquiry_status = $1
-AND picker_id = $2;
+AND picker_id = $2
 	`
 
 	rows, err := dao.DB.Queryx(
