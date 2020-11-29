@@ -33,12 +33,13 @@ const (
 	FailedToTransformGetInquiry            = "3000031"
 	FailedToPickupInquiryDueToDirtyVersion = "3000032"
 
-	FailedToJoinLobby          = "3000032"
-	FailedToLeaveLobby         = "3000033"
-	FailedToCheckLobbyExpiry   = "3000034"
-	FailedToCreateAndJoinLobby = "3000035"
-	FailedToTransformResponse  = "3000036"
-	FailedToPickupInquiry      = "3000037"
+	FailedToJoinLobby             = "3000032"
+	FailedToLeaveLobby            = "3000033"
+	FailedToCheckLobbyExpiry      = "3000034"
+	FailedToCreateAndJoinLobby    = "3000035"
+	FailedToTransformResponse     = "3000036"
+	FailedToPickupInquiry         = "3000037"
+	FailedToTransformServiceModel = "3000038"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{

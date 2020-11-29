@@ -18,8 +18,7 @@ func NewTransform() *InquiryTransform {
 }
 
 type TransformedInquiry struct {
-	Uuid string `json:"uuid"`
-	// Budget        string    `json:"budget"`
+	Uuid          string    `json:"uuid"`
 	Budget        float64   `json:"budget"`
 	ServiceType   string    `json:"service_type"`
 	InquiryStatus string    `json:"inquiry_status"`
@@ -368,4 +367,28 @@ func (t *InquiryTransform) TransformRevertChatting(removedUsers []models.User, i
 		},
 		LobbyChannelID: lobbyChannelID,
 	}
+}
+
+type TransformedGetServiceByInquiryUUID struct {
+	UUID            string    `json:"uuid"`
+	ServiceType     string    `json:"service_type"`
+	Price           float64   `json:"price"`
+	Duration        int32     `json:"duration"`
+	AppointmentTime time.Time `json:"appointment_time"`
+}
+
+func (t *InquiryTransform) TransformGetServiceByInquiryUUID(srv models.Service) (*TransformedGetServiceByInquiryUUID, error) {
+	price, err := strconv.ParseFloat(srv.Price.String, 64)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &TransformedGetServiceByInquiryUUID{
+		UUID:            srv.Uuid.String(),
+		ServiceType:     srv.ServiceType.ToString(),
+		Price:           price,
+		Duration:        srv.Duration.Int32,
+		AppointmentTime: srv.AppointmentTime.Time,
+	}, nil
 }

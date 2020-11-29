@@ -8,6 +8,8 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/middlewares"
@@ -51,11 +53,18 @@ func StartApp(e *gin.Engine) *gin.Engine {
 
 	userDao := user.NewUserDAO(db.GetDB())
 
+	var serviceDAO contracts.ServiceDAOer
+
+	deps.Get().Container.Make(&serviceDAO)
+
 	inquiry.Routes(
 		rv1,
-		userDao,
-		chat.NewChatServices(chat.NewChatDao(db.GetDB())),
-		chat.NewChatDao(db.GetDB()),
+		&inquiry.InquiryRoutesParams{
+			UserDAO:      userDao,
+			ChatServicer: chat.NewChatServices(chat.NewChatDao(db.GetDB())),
+			ChatDAO:      chat.NewChatDao(db.GetDB()),
+			ServiceDAO:   serviceDAO,
+		},
 	)
 
 	image.Routes(rv1)

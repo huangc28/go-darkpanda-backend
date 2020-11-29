@@ -17,6 +17,13 @@ import (
 
 var _darkFirestore *DarkFirestore
 
+type MessageType string
+
+const (
+	Text          MessageType = "text"
+	ServiceDetail MessageType = "service_detail"
+)
+
 type DarkFirestore struct {
 	Client *firestore.Client
 }
@@ -58,10 +65,11 @@ const (
 
 // @TODO remove `To` column.
 type ChatMessage struct {
-	Content   string    `firestore:"content,omitempty" json:"content"`
-	From      string    `firestore:"from,omitempty" json:"from"`
-	To        string    `firestore:"to,omitempty" json:"to"`
-	CreatedAt time.Time `firestore:"created_at,omitempty" json:"created_at"`
+	Type      MessageType `firestore:"type,omitempty" json:"type"`
+	Content   interface{} `firestore:"content,omitempty" json:"content"`
+	From      string      `firestore:"from,omitempty" json:"from"`
+	To        string      `firestore:"to,omitempty" json:"to"`
+	CreatedAt time.Time   `firestore:"created_at,omitempty" json:"created_at"`
 }
 
 type CreatePrivateChatRoomParams struct {
@@ -97,6 +105,10 @@ func (df *DarkFirestore) CreatePrivateChatRoom(ctx context.Context, params Creat
 		params.Data.Content = CreatePrivateChatBotContent
 	}
 
+	if params.Data.Type == "" {
+		params.Data.Type = Text
+	}
+
 	chat, err := df.SendTextMessageToChatroom(ctx, SendTextMessageParams{
 		ChatroomName: params.ChatRoomName,
 		Data:         params.Data,
@@ -116,6 +128,10 @@ type SendTextMessageParams struct {
 }
 
 func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error) {
+	if params.Data.Type == "" {
+		params.Data.Type = Text
+	}
+
 	params.Data.CreatedAt = time.Now()
 
 	_, _, err := df.Client.
@@ -129,6 +145,51 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 	}
 
 	return params.Data, err
+}
+
+type ServiceDetailMessage struct {
+	ChatMessage
+	Price       float64 `firestore:"price,omitempty" json:"price"`
+	Duration    int     `firestore:"duration,omitempty" json:"duration"`
+	ServiceUUID string  `firestore:"service_uuid" json:"service_uuid"`
+	ServiceTime int64   `firestore:"service_time,omitempty" json:"service_time"`
+	ServiceType string  `firestore:"service_type,omitempty" json:"service_type"`
+}
+
+type SendServiceDetailMessageParams struct {
+	ChatroomName string
+	Data         ServiceDetailMessage
+}
+
+const (
+	ServiceDetailMessageContent = "Service updated:\n"
+)
+
+func (df *DarkFirestore) SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error) {
+	if params.Data.Type == "" {
+		params.Data.Type = ServiceDetail
+	}
+
+	if params.Data.Content == "" {
+		params.Data.Content = ServiceDetailMessageContent
+	}
+
+	params.Data.CreatedAt = time.Now()
+
+	log.Printf("DEBUG service detail msg 2 %v", params.Data.ServiceTime)
+
+	// Service detail content has different
+	_, _, err := df.Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(params.ChatroomName).
+		Collection(MessageSubCollectionName).
+		Add(ctx, params.Data)
+
+	if err != nil {
+		return params.Data, err
+	}
+
+	return params.Data, nil
 }
 
 func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string]ChatMessage, error) {
@@ -204,7 +265,9 @@ type GetHistoricalMessagesParams struct {
 	ChannelUUID string
 }
 
-func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]ChatMessage, error) {
+// GetHistoricalMessages retrieve historical message from firestore. The return format would be slice of
+// empty interfaces.
+func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]interface{}, error) {
 	currBatch := df.
 		Client.
 		Collection(PrivateChatsCollectionName).
@@ -221,12 +284,10 @@ func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHi
 		return nil, err
 	}
 
-	msgs := make([]ChatMessage, 0)
+	msgs := make([]interface{}, 0)
 
 	for _, doc := range currDocs {
-		msg := ChatMessage{}
-		MapToStruct(doc.Data(), &msg)
-		msgs = append(msgs, msg)
+		msgs = append(msgs, doc.Data())
 	}
 
 	return msgs, nil

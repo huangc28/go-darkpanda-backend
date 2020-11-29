@@ -73,10 +73,10 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 }
 
 type TransformedGetHistoricalMessages struct {
-	Messages []darkfirestore.ChatMessage `json:"messages"`
+	Messages []interface{} `json:"messages"`
 }
 
-func (t *ChatTransformer) TransformGetHistoricalMessages(messageData []darkfirestore.ChatMessage) TransformedGetHistoricalMessages {
+func (t *ChatTransformer) TransformGetHistoricalMessages(messageData []interface{}) TransformedGetHistoricalMessages {
 	return TransformedGetHistoricalMessages{
 		Messages: messageData,
 	}

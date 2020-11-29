@@ -124,11 +124,12 @@ func (h *ChatHandlers) EmitTextMessage(c *gin.Context) {
 // the chatroom would emit a service setting message. Male user would be notified with the service message.
 // Male user can click on the service message and would show the service detail set by the female user.
 type EmitServiceSettingMessage struct {
-	Price           float64            `form:"price"`
-	InquiryUUID     string             `form:"inquiry_uuid"`
-	ServiceTime     time.Time          `form:"service_time"`
-	ServiceDuration int                `form:"service_duration"`
-	ServiceType     models.ServiceType `form:"service_type"`
+	Price           float64   `form:"price" binding:"required"`
+	ChannelUUID     string    `form:"channel_uuid" binding:"required"`
+	InquiryUUID     string    `form:"inquiry_uuid" binding:"required"`
+	ServiceTime     time.Time `form:"service_time" binding:"required"`
+	ServiceDuration int       `form:"service_duration" binding:"required"`
+	ServiceType     string    `form:"service_type" binding:"required"`
 }
 
 func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
@@ -207,7 +208,7 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 				},
 				InquiryID:     int32(inquiry.ID),
 				ServiceStatus: models.ServiceStatusNegotiating,
-				ServiceType:   body.ServiceType,
+				ServiceType:   models.ServiceType(body.ServiceType),
 			})
 
 			if err != nil {
@@ -234,12 +235,13 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 		}
 	} else {
 		// Corresponding service exists, update detail of the service.
+		srvType := models.ServiceType(body.ServiceType)
 		service, err = h.ServiceDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
 			ID:          service.ID,
 			Price:       &body.Price,
 			Duration:    &body.ServiceDuration,
 			Appointment: &body.ServiceTime,
-			ServiceType: &body.ServiceType,
+			ServiceType: &srvType,
 		})
 
 		if err != nil {
@@ -255,9 +257,26 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 		}
 	}
 
-	// Emit service setting message to chatroom.
+	log.Printf("DEBUG service type %v", service.AppointmentTime)
 
-	c.JSON(http.StatusOK, struct{}{})
+	// Emit service setting message to chatroom.
+	df := darkfirestore.Get()
+	message, err := df.SendServiceDetailMessageToChatroom(ctx, darkfirestore.SendServiceDetailMessageParams{
+		ChatroomName: body.ChannelUUID,
+		Data: darkfirestore.ServiceDetailMessage{
+			ChatMessage: darkfirestore.ChatMessage{
+				Content: "",
+				From:    c.GetString("uuid"),
+			},
+			Price:       body.Price,
+			Duration:    int(service.Duration.Int32),
+			ServiceTime: service.AppointmentTime.Time.UnixNano() / 1000,
+			ServiceType: body.ServiceType,
+			ServiceUUID: service.Uuid.String(),
+		},
+	})
+
+	c.JSON(http.StatusOK, message)
 }
 
 // If the requester is female find all chatrooms that qualify the following conditions:
