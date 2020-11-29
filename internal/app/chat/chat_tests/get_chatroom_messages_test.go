@@ -94,17 +94,19 @@ func (suite *GetChatroomMessagesTestSuite) TestGetChatroomMessagesSuccess() {
 	handlers.GetHistoricalMessages(c)
 	apperr.HandleError()(c)
 
-	page1 := chat.TransformedGetHistoricalMessages{}
+	// page1 := chat.TransformedGetHistoricalMessages{}
+	type Page1Messages []map[string]string
+	page1 := make(map[string]Page1Messages)
 	if err := json.Unmarshal(w.Body.Bytes(), &page1); err != nil {
 		suite.T().Fatal(err)
 	}
 
 	// Assert that message is retrieve from a timestamp descending order fashion.
 	assert := assert.New(suite.T())
-	assert.Equal(len(page1.Messages), 5)
+	assert.Equal(len(page1["messages"]), 5)
 	for i := 0; i < 5; i++ {
 		tag := 20 - i
-		assert.Equal(page1.Messages[i].Content, fmt.Sprintf("message #%d", tag))
+		assert.Equal(page1["messages"][i]["content"], fmt.Sprintf("message #%d", tag))
 	}
 
 	// Fetch second page.
@@ -123,14 +125,15 @@ func (suite *GetChatroomMessagesTestSuite) TestGetChatroomMessagesSuccess() {
 	handlers.GetHistoricalMessages(c)
 	apperr.HandleError()(c)
 
-	page2 := chat.TransformedGetHistoricalMessages{}
+	type Page2Messages []map[string]string
+	page2 := make(map[string]Page2Messages)
 	if err := json.Unmarshal(w.Body.Bytes(), &page2); err != nil {
 		suite.T().Fatal(err)
 	}
 
 	for i := 0; i < 5; i++ {
 		tag := 15 - i
-		assert.Equal(page2.Messages[i].Content, fmt.Sprintf("message #%d", tag))
+		assert.Equal(page2["messages"][i]["content"], fmt.Sprintf("message #%d", tag))
 	}
 }
 

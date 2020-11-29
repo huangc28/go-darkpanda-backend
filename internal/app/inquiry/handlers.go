@@ -28,6 +28,7 @@ type InquiryHandlers struct {
 	LobbyServices LobbyServicer
 	ChatServices  contracts.ChatServicer
 	ChatDao       contracts.ChatDaoer
+	ServiceDAO    contracts.ServiceDAOer
 }
 
 // @TODO budget received from client should be type float instead of string.
@@ -975,14 +976,44 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 
 	tx.Commit()
 
-	// Returns:
-	//   - [x]Removed users
-	//   - [x]Inquiry info
-	//   - [x]Deleted chatroom
 	c.JSON(http.StatusOK, NewTransform().TransformRevertChatting(
 		removedUsers,
 		*iq,
 		*chatroom,
 		lobbyChannelID,
 	))
+}
+
+func (h *InquiryHandlers) GetServiceByInquiryUUID(c *gin.Context) {
+	iqUUID := c.Param("uuid")
+
+	// Retrieve service by inquiry uuid given
+	srvModel, err := h.ServiceDAO.GetServiceByInquiryUUID(iqUUID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByInquiryUUID,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	trfed, err := NewTransform().TransformGetServiceByInquiryUUID(*srvModel)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformServiceModel,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, trfed)
 }
