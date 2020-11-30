@@ -5,11 +5,17 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/middlewares"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
-func Routes(r *gin.RouterGroup) {
+type ChatRoutesParams struct {
+	UserDao    contracts.UserDAOer
+	ServiceDao contracts.ServiceDAOer
+	InquiryDao contracts.InquiryDAOer
+}
+
+func Routes(r *gin.RouterGroup, params *ChatRoutesParams) {
 	g := r.Group(
 		"/chat",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
@@ -17,30 +23,32 @@ func Routes(r *gin.RouterGroup) {
 		}),
 	)
 
-	var (
-		userDao    contracts.UserDAOer
-		serviceDao contracts.ServiceDAOer
-		inquiryDao contracts.InquiryDAOer
-	)
-
-	deps.Get().Container.Make(&userDao)
-	deps.Get().Container.Make(&serviceDao)
-	deps.Get().Container.Make(&inquiryDao)
-
 	handlers := ChatHandlers{
 		ChatDao: &ChatDao{
 			db.GetDB(),
 		},
-		UserDao:    userDao,
-		ServiceDao: serviceDao,
-		InquiryDao: inquiryDao,
+		UserDao:    params.UserDao,
+		ServiceDao: params.ServiceDao,
+		InquiryDao: params.InquiryDao,
 	}
 
 	g.GET("", handlers.GetChatrooms)
 
 	g.POST("/emit-text-message", handlers.EmitTextMessage)
 
-	g.POST("/emit-service-message", handlers.EmitServiceSettingMessage)
+	g.POST(
+		"/emit-service-message",
+		handlers.EmitServiceSettingMessage,
+	)
+
+	// Male user can agree on service detail set by female user. Once agreed, female user would receive
+	// a message saying that the service has been established, the chatroom should be suspended both party should
+	// leave the current inquiry chatroom.
+	g.POST(
+		"/emit-service-confirmed-message",
+		middlewares.IsMale(params.UserDao),
+		handlers.EmitServiceConfirmedMessage,
+	)
 
 	g.GET("/:channel_uuid/messages", handlers.GetHistoricalMessages)
 }

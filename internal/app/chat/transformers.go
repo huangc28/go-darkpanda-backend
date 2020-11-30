@@ -81,3 +81,8 @@ func (t *ChatTransformer) TransformGetHistoricalMessages(messageData []interface
 		Messages: messageData,
 	}
 }
+
+type TransformedSendConfirmedServiceMessage struct {
+}
+
+func (t *ChatTransformer) TransformSendConfirmedServiceMessage() {}

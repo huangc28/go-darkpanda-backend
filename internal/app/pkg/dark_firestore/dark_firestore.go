@@ -20,8 +20,9 @@ var _darkFirestore *DarkFirestore
 type MessageType string
 
 const (
-	Text          MessageType = "text"
-	ServiceDetail MessageType = "service_detail"
+	Text             MessageType = "text"
+	ServiceDetail    MessageType = "service_detail"
+	ConfirmedService MessageType = "confirmed_service"
 )
 
 type DarkFirestore struct {
@@ -176,8 +177,6 @@ func (df *DarkFirestore) SendServiceDetailMessageToChatroom(ctx context.Context,
 
 	params.Data.CreatedAt = time.Now()
 
-	log.Printf("DEBUG service detail msg 2 %v", params.Data.ServiceTime)
-
 	// Service detail content has different
 	_, _, err := df.Client.
 		Collection(PrivateChatsCollectionName).
@@ -291,4 +290,31 @@ func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHi
 	}
 
 	return msgs, nil
+}
+
+// EmitServiceConfirmedMessage male user would emit a service confirmed message to notify female user that the
+// service is confirmed by the client.
+type SendServiceConfirmedMessageParams struct {
+	ChannelUUID string
+	Data        ServiceDetailMessage
+}
+
+func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error) {
+	if params.Data.Type == "" {
+		params.Data.Type = ConfirmedService
+	}
+
+	params.Data.CreatedAt = time.Now()
+
+	ref, _, err := df.Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(params.ChannelUUID).
+		Collection(MessageSubCollectionName).
+		Add(ctx, params)
+
+	if err != nil {
+		return nil, params.Data, err
+	}
+
+	return ref, params.Data, nil
 }

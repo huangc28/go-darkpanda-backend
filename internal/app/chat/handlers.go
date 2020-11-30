@@ -142,7 +142,7 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
-				apperr.FailedToValidateEmitServiceSettingMessageParam,
+				apperr.FailedToValidateEmitServiceSettingMessageParams,
 				err.Error(),
 			),
 		)
@@ -438,4 +438,74 @@ func (h *ChatHandlers) GetHistoricalMessages(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, NewTransformer().TransformGetHistoricalMessages(msgs))
+}
+
+type EmitServiceConfirmedMessageBody struct {
+	Price           float64   `form:"price" binding:"required"`
+	ChannelUUID     string    `form:"channel_uuid" binding:"required"`
+	InquiryUUID     string    `form:"inquiry_uuid" binding:"required"`
+	ServiceTime     time.Time `form:"service_time" binding:"required"`
+	ServiceDuration int       `form:"service_duration" binding:"required"`
+	ServiceType     string    `form:"service_type" binding:"required"`
+}
+
+func (h *ChatHandlers) EmitServiceConfirmedMessage(c *gin.Context) {
+	ctx := context.Background()
+	body := EmitServiceConfirmedMessageBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateEmitConfirmedServiceParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve service by inquiry uuid
+	service, err := h.ServiceDao.GetServiceByInquiryUUID(body.InquiryUUID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByInquiryUUID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	docRef, msg, err := darkfirestore.Get().SendServiceConfirmedMessage(
+		ctx,
+		darkfirestore.SendServiceConfirmedMessageParams{
+			ChannelUUID: body.ChannelUUID,
+			Data: darkfirestore.ServiceDetailMessage{
+				ChatMessage: darkfirestore.ChatMessage{
+					From:      c.GetString("uuid"),
+					CreatedAt: time.Now(),
+				},
+				Price:       body.Price,
+				Duration:    body.ServiceDuration,
+				ServiceUUID: service.Uuid.String(),
+				ServiceType: body.ServiceType,
+				// Convert unix nano to unix micro so that the flutter can parse it using DateTime.
+				ServiceTime: body.ServiceTime.UnixNano() / 1000,
+			},
+		},
+	)
+
+	resp := struct {
+		Message   interface{} `json:"message"`
+		MessageID string      `json:"message_id"`
+	}{
+		Message:   msg,
+		MessageID: docRef.ID,
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
