@@ -20,6 +20,12 @@ type LobbyServices struct {
 	LobbyDao LobbyDaoer
 }
 
+func NewLobbyService(dao LobbyDaoer) *LobbyServices {
+	return &LobbyServices{
+		LobbyDao: dao,
+	}
+}
+
 func (l *LobbyServices) WithTx(tx *sqlx.Tx) LobbyServicer {
 	l.LobbyDao.WithTx(tx)
 

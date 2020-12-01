@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
@@ -22,14 +24,14 @@ import (
 	"github.com/teris-io/shortid"
 )
 
-type InquiryHandlers struct {
-	UserDao       contracts.UserDAOer
-	InquiryDao    InquiryDAOer
-	LobbyServices LobbyServicer
-	ChatServices  contracts.ChatServicer
-	ChatDao       contracts.ChatDaoer
-	ServiceDAO    contracts.ServiceDAOer
-}
+// type InquiryHandlers struct {
+// 	UserDao       contracts.UserDAOer
+// 	InquiryDao    InquiryDAOer
+// 	LobbyServices LobbyServicer
+// 	ChatServices  contracts.ChatServicer
+// 	ChatDao       contracts.ChatDaoer
+// 	ServiceDAO    contracts.ServiceDAOer
+// }
 
 // @TODO budget received from client should be type float instead of string.
 //       budget should be converted to type string before stored in DB.
@@ -38,7 +40,7 @@ type EmitInquiryBody struct {
 	ServiceType string  `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
 }
 
-func (h *InquiryHandlers) EmitInquiryHandler(c *gin.Context) {
+func EmitInquiryHandler(c *gin.Context) {
 	body := &EmitInquiryBody{}
 	ctx := context.Background()
 
@@ -164,7 +166,9 @@ func (h *InquiryHandlers) EmitInquiryHandler(c *gin.Context) {
 	}
 
 	// Joins the lobby and returns lobby channel id
-	channelID, err := h.LobbyServices.JoinLobby(iq.ID)
+	lobbyServices := NewLobbyService(NewLobbyDao(db.GetDB()))
+
+	channelID, err := lobbyServices.JoinLobby(iq.ID)
 
 	if err != nil {
 		c.AbortWithError(
@@ -205,7 +209,7 @@ type GetInquiriesBody struct {
 	PerPage int `form:"perpage,default=7"`
 }
 
-func (h *InquiryHandlers) GetInquiriesHandler(c *gin.Context) {
+func GetInquiriesHandler(c *gin.Context) {
 	body := &GetInquiriesBody{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -220,8 +224,10 @@ func (h *InquiryHandlers) GetInquiriesHandler(c *gin.Context) {
 		return
 	}
 
+	inquiryDao := NewInquiryDAO(db.GetDB())
+
 	// offset should be passed from client
-	inquiries, err := h.InquiryDao.GetInquiries(
+	inquiries, err := inquiryDao.GetInquiries(
 		models.InquiryStatusInquiring,
 		body.Offset,
 		body.PerPage,
@@ -241,7 +247,7 @@ func (h *InquiryHandlers) GetInquiriesHandler(c *gin.Context) {
 
 	// DB has no more records if number of retrieved records is less then the value of `perPage`.
 	// In which case, we should set `has_more` indicator to `false`
-	hasMoreRecord, err := h.InquiryDao.HasMoreInquiries(
+	hasMoreRecord, err := inquiryDao.HasMoreInquiries(
 		body.Offset,
 		body.PerPage,
 	)
@@ -417,7 +423,7 @@ func ExpireInquiryHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, trf)
 }
 
-func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
+func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	eup, uriParamExists := c.Get("uri_params")
 	eiq, inquiryExists := c.Get("inquiry")
 
@@ -450,7 +456,10 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	}
 
 	// Check if user in the lobby has already expired
-	expired, err := h.InquiryDao.IsInquiryExpired(iq.ID)
+	inquiryDao := NewInquiryDAO(db.GetDB())
+	lobbyService := NewLobbyService(NewLobbyDao(db.GetDB()))
+
+	expired, err := inquiryDao.IsInquiryExpired(iq.ID)
 
 	if err != nil {
 		c.AbortWithError(
@@ -466,7 +475,7 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 
 	if expired {
 		// Remove user from lobby
-		if err := h.LobbyServices.LeaveLobby(iq.ID); err != nil {
+		if err := lobbyService.LeaveLobby(iq.ID); err != nil {
 			c.AbortWithError(
 				http.StatusInternalServerError,
 				apperr.NewErr(
@@ -491,7 +500,12 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 	var (
 		uiq          *models.ServiceInquiry
 		chatroomInfo *models.Chatroom
+		userDao      contracts.UserDAOer
+		chatService  contracts.ChatServicer
 	)
+
+	depCon.Make(&userDao)
+	depCon.Make(&chatService)
 
 	err, errCode := db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
 		dao := NewInquiryDAO(tx)
@@ -510,7 +524,7 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 			return apperr.NewErr(apperr.FailedToPickupInquiryDueToDirtyVersion), apperr.FailedToPickupInquiryDueToDirtyVersion
 		}
 
-		servicePicker, err := h.UserDao.
+		servicePicker, err := userDao.
 			WithTx(tx).
 			GetUserByUuid(c.GetString("uuid"))
 
@@ -527,14 +541,14 @@ func (h *InquiryHandlers) PickupInquiryHandler(c *gin.Context) {
 		// @TODO
 		//   - We would need to notify the male user waiting in the lobby to enter the chatroom that the female user has created for him.
 		//   - Male user should leave lobby
-		if err := h.LobbyServices.
+		if err := lobbyService.
 			WithTx(tx).
 			LeaveLobby(uiq.ID); err != nil {
 			return err, apperr.FailedToLeaveLobby
 		}
 
 		// Both male and Female user should also join private chatroom.
-		chatroomInfo, err = h.ChatServices.
+		chatroomInfo, err = chatService.
 			WithTx(tx).
 			CreateAndJoinChatroom(uiq.ID, inquirer.ID, servicePicker.ID)
 
@@ -823,7 +837,7 @@ func ManApproveInquiry(c *gin.Context) {
 // @TODO
 //   - Emit both chat participants that the chat is closed.
 //   - All chat participants should be removed from the chat.
-func (h *InquiryHandlers) RevertChat(c *gin.Context) {
+func RevertChatHandler(c *gin.Context, depCon container.Container) {
 	eiiq, exists := c.Get("inquiry")
 
 	if !exists {
@@ -836,8 +850,16 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 
 	iq := (eiiq).(*models.ServiceInquiry)
 
+	var (
+		chatDao contracts.ChatDaoer
+		userDao contracts.UserDAOer
+	)
+
+	depCon.Make(&chatDao)
+	depCon.Make(&userDao)
+
 	// Find chatroom by inquiry_id, find inquiry_id by inquiry_uuid
-	chatroom, err := h.ChatDao.GetChatRoomByInquiryID(
+	chatroom, err := chatDao.GetChatRoomByInquiryID(
 		iq.ID,
 		"id",
 		"channel_uuid",
@@ -859,7 +881,7 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 	ctx := context.Background()
 	tx := db.GetDB().MustBegin()
 
-	removedUsers, err := h.ChatDao.WithTx(tx).LeaveAllMemebers(chatroom.ID)
+	removedUsers, err := chatDao.WithTx(tx).LeaveAllMemebers(chatroom.ID)
 
 	if err != nil {
 		c.AbortWithError(
@@ -875,7 +897,7 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 	}
 
 	// Soft delete chatroom
-	if err := h.ChatDao.
+	if err := chatDao.
 		WithTx(tx).
 		DeleteChatRoom(chatroom.ID); err != nil {
 		c.AbortWithError(
@@ -937,7 +959,7 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 		}
 
 		// If requester is male user. Rejoin the user to lobby
-		isMale, err := h.UserDao.
+		isMale, err := userDao.
 			WithTx(tx).
 			CheckIsMaleByUuid(c.GetString("uuid"))
 
@@ -955,7 +977,8 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 		}
 
 		if isMale {
-			*lobbyChannelID, err = h.LobbyServices.
+			lobbyService := NewLobbyService(NewLobbyDao(db.GetDB()))
+			*lobbyChannelID, err = lobbyService.
 				WithTx(tx).
 				JoinLobby(iq.ID)
 
@@ -984,11 +1007,17 @@ func (h *InquiryHandlers) RevertChat(c *gin.Context) {
 	))
 }
 
-func (h *InquiryHandlers) GetServiceByInquiryUUID(c *gin.Context) {
+func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
 	iqUUID := c.Param("uuid")
 
+	var (
+		serviceDao contracts.ServiceDAOer
+	)
+
+	depCon.Make(&serviceDao)
+
 	// Retrieve service by inquiry uuid given
-	srvModel, err := h.ServiceDAO.GetServiceByInquiryUUID(iqUUID)
+	srvModel, err := serviceDao.GetServiceByInquiryUUID(iqUUID)
 
 	if err != nil {
 		c.AbortWithError(

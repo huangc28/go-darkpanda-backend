@@ -2,8 +2,8 @@ package inquiry
 
 import (
 	"github.com/gin-gonic/gin"
+	cintrnal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
-	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/middlewares"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
@@ -17,7 +17,8 @@ type InquiryRoutesParams struct {
 }
 
 // userDao contracts.UserDAOer, chatServices contracts.ChatServicer, chatDao contracts.ChatDaoer)
-func Routes(r *gin.RouterGroup, params *InquiryRoutesParams) {
+// func Routes(r *gin.RouterGroup, params *InquiryRoutesParams) {
+func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	g := r.Group(
 		"/inquiries",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
@@ -25,41 +26,48 @@ func Routes(r *gin.RouterGroup, params *InquiryRoutesParams) {
 		}),
 	)
 
-	handlers := &InquiryHandlers{
-		InquiryDao: NewInquiryDAO(db.GetDB()),
-		UserDao:    params.UserDAO,
-		LobbyServices: &LobbyServices{
-			LobbyDao: &LobbyDao{
-				DB: db.GetDB(),
-			},
-		},
-		ChatServices: params.ChatServicer,
-		ChatDao:      params.ChatDAO,
-		ServiceDAO:   params.ServiceDAO,
-	}
+	// handlers := &InquiryHandlers{
+	// 	InquiryDao: NewInquiryDAO(db.GetDB()),
+	// 	UserDao:    params.UserDAO,
+	// 	LobbyServices: &LobbyServices{
+	// 		LobbyDao: &LobbyDao{
+	// 			DB: db.GetDB(),
+	// 		},
+	// 	},
+	// 	ChatServices: params.ChatServicer,
+	// 	ChatDao:      params.ChatDAO,
+	// 	ServiceDAO:   params.ServiceDAO,
+	// }
+	var (
+		userDAO contracts.UserDAOer
+	)
+
+	container.Make(&userDAO)
 
 	g.GET(
 		"",
-		middlewares.IsFemale(params.UserDAO),
-		handlers.GetInquiriesHandler,
+		middlewares.IsFemale(userDAO),
+		GetInquiriesHandler,
 	)
 
 	g.GET(
 		"/:uuid",
-		middlewares.IsFemale(params.UserDAO),
+		middlewares.IsFemale(userDAO),
 		GetInquiryHandler,
 	)
 
 	g.GET(
 		"/:uuid/service",
-		handlers.GetServiceByInquiryUUID,
+		func(c *gin.Context) {
+			GetServiceByInquiryUUID(c, container)
+		},
 	)
 
 	// Emit a new inquiry by male user.
 	g.POST(
 		"",
-		middlewares.IsMale(params.UserDAO),
-		handlers.EmitInquiryHandler,
+		middlewares.IsMale(userDAO),
+		EmitInquiryHandler,
 	)
 
 	// Cancel a inquiry.
@@ -74,16 +82,18 @@ func Routes(r *gin.RouterGroup, params *InquiryRoutesParams) {
 	g.PATCH(
 		"/:inquiry_uuid/revert-chat",
 		ValidateInqiuryURIParams(),
-		middlewares.IsMale(params.UserDAO),
+		middlewares.IsMale(userDAO),
 		ValidateBeforeAlterInquiryStatus(RevertChat),
-		handlers.RevertChat,
+		func(c *gin.Context) {
+			RevertChatHandler(c, container)
+		},
 	)
 
 	// expire an inquiry
 	g.PATCH(
 		"/:inquiry_uuid/expire",
 		ValidateInqiuryURIParams(),
-		middlewares.IsMale(params.UserDAO),
+		middlewares.IsMale(userDAO),
 		ValidateBeforeAlterInquiryStatus(Expire),
 		ExpireInquiryHandler,
 	)
@@ -92,16 +102,18 @@ func Routes(r *gin.RouterGroup, params *InquiryRoutesParams) {
 	g.POST(
 		"/:inquiry_uuid/pickup",
 		ValidateInqiuryURIParams(),
-		middlewares.IsFemale(params.UserDAO),
+		middlewares.IsFemale(userDAO),
 		ValidateBeforeAlterInquiryStatus(Pickup),
-		handlers.PickupInquiryHandler,
+		func(c *gin.Context) {
+			PickupInquiryHandler(c, container)
+		},
 	)
 
 	// After chatting, inquiry can be approved by girl
 	g.POST(
 		"/:inquiry_uuid/girl-approve",
 		ValidateInqiuryURIParams(),
-		middlewares.IsFemale(params.UserDAO),
+		middlewares.IsFemale(userDAO),
 		ValidateBeforeAlterInquiryStatus(GirlApprove),
 		GirlApproveInquiryHandler,
 	)
@@ -110,7 +122,7 @@ func Routes(r *gin.RouterGroup, params *InquiryRoutesParams) {
 	g.POST(
 		"/:inquiry_uuid/book",
 		ValidateInqiuryURIParams(),
-		middlewares.IsMale(params.UserDAO),
+		middlewares.IsMale(userDAO),
 		ValidateBeforeAlterInquiryStatus(Book),
 		ManApproveInquiry,
 	)

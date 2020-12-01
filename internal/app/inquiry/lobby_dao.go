@@ -19,6 +19,12 @@ type LobbyDao struct {
 	DB db.Conn
 }
 
+func NewLobbyDao(DB db.Conn) *LobbyDao {
+	return &LobbyDao{
+		DB: DB,
+	}
+}
+
 func (l *LobbyDao) WithTx(tx *sqlx.Tx) {
 	l.DB = tx
 }

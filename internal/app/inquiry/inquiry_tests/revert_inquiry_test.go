@@ -13,13 +13,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/stretchr/testify/assert"
@@ -28,10 +29,16 @@ import (
 
 type RevertRevertInquiryTestSuite struct {
 	suite.Suite
+	container container.Container
 }
 
 func (suite *RevertRevertInquiryTestSuite) SetupSuite() {
-	manager.NewDefaultManager(context.Background())
+	manager.
+		NewDefaultManager(context.Background()).
+		Run(func() {
+			deps.Get().Run()
+			suite.container = deps.Get().Container
+		})
 }
 
 func (suite *RevertRevertInquiryTestSuite) TestRevertInquiry() {
@@ -94,14 +101,10 @@ func (suite *RevertRevertInquiryTestSuite) TestRevertInquiry() {
 	}
 
 	c.Request = req
-	handlers := inquiry.InquiryHandlers{
-		ChatDao: chat.NewChatDao(db.GetDB()),
-		UserDao: user.NewUserDAO(db.GetDB()),
-	}
 
 	c.Set("uuid", femaleUser.Uuid)
 	c.Set("inquiry", &iq)
-	handlers.RevertChat(c)
+	inquiry.RevertChatHandler(c, suite.container)
 	apperr.HandleError()(c)
 
 	// Assertions

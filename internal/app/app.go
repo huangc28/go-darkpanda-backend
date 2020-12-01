@@ -8,7 +8,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
@@ -38,15 +37,6 @@ func StartApp(e *gin.Engine) *gin.Engine {
 
 	// Resolve dependencies from different domains from IOC container. We'll inject the dependencies
 	// to each domain rotues.
-	var (
-		serviceDao contracts.ServiceDAOer
-		userDao    contracts.UserDAOer
-		inquiryDao contracts.InquiryDAOer
-	)
-
-	deps.Get().Container.Make(&userDao)
-	deps.Get().Container.Make(&serviceDao)
-	deps.Get().Container.Make(&inquiryDao)
 
 	auth.Routes(
 		rv1,
@@ -65,21 +55,15 @@ func StartApp(e *gin.Engine) *gin.Engine {
 
 	inquiry.Routes(
 		rv1,
-		&inquiry.InquiryRoutesParams{
-			UserDAO:      userDao,
-			ChatServicer: chat.NewChatServices(chat.NewChatDao(db.GetDB())),
-			ChatDAO:      chat.NewChatDao(db.GetDB()),
-			ServiceDAO:   serviceDao,
-		},
+		deps.Get().Container,
 	)
 
 	image.Routes(rv1)
 
-	chat.Routes(rv1, &chat.ChatRoutesParams{
-		UserDao:    userDao,
-		ServiceDao: serviceDao,
-		InquiryDao: inquiryDao,
-	})
+	chat.Routes(
+		rv1,
+		deps.Get().Container,
+	)
 
 	return e
 }

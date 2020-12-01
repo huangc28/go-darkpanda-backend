@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golobby/container/pkg/container"
+	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -34,7 +36,7 @@ type EmitTextMessageBody struct {
 // @TODOs
 //   - Check if chatroom has expired
 //   - Check if message count is still within valid range
-func (h *ChatHandlers) EmitTextMessage(c *gin.Context) {
+func EmitTextMessage(c *gin.Context, depCon container.Container) {
 
 	body := EmitTextMessageBody{}
 
@@ -50,8 +52,12 @@ func (h *ChatHandlers) EmitTextMessage(c *gin.Context) {
 		return
 	}
 
+	var (
+		chatDao contracts.ChatDaoer
+	)
+
 	// check if chatroom has expired
-	channel, err := h.ChatDao.GetChatRoomByChannelUUID(
+	channel, err := chatDao.GetChatRoomByChannelUUID(
 		body.ChannelUUID,
 		"expired_at",
 		"message_count",
@@ -132,7 +138,7 @@ type EmitServiceSettingMessage struct {
 	ServiceType     string    `form:"service_type" binding:"required"`
 }
 
-func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
+func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container) {
 	// Check if the corresponding service has already been created with given inquiry
 	// if service has been created, update the service detail,
 	// if not, create the serice with given service detail.
@@ -150,7 +156,17 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 		return
 	}
 
-	user, err := h.UserDao.GetUserByUuid(c.GetString("uuid"), "id")
+	var (
+		userDao    contracts.UserDAOer
+		inquiryDao contracts.InquiryDAOer
+		serviceDao contracts.ServiceDAOer
+	)
+
+	depCon.Make(&userDao)
+	depCon.Make(&inquiryDao)
+	depCon.Make(&serviceDao)
+
+	user, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
 
 	if err != nil {
 		c.AbortWithError(
@@ -164,7 +180,7 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 		return
 	}
 
-	inquiry, err := h.InquiryDao.GetInquiryByUuid(body.InquiryUUID)
+	inquiry, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID)
 
 	if err != nil {
 		c.AbortWithError(
@@ -178,7 +194,7 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 		return
 	}
 
-	service, err := h.ServiceDao.GetServiceByInquiryUUID(body.InquiryUUID)
+	service, err := serviceDao.GetServiceByInquiryUUID(body.InquiryUUID)
 
 	ctx := context.Background()
 	if err != nil {
@@ -236,7 +252,7 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 	} else {
 		// Corresponding service exists, update detail of the service.
 		srvType := models.ServiceType(body.ServiceType)
-		service, err = h.ServiceDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
+		service, err = serviceDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
 			ID:          service.ID,
 			Price:       &body.Price,
 			Duration:    &body.ServiceDuration,
@@ -282,10 +298,18 @@ func (h *ChatHandlers) EmitServiceSettingMessage(c *gin.Context) {
 // If the requester is female find all chatrooms that qualify the following conditions:
 //   - Those chatrooms's related inquiry status is chatting
 //   - Those chatrooms's related inquiry picker_id equals requester's id
-func (h *ChatHandlers) GetInquiryChatRooms(c *gin.Context) {
+func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 	// Recognize the gender of the requester
+	var (
+		userDao contracts.UserDAOer
+		chatDao contracts.ChatDaoer
+	)
+
+	depCon.Make(&userDao)
+	depCon.Make(&chatDao)
+
 	userUUID := c.GetString("uuid")
-	user, err := h.UserDao.GetUserByUuid(userUUID, "id", "gender")
+	user, err := userDao.GetUserByUuid(userUUID, "id", "gender")
 
 	if err != nil {
 		c.AbortWithError(
@@ -301,7 +325,7 @@ func (h *ChatHandlers) GetInquiryChatRooms(c *gin.Context) {
 	var chatrooms []models.InquiryChatRoom
 
 	if user.Gender == models.GenderFemale {
-		chatrooms, err = h.ChatDao.GetFemaleInquiryChatRooms(user.ID)
+		chatrooms, err = chatDao.GetFemaleInquiryChatRooms(user.ID)
 
 	} else {
 		// Retrieve inquiry chatrooms for male user.
@@ -359,7 +383,7 @@ type GetChatroomsBody struct {
 	ChatroomType QueryChatroomType `form:"chatroom_type,default='inquiry'"`
 }
 
-func (h *ChatHandlers) GetChatrooms(c *gin.Context) {
+func GetChatrooms(c *gin.Context, depCon container.Container) {
 	body := GetChatroomsBody{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -375,11 +399,11 @@ func (h *ChatHandlers) GetChatrooms(c *gin.Context) {
 
 	switch body.ChatroomType {
 	case Inquiry:
-		h.GetInquiryChatRooms(c)
+		GetInquiryChatRooms(c, depCon)
 	case Service:
 		c.JSON(http.StatusOK, struct{}{})
 	default:
-		h.GetInquiryChatRooms(c)
+		GetInquiryChatRooms(c, depCon)
 	}
 }
 
@@ -392,7 +416,7 @@ type GetMessagesBody struct {
 	Page    int `form:"page,default=0"`
 }
 
-func (h *ChatHandlers) GetHistoricalMessages(c *gin.Context) {
+func GetHistoricalMessages(c *gin.Context) {
 	channelUUID := c.Param("channel_uuid")
 
 	body := GetMessagesBody{}
@@ -449,7 +473,7 @@ type EmitServiceConfirmedMessageBody struct {
 	ServiceType     string    `form:"service_type" binding:"required"`
 }
 
-func (h *ChatHandlers) EmitServiceConfirmedMessage(c *gin.Context) {
+func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	ctx := context.Background()
 	body := EmitServiceConfirmedMessageBody{}
 
@@ -465,8 +489,11 @@ func (h *ChatHandlers) EmitServiceConfirmedMessage(c *gin.Context) {
 		return
 	}
 
+	var serviceDao contracts.ServiceDAOer
+	depCon.Make(&serviceDao)
+
 	// Retrieve service by inquiry uuid
-	service, err := h.ServiceDao.GetServiceByInquiryUUID(body.InquiryUUID)
+	service, err := serviceDao.GetServiceByInquiryUUID(body.InquiryUUID, "id", "uuid")
 
 	if err != nil {
 		c.AbortWithError(
@@ -479,6 +506,14 @@ func (h *ChatHandlers) EmitServiceConfirmedMessage(c *gin.Context) {
 
 		return
 	}
+
+	// Wrap service and inquiry update in a transaction.
+	db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
+		return nil, nil
+	})
+
+	// Change inquiry status from `chatting` to `booked`
+	// Change service status from `negotiating` to `unpaid`
 
 	docRef, msg, err := darkfirestore.Get().SendServiceConfirmedMessage(
 		ctx,

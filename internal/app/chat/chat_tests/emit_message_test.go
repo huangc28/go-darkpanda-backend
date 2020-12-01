@@ -12,10 +12,12 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
@@ -27,10 +29,15 @@ import (
 
 type EmitMessageTestSuite struct {
 	suite.Suite
+	depCon container.Container
 }
 
 func (suite *EmitMessageTestSuite) SetupSuite() {
-	manager.NewDefaultManager(context.Background())
+	manager.
+		NewDefaultManager(context.Background()).Run(func() {
+		deps.Get().Run()
+		suite.depCon = deps.Get().Container
+	})
 }
 
 func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
@@ -90,12 +97,8 @@ func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
 			ExpiredAt: time.Now().Add(time.Minute * 27),
 		}, nil)
 
-	handlers := chat.ChatHandlers{
-		ChatDao: mChatDao,
-	}
-
 	c.Request = req
-	handlers.EmitTextMessage(c)
+	chat.EmitTextMessage(c, suite.depCon)
 	apperr.HandleError()(c)
 
 	// assertions

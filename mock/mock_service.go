@@ -50,18 +50,23 @@ func (mr *MockServiceDAOerMockRecorder) GetUserHistoricalServicesByUuid(uuid, pe
 }
 
 // GetServiceByInquiryUUID mocks base method
-func (m *MockServiceDAOer) GetServiceByInquiryUUID(uuid string) (*models.Service, error) {
+func (m *MockServiceDAOer) GetServiceByInquiryUUID(uuid string, fields ...string) (*models.Service, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetServiceByInquiryUUID", uuid)
+	varargs := []interface{}{uuid}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetServiceByInquiryUUID", varargs...)
 	ret0, _ := ret[0].(*models.Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetServiceByInquiryUUID indicates an expected call of GetServiceByInquiryUUID
-func (mr *MockServiceDAOerMockRecorder) GetServiceByInquiryUUID(uuid interface{}) *gomock.Call {
+func (mr *MockServiceDAOerMockRecorder) GetServiceByInquiryUUID(uuid interface{}, fields ...interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceByInquiryUUID", reflect.TypeOf((*MockServiceDAOer)(nil).GetServiceByInquiryUUID), uuid)
+	varargs := append([]interface{}{uuid}, fields...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceByInquiryUUID", reflect.TypeOf((*MockServiceDAOer)(nil).GetServiceByInquiryUUID), varargs...)
 }
 
 // UpdateServiceByID mocks base method

@@ -11,11 +11,13 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang/mock/gomock"
+	"github.com/golobby/container/pkg/container"
 	"github.com/google/uuid"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
@@ -27,10 +29,16 @@ import (
 
 type EmitServiceConfirmMessageTestSuite struct {
 	suite.Suite
+	depCon container.Container
 }
 
 func (suite *EmitServiceConfirmMessageTestSuite) SetupSuite() {
-	manager.NewDefaultManager(context.Background())
+	manager.
+		NewDefaultManager(context.Background()).
+		Run(func() {
+			deps.Get().Run()
+			suite.depCon = deps.Get().Container
+		})
 }
 
 // TestEmitServiceConfirmedMessageSuccess test emiting service confirmed message.
@@ -76,10 +84,6 @@ func (suite *EmitServiceConfirmMessageTestSuite) TestEmitServiceConfirmedMessage
 	ctrl := gomock.NewController(suite.T())
 	mServiceDao := mock.NewMockServiceDAOer(ctrl)
 
-	handlers := chat.ChatHandlers{
-		ServiceDao: mServiceDao,
-	}
-
 	serviceUUID := uuid.New()
 	mServiceDao.EXPECT().
 		GetServiceByInquiryUUID(gomock.Eq("some_inquiry_uuid")).
@@ -90,7 +94,7 @@ func (suite *EmitServiceConfirmMessageTestSuite) TestEmitServiceConfirmedMessage
 			nil,
 		)
 
-	handlers.EmitServiceConfirmedMessage(c)
+	chat.EmitServiceConfirmedMessage(c, suite.depCon)
 	apperr.HandleError()(c)
 
 	// Retrieve message from firestore to makesure the correctness of the content.

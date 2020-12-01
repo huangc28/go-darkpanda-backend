@@ -7,9 +7,14 @@ import (
 )
 
 func Routes(r *gin.RouterGroup, paymentDAO PaymentDAOer, serviceDAO ServiceDAOer) {
-	g := r.Group("/users", jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
-		Secret: config.GetAppConf().JwtSecret,
-	}))
+	g := r.Group(
+		"/users",
+		jwtactor.JwtValidator(
+			jwtactor.JwtMiddlewareOptions{
+				Secret: config.GetAppConf().JwtSecret,
+			},
+		),
+	)
 
 	handlers := UserHandlers{
 		PaymentDAO: paymentDAO,

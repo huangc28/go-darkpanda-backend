@@ -1,6 +1,8 @@
 package service
 
 import (
+	"fmt"
+
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
@@ -28,6 +30,8 @@ func ServiceDAOServiceProvider(c cintrnal.Container) func() error {
 		return nil
 	}
 }
+
+func (dao *ServiceDAO) WithTx() {}
 
 func (dao *ServiceDAO) GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error) {
 	query := `
@@ -70,13 +74,15 @@ OFFSET $3;
 	return services, nil
 }
 
-func (dao *ServiceDAO) GetServiceByInquiryUUID(uuid string) (*models.Service, error) {
-	query := `
-SELECT services.*
+func (dao *ServiceDAO) GetServiceByInquiryUUID(uuid string, fields ...string) (*models.Service, error) {
+	baseQuery := `
+SELECT %s
 FROM services
 LEFT JOIN service_inquiries ON service_inquiries.id = services.inquiry_id
 WHERE service_inquiries.uuid = $1;
 `
+
+	query := fmt.Sprintf(baseQuery, db.ComposeFieldsSQLString(fields...))
 	service := models.Service{}
 
 	if err := dao.DB.QueryRowx(query, uuid).StructScan(&service); err != nil {
@@ -93,8 +99,9 @@ UPDATE services SET
 	uuid = uuid,
 	duration = COALESCE($2, duration), 
 	appointment_time = COALESCE($3, appointment_time),
-	service_type = COALESCE($4, service_type)
-WHERE id = $5
+	service_status = COALESCE($4, service_status),
+	service_type = COALESCE($5, service_type)
+WHERE id = $6
 RETURNING 
 	uuid,
 	price, 
@@ -110,6 +117,7 @@ RETURNING
 		params.Duration,
 		params.Appointment,
 		params.ServiceType,
+		params.ServiceStatus,
 		params.ID,
 	).StructScan(&service); err != nil {
 		return (*models.Service)(nil), err

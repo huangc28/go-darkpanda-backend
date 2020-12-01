@@ -2,8 +2,8 @@ package chat
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
-	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/middlewares"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
@@ -15,7 +15,7 @@ type ChatRoutesParams struct {
 	InquiryDao contracts.InquiryDAOer
 }
 
-func Routes(r *gin.RouterGroup, params *ChatRoutesParams) {
+func Routes(r *gin.RouterGroup, depCon container.Container) {
 	g := r.Group(
 		"/chat",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
@@ -23,22 +23,33 @@ func Routes(r *gin.RouterGroup, params *ChatRoutesParams) {
 		}),
 	)
 
-	handlers := ChatHandlers{
-		ChatDao: &ChatDao{
-			db.GetDB(),
+	// handlers := ChatHandlers{
+	// 	ChatDao: &ChatDao{
+	// 		db.GetDB(),
+	// 	},
+	// 	UserDao:    params.UserDao,
+	// 	ServiceDao: params.ServiceDao,
+	// 	InquiryDao: params.InquiryDao,
+	// }
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	g.GET("", func(c *gin.Context) {
+		GetChatrooms(c, depCon)
+	})
+
+	g.POST(
+		"/emit-text-message",
+		func(c *gin.Context) {
+			EmitTextMessage(c, depCon)
 		},
-		UserDao:    params.UserDao,
-		ServiceDao: params.ServiceDao,
-		InquiryDao: params.InquiryDao,
-	}
-
-	g.GET("", handlers.GetChatrooms)
-
-	g.POST("/emit-text-message", handlers.EmitTextMessage)
+	)
 
 	g.POST(
 		"/emit-service-message",
-		handlers.EmitServiceSettingMessage,
+		func(c *gin.Context) {
+			EmitServiceSettingMessageHandler(c, depCon)
+		},
 	)
 
 	// Male user can agree on service detail set by female user. Once agreed, female user would receive
@@ -46,9 +57,14 @@ func Routes(r *gin.RouterGroup, params *ChatRoutesParams) {
 	// leave the current inquiry chatroom.
 	g.POST(
 		"/emit-service-confirmed-message",
-		middlewares.IsMale(params.UserDao),
-		handlers.EmitServiceConfirmedMessage,
+		middlewares.IsMale(userDao),
+		func(c *gin.Context) {
+			EmitServiceConfirmedMessage(c, depCon)
+		},
 	)
 
-	g.GET("/:channel_uuid/messages", handlers.GetHistoricalMessages)
+	g.GET(
+		"/:channel_uuid/messages",
+		GetHistoricalMessages,
+	)
 }

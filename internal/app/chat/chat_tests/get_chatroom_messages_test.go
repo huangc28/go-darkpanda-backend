@@ -11,10 +11,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
@@ -25,10 +27,14 @@ import (
 
 type GetChatroomMessagesTestSuite struct {
 	suite.Suite
+	depCon container.Container
 }
 
 func (suite *GetChatroomMessagesTestSuite) SetupSuite() {
-	manager.NewDefaultManager(context.Background())
+	manager.NewDefaultManager(context.Background()).Run(func() {
+		deps.Get().Run()
+		suite.depCon = deps.Get().Container
+	})
 }
 
 // GetChatroomMessagesSuccess we are seeding real firestore messages to testify
@@ -90,8 +96,7 @@ func (suite *GetChatroomMessagesTestSuite) TestGetChatroomMessagesSuccess() {
 	}
 
 	c.Request = req
-	handlers := chat.ChatHandlers{}
-	handlers.GetHistoricalMessages(c)
+	chat.GetHistoricalMessages(c)
 	apperr.HandleError()(c)
 
 	// page1 := chat.TransformedGetHistoricalMessages{}
@@ -122,7 +127,7 @@ func (suite *GetChatroomMessagesTestSuite) TestGetChatroomMessagesSuccess() {
 	)
 
 	c.Request = req2
-	handlers.GetHistoricalMessages(c)
+	chat.GetHistoricalMessages(c)
 	apperr.HandleError()(c)
 
 	type Page2Messages []map[string]string
