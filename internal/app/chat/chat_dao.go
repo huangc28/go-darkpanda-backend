@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
@@ -19,6 +20,16 @@ type ChatDao struct {
 func NewChatDao(db db.Conn) contracts.ChatDaoer {
 	return &ChatDao{
 		DB: db,
+	}
+}
+
+func ChatDaoServiceProvider(c container.Container) func() error {
+	return func() error {
+		c.Transient(func() contracts.ChatDaoer {
+			return NewChatDao(db.GetDB())
+		})
+
+		return nil
 	}
 }
 

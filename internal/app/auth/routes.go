@@ -2,21 +2,20 @@ package auth
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
-	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/spf13/viper"
 )
 
-func Routes(r *gin.RouterGroup, userDAO UserDAO) {
+func Routes(r *gin.RouterGroup, depCon container.Container) {
 	authController := AuthController{
 		TwilioClient: twilio.New(twilio.TwilioConf{
 			AccountSID:   viper.GetString("twilio.account_id"),
 			AccountToken: viper.GetString("twilio.auth_token"),
 		}),
-		DB:    db.GetDB(),
-		Redis: db.GetRedis(),
+		Container: depCon,
 	}
 
 	// Provides user information to register a new user.

@@ -52,9 +52,9 @@ func EmitTextMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	var (
-		chatDao contracts.ChatDaoer
-	)
+	var chatDao contracts.ChatDaoer
+
+	depCon.Make(&chatDao)
 
 	// check if chatroom has expired
 	channel, err := chatDao.GetChatRoomByChannelUUID(
@@ -180,7 +180,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 		return
 	}
 
-	inquiry, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID)
+	inquiry, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID, "")
 
 	if err != nil {
 		c.AbortWithError(
@@ -194,7 +194,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 		return
 	}
 
-	service, err := serviceDao.GetServiceByInquiryUUID(body.InquiryUUID)
+	service, err := serviceDao.GetServiceByInquiryUUID(body.InquiryUUID, "services.*")
 
 	ctx := context.Background()
 	if err != nil {
@@ -489,8 +489,13 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	var serviceDao contracts.ServiceDAOer
+	var (
+		serviceDao contracts.ServiceDAOer
+		inquiryDao contracts.InquiryDAOer
+	)
+
 	depCon.Make(&serviceDao)
+	depCon.Make(&inquiryDao)
 
 	// Retrieve service by inquiry uuid
 	service, err := serviceDao.GetServiceByInquiryUUID(body.InquiryUUID, "id", "uuid")
@@ -508,12 +513,47 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	}
 
 	// Wrap service and inquiry update in a transaction.
-	db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
+	// Change inquiry status from `chatting` to `booked`
+	// Change service status from `negotiating` to `unpaid`
+	err, _ = db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
+		serviceDao.WithTx(tx)
+
+		statusUnpaid := models.ServiceStatusUnpaid
+
+		_, err := serviceDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
+			ID:            service.ID,
+			ServiceStatus: &statusUnpaid,
+		})
+
+		if err != nil {
+			return err, nil
+		}
+
+		q := models.New(tx)
+
+		_, err = q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
+			Uuid:          body.InquiryUUID,
+			InquiryStatus: models.InquiryStatusBooked,
+		})
+
+		if err != nil {
+			return err, nil
+		}
+
 		return nil, nil
 	})
 
-	// Change inquiry status from `chatting` to `booked`
-	// Change service status from `negotiating` to `unpaid`
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToChangeStatusWhenEmittingServiceConfirmMessage,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	docRef, msg, err := darkfirestore.Get().SendServiceConfirmedMessage(
 		ctx,

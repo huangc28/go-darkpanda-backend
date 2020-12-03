@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/jmoiron/sqlx"
+	"github.com/golobby/container/pkg/container"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -26,9 +26,7 @@ import (
 
 type AuthController struct {
 	TwilioClient *twilio.TwilioClient
-	DB           *sqlx.DB
-	Redis        *redis.Client
-	UserDAO      UserDAO
+	Container    container.Container
 }
 
 type RegisterBody struct {
@@ -671,7 +669,7 @@ func (ac *AuthController) VerifyLoginCode(c *gin.Context) {
 
 	// Try to retrieve authenticator record from redis via UUID.
 	// If given key does not exist, response with error.
-	q := models.New(ac.DB)
+	q := models.New(db.GetDB())
 	user, err := q.GetUserByUuid(ctx, body.UUID)
 
 	if err != nil {
@@ -687,7 +685,7 @@ func (ac *AuthController) VerifyLoginCode(c *gin.Context) {
 	}
 
 	// Retrieve auth record from redis
-	authDao := NewAuthDao(ac.Redis)
+	authDao := NewAuthDao(db.GetRedis())
 	authRecord, _ := authDao.GetLoginRecord(ctx, user.Uuid)
 
 	if authRecord.VerifyCode != fmt.Sprintf("%s-%d", body.VerifyChar, body.VerifyDig) {

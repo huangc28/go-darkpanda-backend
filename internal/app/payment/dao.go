@@ -1,6 +1,9 @@
 package payment
 
 import (
+	"github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
 )
@@ -9,8 +12,20 @@ type PaymentDAO struct {
 	DB *sqlx.DB
 }
 
-func (dao *PaymentDAO) Ping() error {
-	return dao.DB.Ping()
+func NewPaymentDAO(DB *sqlx.DB) *PaymentDAO {
+	return &PaymentDAO{
+		DB: DB,
+	}
+}
+
+func PaymentDAOServiceProvider(c container.Container) func() error {
+	return func() error {
+		c.Transient(func() contracts.PaymentDAOer {
+			return NewPaymentDAO(db.GetDB())
+		})
+
+		return nil
+	}
 }
 
 func (dao *PaymentDAO) GetPaymentsByUuid(uuid string) ([]models.PaymentInfo, error) {

@@ -9,15 +9,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
-type InquiryRoutesParams struct {
-	UserDAO      contracts.UserDAOer
-	ChatServicer contracts.ChatServicer
-	ChatDAO      contracts.ChatDaoer
-	ServiceDAO   contracts.ServiceDAOer
-}
-
-// userDao contracts.UserDAOer, chatServices contracts.ChatServicer, chatDao contracts.ChatDaoer)
-// func Routes(r *gin.RouterGroup, params *InquiryRoutesParams) {
 func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	g := r.Group(
 		"/inquiries",
@@ -26,21 +17,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		}),
 	)
 
-	// handlers := &InquiryHandlers{
-	// 	InquiryDao: NewInquiryDAO(db.GetDB()),
-	// 	UserDao:    params.UserDAO,
-	// 	LobbyServices: &LobbyServices{
-	// 		LobbyDao: &LobbyDao{
-	// 			DB: db.GetDB(),
-	// 		},
-	// 	},
-	// 	ChatServices: params.ChatServicer,
-	// 	ChatDao:      params.ChatDAO,
-	// 	ServiceDAO:   params.ServiceDAO,
-	// }
-	var (
-		userDAO contracts.UserDAOer
-	)
+	var userDAO contracts.UserDAOer
 
 	container.Make(&userDAO)
 

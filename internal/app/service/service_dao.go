@@ -12,7 +12,7 @@ import (
 )
 
 type ServiceDAO struct {
-	DB *sqlx.DB
+	DB db.Conn
 }
 
 func NewServiceDAO(db *sqlx.DB) *ServiceDAO {
@@ -31,7 +31,11 @@ func ServiceDAOServiceProvider(c cintrnal.Container) func() error {
 	}
 }
 
-func (dao *ServiceDAO) WithTx() {}
+func (dao *ServiceDAO) WithTx(tx db.Conn) contracts.ServiceDAOer {
+	dao.DB = tx
+
+	return dao
+}
 
 func (dao *ServiceDAO) GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error) {
 	query := `
@@ -75,6 +79,7 @@ OFFSET $3;
 }
 
 func (dao *ServiceDAO) GetServiceByInquiryUUID(uuid string, fields ...string) (*models.Service, error) {
+
 	baseQuery := `
 SELECT %s
 FROM services
@@ -94,17 +99,17 @@ WHERE service_inquiries.uuid = $1;
 
 func (dao *ServiceDAO) UpdateServiceByID(params contracts.UpdateServiceByIDParams) (*models.Service, error) {
 	sql := `
-UPDATE services SET 	
+UPDATE services SET
 	price = COALESCE($1, price),
 	uuid = uuid,
-	duration = COALESCE($2, duration), 
+	duration = COALESCE($2, duration),
 	appointment_time = COALESCE($3, appointment_time),
 	service_status = COALESCE($4, service_status),
 	service_type = COALESCE($5, service_type)
 WHERE id = $6
-RETURNING 
+RETURNING
 	uuid,
-	price, 
+	price,
 	duration,
 	appointment_time,
 	service_type;
@@ -116,8 +121,8 @@ RETURNING
 		params.Price,
 		params.Duration,
 		params.Appointment,
-		params.ServiceType,
 		params.ServiceStatus,
+		params.ServiceType,
 		params.ID,
 	).StructScan(&service); err != nil {
 		return (*models.Service)(nil), err

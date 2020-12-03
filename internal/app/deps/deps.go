@@ -9,7 +9,9 @@ import (
 
 	"github.com/golobby/container"
 	cintrnal "github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/service"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
 )
@@ -41,6 +43,8 @@ func (dep *DepContainer) Run() error {
 		user.UserDaoServiceProvider(dep.Container),
 		service.ServiceDAOServiceProvider(dep.Container),
 		inquiry.InquiryDaoServiceProvider(dep.Container),
+		chat.ChatDaoServiceProvider(dep.Container),
+		payment.PaymentDAOServiceProvider(dep.Container),
 	}
 
 	for _, depRegistrar := range depRegistrars {

@@ -2,11 +2,12 @@ package user
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
-func Routes(r *gin.RouterGroup, paymentDAO PaymentDAOer, serviceDAO ServiceDAOer) {
+func Routes(r *gin.RouterGroup, depCon container.Container) {
 	g := r.Group(
 		"/users",
 		jwtactor.JwtValidator(
@@ -17,8 +18,7 @@ func Routes(r *gin.RouterGroup, paymentDAO PaymentDAOer, serviceDAO ServiceDAOer
 	)
 
 	handlers := UserHandlers{
-		PaymentDAO: paymentDAO,
-		ServiceDAO: serviceDAO,
+		Container: depCon,
 	}
 
 	g.GET("/:uuid/services", handlers.GetUserServiceHistory)

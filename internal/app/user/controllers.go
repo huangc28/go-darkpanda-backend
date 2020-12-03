@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
@@ -15,8 +16,7 @@ import (
 )
 
 type UserHandlers struct {
-	PaymentDAO PaymentDAOer
-	ServiceDAO ServiceDAOer
+	Container container.Container
 }
 
 // Get the following information from the user:
@@ -286,7 +286,10 @@ func (h *UserHandlers) GetUserImagesHandler(c *gin.Context) {
 func (h *UserHandlers) GetUserPayments(c *gin.Context) {
 	uuid := c.Param("uuid")
 
-	paymentInfos, err := h.PaymentDAO.GetPaymentsByUuid(uuid)
+	var paymentDAO contracts.PaymentDAOer
+	h.Container.Make(&paymentDAO)
+
+	paymentInfos, err := paymentDAO.GetPaymentsByUuid(uuid)
 
 	if err != nil {
 		c.AbortWithError(
@@ -339,8 +342,11 @@ func (h *UserHandlers) GetUserServiceHistory(c *gin.Context) {
 		return
 	}
 
+	var serviceDAO contracts.ServiceDAOer
+	h.Container.Make(&serviceDAO)
+
 	// Retrieve past service records.
-	services, err := h.ServiceDAO.GetUserHistoricalServicesByUuid(
+	services, err := serviceDAO.GetUserHistoricalServicesByUuid(
 		uuid,
 		body.PerPage,
 		body.Offset,

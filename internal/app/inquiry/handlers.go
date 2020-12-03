@@ -24,15 +24,6 @@ import (
 	"github.com/teris-io/shortid"
 )
 
-// type InquiryHandlers struct {
-// 	UserDao       contracts.UserDAOer
-// 	InquiryDao    InquiryDAOer
-// 	LobbyServices LobbyServicer
-// 	ChatServices  contracts.ChatServicer
-// 	ChatDao       contracts.ChatDaoer
-// 	ServiceDAO    contracts.ServiceDAOer
-// }
-
 // @TODO budget received from client should be type float instead of string.
 //       budget should be converted to type string before stored in DB.
 type EmitInquiryBody struct {
@@ -1017,7 +1008,14 @@ func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
 	depCon.Make(&serviceDao)
 
 	// Retrieve service by inquiry uuid given
-	srvModel, err := serviceDao.GetServiceByInquiryUUID(iqUUID)
+	srvModel, err := serviceDao.GetServiceByInquiryUUID(
+		iqUUID,
+		"services.uuid",
+		"services.service_type",
+		"services.price",
+		"services.duration",
+		"services.appointment_time",
+	)
 
 	if err != nil {
 		c.AbortWithError(

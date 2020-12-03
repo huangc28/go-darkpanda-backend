@@ -23,15 +23,8 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		}),
 	)
 
-	// handlers := ChatHandlers{
-	// 	ChatDao: &ChatDao{
-	// 		db.GetDB(),
-	// 	},
-	// 	UserDao:    params.UserDao,
-	// 	ServiceDao: params.ServiceDao,
-	// 	InquiryDao: params.InquiryDao,
-	// }
 	var userDao contracts.UserDAOer
+
 	depCon.Make(&userDao)
 
 	g.GET("", func(c *gin.Context) {
