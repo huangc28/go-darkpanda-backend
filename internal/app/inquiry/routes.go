@@ -103,4 +103,13 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		ValidateBeforeAlterInquiryStatus(Book),
 		ManApproveInquiry,
 	)
+
+	g.GET(
+		"/:inquiry_uuid/inquirer",
+		ValidateInqiuryURIParams(),
+		middlewares.IsFemale(userDAO),
+		func(c *gin.Context) {
+			GetInquirerInfo(c, container)
+		},
+	)
 }

@@ -9,6 +9,7 @@ const (
 	FailedToInitGCSClient               = "4000006"
 	FailedToParseMultipartForm          = "4000007"
 	FailedToOpenMultipartFile           = "4000008"
+	FailedToGetImagesByUserID           = "4000009"
 )
 
 var ImageErrCodeMap = map[string]string{}

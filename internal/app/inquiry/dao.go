@@ -12,15 +12,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
-//type InquiryDAOer interface {
-//CheckHasActiveInquiryByID(id int64) (bool, error)
-//GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error)
-//HasMoreInquiries(offset int, perPage int) (bool, error)
-//GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error)
-//IsInquiryExpired(inquiryID int64) (bool, error)
-//PickupInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error)
-//}
-
 type InquiryDAO struct {
 	db db.Conn
 }
@@ -224,4 +215,32 @@ WHERE uuid = $2
 	}
 
 	return err
+}
+
+// GetInquirerByInquiryUUID gets the inquirer information given inquiry UUID. If no fields is given,
+// it retrieves all field in regards to that inquirer.
+func (dao *InquiryDAO) GetInquirerByInquiryUUID(uuid string, fields ...string) (*models.User, error) {
+	if len(fields) == 0 {
+		fields = append(fields, "users.*")
+	}
+
+	fieldsStr := strings.TrimSuffix(strings.Join(fields, ","), ",")
+
+	baseQuery := `
+SELECT %s
+FROM users
+INNER JOIN service_inquiries
+	ON service_inquiries.inquirer_id = users.id
+WHERE service_inquiries.uuid = $1;
+	`
+
+	query := fmt.Sprintf(baseQuery, fieldsStr)
+
+	inquirer := models.User{}
+
+	if err := dao.db.QueryRowx(query, uuid).StructScan(&inquirer); err != nil {
+		return nil, err
+	}
+
+	return &inquirer, nil
 }

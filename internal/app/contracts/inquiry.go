@@ -10,4 +10,5 @@ type PatchInquiryStatusByUUIDParams struct {
 type InquiryDAOer interface {
 	GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error)
 	PatchInquiryStatusByUUID(params PatchInquiryStatusByUUIDParams) error
+	GetInquirerByInquiryUUID(uuid string, fields ...string) (*models.User, error)
 }

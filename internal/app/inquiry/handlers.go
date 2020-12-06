@@ -1044,3 +1044,63 @@ func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, trfed)
 }
+
+func GetInquirerInfo(c *gin.Context, depCon container.Container) {
+	iqUUID := c.Param("inquiry_uuid")
+
+	// Retrieve inquiry info by UUID
+	var (
+		inquiryDAO contracts.InquiryDAOer
+		imageDAO   contracts.ImageDAOer
+	)
+
+	depCon.Make(&inquiryDAO)
+	depCon.Make(&imageDAO)
+
+	inquirer, err := inquiryDAO.GetInquirerByInquiryUUID(iqUUID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquirerByInquiryUUID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	images, err := imageDAO.GetImagesByUserID(int(inquirer.ID))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetImagesByUserID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	trfm, err := NewTransform().TransformGetInquirerInfo(
+		*inquirer,
+		images,
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformInquirerResponse,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, trfm)
+}

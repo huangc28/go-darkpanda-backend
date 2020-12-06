@@ -44,6 +44,11 @@ func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
 	// seed a male user
 	// the male user send a message to specified channel
 	maleUserParams, err := util.GenTestUserParams()
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
 	maleUserParams.Gender = models.GenderMale
 	q := models.New(db.GetDB())
 	ctx := context.Background()
@@ -61,10 +66,6 @@ func (suite *EmitMessageTestSuite) TestEmitMessageSuccess() {
 	params := &url.Values{}
 	params.Add("content", "hello world")
 	params.Add("channel_id", pubnubChannelID)
-
-	if err != nil {
-		suite.T().Fatal(err)
-	}
 
 	req, err := util.ComposeTestRequest(
 		"POST",

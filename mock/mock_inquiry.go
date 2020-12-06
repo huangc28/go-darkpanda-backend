@@ -67,3 +67,23 @@ func (mr *MockInquiryDAOerMockRecorder) PatchInquiryStatusByUUID(params interfac
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PatchInquiryStatusByUUID", reflect.TypeOf((*MockInquiryDAOer)(nil).PatchInquiryStatusByUUID), params)
 }
+
+// GetInquirerByInquiryUUID mocks base method
+func (m *MockInquiryDAOer) GetInquirerByInquiryUUID(uuid string, fields ...string) (*models.ServiceInquiry, error) {
+	m.ctrl.T.Helper()
+	varargs := []interface{}{uuid}
+	for _, a := range fields {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetInquirerByInquiryUUID", varargs...)
+	ret0, _ := ret[0].(*models.ServiceInquiry)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetInquirerByInquiryUUID indicates an expected call of GetInquirerByInquiryUUID
+func (mr *MockInquiryDAOerMockRecorder) GetInquirerByInquiryUUID(uuid interface{}, fields ...interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]interface{}{uuid}, fields...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetInquirerByInquiryUUID", reflect.TypeOf((*MockInquiryDAOer)(nil).GetInquirerByInquiryUUID), varargs...)
+}

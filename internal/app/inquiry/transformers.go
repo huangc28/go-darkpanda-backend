@@ -392,3 +392,57 @@ func (t *InquiryTransform) TransformGetServiceByInquiryUUID(srv models.Service) 
 		AppointmentTime: srv.AppointmentTime.Time,
 	}, nil
 }
+
+type TransformGetInquirerInfo struct {
+	Username    string         `json:"username"`
+	UUID        string         `json:"uuid"`
+	AvatarURL   string         `json:"avatar_url"`
+	Nationality string         `json:"nationality"`
+	Region      string         `json:"region"`
+	Age         *int32         `json:"age"`
+	Height      *float64       `json:"height"`
+	Weight      *float64       `json:"weight"`
+	Description string         `json:"description"`
+	Image       []models.Image `json:"images"`
+}
+
+func (t *InquiryTransform) TransformGetInquirerInfo(inquirer models.User, images []models.Image) (*TransformGetInquirerInfo, error) {
+	var (
+		err    error
+		age    *int32
+		height *float64
+		weight *float64
+	)
+
+	if inquirer.Age.Valid != false {
+		age = &inquirer.Age.Int32
+	}
+
+	if inquirer.Height.Valid != false {
+		*height, err = strconv.ParseFloat(inquirer.Height.String, 64)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if inquirer.Weight.Valid != false {
+		*weight, err = strconv.ParseFloat(inquirer.Weight.String, 64)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &TransformGetInquirerInfo{
+		Username:    inquirer.Username,
+		UUID:        inquirer.Uuid,
+		AvatarURL:   inquirer.AvatarUrl.String,
+		Nationality: inquirer.Nationality.String,
+		Age:         age,
+		Height:      height,
+		Weight:      weight,
+		Description: inquirer.Description.String,
+		Image:       images,
+	}, nil
+}
