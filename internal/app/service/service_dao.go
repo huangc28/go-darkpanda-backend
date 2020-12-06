@@ -79,6 +79,9 @@ OFFSET $3;
 }
 
 func (dao *ServiceDAO) GetServiceByInquiryUUID(uuid string, fields ...string) (*models.Service, error) {
+	if len(fields) == 0 {
+		fields = append(fields, "*")
+	}
 
 	baseQuery := `
 SELECT %s

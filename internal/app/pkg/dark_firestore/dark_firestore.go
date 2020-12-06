@@ -292,13 +292,13 @@ func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHi
 	return msgs, nil
 }
 
-// EmitServiceConfirmedMessage male user would emit a service confirmed message to notify female user that the
-// service is confirmed by the client.
 type SendServiceConfirmedMessageParams struct {
 	ChannelUUID string
 	Data        ServiceDetailMessage
 }
 
+// EmitServiceConfirmedMessage male user would emit a service confirmed message to notify female user that the
+// service is confirmed by the client.
 func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error) {
 	if params.Data.Type == "" {
 		params.Data.Type = ConfirmedService
@@ -310,7 +310,7 @@ func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params
 		Collection(PrivateChatsCollectionName).
 		Doc(params.ChannelUUID).
 		Collection(MessageSubCollectionName).
-		Add(ctx, params)
+		Add(ctx, params.Data)
 
 	if err != nil {
 		return nil, params.Data, err

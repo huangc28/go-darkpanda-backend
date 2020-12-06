@@ -273,8 +273,6 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 		}
 	}
 
-	log.Printf("DEBUG service type %v", service.AppointmentTime)
-
 	// Emit service setting message to chatroom.
 	df := darkfirestore.Get()
 	message, err := df.SendServiceDetailMessageToChatroom(ctx, darkfirestore.SendServiceDetailMessageParams{
@@ -498,7 +496,11 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	depCon.Make(&inquiryDao)
 
 	// Retrieve service by inquiry uuid
-	service, err := serviceDao.GetServiceByInquiryUUID(body.InquiryUUID, "id", "uuid")
+	service, err := serviceDao.GetServiceByInquiryUUID(
+		body.InquiryUUID,
+		"services.id",
+		"services.uuid",
+	)
 
 	if err != nil {
 		c.AbortWithError(
@@ -529,11 +531,9 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			return err, nil
 		}
 
-		q := models.New(tx)
-
-		_, err = q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
-			Uuid:          body.InquiryUUID,
+		err = inquiryDao.PatchInquiryStatusByUUID(contracts.PatchInquiryStatusByUUIDParams{
 			InquiryStatus: models.InquiryStatusBooked,
+			UUID:          body.InquiryUUID,
 		})
 
 		if err != nil {
@@ -561,6 +561,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			ChannelUUID: body.ChannelUUID,
 			Data: darkfirestore.ServiceDetailMessage{
 				ChatMessage: darkfirestore.ChatMessage{
+					Content:   "",
 					From:      c.GetString("uuid"),
 					CreatedAt: time.Now(),
 				},

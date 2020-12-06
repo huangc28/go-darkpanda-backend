@@ -12,20 +12,20 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
-type InquiryDAOer interface {
-	CheckHasActiveInquiryByID(id int64) (bool, error)
-	GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error)
-	HasMoreInquiries(offset int, perPage int) (bool, error)
-	GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error)
-	IsInquiryExpired(inquiryID int64) (bool, error)
-	PickupInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error)
-}
+//type InquiryDAOer interface {
+//CheckHasActiveInquiryByID(id int64) (bool, error)
+//GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error)
+//HasMoreInquiries(offset int, perPage int) (bool, error)
+//GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error)
+//IsInquiryExpired(inquiryID int64) (bool, error)
+//PickupInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error)
+//}
 
 type InquiryDAO struct {
 	db db.Conn
 }
 
-func NewInquiryDAO(db db.Conn) InquiryDAOer {
+func NewInquiryDAO(db db.Conn) *InquiryDAO {
 	return &InquiryDAO{
 		db: db,
 	}
@@ -209,4 +209,19 @@ RETURNING *;
 	}
 
 	return &pickedInquiry, nil
+}
+
+func (dao *InquiryDAO) PatchInquiryStatusByUUID(params contracts.PatchInquiryStatusByUUIDParams) error {
+	sql := `
+UPDATE service_inquiries
+SET inquiry_status = $1
+WHERE uuid = $2
+`
+	_, err := dao.db.Exec(sql, params.InquiryStatus, params.UUID)
+
+	if err != nil {
+		return err
+	}
+
+	return err
 }

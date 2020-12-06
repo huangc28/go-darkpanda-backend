@@ -75,6 +75,7 @@ The content in `db/migrations/schema.sql` will be truncated everytime running th
 
 - [x] docker environment with postgres and redis
 - [x] dotenv files
+- [] Write a test to emit service confirmed message.
 - [] Create Makefile commands to run migrations for both `test` and `development` environments
 - []  Implement an API to return inquiries, only female user can fetch inquiries
 - [] Add image relative APIs

@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -132,6 +136,52 @@ func (suite *EmitServiceConfirmMessageTestSuite) TestEmitServiceConfirmedMessage
 		Doc(resp.MessageID).
 		Delete(ctx)
 
+}
+
+// This test should be skipped.
+func (suite *EmitServiceConfirmMessageTestSuite) TestEmitServiceConfirmedMessageSuccessToExistingService() {
+	// Retrieve male user from real application
+
+	// Make a real http request to existing server.
+	headerMap := util.CreateJwtHeaderMap(
+		"31a6b0dc-2857-4bad-b18e-76caab794dee",
+		config.GetAppConf().JwtSecret,
+	)
+
+	v := &url.Values{}
+	v.Add("price", "10.2")
+	v.Add("channel_uuid", "private_chat:tq9MY5hGR")
+	v.Add("inquiry_uuid", "d731a4f9-6907-4ca7-87ca-72b04df03ca8")
+	v.Add("service_time", time.Now().Format("2006-01-02T15:04:05Z07:00"))
+	v.Add("service_duration", "30")
+	v.Add("service_type", string(models.ServiceTypeSex))
+
+	req, err := http.NewRequest(
+		"POST",
+		"http://localhost:3001/v1/chat/emit-service-confirmed-message",
+		strings.NewReader(v.Encode()),
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	util.MergeMapToHeader(req, headerMap)
+
+	client := &http.Client{}
+	res, err := client.Do(req)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	resBytes, err := ioutil.ReadAll(res.Body)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	log.Printf("DEBUG resp %v", string(resBytes))
 }
 
 func TestEmitServiceConfirmMessageTestSuite(t *testing.T) {
