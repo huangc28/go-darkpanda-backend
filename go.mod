@@ -8,6 +8,7 @@ require (
 	cloud.google.com/go/storage v1.10.0
 	firebase.google.com/go v3.13.0+incompatible
 	github.com/DATA-DOG/go-txdb v0.1.3
+	github.com/armon/consul-api v0.0.0-20180202201655-eb2c6b5be1b6 // indirect
 	github.com/brianolson/cbor_go v1.0.0 // indirect
 	github.com/bxcodec/faker/v3 v3.5.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -33,12 +34,13 @@ require (
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.1.1
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/teris-io/shortid v0.0.0-20171029131806-771a37caa5cf
 	github.com/ventu-io/go-shortid v0.0.0-20171029131806-771a37caa5cf
+	github.com/xordataexchange/crypt v0.0.3-0.20170626215501-b2862e3d0a77 // indirect
 	go.opentelemetry.io/otel v0.10.0 // indirect
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	golang.org/x/sys v0.0.0-20200826173525-f9321e4c35a6 // indirect

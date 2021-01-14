@@ -44,6 +44,7 @@ func GetErrorMessage(code string) string {
 			ChatErrorMessageMap,
 			ImageErrCodeMap,
 			ServiceErrorMessageMap,
+			RegisterErrorMessageMap,
 		)
 	}
 

@@ -40,6 +40,15 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
+	g.GET(
+		"/:uuid/inquirer",
+		ValidateInqiuryURIParams(),
+		middlewares.IsFemale(userDAO),
+		func(c *gin.Context) {
+			GetInquirerInfo(c, container)
+		},
+	)
+
 	// Emit a new inquiry by male user.
 	g.POST(
 		"",
@@ -104,12 +113,4 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		ManApproveInquiry,
 	)
 
-	g.GET(
-		"/:inquiry_uuid/inquirer",
-		ValidateInqiuryURIParams(),
-		middlewares.IsFemale(userDAO),
-		func(c *gin.Context) {
-			GetInquirerInfo(c, container)
-		},
-	)
 }

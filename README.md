@@ -19,7 +19,7 @@ Docker compose environment consist of the following:
 - postgres for testing
 - redis
 
-run docker compose environment
+run docker compose for local environment
 
 ```
 docker-compose -f build/package/docker-compose.yaml --env-file build/package/.docker.env up -d
@@ -58,7 +58,7 @@ migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/
 **down**
 
 ```
-migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' up
+migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' down
 ```
 
 Run the following command to generate models in go code from migration contents:
@@ -73,10 +73,11 @@ The content in `db/migrations/schema.sql` will be truncated everytime running th
 
 # TODOs
 
-- [x] docker environment with postgres and redis
-- [x] dotenv files
+- [x] docker environment with postgres and redis.
+- [x] dotenv files.
+= [] Verify referral code.
 - [] Write a test to emit service confirmed message.
-- [] Create Makefile commands to run migrations for both `test` and `development` environments
-- []  Implement an API to return inquiries, only female user can fetch inquiries
-- [] Add image relative APIs
+- [] Create Makefile commands to run migrations for both `test` and `development` environments.
+- []  Implement an API to return inquiries, only female user can fetch inquiries.
+- [] Add image relative APIs.
 

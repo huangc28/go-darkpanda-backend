@@ -14,10 +14,16 @@ var GenJwtTokenByUuid = &cobra.Command{
 	Short: "Generate JWT token by user uuid to request API.",
 	Long:  "Generate JWT token by using user uuid and secret.",
 	RunE:  GenJwtTokenByUuidFunc,
-	Args:  cobra.ExactArgs(1),
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			return errors.New("")
+		}
+
+		return nil
+	},
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return errors.New("exactly one user uuid must be specified to generate jwt.")
+			return errors.New("exactly one user uuid must be specified to generate jwt")
 		}
 
 		return nil

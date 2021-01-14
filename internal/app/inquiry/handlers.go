@@ -1046,7 +1046,7 @@ func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
 }
 
 func GetInquirerInfo(c *gin.Context, depCon container.Container) {
-	iqUUID := c.Param("inquiry_uuid")
+	iqUUID := c.Param("uuid")
 
 	// Retrieve inquiry info by UUID
 	var (
