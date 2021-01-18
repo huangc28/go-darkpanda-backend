@@ -1,8 +1,10 @@
-package register_tests
+package referral_tests
 
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,7 +16,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/register"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/referral"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/stretchr/testify/assert"
@@ -37,10 +39,8 @@ func (suite *VerifyReferralCodeTestSuite) SetupSuite() {
 	})
 }
 
-func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorReferralCodeSuccess() {
-	ctx := context.Background()
+func (suite *VerifyReferralCodeTestSuite) invitorInviteeProvider(ctx context.Context) []models.User {
 	q := models.New(db.GetDB())
-
 	mans := make([]models.User, 0)
 
 	// creates 2 man, one invitor one invitee.
@@ -61,10 +61,96 @@ func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorReferralCodeSuccess()
 		mans = append(mans, man)
 	}
 
+	return mans
+}
+
+func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorCodeExpired() {
+}
+
+func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorCodeInvalId() {
+	ctx := context.Background()
+	mans := suite.invitorInviteeProvider(ctx)
+
+	invitor := mans[0]
+	invitee := mans[1]
+
+	q := models.New(db.GetDB())
+	refCode, err := q.CreateRefcode(
+		ctx,
+		models.CreateRefcodeParams{
+			InvitorID: int32(invitor.ID),
+			InviteeID: sql.NullInt32{
+				Valid: true,
+				Int32: int32(invitee.ID),
+			},
+			RefCode:     util.GenRandStringRune(10),
+			RefCodeType: models.RefCodeTypeInvitor,
+		},
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// 3rd invitee is trying to use the occupied referral code...
+	otherManParams, err := util.GenTestUserParams()
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	otherManParams.Gender = models.GenderMale
+	otherMan, err := q.CreateUser(ctx, *otherManParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	log.Printf("DEBUG otherMan %v", otherMan)
+
+	// Request the API.
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	params := &url.Values{}
+	params.Add("invitee_uuid", otherMan.Uuid)
+	params.Add("referral_code", refCode.RefCode)
+	headers := make(map[string]string)
+
+	req, err := util.ComposeTestRequest(
+		"POST",
+		"/v1/referral/verify",
+		params,
+		headers,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	c.Request = req
+	referral.HandleVerifyReferralCode(c, suite.depCon)
+	apperr.HandleError()(c)
+
+	suite.assert.Equal(http.StatusBadRequest, w.Result().StatusCode)
+
+	body := struct {
+		ErrCode string `json:"err_code"`
+	}{}
+
+	json.Unmarshal(w.Body.Bytes(), &body)
+	suite.assert.Equal(apperr.ReferralCodeIsOccupied, body.ErrCode)
+}
+
+func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorReferralCodeSuccess() {
+	ctx := context.Background()
+	mans := suite.invitorInviteeProvider(ctx)
+
 	invitor := mans[0]
 	invitee := mans[1]
 
 	// Seed sample referral code.
+	q := models.New(db.GetDB())
 	refCode, err := q.CreateRefcode(
 		ctx,
 		models.CreateRefcodeParams{
@@ -93,7 +179,7 @@ func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorReferralCodeSuccess()
 
 	req, err := util.ComposeTestRequest(
 		"POST",
-		"/v1/register/verify-referral-code",
+		"/v1/referral/verify",
 		params,
 		headers,
 	)
@@ -103,7 +189,7 @@ func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorReferralCodeSuccess()
 	}
 
 	c.Request = req
-	register.HandleVerifyReferralCode(c, suite.depCon)
+	referral.HandleVerifyReferralCode(c, suite.depCon)
 	apperr.HandleError()(c)
 
 	// Assert that the response is OK.

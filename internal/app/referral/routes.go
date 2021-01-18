@@ -1,4 +1,4 @@
-package register
+package referral
 
 import (
 	"github.com/gin-gonic/gin"
@@ -6,7 +6,7 @@ import (
 )
 
 func Routes(r *gin.RouterGroup, depCon container.Container) {
-	r.POST("/verify-referral-code", func(c *gin.Context) {
+	r.POST("/verify", func(c *gin.Context) {
 		HandleVerifyReferralCode(c, depCon)
 	})
 }

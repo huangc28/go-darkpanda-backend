@@ -42,7 +42,8 @@ type TestDBConf struct {
 
 func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 	if isTestEnv {
-		log.Printf("is test %t", isTestEnv)
+		log.Printf("is test %v", testConf)
+
 		initTestDB(testConf)
 
 		log.Info("Test database connected!")
