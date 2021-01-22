@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
@@ -66,9 +67,16 @@ func HandleVerifyReferralCode(c *gin.Context, depCon container.Container) {
 				return err, apperr.FailedToGetReferralCode
 			}
 
-			// If ref code is occupied returns error.
+			// If referral code is occupied returns error.
 			if refCode.InviteeID.Valid {
 				return errors.New("Referral code is occupied"), apperr.ReferralCodeIsOccupied
+			}
+
+			// If referral code is expired, return error.
+			if time.Now().After(refCode.ExpiredAt.Time) {
+				return errors.New(
+					apperr.ReferralErrorMessageMap[apperr.ReferralCodeExpired],
+				), apperr.ReferralCodeExpired
 			}
 
 			// Update the invitee of the referral code.

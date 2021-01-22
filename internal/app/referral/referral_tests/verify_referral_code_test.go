@@ -4,11 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
@@ -64,13 +64,69 @@ func (suite *VerifyReferralCodeTestSuite) invitorInviteeProvider(ctx context.Con
 	return mans
 }
 
-func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorCodeExpired() {
-}
-
-func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorCodeInvalId() {
+func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorCodeFailedDueToExpired() {
 	ctx := context.Background()
+
+	// Create invitor and invitee.
 	mans := suite.invitorInviteeProvider(ctx)
 
+	invitor := mans[0]
+	invitee := mans[1]
+
+	// Create an expired referral code.
+	q := models.New(db.GetDB())
+	refCode, err := q.CreateRefcode(ctx, models.CreateRefcodeParams{
+		InvitorID: int32(invitor.ID),
+		InviteeID: sql.NullInt32{
+			Valid: false,
+		},
+		RefCode:     "somerefcode",
+		RefCodeType: models.RefCodeTypeInvitor,
+		ExpiredAt: sql.NullTime{
+			Valid: true,
+			Time:  time.Now().AddDate(0, 0, -4),
+		},
+	})
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// Request the API.
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	params := &url.Values{}
+	params.Add("invitee_uuid", invitee.Uuid)
+	params.Add("referral_code", refCode.RefCode)
+	headers := make(map[string]string)
+
+	req, err := util.ComposeTestRequest(
+		"POST",
+		"/v1/referral/verify",
+		params,
+		headers,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	c.Request = req
+	referral.HandleVerifyReferralCode(c, suite.depCon)
+	apperr.HandleError()(c)
+
+	respStruct := struct {
+		ErrCode string `json:"err_code"`
+		ErrMsg  string `json:"err_msg"`
+	}{}
+
+	json.Unmarshal(w.Body.Bytes(), &respStruct)
+	suite.assert.Equal(apperr.ReferralCodeExpired, respStruct.ErrCode)
+}
+func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorCodeInvalid() {
+	ctx := context.Background()
+	mans := suite.invitorInviteeProvider(ctx)
 	invitor := mans[0]
 	invitee := mans[1]
 
@@ -105,8 +161,6 @@ func (suite *VerifyReferralCodeTestSuite) TestVerifyInvitorCodeInvalId() {
 	if err != nil {
 		suite.T().Fatal(err)
 	}
-
-	log.Printf("DEBUG otherMan %v", otherMan)
 
 	// Request the API.
 	w := httptest.NewRecorder()

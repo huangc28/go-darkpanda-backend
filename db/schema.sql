@@ -357,4 +357,13 @@ BEGIN;
 ALTER TABLE service_inquiries 
 ADD COLUMN picker_id INT REFERENCES users(id) NULL;
 
-COMMIT;ALTER TYPE service_status ADD VALUE 'negotiating';
+COMMIT;ALTER TYPE service_status ADD VALUE 'negotiating';BEGIN;
+
+ALTER TABLE user_refcodes
+ADD COLUMN expired_at timestamp
+DEFAULT NOW() + interval '3 days';
+
+
+COMMENT ON COLUMN user_refcodes.expired_at IS 'Time that this referral code will be invalid.';
+
+COMMIT;

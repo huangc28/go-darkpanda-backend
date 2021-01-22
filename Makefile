@@ -30,3 +30,9 @@ migrate_up:
 migrate_down:
 	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' down
 
+test_migrate_up:
+	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5433/darkpanda?sslmode=disable' up
+
+test_migrate_down:
+	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5433/darkpanda?sslmode=disable' down
+

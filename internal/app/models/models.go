@@ -276,4 +276,6 @@ type UserRefcode struct {
 	CreatedAt   time.Time     `json:"created_at"`
 	UpdatedAt   sql.NullTime  `json:"updated_at"`
 	DeletedAt   sql.NullTime  `json:"deleted_at"`
+	// Time that this referral code will be invalid.
+	ExpiredAt sql.NullTime `json:"expired_at"`
 }

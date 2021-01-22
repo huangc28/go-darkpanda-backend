@@ -7,12 +7,14 @@ INSERT INTO user_refcodes (
 	invitor_id,
 	invitee_id,
 	ref_code,
-	ref_code_type
+	ref_code_type,
+	expired_at
 ) VALUES (
 	$1,
 	$2,
 	$3,
-	$4
+	$4,
+	$5
 )
 RETURNING *;
 

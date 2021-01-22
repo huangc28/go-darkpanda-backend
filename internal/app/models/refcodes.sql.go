@@ -13,14 +13,16 @@ INSERT INTO user_refcodes (
 	invitor_id,
 	invitee_id,
 	ref_code,
-	ref_code_type
+	ref_code_type,
+	expired_at
 ) VALUES (
 	$1,
 	$2,
 	$3,
-	$4
+	$4,
+	$5
 )
-RETURNING id, invitor_id, invitee_id, ref_code, ref_code_type, created_at, updated_at, deleted_at
+RETURNING id, invitor_id, invitee_id, ref_code, ref_code_type, created_at, updated_at, deleted_at, expired_at
 `
 
 type CreateRefcodeParams struct {
@@ -28,6 +30,7 @@ type CreateRefcodeParams struct {
 	InviteeID   sql.NullInt32 `json:"invitee_id"`
 	RefCode     string        `json:"ref_code"`
 	RefCodeType RefCodeType   `json:"ref_code_type"`
+	ExpiredAt   sql.NullTime  `json:"expired_at"`
 }
 
 func (q *Queries) CreateRefcode(ctx context.Context, arg CreateRefcodeParams) (UserRefcode, error) {
@@ -36,6 +39,7 @@ func (q *Queries) CreateRefcode(ctx context.Context, arg CreateRefcodeParams) (U
 		arg.InviteeID,
 		arg.RefCode,
 		arg.RefCodeType,
+		arg.ExpiredAt,
 	)
 	var i UserRefcode
 	err := row.Scan(
@@ -47,12 +51,13 @@ func (q *Queries) CreateRefcode(ctx context.Context, arg CreateRefcodeParams) (U
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ExpiredAt,
 	)
 	return i, err
 }
 
 const getReferCodeInfoByRefcode = `-- name: GetReferCodeInfoByRefcode :one
-SELECT id, invitor_id, invitee_id, ref_code, ref_code_type, created_at, updated_at, deleted_at FROM user_refcodes
+SELECT id, invitor_id, invitee_id, ref_code, ref_code_type, created_at, updated_at, deleted_at, expired_at FROM user_refcodes
 WHERE ref_code = $1 LIMIT 1
 `
 
@@ -68,6 +73,7 @@ func (q *Queries) GetReferCodeInfoByRefcode(ctx context.Context, refCode string)
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ExpiredAt,
 	)
 	return i, err
 }
