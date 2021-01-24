@@ -2,6 +2,7 @@ package inquirytests
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http/httptest"
@@ -20,6 +21,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -95,24 +97,25 @@ func (suite *EmitInquiryTestSuite) TestEmitInquirySuccess() {
 	log.Printf("DEBUG resp %v", w.Body.String())
 
 	// ------------------- assert test case -------------------
-	//respBody := struct {
-	//Uuid          string               `json:"uuid"`
-	//Budget        string               `json:"budget"`
-	//ServiceType   models.ServiceType   `json:"service_type"`
-	//ChannelID     string               `json:"channel_id"`
-	//InquiryStatus models.InquiryStatus `json:"inquiry_status"`
-	//CreatedAt     time.Time            `json:"created_at"`
-	//}{}
+	respBody := struct {
+		InquiryUuid   string               `json:"inquiry_uuid"`
+		LobbyUuid     string               `json:"lobby_uuid"`
+		Budget        float64              `json:"budget"`
+		ServiceType   models.ServiceType   `json:"service_type"`
+		InquiryStatus models.InquiryStatus `json:"inquiry_status"`
+		CreatedAt     time.Time            `json:"created_at"`
+	}{}
 
-	//dec := json.NewDecoder(resp.Result().Body)
-	//dec.Decode(&respBody)
-	//assert := assert.New(suite.T())
+	dec := json.NewDecoder(w.Body)
+	dec.Decode(&respBody)
 
-	//assert.NotEmpty(respBody.Uuid)
-	//assert.Equal(respBody.Budget, "100.10")
-	//assert.Equal(respBody.ServiceType, models.ServiceTypeSex)
-	//assert.Equal(respBody.InquiryStatus, models.InquiryStatusInquiring)
-	//assert.NotEmpty(respBody.ChannelID)
+	assert := assert.New(suite.T())
+
+	assert.NotEmpty(respBody.InquiryUuid)
+	assert.NotEmpty(respBody.LobbyUuid)
+	assert.Equal(respBody.Budget, 100.1)
+	assert.Equal(respBody.ServiceType, models.ServiceTypeSex)
+	assert.Equal(respBody.InquiryStatus, models.InquiryStatusInquiring)
 }
 
 func TestEmitInquiryTestSuite(t *testing.T) {

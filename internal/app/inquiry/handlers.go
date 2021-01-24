@@ -175,7 +175,7 @@ func EmitInquiryHandler(c *gin.Context) {
 	//   - We should also set the counter in firestore to be 27 minutes.
 	//   - Set the status in the firestore to be waiting.
 	df := darkfirestore.Get()
-	channelUUID, err := lobbyServices.JoinLobby(iq.ID, df)
+	lobbyUUID, err := lobbyServices.JoinLobby(iq.ID, df)
 
 	if err != nil {
 		c.AbortWithError(
@@ -189,7 +189,9 @@ func EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	trf, err := NewTransform().TransformEmitInquiry(iq, channelUUID)
+	//log.Printf("DEBUG Budget %v", iq.Budget)
+
+	trf, err := NewTransform().TransformEmitInquiry(iq, lobbyUUID)
 
 	if err != nil {
 		c.AbortWithError(

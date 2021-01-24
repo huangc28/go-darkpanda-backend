@@ -2,6 +2,7 @@ package inquiry
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"time"
 
@@ -18,19 +19,21 @@ func NewTransform() *InquiryTransform {
 }
 
 type TransformedInquiry struct {
-	Uuid          string    `json:"uuid"`
+	Uuid          string    `json:"inquiry_uuid"`
+	LobbyUUID     string    `json:"lobby_uuid"`
 	Budget        float64   `json:"budget"`
 	ServiceType   string    `json:"service_type"`
 	InquiryStatus string    `json:"inquiry_status"`
 	CreatedAt     time.Time `json:"created_at"`
 }
 
-func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, channelID string) (TransformedInquiry, error) {
+func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, lobbyUUID string) (TransformedInquiry, error) {
 	budget, err := strconv.ParseFloat(m.Budget, 64)
+
+	log.Printf("DEBUG budget 4 %v", budget)
 
 	if err != nil {
 		return TransformedInquiry{}, err
-
 	}
 
 	tiq := TransformedInquiry{
@@ -39,6 +42,7 @@ func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, channel
 		ServiceType:   string(m.ServiceType),
 		InquiryStatus: string(m.InquiryStatus),
 		CreatedAt:     m.CreatedAt,
+		LobbyUUID:     lobbyUUID,
 	}
 
 	return tiq, nil

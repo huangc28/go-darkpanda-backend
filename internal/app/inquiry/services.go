@@ -56,7 +56,10 @@ func (l *LobbyServices) JoinLobby(inquiryID int64, df *darkfirestore.DarkFiresto
 		darkfirestore.CreateLobbyUserParams{
 			LobbyUserChannelUUID: channelUUID,
 			LobbyUserStatus:      string(models.LobbyStatusWaiting),
-			Timer:                time.Minute * 27,
+			// Timer we want to maintain the timer value in the firestore
+			// display in seconds. If we store the value using `time.Minute`,
+			// It displays seconds in terms of nanoseconds.
+			Timer: (time.Minute * 27) / time.Second,
 		},
 	)
 
