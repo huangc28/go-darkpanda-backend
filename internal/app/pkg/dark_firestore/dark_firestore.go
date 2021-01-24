@@ -318,3 +318,44 @@ func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params
 
 	return ref, params.Data, nil
 }
+
+const (
+	LobbyCollectionName = "lobby"
+	LobbyUserInfoName   = "info"
+)
+
+type CreateLobbyUserParams struct {
+	Timer                time.Duration
+	LobbyUserChannelUUID string
+	LobbyUserStatus      string
+}
+
+type LobbyUserInfo struct {
+	ChannelUUID string        `firestore:"channel_uuid,omitempty"`
+	Timer       time.Duration `firestore:"timer,omitempty"`
+	Status      string        `firestore:"status,omitempty"`
+}
+
+// CreateLobbyUser Adds user into lobby by creating a user record in the firestore.
+// User record includes following info:
+//   - timer countdown in second.
+//   - lobby status.
+func (df *DarkFirestore) CreateLobbyUser(ctx context.Context, params CreateLobbyUserParams) (*firestore.WriteResult, LobbyUserInfo, error) {
+	data := LobbyUserInfo{
+		ChannelUUID: params.LobbyUserChannelUUID,
+		Timer:       params.Timer,
+		Status:      params.LobbyUserStatus,
+	}
+
+	wres, err := df.
+		Client.
+		Collection(LobbyCollectionName).
+		Doc(params.LobbyUserChannelUUID).
+		Set(ctx, data)
+
+	if err != nil {
+		return nil, data, err
+	}
+
+	return wres, data, nil
+}

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
 	"github.com/teris-io/shortid"
 )
@@ -40,14 +41,16 @@ func (l *LobbyDao) JoinLobby(inquiryID int64) (string, error) {
 	query := `
 INSERT INTO lobby_users (
 	channel_uuid,
-	inquiry_id
-) VALUES ($1, $2);
+	inquiry_id,
+	lobby_status
+) VALUES ($1, $2, $3);
 	`
 
 	if _, err := l.DB.Exec(
 		query,
 		chanUuid,
 		inquiryID,
+		models.LobbyStatusWaiting,
 	); err != nil {
 		return "", err
 	}

@@ -1,13 +1,16 @@
 package inquiry
 
 import (
+	"context"
 	"time"
 
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/jmoiron/sqlx"
 )
 
 type LobbyServicer interface {
-	JoinLobby(inquiryID int64) (string, error)
+	JoinLobby(inquiryID int64, df *darkfirestore.DarkFirestore) (string, error)
 	LeaveLobby(inquiryID int64) error
 	WithTx(tx *sqlx.Tx) LobbyServicer
 }
@@ -34,9 +37,34 @@ func (l *LobbyServices) WithTx(tx *sqlx.Tx) LobbyServicer {
 
 // JoinLobby generates pubsub channel uuid for client to subscribe. We will create a new lobby record in
 // `lobby_users` table
-func (l *LobbyServices) JoinLobby(inquiryID int64) (string, error) {
+
+const InquiryTimerDuration = 27
+
+func (l *LobbyServices) JoinLobby(inquiryID int64, df *darkfirestore.DarkFirestore) (string, error) {
+	ctx := context.Background()
 	// Generate lobby key
-	return l.LobbyDao.JoinLobby(inquiryID)
+	//  - Set countdown counter in the lobby record in the firestore.
+	//  - Set status in the lobby record in the firestore
+	channelUUID, err := l.LobbyDao.JoinLobby(inquiryID)
+
+	if err != nil {
+		return "", err
+	}
+
+	_, _, err = df.CreateLobbyUser(
+		ctx,
+		darkfirestore.CreateLobbyUserParams{
+			LobbyUserChannelUUID: channelUUID,
+			LobbyUserStatus:      string(models.LobbyStatusWaiting),
+			Timer:                time.Minute * 27,
+		},
+	)
+
+	if err != nil {
+		return "", err
+	}
+
+	return channelUUID, nil
 }
 
 func (l *LobbyServices) LeaveLobby(inquiryID int64) error {

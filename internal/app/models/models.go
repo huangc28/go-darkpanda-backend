@@ -52,6 +52,27 @@ func (e *InquiryStatus) Scan(src interface{}) error {
 	return nil
 }
 
+type LobbyStatus string
+
+const (
+	LobbyStatusWaiting LobbyStatus = "waiting"
+	LobbyStatusPause   LobbyStatus = "pause"
+	LobbyStatusExpired LobbyStatus = "expired"
+	LobbyStatusLeft    LobbyStatus = "left"
+)
+
+func (e *LobbyStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = LobbyStatus(s)
+	case string:
+		*e = LobbyStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for LobbyStatus: %T", src)
+	}
+	return nil
+}
+
 type PremiumType string
 
 const (
@@ -176,6 +197,8 @@ type LobbyUser struct {
 	CreatedAt   time.Time    `json:"created_at"`
 	UpdatedAt   sql.NullTime `json:"updated_at"`
 	DeletedAt   sql.NullTime `json:"deleted_at"`
+	ExpiredAt   time.Time    `json:"expired_at"`
+	LobbyStatus LobbyStatus  `json:"lobby_status"`
 }
 
 type Payment struct {

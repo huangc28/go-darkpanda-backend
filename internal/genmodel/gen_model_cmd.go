@@ -87,6 +87,10 @@ func appendFileContentToDestFile(files []os.FileInfo, src string, dest string) {
 }
 
 func Gen(cmd *cobra.Command, args []string) error {
+	env := os.Getenv("ENV")
+
+	log.Printf("DEBUG 1 %v", env)
+
 	// read latest migration info from database
 	appConf := config.GetAppConf()
 
@@ -98,6 +102,19 @@ func Gen(cmd *cobra.Command, args []string) error {
 		appConf.DBConf.Password,
 		appConf.DBConf.Dbname,
 	)
+
+	if env == "test" {
+		testDBConf := config.GetTestDBConf()
+
+		psqlDSN = fmt.Sprintf(
+			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+			testDBConf.Host,
+			testDBConf.Port,
+			testDBConf.User,
+			testDBConf.Password,
+			testDBConf.Dbname,
+		)
+	}
 
 	db, err := sql.Open("postgres", psqlDSN)
 

@@ -24,11 +24,16 @@ import (
 	"github.com/teris-io/shortid"
 )
 
-// @TODO budget received from client should be type float instead of string.
-//       budget should be converted to type string before stored in DB.
+// @TODO
+//   - budget received from client should be type float instead of string.
+//   - budget should be converted to type string before stored in DB.
+//   - Body should include "appointment time"
+//   - Body should include "Service duration"
 type EmitInquiryBody struct {
-	Budget      float64 `form:"budget" uri:"budget" json:"budget" binding:"required"`
-	ServiceType string  `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
+	Budget          float64   `form:"budget" uri:"budget" json:"budget" binding:"required"`
+	ServiceType     string    `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
+	AppointmentTime time.Time `form:"appointment_time" binding:"required"`
+	ServiceDuration int       `form:"service_duration" binding:"required"`
 }
 
 func EmitInquiryHandler(c *gin.Context) {
@@ -48,6 +53,9 @@ func EmitInquiryHandler(c *gin.Context) {
 	}
 
 	uuid := c.GetString("uuid")
+
+	log.Printf("DEBUG spot 1 %v", uuid)
+
 	q := models.New(db.GetDB())
 	usr, err := q.GetUserByUuid(ctx, uuid)
 
@@ -64,6 +72,9 @@ func EmitInquiryHandler(c *gin.Context) {
 	}
 
 	// Check if the user already has an active inquiry
+	// If active inquiry exists but expired, change the
+	// inquiry status to `expired`. If exists but has not
+	// expired, respond with error.
 	dao := NewInquiryDAO(db.GetDB())
 	activeIqExists, err := dao.CheckHasActiveInquiryByID(usr.ID)
 
@@ -106,6 +117,7 @@ func EmitInquiryHandler(c *gin.Context) {
 			return
 		}
 
+		// @TODO also makesure records in the firestore is marked expired.
 		if err := q.PatchInquiryStatus(ctx, models.PatchInquiryStatusParams{
 			ID:            resIq.ID,
 			InquiryStatus: models.InquiryStatusExpired,
@@ -159,7 +171,11 @@ func EmitInquiryHandler(c *gin.Context) {
 	// Joins the lobby and returns lobby channel id
 	lobbyServices := NewLobbyService(NewLobbyDao(db.GetDB()))
 
-	channelID, err := lobbyServices.JoinLobby(iq.ID)
+	// @TODO
+	//   - We should also set the counter in firestore to be 27 minutes.
+	//   - Set the status in the firestore to be waiting.
+	df := darkfirestore.Get()
+	channelUUID, err := lobbyServices.JoinLobby(iq.ID, df)
 
 	if err != nil {
 		c.AbortWithError(
@@ -173,7 +189,7 @@ func EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	trf, err := NewTransform().TransformEmitInquiry(iq, channelID)
+	trf, err := NewTransform().TransformEmitInquiry(iq, channelUUID)
 
 	if err != nil {
 		c.AbortWithError(
@@ -969,9 +985,11 @@ func RevertChatHandler(c *gin.Context, depCon container.Container) {
 
 		if isMale {
 			lobbyService := NewLobbyService(NewLobbyDao(db.GetDB()))
+			df := darkfirestore.Get()
+
 			*lobbyChannelID, err = lobbyService.
 				WithTx(tx).
-				JoinLobby(iq.ID)
+				JoinLobby(iq.ID, df)
 
 			if err != nil {
 				c.AbortWithError(
