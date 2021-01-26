@@ -5,7 +5,7 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type TxFunc func(*sqlx.Tx) (error, interface{})
+type TxFunc func(tx *sqlx.Tx) (error, interface{})
 
 func Transact(db *sqlx.DB, txFunc TxFunc) (error, interface{}) {
 	tx, err := db.Beginx()

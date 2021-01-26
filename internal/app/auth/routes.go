@@ -18,11 +18,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		Container: depCon,
 	}
 
-	// Provides user information to register a new user.
-	// Newly registered user still has to verify their mobile number
-	// to proceed usage.
-	r.POST("/register", authController.RegisterHandler)
-
 	// This API receives user uuid and mobile number to send SMS verify code.
 	// This API is used in pair with `/register` API letting newly registered user
 	// to verify their SMS.
