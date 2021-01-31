@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
@@ -21,7 +22,7 @@ type RegisterBody struct {
 	ReferCode string `form:"refer_code" uri:"refer_code" json:"refer_code" binding:"required"`
 }
 
-func HandleRegister(c *gin.Context) {
+func RegisterHandler(c *gin.Context) {
 	var (
 		body RegisterBody
 		ctx  context.Context = context.Background()
@@ -125,7 +126,20 @@ func HandleRegister(c *gin.Context) {
 		return
 	}
 
-	// if refer code and username are all valid, create a new user.
+	// If referral code is expired, return error.
+	if time.Now().After(urc.ExpiredAt.Time) {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.ReferralCodeExpired,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// If refer code and username are all valid, create a new user.
 	// generates uuid for new user.
 	uuid, err := shortid.Generate()
 
@@ -236,8 +250,4 @@ func HandleVerifyUsername(c *gin.Context, depCon container.Container) {
 	}
 
 	c.JSON(http.StatusOK, struct{}{})
-}
-
-func HandleSendVerifyCode(c *gin.Context, depCon container.Container) {
-
 }

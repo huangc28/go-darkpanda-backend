@@ -79,6 +79,10 @@ type TwilioClient struct {
 	Conf TwilioConf
 }
 
+type TwilioServicer interface {
+	SendSMS(from string, to string, content string) (*SMSResponse, error)
+}
+
 func New(conf TwilioConf) *TwilioClient {
 	return &TwilioClient{
 		Conf: conf,

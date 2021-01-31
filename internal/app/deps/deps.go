@@ -13,8 +13,10 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/service"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
+	"github.com/spf13/viper"
 )
 
 type DepContainer struct {
@@ -39,8 +41,23 @@ func Get() *DepContainer {
 	return _depContainer
 }
 
+func (dep *DepContainer) TwilioServiceProvider(c cintrnal.Container) DepRegistrar {
+	return func() error {
+		c.Transient(func() twilio.TwilioServicer {
+			return twilio.New(twilio.TwilioConf{
+				AccountSID:   viper.GetString("twilio.account_id"),
+				AccountToken: viper.GetString("twilio.auth_token"),
+			})
+		})
+
+		return nil
+	}
+}
+
 func (dep *DepContainer) Run() error {
 	depRegistrars := []DepRegistrar{
+		dep.TwilioServiceProvider(dep.Container),
+
 		user.UserDaoServiceProvider(dep.Container),
 		service.ServiceDAOServiceProvider(dep.Container),
 		inquiry.InquiryDaoServiceProvider(dep.Container),

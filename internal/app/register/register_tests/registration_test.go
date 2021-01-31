@@ -7,22 +7,25 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"testing"
+	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/referral"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/register"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
 type UserRegistrationTestSuite struct {
 	suite.Suite
+	depCon container.Container
 	assert *assert.Assertions
 }
 
@@ -32,13 +35,8 @@ func (suite *UserRegistrationTestSuite) SetupSuite() {
 	manager.
 		NewDefaultManager(context.Background()).Run(func() {
 		deps.Get().Run()
+		suite.depCon = deps.Get().Container
 	})
-}
-
-func (suite *UserRegistrationTestSuite) BeforeTest(suiteName, testName string) {
-	if testName == "TestSendVerifyCodeViaTwilioSuccess" {
-		viper.Set("twilio.from", "+15005550006")
-	}
 }
 
 func (suite *UserRegistrationTestSuite) TestRegisterMissingParams() {
@@ -63,7 +61,7 @@ func (suite *UserRegistrationTestSuite) TestRegisterMissingParams() {
 	}
 
 	c.Request = req
-	register.HandleRegister(c)
+	register.RegisterHandler(c)
 	apperr.HandleError()(c)
 
 	resStruct := struct {
@@ -76,6 +74,94 @@ func (suite *UserRegistrationTestSuite) TestRegisterMissingParams() {
 		apperr.FailedToValidateRegisterParams,
 		resStruct,
 	)
+}
+
+func (suite *UserRegistrationTestSuite) invitorInviteeProvider(ctx context.Context) []models.User {
+	q := models.New(db.GetDB())
+	mans := make([]models.User, 0)
+
+	// creates 2 man, one invitor one invitee.
+	for i := 0; i < 2; i++ {
+		manParams, err := util.GenTestUserParams()
+
+		if err != nil {
+			suite.T().Fatal(err)
+		}
+
+		manParams.Gender = models.GenderMale
+		man, err := q.CreateUser(ctx, *manParams)
+
+		if err != nil {
+			suite.T().Fatal(err)
+		}
+
+		mans = append(mans, man)
+	}
+
+	return mans
+}
+
+func (suite *UserRegistrationTestSuite) TestVerifyInvitorCodeFailedDueToExpired() {
+
+	ctx := context.Background()
+
+	// Create invitor and invitee.
+	mans := suite.invitorInviteeProvider(ctx)
+
+	invitor := mans[0]
+	invitee := mans[1]
+
+	// Create an expired referral code.
+	q := models.New(db.GetDB())
+	refCode, err := q.CreateRefcode(ctx, models.CreateRefcodeParams{
+		InvitorID: int32(invitor.ID),
+		InviteeID: sql.NullInt32{
+			Valid: false,
+		},
+		RefCode:     "somerefcode",
+		RefCodeType: models.RefCodeTypeInvitor,
+		ExpiredAt: sql.NullTime{
+			Valid: true,
+			Time:  time.Now().AddDate(0, 0, -4),
+		},
+	})
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// Request the API.
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	params := &url.Values{}
+	params.Add("invitee_uuid", invitee.Uuid)
+	params.Add("referral_code", refCode.RefCode)
+	headers := make(map[string]string)
+
+	req, err := util.ComposeTestRequest(
+		"POST",
+		"/v1/register",
+		params,
+		headers,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	c.Request = req
+	referral.HandleVerifyReferralCode(c, suite.depCon)
+	apperr.HandleError()(c)
+
+	respStruct := struct {
+		ErrCode string `json:"err_code"`
+		ErrMsg  string `json:"err_msg"`
+	}{}
+
+	json.Unmarshal(w.Body.Bytes(), &respStruct)
+
+	suite.assert.Equal(apperr.ReferralCodeExpired, respStruct.ErrCode)
 }
 
 func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
@@ -132,7 +218,7 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 	)
 
 	c.Request = req
-	register.HandleRegister(c)
+	register.RegisterHandler(c)
 
 	// Assertions
 	resUser := register.TransformedUser{}
@@ -146,6 +232,7 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 	suite.assert.Equal(dbUser.PhoneVerified, false) // the value of phone_verified is false
 	suite.assert.Equal(resUser.Uuid, dbUser.Uuid)
 }
+
 func TestUserRegistrationTestSuite(t *testing.T) {
 	suite.Run(t, new(UserRegistrationTestSuite))
 }

@@ -25,3 +25,15 @@ func (rt *RegisterTransform) TransformUser(m *models.User) *TransformedUser {
 
 	return tu
 }
+
+type TransformedSendMobileVerifyCode struct {
+	UUID         string `json:"uuid"`
+	VerifyPrefix string `json:"verify_prefix"`
+}
+
+func (at *RegisterTransform) TransformSendMobileVerifyCode(uuid string, verifyPrefix string) TransformedSendMobileVerifyCode {
+	return TransformedSendMobileVerifyCode{
+		UUID:         uuid,
+		VerifyPrefix: verifyPrefix,
+	}
+}

@@ -14,251 +14,17 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	"github.com/spf13/viper"
 )
 
 type AuthController struct {
 	TwilioClient *twilio.TwilioClient
 	Container    container.Container
-}
-
-// sends verification code to specified mobile number
-//   - receive user uuid
-//   - mobile number
-//
-// @TODOs
-//   - verify code should be stored in redis instead of DB. It should stored in a key value pair like below:
-//
-//     {USER_UUID}: {verify_code}
-//
-//     Set the TTL to 1.5 mintues before expired.
-// from the client.
-type SendVerifyCodeBody struct {
-	Uuid   string `form:"uuid" binding:"required,gt=0"`
-	Mobile string `form:"mobile" json:"mobile" binding:"required,numeric,gt=0"`
-}
-
-func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context) {
-	var (
-		body SendVerifyCodeBody
-		ctx  context.Context = context.Background()
-	)
-
-	if err := requestbinder.Bind(c, &body); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToValidateSendVerifyCodeParams,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	q := models.New(db.GetDB())
-	usr, err := q.GetUserByUuid(ctx, body.Uuid)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// -------------------  user is not phone verified -------------------
-	if usr.PhoneVerified {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.UserHasPhoneVerified),
-		)
-
-		return
-	}
-
-	// ------------------- sends verify code to specified number -------------------
-	// generate 4 digit code
-	verPrefix := util.GenRandStringRune(3)
-	verfDigs := util.Gen4DigitNum(1000, 9999)
-
-	// @TODO verify code should be stored in redis instead of DB.
-	// store verify prefix and verify digits to db in a form of ccc-3333
-	err = q.UpdateVerifyCodeById(ctx, models.UpdateVerifyCodeByIdParams{
-		PhoneVerifyCode: sql.NullString{
-			String: fmt.Sprintf("%s-%d", verPrefix, verfDigs),
-			Valid:  true,
-		},
-		ID: usr.ID,
-	})
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToUpdateVerifyCode,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// ------------------- send verification code via twilio -------------------
-	smsResp, err := ac.TwilioClient.SendSMS(
-		viper.GetString("twilio.from"),
-		body.Mobile,
-		fmt.Sprintf("your darkpanda verify code: \n\n %d", verfDigs),
-	)
-
-	if twilio.HandleSendTwilioError(c, err) != nil {
-		return
-	}
-
-	log.
-		WithFields(log.Fields{
-			"user_uuid": usr.Uuid,
-			"mobile":    body.Mobile,
-		}).
-		Infof("sends twilio SMS success! %v", smsResp.SID)
-
-	// ------------------- send sms code back -------------------
-	c.JSON(http.StatusOK, NewTransform().TransformSendMobileVerifyCode(
-		usr.Uuid,
-		verPrefix,
-	))
-}
-
-// ------------------- phone verification -------------------
-// receive uuid
-// receive verification code
-// check the following to verify phone.
-//   - phone_verified is false
-//   - phone_verify_code stored in DB is the same as the one received from the client
-// Sends jwt token back to client once its validated
-type VerifyPhoneBody struct {
-	Uuid       string `form:"uuid" json:"uuid" binding:"required,gt=0"`
-	Mobile     string `form:"mobile" json:"mobile" binding:"required,gt=0"`
-	VerifyCode string `form:"verify_code" json:"verify_code" binding:"required,gt=0"`
-}
-
-func (ac *AuthController) VerifyPhoneHandler(c *gin.Context) {
-	var (
-		ctx  context.Context = context.Background()
-		body VerifyPhoneBody
-	)
-
-	if err := requestbinder.Bind(c, &body); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToValidateVerifyPhoneParams,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// ------------------- check if the given verify code exists in DB -------------------
-	q := models.New(db.GetDB())
-	user, err := q.GetUserByVerifyCode(ctx, sql.NullString{
-		String: body.VerifyCode,
-		Valid:  true,
-	})
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			c.AbortWithError(
-				http.StatusNotFound,
-				apperr.NewErr(apperr.UserNotFoundByVerifyCode),
-			)
-
-			return
-		}
-
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByVerifyCode,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// ------------------- makesure verify code given matches -------------------
-	if user.PhoneVerifyCode.String != body.VerifyCode {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.VerifyCodeNotMatching),
-		)
-
-		return
-	}
-
-	// ------------------- if user is already verified, return error -------------------
-	if user.PhoneVerified {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.UserHasPhoneVerified),
-		)
-
-		return
-	}
-
-	// ------------------- set the user to be phone verified -------------------
-	if err := q.UpdateVerifyStatusById(ctx, models.UpdateVerifyStatusByIdParams{
-		ID:            user.ID,
-		PhoneVerified: true,
-		Mobile: sql.NullString{
-			String: body.Mobile,
-			Valid:  true,
-		},
-	}); err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToUpdateVerifyStatus,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// ------------------- generate jwt token and return it -------------------
-	token, err := jwtactor.CreateToken(
-		user.Uuid,
-		config.GetAppConf().JwtSecret,
-	)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGenerateJwtToken,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	c.JSON(http.StatusOK, struct {
-		JwtToken string `json:"jwt"`
-	}{token})
 }
 
 // store jwt token in redis and db
@@ -295,7 +61,7 @@ type SendLoginVerifyCodeBody struct {
 	Username string `form:"username"  json:"username" binding:"required,gt=0"`
 }
 
-func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
+func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context) {
 	var (
 		body SendLoginVerifyCodeBody
 		ctx  context.Context = context.Background()
@@ -359,6 +125,8 @@ func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
 	// Check if login record already exists in redis.
 	authenticator, err := authDao.GetLoginRecord(ctx, user.Uuid)
 
+	log.Printf("DEBUG authenticator %v", authenticator)
+
 	if err != nil {
 		// If authenticator does not exists, that means this is the first time the user
 		// performs login. We should create an authentication record in redis for this user.
@@ -382,10 +150,14 @@ func (ac *AuthController) SendLoginVerifyCode(c *gin.Context) {
 			}
 
 			// send mobile verify code via twilio
-			smsResp, err := ac.TwilioClient.SendSMS(
+			var tc twilio.TwilioServicer
+			ac.Container.Make(&tc)
+			vc := genverifycode.GenVerifyCode()
+
+			smsResp, err := tc.SendSMS(
 				viper.GetString("twilio.from"),
 				user.Mobile.String,
-				fmt.Sprintf("your darkpanda verify code: \n\n %d", verifyCode.BuildCode()),
+				fmt.Sprintf("your darkpanda verify code: \n\n %d", vc.BuildCode()),
 			)
 
 			if twilio.HandleSendTwilioError(c, err) != nil {

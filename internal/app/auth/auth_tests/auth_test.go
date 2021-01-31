@@ -12,11 +12,14 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/stretchr/testify/assert"
@@ -25,6 +28,7 @@ import (
 
 type UserAuthTestSuite struct {
 	suite.Suite
+	sendRequest           util.SendRequest
 	sendURLEncodedRequest util.SendUrlEncodedRequest
 }
 
@@ -32,7 +36,9 @@ func (suite *UserAuthTestSuite) SetupSuite() {
 	manager.
 		NewDefaultManager(context.Background()).
 		Run(func() {
+			deps.Get().Run()
 			suite.sendURLEncodedRequest = util.SendUrlEncodedRequestToApp(app.StartApp(gin.Default()))
+			suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 		})
 }
 
@@ -65,10 +71,12 @@ func (suite *UserAuthTestSuite) TestSendLoginVerifyCodeSuccess() {
 
 	rr, err := suite.sendURLEncodedRequest(
 		"POST",
-		"/v1/send-login-verify-code",
+		"/v1/auth/send-verify-code",
 		&params,
 		make(map[string]string),
 	)
+
+	//log.Printf("DEBUG resp %v", rr.Body.String())
 
 	if err != nil {
 		log.Fatal(err)
@@ -161,6 +169,39 @@ func (suite *UserAuthTestSuite) TestVerifyLoginCodeSuccess() {
 
 	assert.NotEmpty(suite.T(), respStruct.JWT)
 }
+
+func (suite *UserAuthTestSuite) TestRevokeJwtSuccess() {
+	// ------------------- generate jwt token -------------------
+	jwt, err := jwtactor.CreateToken("someuuid", config.GetAppConf().JwtSecret)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// ------------------- create request -------------------
+	body := struct {
+		Jwt string `json:"jwt"`
+	}{jwt}
+
+	headers := make(map[string]string)
+	resp, err := suite.sendRequest("POST", "/v1/auth/revoke-jwt", body, headers)
+
+	if resp.Result().StatusCode != http.StatusOK {
+		suite.T().Fatalf("Failed to revoke jwt token")
+	}
+
+	// ------------------- check in redis if jwt exists -------------------
+	ctx := context.Background()
+	rds := db.GetRedis()
+	isMember, err := rds.SIsMember(ctx, auth.INVALIDATE_TOKEN_REDIS_KEY, jwt).Result()
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Equal(suite.T(), isMember, true)
+}
+
 func TestUserAuthTestSuite(t *testing.T) {
 	suite.Run(t, new(UserAuthTestSuite))
 }
