@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
 type RegisterDAO struct {
@@ -36,4 +37,21 @@ func (dao *RegisterDAO) CheckReferCodeExists(ctx context.Context, referCode stri
 	}
 
 	return exists, nil
+}
+
+func (dao *RegisterDAO) GetReferralCodeByReferralCode(refCode string) (models.UserRefcode, error) {
+	query := `
+SELECT id, invitor_id, invitee_id, ref_code, ref_code_type, created_at, updated_at, deleted_at, expired_at FROM user_refcodes
+WHERE ref_code = $1 LIMIT 1
+`
+	var refCodeM models.UserRefcode
+
+	if err := dao.
+		db.
+		QueryRowx(query, refCode).
+		StructScan(&refCodeM); err != nil {
+		return refCodeM, err
+	}
+
+	return refCodeM, nil
 }

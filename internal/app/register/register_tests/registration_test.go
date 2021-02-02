@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
@@ -231,6 +232,58 @@ func (suite *UserRegistrationTestSuite) TestRegisterApiSuccess() {
 	suite.assert.Equal(dbUser.PremiumType, models.PremiumTypeNormal)
 	suite.assert.Equal(dbUser.PhoneVerified, false) // the value of phone_verified is false
 	suite.assert.Equal(resUser.Uuid, dbUser.Uuid)
+}
+
+func (suite *UserRegistrationTestSuite) TestVerifyReferralCodeSuccess() {
+	ctx := context.Background()
+	// Create an invitor.
+	mans := suite.invitorInviteeProvider(ctx)
+
+	// Create a referral code.
+	invitor := mans[0]
+
+	q := models.New(db.GetDB())
+	refCode, err := q.CreateRefcode(ctx, models.CreateRefcodeParams{
+		InvitorID: int32(invitor.ID),
+		InviteeID: sql.NullInt32{
+			Valid: false,
+		},
+		RefCode:     "somerefcode",
+		RefCodeType: models.RefCodeTypeInvitor,
+		ExpiredAt: sql.NullTime{
+			Valid: true,
+			Time:  time.Now().AddDate(0, 0, 4),
+		},
+	})
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	// Request the API
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	params := &url.Values{}
+	params.Set("referral_code", refCode.RefCode)
+	headers := make(map[string]string)
+
+	req, err := util.ComposeTestRequest(
+		"POST",
+		"/v1/register/verify-referral-code",
+		params,
+		headers,
+	)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	c.Request = req
+	register.VerifyReferralCodeHandler(c, suite.depCon)
+	apperr.HandleError()(c)
+
+	suite.assert.Equal(http.StatusOK, w.Code)
 }
 
 func TestUserRegistrationTestSuite(t *testing.T) {

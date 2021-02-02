@@ -10,18 +10,14 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	g.POST("", RegisterHandler)
 
-	// This API receives user uuid and mobile number to send SMS verify code.
-	// This API is used in pair with `/register` API letting newly registered user
-	// to verify their SMS.
-	//g.POST("/send-verify-code", func(c *gin.Context) {
-	//SendVerifyCodeHandler(c, depCon)
-	//})
-
 	// Check username availability.
 	g.POST("/verify-username", func(c *gin.Context) {
-		HandleVerifyUsername(c, depCon)
+		VerifyUsernameHandler(c, depCon)
 	})
 
 	// Check referral code availabiity.
+	g.POST("/verify-referral-code", func(c *gin.Context) {
+		VerifyReferralCodeHandler(c, depCon)
+	})
 
 }

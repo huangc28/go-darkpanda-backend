@@ -39,6 +39,7 @@ const (
 	FailedToValidateVerifyLoginParams        = "1000036"
 	VerifyCodeUnmatched                      = "1000037"
 	FailedToCreateJWTToken                   = "1000038"
+	FailedToValidateReferralCode             = "1000039"
 )
 
 var AuthErrCodeMsgMap = map[string]string{
