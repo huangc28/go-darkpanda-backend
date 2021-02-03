@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/huangc28/go-darkpanda-backend/config"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/auth/internal/twilio"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

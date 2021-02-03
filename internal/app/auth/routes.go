@@ -14,8 +14,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	g := r.Group("/auth")
 
-	// Send verify code to user that attempts to login to the application
-	// authController.SendVerifyCodeHandler
 	g.POST("/send-verify-code", authController.SendVerifyCodeHandler)
 
 	// Client attempt to verify login code he / she received via SMS from `/send-verify-code`. If the

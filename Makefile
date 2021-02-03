@@ -18,6 +18,9 @@ docker_compose:
 
 .PHONY: docker_compose
 
+swagger:
+	swag init -g cmd/app/main.go
+
 # Create a new migration file.
 # Usage:
 #   migrate_create referral_code.
