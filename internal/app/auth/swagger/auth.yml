@@ -1,0 +1,84 @@
+sendVerifyCode:
+  post:
+    tags:
+      - auth
+    consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: false
+        schema:
+          type: object
+          required:
+            - uuid
+          properties:
+            uuid:
+              type: string
+    responses:
+      '200':
+        description: 'send SMS verify code to login'
+        schema:
+          type: object
+          properties:
+            uuid:
+              type: string
+            verify_prefix:
+              type: string
+            mobile:
+              type: string
+
+VerifyCode:
+  post:
+    tags:
+      - auth
+    consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: false
+        schema:
+          type: object
+          properties:
+            mobile:
+              type: string
+            uuid:
+              type: string
+            verify_char:
+              type: string
+            verify_dig:
+              type: string
+    responses:
+      '200':
+        description: 'verify SMS code response'
+        schema:
+          type: object
+          properties:
+            jwt:
+              type: string
+
+RevokeJwt:
+  post:
+    security:
+      - Bearer: []
+    tags:
+      - auth
+    consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+    produces:
+      - application/json
+    responses:
+      '200':
+        description: 'Revoke the jwt token to logout the user'
+        schema:
+          type: object
+
+

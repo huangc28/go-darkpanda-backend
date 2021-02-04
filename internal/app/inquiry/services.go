@@ -10,7 +10,7 @@ import (
 )
 
 type LobbyServicer interface {
-	JoinLobby(inquiryID int64, df *darkfirestore.DarkFirestore) (string, error)
+	JoinLobby(inquiryID int64, df darkfirestore.DarkFireStorer) (string, error)
 	LeaveLobby(inquiryID int64) error
 	WithTx(tx *sqlx.Tx) LobbyServicer
 }
@@ -40,7 +40,7 @@ func (l *LobbyServices) WithTx(tx *sqlx.Tx) LobbyServicer {
 
 const InquiryTimerDuration = 27
 
-func (l *LobbyServices) JoinLobby(inquiryID int64, df *darkfirestore.DarkFirestore) (string, error) {
+func (l *LobbyServices) JoinLobby(inquiryID int64, df darkfirestore.DarkFireStorer) (string, error) {
 	ctx := context.Background()
 	// Generate lobby key
 	//  - Set countdown counter in the lobby record in the firestore.

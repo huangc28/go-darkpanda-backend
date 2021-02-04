@@ -1,0 +1,93 @@
+schemes:
+- http
+- https
+swagger: "2.0"
+info:
+  title: DarkPanda backend API service
+  contact:
+    name: Chi-Han Huang
+    email: huangchiheng@gmail.com
+  version: 0.0.1
+host: localhost:3333
+basePath: /api/v1
+paths:
+  /auth/revoke-jwt:
+    post:
+      security:
+      - Bearer: []
+      consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      tags:
+      - auth
+  /auth/send-verify-code:
+    post:
+      consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      tags:
+      - auth
+      parameters:
+      - name: body
+        in: body
+        schema:
+          type: object
+          required:
+          - uuid
+          properties:
+            uuid:
+              type: string
+      responses:
+        "200":
+          description: send SMS verify code to login
+          schema:
+            type: object
+            properties:
+              mobile:
+                type: string
+              uuid:
+                type: string
+              verify_prefix:
+                type: string
+  /auth/verify-code:
+    post:
+      consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+      produces:
+      - application/json
+      tags:
+      - auth
+      parameters:
+      - name: body
+        in: body
+        schema:
+          type: object
+          properties:
+            mobile:
+              type: string
+            uuid:
+              type: string
+            verify_char:
+              type: string
+            verify_dig:
+              type: string
+      responses:
+        "200":
+          description: verify SMS code response
+          schema:
+            type: object
+            properties:
+              jwt:
+                type: string
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+tags:
+- name: auth

@@ -11,12 +11,14 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/stretchr/testify/assert"
@@ -24,6 +26,7 @@ import (
 )
 
 type PickupInquiryTestSuite struct {
+	depCon container.Container
 	suite.Suite
 	SendUrlEncodedRequest util.SendUrlEncodedRequest
 }
@@ -31,6 +34,7 @@ type PickupInquiryTestSuite struct {
 func (suite *PickupInquiryTestSuite) SetupSuite() {
 	manager.NewDefaultManager(context.Background())
 	deps.Get().Run()
+	suite.depCon = deps.Get().Container
 
 	suite.SendUrlEncodedRequest = util.SendUrlEncodedRequestToApp(app.StartApp(gin.Default()))
 }
@@ -82,7 +86,10 @@ func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
 		},
 	}
 
-	_, err = lobbySrv.JoinLobby(iq.ID)
+	var df darkfirestore.DarkFireStorer
+	suite.depCon.Make(&df)
+
+	_, err = lobbySrv.JoinLobby(iq.ID, df)
 
 	if err != nil {
 		suite.T().Fatalf("Failed to join lobby %s", err.Error())

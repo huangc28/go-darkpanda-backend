@@ -5,14 +5,18 @@
 package deps
 
 import (
+	"context"
+	"log"
 	"sync"
 
 	"github.com/golobby/container"
 	cintrnal "github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/service"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
@@ -48,6 +52,29 @@ func (dep *DepContainer) TwilioServiceProvider(c cintrnal.Container) DepRegistra
 				AccountSID:   viper.GetString("twilio.account_id"),
 				AccountToken: viper.GetString("twilio.auth_token"),
 			})
+		})
+
+		return nil
+	}
+}
+
+func (dep *DepContainer) DarkFirestoreServiceProvider(c cintrnal.Container) DepRegistrar {
+	return func() error {
+		ctx := context.Background()
+
+		err := darkfirestore.InitFireStore(
+			ctx,
+			darkfirestore.InitOptions{
+				CredentialFile: config.GetAppConf().Firestore.CredentialFile,
+			},
+		)
+
+		if err != nil {
+			log.Fatalf("failed to initialize darkfirestore %v", err)
+		}
+
+		c.Singleton(func() darkfirestore.DarkFireStorer {
+			return darkfirestore.Get()
 		})
 
 		return nil

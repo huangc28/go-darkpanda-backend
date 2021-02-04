@@ -16,10 +16,17 @@ docker_compose:
 		--env-file build/package/.docker.env \
 		$(filter-out $@, $(MAKECMDGOALS))
 
-.PHONY: docker_compose
+build_swagger:
+	swagger flatten swagger/general.yml \
+	--output=swagger/master.yml \
+	--format=yaml
 
-swagger:
-	swag init -g cmd/app/main.go
+serve_swagger: build_swagger
+	swagger serve swagger/master.yml -p 3333 --host localhost --flavor=swagger
+
+.PHONY: docker_compose
+.PHONY: serve_swagger
+.PHONY: build_swagger
 
 # Create a new migration file.
 # Usage:

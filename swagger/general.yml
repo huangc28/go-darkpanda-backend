@@ -1,0 +1,29 @@
+---
+swagger: "2.0"
+info:
+  title: DarkPanda backend API service
+  contact:
+    name: Chi-Han Huang
+    email: huangchiheng@gmail.com
+  version: "0.0.1"
+tags:
+  - name: auth
+host: localhost:3333
+basePath: /api/v1
+schemes:
+  - "http"
+  - "https"
+securityDefinitions:
+  Bearer:
+    type: apiKey
+    name: Authorization
+    in: header
+paths:
+  /auth/send-verify-code:
+    $ref: '../internal/app/auth/swagger/auth.yml#/sendVerifyCode'
+
+  /auth/verify-code:
+    $ref: '../internal/app/auth/swagger/auth.yml#/VerifyCode'
+
+  /auth/revoke-jwt:
+    $ref: '../internal/app/auth/swagger/auth.yml#/RevokeJwt'

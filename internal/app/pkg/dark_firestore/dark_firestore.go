@@ -25,6 +25,16 @@ const (
 	ConfirmedService MessageType = "confirmed_service"
 )
 
+type DarkFireStorer interface {
+	CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error
+	SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error)
+	SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error)
+	GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string]ChatMessage, error)
+	GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]interface{}, error)
+	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
+	CreateLobbyUser(ctx context.Context, params CreateLobbyUserParams) (*firestore.WriteResult, LobbyUserInfo, error)
+}
+
 type DarkFirestore struct {
 	Client *firestore.Client
 }

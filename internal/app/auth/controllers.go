@@ -58,7 +58,7 @@ func (ac *AuthController) RevokeJwtHandler(c *gin.Context) {
 }
 
 type SendLoginVerifyCodeBody struct {
-	Username string `form:"username"  json:"username" binding:"required,gt=0"`
+	Username string `form:"username" json:"username" binding:"required,gt=0"`
 }
 
 func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context) {
@@ -125,8 +125,6 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context) {
 	// Check if login record already exists in redis.
 	authenticator, err := authDao.GetLoginRecord(ctx, user.Uuid)
 
-	log.Printf("DEBUG authenticator %v", authenticator)
-
 	if err != nil {
 		// If authenticator does not exists, that means this is the first time the user
 		// performs login. We should create an authentication record in redis for this user.
@@ -157,7 +155,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context) {
 			smsResp, err := tc.SendSMS(
 				viper.GetString("twilio.from"),
 				user.Mobile.String,
-				fmt.Sprintf("your darkpanda verify code: \n\n %d", vc.BuildCode()),
+				fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
 			)
 
 			if twilio.HandleSendTwilioError(c, err) != nil {
