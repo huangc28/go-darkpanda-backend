@@ -365,7 +365,13 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, NewTransformer().TransformInquiryChats(chatrooms, channelUUIDMessageMap))
+	c.JSON(
+		http.StatusOK,
+		NewTransformer().TransformInquiryChats(
+			chatrooms,
+			channelUUIDMessageMap,
+		),
+	)
 }
 
 // GetChatrooms gets list of chatrooms based on chatroom type (service / inquiry). If chatroom type
@@ -378,7 +384,7 @@ const (
 )
 
 type GetChatroomsBody struct {
-	ChatroomType QueryChatroomType `form:"chatroom_type,default='inquiry'"`
+	ChatroomType QueryChatroomType `form:"chatroom_type,default='inquiry'" json:"chatroom_type,default='inquiry'"`
 }
 
 func GetChatrooms(c *gin.Context, depCon container.Container) {

@@ -1,0 +1,59 @@
+GetChatrooms:
+  post:
+    security:
+      - Bearer: []
+    tags:
+      - chat
+    consumes:
+      - application/json
+      - application/x-www-form-urlencoded
+    produces:
+      - application/json
+    parameters:
+      - in: body
+        name: body
+        required: false
+        schema:
+          type: object
+          properties:
+            service_type:
+              type: string
+              enum:
+                - inquiring
+                - canceled
+                - expired
+                - booked
+                - chatting
+                - wait_for_inquirer_approve
+            username:
+              type: string
+            avatar_url:
+              type: string
+            channel_uuid:
+              type: string
+            expired_at:
+              type: string
+            created_at:
+              type: string
+            latest_message:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                    enum:
+                      - text
+                      - service_detail
+                      - confirmed_service
+                  content:
+                    type: string
+                  from:
+                    type: string
+                  to:
+                    type: string
+                  created_at:
+                    type: string
+            inquiry_uuid:
+              type: string 
+            

@@ -8,6 +8,7 @@ info:
   version: "0.0.1"
 tags:
   - name: auth
+  - name: chat
 host: localhost:3333
 basePath: /api/v1
 schemes:
@@ -18,6 +19,18 @@ securityDefinitions:
     type: apiKey
     name: Authorization
     in: header
+components:
+  schemas:
+    InquiryStatus:
+      type: string
+      enum:
+        - inquiring
+        - canceled
+        - expired
+        - booked
+        - chatting
+        - wait_for_inquirer_approve
+
 paths:
   /auth/send-verify-code:
     $ref: '../internal/app/auth/swagger/auth.yml#/sendVerifyCode'
@@ -27,3 +40,6 @@ paths:
 
   /auth/revoke-jwt:
     $ref: '../internal/app/auth/swagger/auth.yml#/RevokeJwt'
+
+  /chat:
+    $ref: '../internal/app/chat/swagger/chat.yaml#/GetChatrooms'

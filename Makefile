@@ -16,13 +16,14 @@ docker_compose:
 		--env-file build/package/.docker.env \
 		$(filter-out $@, $(MAKECMDGOALS))
 
+serve_swagger: build_swagger
+	swagger serve swagger/master.yml -p 3333 --host localhost --flavor=swagger
+
 build_swagger:
 	swagger flatten swagger/general.yml \
 	--output=swagger/master.yml \
 	--format=yaml
 
-serve_swagger: build_swagger
-	swagger serve swagger/master.yml -p 3333 --host localhost --flavor=swagger
 
 .PHONY: docker_compose
 .PHONY: serve_swagger
