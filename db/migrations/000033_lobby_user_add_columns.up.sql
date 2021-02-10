@@ -1,7 +1,6 @@
 -- Add default timestamp value in minute: https://stackoverflow.com/questions/21745125/add-minutes-to-current-timestamp-in-postgresql
 BEGIN;
 
-DROP TYPE IF EXISTS lobby_status;
 CREATE TYPE lobby_status AS ENUM (
 	'waiting',
 	'pause',

@@ -29,6 +29,12 @@ build_swagger:
 .PHONY: serve_swagger
 .PHONY: build_swagger
 
+# Generate models from migration SQL schemas. This tool uses 
+# `https://github.com/kyleconroy/sqlc` to parse SQL syntax    
+# and generate corresponding models.
+gen_model:
+	go run cmd/genmodel/main.go gen
+	
 # Create a new migration file.
 # Usage:
 #   migrate_create referral_code.

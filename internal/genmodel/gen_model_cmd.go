@@ -89,8 +89,6 @@ func appendFileContentToDestFile(files []os.FileInfo, src string, dest string) {
 func Gen(cmd *cobra.Command, args []string) error {
 	env := os.Getenv("ENV")
 
-	log.Printf("DEBUG 1 %v", env)
-
 	// read latest migration info from database
 	appConf := config.GetAppConf()
 

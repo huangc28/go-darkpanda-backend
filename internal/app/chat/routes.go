@@ -38,6 +38,9 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
+	// The female user edited service details and saved the service settings, the chatroom would emit a service setting message.
+	// Male user would be notified with the service message.  Male user can click on the service message and would show the
+	// service detail set by the female user.
 	g.POST(
 		"/emit-service-message",
 		func(c *gin.Context) {
@@ -46,8 +49,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	)
 
 	// Male user can agree on service detail set by female user. Once agreed, female user would receive
-	// a message saying that the service has been established, the chatroom should be suspended both party should
-	// leave the current inquiry chatroom.
+	// a message saying that the service has been established, the chatroom will be forwarded
 	g.POST(
 		"/emit-service-confirmed-message",
 		middlewares.IsMale(userDao),

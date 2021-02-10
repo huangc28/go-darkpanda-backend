@@ -54,8 +54,6 @@ func EmitInquiryHandler(c *gin.Context) {
 
 	uuid := c.GetString("uuid")
 
-	log.Printf("DEBUG spot 1 %v", uuid)
-
 	q := models.New(db.GetDB())
 	usr, err := q.GetUserByUuid(ctx, uuid)
 
@@ -171,9 +169,6 @@ func EmitInquiryHandler(c *gin.Context) {
 	// Joins the lobby and returns lobby channel id
 	lobbyServices := NewLobbyService(NewLobbyDao(db.GetDB()))
 
-	// @TODO
-	//   - We should also set the counter in firestore to be 27 minutes.
-	//   - Set the status in the firestore to be waiting.
 	df := darkfirestore.Get()
 	lobbyUUID, err := lobbyServices.JoinLobby(iq.ID, df)
 
@@ -188,8 +183,6 @@ func EmitInquiryHandler(c *gin.Context) {
 
 		return
 	}
-
-	//log.Printf("DEBUG Budget %v", iq.Budget)
 
 	trf, err := NewTransform().TransformEmitInquiry(iq, lobbyUUID)
 
@@ -464,7 +457,7 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Check if user in the lobby has already expired
+	// Check if male user in the lobby has already expired
 	inquiryDao := NewInquiryDAO(db.GetDB())
 	lobbyService := NewLobbyService(NewLobbyDao(db.GetDB()))
 

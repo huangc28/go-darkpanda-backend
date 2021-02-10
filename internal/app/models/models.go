@@ -59,6 +59,7 @@ const (
 	LobbyStatusPause   LobbyStatus = "pause"
 	LobbyStatusExpired LobbyStatus = "expired"
 	LobbyStatusLeft    LobbyStatus = "left"
+	LobbyStatusAsking  LobbyStatus = "asking"
 )
 
 func (e *LobbyStatus) Scan(src interface{}) error {

@@ -56,7 +56,18 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		EmitInquiryHandler,
 	)
 
-	// Cancel a inquiry.
+	// A Female user can pickup an inquiry.
+	g.POST(
+		"/:inquiry_uuid/pickup",
+		ValidateInqiuryURIParams(),
+		middlewares.IsFemale(userDAO),
+		ValidateBeforeAlterInquiryStatus(Pickup),
+		func(c *gin.Context) {
+			PickupInquiryHandler(c, container)
+		},
+	)
+
+	// Cancel an inquiry.
 	g.PATCH(
 		"/:inquiry_uuid/cancel",
 		ValidateInqiuryURIParams(),
@@ -82,17 +93,6 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		middlewares.IsMale(userDAO),
 		ValidateBeforeAlterInquiryStatus(Expire),
 		ExpireInquiryHandler,
-	)
-
-	// pickup an inquiry
-	g.POST(
-		"/:inquiry_uuid/pickup",
-		ValidateInqiuryURIParams(),
-		middlewares.IsFemale(userDAO),
-		ValidateBeforeAlterInquiryStatus(Pickup),
-		func(c *gin.Context) {
-			PickupInquiryHandler(c, container)
-		},
 	)
 
 	// After chatting, inquiry can be approved by girl

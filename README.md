@@ -75,9 +75,17 @@ The content in `db/migrations/schema.sql` will be truncated everytime running th
 
 - [x] docker environment with postgres and redis.
 - [x] dotenv files.
-= [] Verify referral code.
+- [x] Verify referral code.
 - [] Write a test to emit service confirmed message.
 - [] Create Makefile commands to run migrations for both `test` and `development` environments.
-- []  Implement an API to return inquiries, only female user can fetch inquiries.
+- [] Implement an API to return inquiries, only female user can fetch inquiries.
 - [] Add image relative APIs.
 
+## Geo Location APIs
+
+- [] Use google map API to retrieve all location suggestion based on inputs
+- [] Retrieve longtitude and latitude of a given address.
+
+## Notification
+
+- [] Notify male user when is at service appointment time.
