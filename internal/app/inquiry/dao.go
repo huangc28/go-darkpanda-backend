@@ -195,7 +195,14 @@ RETURNING *;
 
 	var pickedInquiry models.ServiceInquiry
 
-	if err := dao.db.QueryRowx(sql, models.InquiryStatusChatting, pickerID, inquiryID).StructScan(&pickedInquiry); err != nil {
+	if err := dao.
+		db.
+		QueryRowx(
+			sql,
+			models.InquiryStatusChatting,
+			pickerID,
+			inquiryID,
+		).StructScan(&pickedInquiry); err != nil {
 		return nil, err
 	}
 

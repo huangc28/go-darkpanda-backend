@@ -38,6 +38,7 @@ const (
 	InquiryStatusBooked                 InquiryStatus = "booked"
 	InquiryStatusChatting               InquiryStatus = "chatting"
 	InquiryStatusWaitForInquirerApprove InquiryStatus = "wait_for_inquirer_approve"
+	InquiryStatusAsking                 InquiryStatus = "asking"
 )
 
 func (e *InquiryStatus) Scan(src interface{}) error {

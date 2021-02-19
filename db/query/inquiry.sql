@@ -11,7 +11,7 @@ WHERE uuid = $1;
 INSERT INTO service_inquiries(
 	uuid,
 	inquirer_id,
-	picker_id,	
+	picker_id,
 	budget,
 	service_type,
 	inquiry_status,
@@ -23,6 +23,7 @@ INSERT INTO service_inquiries(
 	expired_at
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING *;
+
 
 -- name: PatchInquiryStatus :exec
 UPDATE service_inquiries
@@ -46,6 +47,13 @@ SELECT EXISTS (
 
 -- name: UpdateInquiryByUuid :one
 UPDATE  service_inquiries
-SET price = $1, duration = $2, appointment_time = $3, lng = $4, lat = $5, inquiry_status = $6
-WHERE uuid = $7
+SET
+	price = $1,
+	duration = $2,
+	appointment_time = $3,
+	lng = $4,
+	lat = $5,
+	inquiry_status = $6,
+	picker_id = $7
+WHERE uuid = $8
 RETURNING *;

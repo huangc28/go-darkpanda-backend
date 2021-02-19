@@ -32,7 +32,7 @@ const createInquiry = `-- name: CreateInquiry :one
 INSERT INTO service_inquiries(
 	uuid,
 	inquirer_id,
-	picker_id,	
+	picker_id,
 	budget,
 	service_type,
 	inquiry_status,
@@ -216,8 +216,15 @@ func (q *Queries) PatchInquiryStatusByUuid(ctx context.Context, arg PatchInquiry
 
 const updateInquiryByUuid = `-- name: UpdateInquiryByUuid :one
 UPDATE  service_inquiries
-SET price = $1, duration = $2, appointment_time = $3, lng = $4, lat = $5, inquiry_status = $6
-WHERE uuid = $7
+SET
+	price = $1,
+	duration = $2,
+	appointment_time = $3,
+	lng = $4,
+	lat = $5,
+	inquiry_status = $6,
+	picker_id = $7
+WHERE uuid = $8
 RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, price, duration, appointment_time, lng, lat, expired_at, picker_id
 `
 
@@ -228,6 +235,7 @@ type UpdateInquiryByUuidParams struct {
 	Lng             sql.NullString `json:"lng"`
 	Lat             sql.NullString `json:"lat"`
 	InquiryStatus   InquiryStatus  `json:"inquiry_status"`
+	PickerID        sql.NullInt32  `json:"picker_id"`
 	Uuid            string         `json:"uuid"`
 }
 
@@ -239,6 +247,7 @@ func (q *Queries) UpdateInquiryByUuid(ctx context.Context, arg UpdateInquiryByUu
 		arg.Lng,
 		arg.Lat,
 		arg.InquiryStatus,
+		arg.PickerID,
 		arg.Uuid,
 	)
 	var i ServiceInquiry

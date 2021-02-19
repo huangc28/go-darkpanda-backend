@@ -33,15 +33,21 @@ const (
 	FailedToTransformGetInquiry            = "3000031"
 	FailedToPickupInquiryDueToDirtyVersion = "3000032"
 
-	FailedToJoinLobby                 = "3000032"
-	FailedToLeaveLobby                = "3000033"
-	FailedToCheckLobbyExpiry          = "3000034"
-	FailedToCreateAndJoinLobby        = "3000035"
-	FailedToTransformResponse         = "3000036"
-	FailedToPickupInquiry             = "3000037"
-	FailedToTransformServiceModel     = "3000038"
-	FailedToGetInquirerByInquiryUUID  = "3000039"
-	FailedToTransformInquirerResponse = "3000040"
+	FailedToJoinLobby                    = "3000032"
+	FailedToLeaveLobby                   = "3000033"
+	FailedToCheckLobbyExpiry             = "3000034"
+	FailedToCreateAndJoinLobby           = "3000035"
+	FailedToTransformResponse            = "3000036"
+	FailedToPickupInquiry                = "3000037"
+	FailedToTransformServiceModel        = "3000038"
+	FailedToGetInquirerByInquiryUUID     = "3000039"
+	FailedToTransformInquirerResponse    = "3000040"
+	FailedToGetLobbyUserByInquiryID      = "3000041"
+	FailedToPickupStatusNotInquiring     = "3000042"
+	FailedToAskInquiringUser             = "3000043"
+	FailedToBindInquiryUriParams         = "3000044"
+	FailedToChangeFirestoreInquiryStatus = "3000045"
+	FailedToPickupStatusNotWaiting       = "3000046"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
@@ -56,4 +62,5 @@ var InquiryErrCodeMsgMap = map[string]string{
 	OnlyMaleCanBookService:                 "Only male can book service",
 	OnlyFemaleUserCanAccessAPI:             "Only female user can access API",
 	FailedToPickupInquiryDueToDirtyVersion: "Inquiry has been modified by other requests. Please pick another request or try again later",
+	FailedToPickupStatusNotWaiting:         "Inquiry not available, status is not waiting",
 }

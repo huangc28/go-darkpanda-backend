@@ -13,6 +13,8 @@ var (
 	Cancel      InquiryActions = "cancel"
 	Expire      InquiryActions = "expire"
 	Pickup      InquiryActions = "pickup"
+	AgreePickup InquiryActions = "agree_pickup"
+	Skip        InquiryActions = "skip"
 	GirlApprove InquiryActions = "girl_approve"
 	Book        InquiryActions = "book"
 	RevertChat  InquiryActions = "revert_chat"
@@ -49,7 +51,21 @@ func NewInquiryFSM(initial models.InquiryStatus) (*fsm.FSM, error) {
 				Src: []string{
 					string(models.InquiryStatusInquiring),
 				},
+				Dst: string(models.InquiryStatusAsking),
+			},
+			{
+				Name: AgreePickup.ToString(),
+				Src: []string{
+					string(models.InquiryStatusAsking),
+				},
 				Dst: string(models.InquiryStatusChatting),
+			},
+			{
+				Name: Skip.ToString(),
+				Src: []string{
+					string(models.InquiryStatusAsking),
+				},
+				Dst: string(models.InquiryStatusInquiring),
 			},
 			{
 				Name: GirlApprove.ToString(),

@@ -29,12 +29,12 @@ build_swagger:
 .PHONY: serve_swagger
 .PHONY: build_swagger
 
-# Generate models from migration SQL schemas. This tool uses 
-# `https://github.com/kyleconroy/sqlc` to parse SQL syntax    
+# Generate models from migration SQL schemas. This tool uses
+# `https://github.com/kyleconroy/sqlc` to parse SQL syntax
 # and generate corresponding models.
 gen_model:
 	go run cmd/genmodel/main.go gen
-	
+
 # Create a new migration file.
 # Usage:
 #   migrate_create referral_code.
@@ -42,13 +42,13 @@ migrate_create:
 	migrate create -ext sql -dir db/migrations -seq $(filter-out $@, $(MAKECMDGOALS))
 
 migrate_up:
-	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' up
+	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' up && make gen_model
 
 migrate_down:
 	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' down
 
 test_migrate_up:
-	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5433/darkpanda?sslmode=disable' up
+	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5433/darkpanda?sslmode=disable' up && make gen_model
 
 test_migrate_down:
 	migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5433/darkpanda?sslmode=disable' down

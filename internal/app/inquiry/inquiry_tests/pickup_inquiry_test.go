@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
@@ -14,7 +15,7 @@ import (
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
-	"github.com/huangc28/go-darkpanda-backend/internal/app"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
@@ -28,15 +29,12 @@ import (
 type PickupInquiryTestSuite struct {
 	depCon container.Container
 	suite.Suite
-	SendUrlEncodedRequest util.SendUrlEncodedRequest
 }
 
 func (suite *PickupInquiryTestSuite) SetupSuite() {
 	manager.NewDefaultManager(context.Background())
 	deps.Get().Run()
 	suite.depCon = deps.Get().Container
-
-	suite.SendUrlEncodedRequest = util.SendUrlEncodedRequestToApp(app.StartApp(gin.Default()))
 }
 
 func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
@@ -80,101 +78,102 @@ func (suite *PickupInquiryTestSuite) TestPickupInquirySuccess() {
 	}
 
 	// male user joins the lobby
-	lobbySrv := inquiry.LobbyServices{
-		LobbyDao: &inquiry.LobbyDao{
-			DB: db.GetDB(),
-		},
-	}
-
 	var df darkfirestore.DarkFireStorer
 	suite.depCon.Make(&df)
 
-	_, err = lobbySrv.JoinLobby(iq.ID, df)
+	df.CreateInquiringUser(
+		ctx,
+		darkfirestore.CreateInquiringUserParams{
+			InquiryUUID:   iq.Uuid,
+			InquiryStatus: string(models.InquiryStatusInquiring),
+		},
+	)
 
 	if err != nil {
 		suite.T().Fatalf("Failed to join lobby %s", err.Error())
 	}
 
-	headerMap := util.CreateJwtHeaderMap(femaleUser.Uuid, config.GetAppConf().JwtSecret)
-	resp, err := suite.SendUrlEncodedRequest(
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	req, err := util.ComposeTestRequest(
 		"POST",
 		fmt.Sprintf("/v1/inquiries/%s/pickup", iq.Uuid),
 		&url.Values{},
-		headerMap,
+		util.CreateJwtHeaderMap(femaleUser.Uuid, config.GetAppConf().JwtSecret),
 	)
 
 	if err != nil {
 		suite.T().Fatal(err)
 	}
 
+	c.Request = req
+	c.Params = append(c.Params, gin.Param{
+		Key:   "inquiry_uuid",
+		Value: iq.Uuid,
+	})
+
+	inquiry.PickupInquiryHandler(c, suite.depCon)
+	apperr.HandleError()(c)
+
+	respStruct := struct {
+		ServiceType   string `json:"service_type"`
+		InquiryUUID   string `json:"inquiry_uuid"`
+		InquiryStatus string `json:"inquiry_status"`
+		ExpiredAt     string `json:"expired_at"`
+		CreatedAt     string `json:"created_at"`
+	}{}
+
+	json.Unmarshal(w.Body.Bytes(), &respStruct)
+
 	// ------------------- Assert test cases -------------------
 	assert := assert.New(suite.T())
-	assert.Equal(http.StatusOK, resp.Result().StatusCode)
+	assert.Equal(http.StatusOK, w.Result().StatusCode)
 
-	// assert that the inquiry has been removed from lobby (soft deleted).
+	// Assert that the lobby user status in DB has changed to `waiting`
+	var si models.ServiceInquiry
 	db := db.GetDB()
-	var removedUserExists bool
-	if err := db.QueryRow(`
-SELECT EXISTS(
-	SELECT 1 FROM lobby_users
-	WHERE inquiry_id = $1
-	AND deleted_at IS NOT NULL
-) AS exists;
-	`, iq.ID).Scan(&removedUserExists); err != nil {
+	if err := db.QueryRowx(
+		`
+	SELECT
+		uuid,
+		inquiry_status,
+		picker_id
+	FROM
+		service_inquiries
+	WHERE
+		id = $1;
+	`,
+		iq.ID,
+	).StructScan(&si); err != nil {
 		suite.T().Fatal(err)
 	}
 
-	assert.True(removedUserExists)
-
-	// assert that both male and female user are in the chatroom already.
-	var (
-		maleExistsInChat     bool
-		femaleExistsInChat   bool
-		pickerIDIsFemaleUser bool
+	assert.Equal(
+		models.InquiryStatusAsking,
+		si.InquiryStatus,
 	)
-	existenceQuery := `
-SELECT EXISTS(
-	SELECT 1 FROM chatroom_users
-	WHERE user_id = $1
-) AS exists;
-	`
-	if err := db.QueryRow(existenceQuery, maleUser.ID).Scan(&maleExistsInChat); err != nil {
+
+	assert.Equal(
+		int64(si.PickerID.Int32),
+		femaleUser.ID,
+	)
+
+	// Assert that the user status in firestore has changed to `waiting`
+	dfClient := df.GetClient()
+	dfResp, err := dfClient.
+		Collection("inquiries").
+		Doc(respStruct.InquiryUUID).
+		Get(ctx)
+
+	if err != nil {
 		suite.T().Fatal(err)
 	}
 
-	assert.True(maleExistsInChat)
-
-	if err := db.QueryRow(existenceQuery, femaleUser.ID).Scan(&femaleExistsInChat); err != nil {
-		suite.T().Fatal(err)
-	}
-
-	assert.True(femaleExistsInChat)
-
-	// assert the value of picker_id on inquiry is female user
-	if err := db.QueryRow(`
-SELECT EXISTS(
-	SELECT 1 FROM service_inquiries
-	WHERE id = $1 
-	AND picker_id = $2
-) AS exists;
-	`, iq.ID, femaleUser.ID).Scan(&pickerIDIsFemaleUser); err != nil {
-		suite.T().Fatal(err)
-	}
-
-	assert.True(pickerIDIsFemaleUser)
-
-	respBody := inquiry.TransformedPickupInquiry{}
-	dec := json.NewDecoder(resp.Body)
-	if err := dec.Decode(&respBody); err != nil {
-		suite.T().Fatal(err)
-	}
-
-	assert.NotEmpty(respBody.ChannelUUID)
-	assert.Equal(string(models.ServiceTypeSex), respBody.ServiceType)
-	assert.Equal(string(models.InquiryStatusChatting), respBody.InquiryStatus)
-
-	assert.NotEmpty(respBody.InquirerUUID)
-	assert.Equal(maleUser.Username, respBody.Username)
+	assert.Equal(
+		dfResp.Data()["status"],
+		"asking",
+	)
 }
 
 func TestPickupInquiryTestSuite(t *testing.T) {

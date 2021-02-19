@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http/httptest"
 	"net/url"
 	"testing"
 	"time"
 
 	"github.com/gin-gonic/gin"
+
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
@@ -18,6 +18,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
@@ -68,10 +69,6 @@ func (suite *EmitInquiryTestSuite) TestEmitInquirySuccess() {
 
 	// Request API
 
-	//jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
-	//Secret: config.GetAppConf().JwtSecret,
-	//}),
-
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 
@@ -94,12 +91,9 @@ func (suite *EmitInquiryTestSuite) TestEmitInquirySuccess() {
 	inquiry.EmitInquiryHandler(c)
 	apperr.HandleError()(c)
 
-	log.Printf("DEBUG resp %v", w.Body.String())
-
 	// ------------------- assert test case -------------------
 	respBody := struct {
 		InquiryUuid   string               `json:"inquiry_uuid"`
-		LobbyUuid     string               `json:"lobby_uuid"`
 		Budget        float64              `json:"budget"`
 		ServiceType   models.ServiceType   `json:"service_type"`
 		InquiryStatus models.InquiryStatus `json:"inquiry_status"`
@@ -112,10 +106,19 @@ func (suite *EmitInquiryTestSuite) TestEmitInquirySuccess() {
 	assert := assert.New(suite.T())
 
 	assert.NotEmpty(respBody.InquiryUuid)
-	assert.NotEmpty(respBody.LobbyUuid)
 	assert.Equal(respBody.Budget, 100.1)
 	assert.Equal(respBody.ServiceType, models.ServiceTypeSex)
 	assert.Equal(respBody.InquiryStatus, models.InquiryStatusInquiring)
+
+	// Makesure inquiry status in firestore is `inquring`
+	df := darkfirestore.Get()
+	dfClient := df.GetClient()
+	dfResp, _ := dfClient.
+		Collection("inquiries").
+		Doc(respBody.InquiryUuid).
+		Get(ctx)
+
+	assert.Equal("inquiring", dfResp.Data()["status"])
 }
 
 func TestEmitInquiryTestSuite(t *testing.T) {

@@ -166,11 +166,11 @@ func EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	// Joins the lobby and returns lobby channel id
-	lobbyServices := NewLobbyService(NewLobbyDao(db.GetDB()))
-
 	df := darkfirestore.Get()
-	lobbyUUID, err := lobbyServices.JoinLobby(iq.ID, df)
+	df.CreateInquiringUser(ctx, darkfirestore.CreateInquiringUserParams{
+		InquiryUUID:   iq.Uuid,
+		InquiryStatus: iq.InquiryStatus.ToString(),
+	})
 
 	if err != nil {
 		c.AbortWithError(
@@ -184,7 +184,7 @@ func EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	trf, err := NewTransform().TransformEmitInquiry(iq, lobbyUUID)
+	trf, err := NewTransform().TransformEmitInquiry(iq)
 
 	if err != nil {
 		c.AbortWithError(
@@ -425,26 +425,43 @@ func ExpireInquiryHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, trf)
 }
 
-func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
-	eup, uriParamExists := c.Get("uri_params")
-	eiq, inquiryExists := c.Get("inquiry")
+type PickupInquiryHandlerParams struct {
+	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
+}
 
-	if !uriParamExists || !inquiryExists {
+func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
+	var params PickupInquiryHandlerParams
+
+	if err := c.ShouldBindUri(&params); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
-			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
+			apperr.NewErr(
+				apperr.FailedToValidateCancelInquiryParams,
+				err.Error(),
+			),
 		)
 
 		return
 	}
 
-	uriParams := eup.(*InquiryUriParams)
-	iq := eiq.(models.ServiceInquiry)
 	ctx := context.Background()
-
-	// retrieve inquirier information
 	q := models.New(db.GetDB())
-	inquirer, err := q.GetUserByID(ctx, int64(iq.InquirerID.Int32))
+
+	// Retrieve inquiry information
+	iq, err := q.GetInquiryByUuid(ctx, params.InquiryUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
 
 	if err != nil {
 		c.AbortWithError(
@@ -454,20 +471,16 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 				err.Error(),
 			),
 		)
+
 		return
 	}
 
-	// Check if male user in the lobby has already expired
-	inquiryDao := NewInquiryDAO(db.GetDB())
-	lobbyService := NewLobbyService(NewLobbyDao(db.GetDB()))
-
-	expired, err := inquiryDao.IsInquiryExpired(iq.ID)
-
-	if err != nil {
+	// ------------------- Check inquiry status is inquiring -------------------
+	if iq.InquiryStatus != models.InquiryStatusInquiring {
 		c.AbortWithError(
-			http.StatusInternalServerError,
+			http.StatusBadRequest,
 			apperr.NewErr(
-				apperr.FailedToCheckLobbyExpiry,
+				apperr.FailedToPickupStatusNotInquiring,
 				err.Error(),
 			),
 		)
@@ -475,111 +488,43 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	if expired {
-		// Remove user from lobby
-		if err := lobbyService.LeaveLobby(iq.ID); err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToLeaveLobby,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		// @TODO Notify clients via socket event that the inquiry is expired and should be removed from inquiry list.
-
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.CanNotPickupExpiredInquiry),
-		)
-
-		return
-	}
-
-	var (
-		uiq          *models.ServiceInquiry
-		chatroomInfo *models.Chatroom
-		userDao      contracts.UserDAOer
-		chatService  contracts.ChatServicer
-	)
-
-	depCon.Make(&userDao)
-	depCon.Make(&chatService)
-
 	err, errCode := db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
-		dao := NewInquiryDAO(tx)
-		lastVerIq, err := dao.GetInquiryByUuid(
-			uriParams.InquiryUuid,
-			"updated_at",
+		fsm, _ := NewInquiryFSM(iq.InquiryStatus)
+
+		if err := fsm.Event(Pickup.ToString()); err != nil {
+			return err, apperr.InquiryFSMTransitionFailed
+		}
+
+		// Patch inquiry status in DB to be `asking`
+		q := models.New(tx)
+		_, err := q.UpdateInquiryByUuid(
+			ctx,
+			models.UpdateInquiryByUuidParams{
+				PickerID: sql.NullInt32{
+					Int32: iq.PickerID.Int32,
+					Valid: true,
+				},
+				InquiryStatus: models.InquiryStatus(fsm.Current()),
+				Uuid:          iq.Uuid,
+			},
 		)
 
 		if err != nil {
-			return err, apperr.FailedToGetInquiryByUuid
+			return err, apperr.FailedToUpdateInquiryContent
 		}
 
-		// Before patching the inquiry status, we apply optimistic lock strategy which checks `updated_at` column of that inquiry again
-		// makesure it hasn't been modified by other transactions / processes. If `updated_at` at has been modified, abort the transaction.
-		if !lastVerIq.UpdatedAt.Time.Equal(iq.UpdatedAt.Time) {
-			return apperr.NewErr(apperr.FailedToPickupInquiryDueToDirtyVersion), apperr.FailedToPickupInquiryDueToDirtyVersion
-		}
-
-		servicePicker, err := userDao.
-			WithTx(tx).
-			GetUserByUuid(c.GetString("uuid"))
-
-		if err != nil {
-			return err, apperr.FailedToGetUserByUuid
-		}
-
-		uiq, err = dao.PickupInquiry(servicePicker.ID, iq.ID)
-
-		if err != nil {
-			return err, apperr.FailedToPickupInquiry
-		}
-
-		// @TODO
-		//   - We would need to notify the male user waiting in the lobby to enter the chatroom that the female user has created for him.
-		//   - Male user should leave lobby
-		if err := lobbyService.
-			WithTx(tx).
-			LeaveLobby(uiq.ID); err != nil {
-			return err, apperr.FailedToLeaveLobby
-		}
-
-		// Both male and Female user should also join private chatroom.
-		chatroomInfo, err = chatService.
-			WithTx(tx).
-			CreateAndJoinChatroom(uiq.ID, inquirer.ID, servicePicker.ID)
-
-		if err != nil {
-			return err, apperr.FailedToCreateAndJoinLobby
-		}
-
-		// Create a new private chatroom for client to subscribe.
-		// @TODOs:
-		//   - Abstract this logic into a method of darkfirestore instance.
+		// Patch inquiry status in firestore to be `asking`
 		df := darkfirestore.Get()
-		err = df.CreatePrivateChatRoom(ctx, darkfirestore.CreatePrivateChatRoomParams{
-			ChatRoomName: chatroomInfo.ChannelUuid.String,
-			Data: darkfirestore.ChatMessage{
-				From: servicePicker.Uuid,
-				To:   inquirer.Uuid,
+
+		err = df.AskingInquiringUser(
+			ctx,
+			darkfirestore.AskingInquiringUserParams{
+				InquiryUUID: iq.Uuid,
 			},
-		})
+		)
 
 		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToCreatePrivateChatRoom,
-					err.Error(),
-				),
-			)
-
-			return err, apperr.FailedToCreatePrivateChatRoom
+			return err, apperr.FailedToAskInquiringUser
 		}
 
 		return nil, nil
@@ -597,11 +542,124 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, NewTransform().TransformPickupInquiry(
-		*uiq,
-		inquirer,
-		chatroomInfo.ChannelUuid.String,
-	))
+	// @TODO
+	//   should return inquiry uuid for female user to subscribe to firestore document.
+	c.JSON(
+		http.StatusOK,
+		NewTransform().TransformPickupInquiry(iq),
+	)
+
+}
+
+type AgreePickupInquiryHandlerParams struct {
+	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
+}
+
+// AgreePickupInquiryHandler Male user agree to have a chat with the male user.
+// Perform following operations when male user agrees to chat.
+//   - Check inquiry status can be transitioned to `chatting`
+//   - Change inquiry status to `chatting` on DB
+//   - Change inquiry status to `chatting` on firestore
+func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
+	var params AgreePickupInquiryHandlerParams
+
+	if err := c.ShouldBindUri(&params); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToBindInquiryUriParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve inquiry by inquiry uuid
+	ctx := context.Background()
+
+	q := models.New(db.GetDB())
+	iq, err := q.GetInquiryByUuid(ctx, params.InquiryUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	fsm, _ := NewInquiryFSM(iq.InquiryStatus)
+
+	if err := fsm.Event(AgreePickup.ToString()); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.InquiryFSMTransitionFailed,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Update inquiry status in DB.
+	inquiryDao := NewInquiryDAO(db.GetDB())
+	if err := inquiryDao.PatchInquiryStatusByUUID(
+		contracts.PatchInquiryStatusByUUIDParams{
+			UUID:          iq.Uuid,
+			InquiryStatus: models.InquiryStatusChatting,
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToPatchInquiryStatus,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Update inquiry status in firestore.
+	df := darkfirestore.Get()
+	if err := df.ChatInquiringUser(ctx, darkfirestore.ChatInquiringUserParams{
+		InquiryUUID: iq.Uuid,
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToChangeFirestoreInquiryStatus,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Create private chatroom using chat service.
+	var chat contracts.ChatServicer
+	depCon.Make(&chat)
+
+	chat.CreateAndJoinChatroom(
+		iq.ID,
+		int64(iq.InquirerID.Int32),
+	)
+
+	// Respoonse:
+	//   - service provider's info
+	//   - inquiry info
+	//   - private chat uuid in firestore
+	//trf := NewTransform()
+
+	//c.JSON(http.StatusOK, trf.TransformPickupInquiry(iq))
+
+	c.JSON(http.StatusOK, struct{}{})
 }
 
 // Girl has approved the inquiry, thus, update the inquiry content.

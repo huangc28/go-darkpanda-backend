@@ -9,6 +9,7 @@ import (
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
 	"github.com/huangc28/go-darkpanda-backend/config"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 
@@ -26,13 +27,15 @@ const (
 )
 
 type DarkFireStorer interface {
+	GetClient() *firestore.Client
 	CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error
 	SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error)
 	SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error)
 	GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string]ChatMessage, error)
 	GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]interface{}, error)
 	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
-	CreateLobbyUser(ctx context.Context, params CreateLobbyUserParams) (*firestore.WriteResult, LobbyUserInfo, error)
+	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
+	AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error
 }
 
 type DarkFirestore struct {
@@ -66,6 +69,10 @@ func InitFireStore(ctx context.Context, options InitOptions) error {
 	}
 
 	return nil
+}
+
+func (df *DarkFirestore) GetClient() *firestore.Client {
+	return _darkFirestore.Client
 }
 
 const (
@@ -330,37 +337,36 @@ func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params
 }
 
 const (
-	LobbyCollectionName = "lobby"
-	LobbyUserInfoName   = "info"
+	InquiryCollectionName = "inquiries"
 )
 
-type CreateLobbyUserParams struct {
-	Timer                time.Duration
-	LobbyUserChannelUUID string
-	LobbyUserStatus      string
+type CreateInquiringUserParams struct {
+	Timer         time.Duration
+	InquiryUUID   string
+	InquiryStatus string
 }
 
-type LobbyUserInfo struct {
-	ChannelUUID string        `firestore:"channel_uuid,omitempty"`
+type InquiringUserInfo struct {
+	InquiryUUID string        `firestore:"inquiry_uuid,omitempty"`
 	Timer       time.Duration `firestore:"timer,omitempty"`
 	Status      string        `firestore:"status,omitempty"`
 }
 
-// CreateLobbyUser Adds user into lobby by creating a user record in the firestore.
+// CreateInquiry Adds user into lobby by creating a user record in the firestore.
 // User record includes following info:
 //   - timer countdown in second.
 //   - lobby status.
-func (df *DarkFirestore) CreateLobbyUser(ctx context.Context, params CreateLobbyUserParams) (*firestore.WriteResult, LobbyUserInfo, error) {
-	data := LobbyUserInfo{
-		ChannelUUID: params.LobbyUserChannelUUID,
+func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error) {
+	data := InquiringUserInfo{
+		InquiryUUID: params.InquiryUUID,
 		Timer:       params.Timer,
-		Status:      params.LobbyUserStatus,
+		Status:      params.InquiryStatus,
 	}
 
 	wres, err := df.
 		Client.
-		Collection(LobbyCollectionName).
-		Doc(params.LobbyUserChannelUUID).
+		Collection(InquiryCollectionName).
+		Doc(params.InquiryUUID).
 		Set(ctx, data)
 
 	if err != nil {
@@ -368,4 +374,52 @@ func (df *DarkFirestore) CreateLobbyUser(ctx context.Context, params CreateLobby
 	}
 
 	return wres, data, nil
+}
+
+type AskingInquiringUserParams struct {
+	InquiryUUID string
+}
+
+// AskingLobbyUser updates the status of lobby user document
+// to be `asking` to notify male user to diplay a popup.
+func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error {
+	_, err := df.
+		Client.
+		Collection(InquiryCollectionName).
+		Doc(params.InquiryUUID).
+		Update(ctx, []firestore.Update{
+			{
+				Path:  "status",
+				Value: models.InquiryStatusAsking,
+			},
+		})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type ChatInquiringUserParams struct {
+	InquiryUUID string
+}
+
+func (df *DarkFirestore) ChatInquiringUser(ctx context.Context, params ChatInquiringUserParams) error {
+	_, err := df.
+		Client.
+		Collection(InquiryCollectionName).
+		Doc(params.InquiryUUID).
+		Update(ctx, []firestore.Update{
+			{
+				Path:  "status",
+				Value: models.InquiryStatusChatting,
+			},
+		})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

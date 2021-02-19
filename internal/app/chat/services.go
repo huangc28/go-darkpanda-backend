@@ -3,19 +3,15 @@ package chat
 import (
 	"time"
 
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 )
 
 const MaxMassageCount = 200
 
 func IsExceedMaxMessageCount(count int) bool {
-
-	log.Printf("DEBUG spot 5 count %d", count)
-	log.Printf("DEBUG spot 6 count %t", count+1 > MaxMassageCount)
-
 	return count+1 > MaxMassageCount
 }
 
@@ -25,6 +21,19 @@ func IsChatroomExpired(expT time.Time) bool {
 
 type ChatServices struct {
 	ChatDao contracts.ChatDaoer
+}
+
+func ChatServiceServiceProvider(c container.Container) func() error {
+	return func() error {
+		c.Transient(func() contracts.ChatServicer {
+			var chatDaoer contracts.ChatDaoer
+			c.Make(&chatDaoer)
+			return NewChatServices(chatDaoer)
+		})
+
+		return nil
+	}
+
 }
 
 func NewChatServices(chatDao contracts.ChatDaoer) contracts.ChatServicer {

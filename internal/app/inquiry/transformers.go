@@ -2,7 +2,6 @@ package inquiry
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -20,17 +19,14 @@ func NewTransform() *InquiryTransform {
 
 type TransformedInquiry struct {
 	Uuid          string    `json:"inquiry_uuid"`
-	LobbyUUID     string    `json:"lobby_uuid"`
 	Budget        float64   `json:"budget"`
 	ServiceType   string    `json:"service_type"`
 	InquiryStatus string    `json:"inquiry_status"`
 	CreatedAt     time.Time `json:"created_at"`
 }
 
-func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, lobbyUUID string) (TransformedInquiry, error) {
+func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (TransformedInquiry, error) {
 	budget, err := strconv.ParseFloat(m.Budget, 64)
-
-	log.Printf("DEBUG budget 4 %v", budget)
 
 	if err != nil {
 		return TransformedInquiry{}, err
@@ -42,7 +38,6 @@ func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, lobbyUU
 		ServiceType:   string(m.ServiceType),
 		InquiryStatus: string(m.InquiryStatus),
 		CreatedAt:     m.CreatedAt,
-		LobbyUUID:     lobbyUUID,
 	}
 
 	return tiq, nil
@@ -96,23 +91,17 @@ func (t *InquiryTransform) TransformService(m models.Service, iqer models.User) 
 
 type TransformedPickupInquiry struct {
 	ServiceType   string    `json:"service_type"`
+	InquiryUUID   string    `json:"inquiry_uuid"`
 	InquiryStatus string    `json:"inquiry_status"`
-	Username      string    `json:"username"`
-	InquirerUUID  string    `json:"inquirer_uuid"`
-	AvatarURL     string    `json:"avatar_url"`
-	ChannelUUID   string    `json:"channel_uuid"`
 	ExpiredAt     time.Time `json:"expired_at"`
 	CreatedAt     time.Time `json:"created_at"`
 }
 
-func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry, iqer models.User, channelUuid string) TransformedPickupInquiry {
+func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry) TransformedPickupInquiry {
 	return TransformedPickupInquiry{
 		ServiceType:   iq.ServiceType.ToString(),
 		InquiryStatus: iq.InquiryStatus.ToString(),
-		Username:      iqer.Username,
-		AvatarURL:     iqer.AvatarUrl.String,
-		ChannelUUID:   channelUuid,
-		InquirerUUID:  iqer.Uuid,
+		InquiryUUID:   iq.Uuid,
 		ExpiredAt:     iq.ExpiredAt.Time,
 		CreatedAt:     iq.CreatedAt,
 	}

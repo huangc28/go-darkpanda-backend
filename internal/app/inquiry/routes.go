@@ -59,58 +59,66 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	// A Female user can pickup an inquiry.
 	g.POST(
 		"/:inquiry_uuid/pickup",
-		ValidateInqiuryURIParams(),
 		middlewares.IsFemale(userDAO),
-		ValidateBeforeAlterInquiryStatus(Pickup),
 		func(c *gin.Context) {
 			PickupInquiryHandler(c, container)
 		},
 	)
 
-	// Cancel an inquiry.
-	g.PATCH(
-		"/:inquiry_uuid/cancel",
-		ValidateInqiuryURIParams(),
-		ValidateBeforeAlterInquiryStatus(Cancel),
-		CancelInquiryHandler,
-	)
-
-	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
-	g.PATCH(
-		"/:inquiry_uuid/revert-chat",
-		ValidateInqiuryURIParams(),
+	// A Male user agreed to chat with the female. Both parties
+	// would enter
+	g.POST(
+		"/:inquiry/agree-to-chat",
 		middlewares.IsMale(userDAO),
-		ValidateBeforeAlterInquiryStatus(RevertChat),
 		func(c *gin.Context) {
-			RevertChatHandler(c, container)
+			AgreeToChatInquiryHandler(c, container)
 		},
 	)
 
+	// Cancel an inquiry.
+	//g.PATCH(
+	//"/:inquiry_uuid/cancel",
+	//ValidateInqiuryURIParams(),
+	//ValidateBeforeAlterInquiryStatus(Cancel),
+	//CancelInquiryHandler,
+	//)
+
+	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
+	//g.PATCH(
+	//"/:inquiry_uuid/revert-chat",
+	//ValidateInqiuryURIParams(),
+	//middlewares.IsMale(userDAO),
+	//ValidateBeforeAlterInquiryStatus(RevertChat),
+	//func(c *gin.Context) {
+	//RevertChatHandler(c, container)
+	//},
+	//)
+
 	// expire an inquiry
-	g.PATCH(
-		"/:inquiry_uuid/expire",
-		ValidateInqiuryURIParams(),
-		middlewares.IsMale(userDAO),
-		ValidateBeforeAlterInquiryStatus(Expire),
-		ExpireInquiryHandler,
-	)
+	//g.PATCH(
+	//"/:inquiry_uuid/expire",
+	//ValidateInqiuryURIParams(),
+	//middlewares.IsMale(userDAO),
+	//ValidateBeforeAlterInquiryStatus(Expire),
+	//ExpireInquiryHandler,
+	//)
 
 	// After chatting, inquiry can be approved by girl
-	g.POST(
-		"/:inquiry_uuid/girl-approve",
-		ValidateInqiuryURIParams(),
-		middlewares.IsFemale(userDAO),
-		ValidateBeforeAlterInquiryStatus(GirlApprove),
-		GirlApproveInquiryHandler,
-	)
+	//g.POST(
+	//"/:inquiry_uuid/girl-approve",
+	//ValidateInqiuryURIParams(),
+	//middlewares.IsFemale(userDAO),
+	//ValidateBeforeAlterInquiryStatus(GirlApprove),
+	//GirlApproveInquiryHandler,
+	//)
 
 	// Man book the inquiry
-	g.POST(
-		"/:inquiry_uuid/book",
-		ValidateInqiuryURIParams(),
-		middlewares.IsMale(userDAO),
-		ValidateBeforeAlterInquiryStatus(Book),
-		ManApproveInquiry,
-	)
+	//g.POST(
+	//"/:inquiry_uuid/book",
+	//ValidateInqiuryURIParams(),
+	//middlewares.IsMale(userDAO),
+	//ValidateBeforeAlterInquiryStatus(Book),
+	//ManApproveInquiry,
+	//)
 
 }

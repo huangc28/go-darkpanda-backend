@@ -2,7 +2,6 @@ package inquiry
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -39,30 +38,45 @@ func ValidateInqiuryURIParams() gin.HandlerFunc {
 func ValidateBeforeAlterInquiryStatus(action InquiryActions) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx := context.Background()
-		usrUuid := c.GetString("uuid")
+		//usrUuid := c.GetString("uuid")
 
 		eup, _ := c.Get("uri_params")
 		uriParams := eup.(*InquiryUriParams)
 
 		// ------------------- makesure the user owns the inquiry -------------------
+		//err := q.CheckUserOwnsInquiry(ctx, models.CheckUserOwnsInquiryParams{
+
+		//Uuid:   usrUuid,
+		//Uuid_2: uriParams.InquiryUuid,
+		//})
+
+		//if err == sql.ErrNoRows {
+		//c.AbortWithError(
+		//http.StatusBadRequest,
+		//apperr.NewErr(apperr.UserNotOwnInquiry),
+		//)
+
+		//return
+		//}
+
+		// ------------------- try to emit transition event  -------------------
 		q := models.New(db.GetDB())
-		err := q.CheckUserOwnsInquiry(ctx, models.CheckUserOwnsInquiryParams{
 
-			Uuid:   usrUuid,
-			Uuid_2: uriParams.InquiryUuid,
-		})
+		iq, err := q.GetInquiryByUuid(ctx, uriParams.InquiryUuid)
 
-		if err == sql.ErrNoRows {
+		if err != nil {
 			c.AbortWithError(
 				http.StatusBadRequest,
-				apperr.NewErr(apperr.UserNotOwnInquiry),
+				apperr.NewErr(
+					apperr.FailedToGetInquiryByUuid,
+					err.Error(),
+				),
 			)
 
 			return
+
 		}
 
-		// ------------------- try to emit transition event  -------------------
-		iq, err := q.GetInquiryByUuid(ctx, uriParams.InquiryUuid)
 		fsm, _ := NewInquiryFSM(iq.InquiryStatus)
 
 		if err := fsm.Event(action.ToString()); err != nil {

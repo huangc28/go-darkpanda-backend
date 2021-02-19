@@ -383,4 +383,4 @@ ADD COLUMN lobby_status lobby_status NOT NULL DEFAULT 'waiting';
 
 COMMIT;
 ALTER TYPE lobby_status ADD VALUE 'asking';
-    
+    ALTER TYPE inquiry_status ADD VALUE 'asking';

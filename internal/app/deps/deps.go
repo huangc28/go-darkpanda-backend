@@ -84,11 +84,14 @@ func (dep *DepContainer) DarkFirestoreServiceProvider(c cintrnal.Container) DepR
 func (dep *DepContainer) Run() error {
 	depRegistrars := []DepRegistrar{
 		dep.TwilioServiceProvider(dep.Container),
-
+		dep.DarkFirestoreServiceProvider(dep.Container),
 		user.UserDaoServiceProvider(dep.Container),
 		service.ServiceDAOServiceProvider(dep.Container),
 		inquiry.InquiryDaoServiceProvider(dep.Container),
+
 		chat.ChatDaoServiceProvider(dep.Container),
+		chat.ChatServiceServiceProvider(dep.Container),
+
 		payment.PaymentDAOServiceProvider(dep.Container),
 		image.ImageDAOServiceProvider(dep.Container),
 	}
