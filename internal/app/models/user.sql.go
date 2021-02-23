@@ -19,8 +19,9 @@ INSERT INTO users (
 	premium_type,
 	premium_expiry_date,
 	avatar_url,
-	mobile
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	mobile,
+	description
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile
 `
 
@@ -35,6 +36,7 @@ type CreateUserParams struct {
 	PremiumExpiryDate sql.NullTime   `json:"premium_expiry_date"`
 	AvatarUrl         sql.NullString `json:"avatar_url"`
 	Mobile            sql.NullString `json:"mobile"`
+	Description       sql.NullString `json:"description"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -49,6 +51,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.PremiumExpiryDate,
 		arg.AvatarUrl,
 		arg.Mobile,
+		arg.Description,
 	)
 	var i User
 	err := row.Scan(

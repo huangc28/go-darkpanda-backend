@@ -1,6 +1,8 @@
 package db
 
 import (
+	"net/http"
+
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/jmoiron/sqlx"
 )
@@ -28,4 +30,41 @@ func Transact(db *sqlx.DB, txFunc TxFunc) (error, interface{}) {
 	err, extra := txFunc(tx)
 
 	return err, extra
+}
+
+type FormatResp struct {
+	Err            error
+	ErrCode        string
+	HttpStatusCode int
+	Response       interface{}
+}
+
+type TxFuncFormatResp func(tx *sqlx.Tx) FormatResp
+
+func TransactWithFormatStruct(db *sqlx.DB, txFunc TxFuncFormatResp) FormatResp {
+	tx, err := db.Beginx()
+
+	if err != nil {
+		return FormatResp{
+			Err:     err,
+			ErrCode: apperr.FailedToBeginTx,
+		}
+	}
+
+	fnResp := txFunc(tx)
+
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if fnResp.Err != nil {
+			tx.Rollback()
+		} else {
+			fnResp.Err = tx.Commit()
+			fnResp.ErrCode = apperr.FailedToCommitTx
+			fnResp.HttpStatusCode = http.StatusInternalServerError
+		}
+	}()
+
+	return fnResp
 }

@@ -3,7 +3,14 @@ package models
 // InquiryStatus extension methods
 func (s *InquiryStatus) IsValid() bool {
 	switch *s {
-	case InquiryStatusBooked, InquiryStatusCanceled, InquiryStatusExpired, InquiryStatusInquiring, InquiryStatusChatting, InquiryStatusWaitForInquirerApprove:
+	case InquiryStatusBooked,
+		InquiryStatusCanceled,
+		InquiryStatusExpired,
+		InquiryStatusInquiring,
+		InquiryStatusChatting,
+		InquiryStatusWaitForInquirerApprove,
+		InquiryStatusAsking:
+
 		return true
 	default:
 		return false

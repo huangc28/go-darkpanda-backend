@@ -36,6 +36,7 @@ type DarkFireStorer interface {
 	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
 	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
 	AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error
+	UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) error
 }
 
 type DarkFirestore struct {
@@ -119,9 +120,8 @@ func MapToStruct(data map[string]interface{}, ts interface{}) error {
 }
 
 func (df *DarkFirestore) CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error {
-	if params.Data.Content == "" {
-		params.Data.Content = CreatePrivateChatBotContent
-	}
+
+	params.Data.Content = CreatePrivateChatBotContent
 
 	if params.Data.Type == "" {
 		params.Data.Type = Text
@@ -360,7 +360,7 @@ func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateI
 	data := InquiringUserInfo{
 		InquiryUUID: params.InquiryUUID,
 		Timer:       params.Timer,
-		Status:      params.InquiryStatus,
+		Status:      string(models.InquiryStatusInquiring),
 	}
 
 	wres, err := df.
@@ -376,6 +376,30 @@ func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateI
 	return wres, data, nil
 }
 
+type UpdateInquiryStatusParams struct {
+	InquiryUUID string
+	Status      models.InquiryStatus
+}
+
+func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) error {
+	_, err := df.
+		Client.
+		Collection(InquiryCollectionName).
+		Doc(params.InquiryUUID).
+		Update(ctx, []firestore.Update{
+			{
+				Path:  "status",
+				Value: params.Status,
+			},
+		})
+
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
 type AskingInquiringUserParams struct {
 	InquiryUUID string
 }
@@ -383,22 +407,13 @@ type AskingInquiringUserParams struct {
 // AskingLobbyUser updates the status of lobby user document
 // to be `asking` to notify male user to diplay a popup.
 func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error {
-	_, err := df.
-		Client.
-		Collection(InquiryCollectionName).
-		Doc(params.InquiryUUID).
-		Update(ctx, []firestore.Update{
-			{
-				Path:  "status",
-				Value: models.InquiryStatusAsking,
-			},
-		})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return df.UpdateInquiryStatus(
+		ctx,
+		UpdateInquiryStatusParams{
+			InquiryUUID: params.InquiryUUID,
+			Status:      models.InquiryStatusAsking,
+		},
+	)
 }
 
 type ChatInquiringUserParams struct {
@@ -406,20 +421,11 @@ type ChatInquiringUserParams struct {
 }
 
 func (df *DarkFirestore) ChatInquiringUser(ctx context.Context, params ChatInquiringUserParams) error {
-	_, err := df.
-		Client.
-		Collection(InquiryCollectionName).
-		Doc(params.InquiryUUID).
-		Update(ctx, []firestore.Update{
-			{
-				Path:  "status",
-				Value: models.InquiryStatusChatting,
-			},
-		})
-
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return df.UpdateInquiryStatus(
+		ctx,
+		UpdateInquiryStatusParams{
+			InquiryUUID: params.InquiryUUID,
+			Status:      models.InquiryStatusChatting,
+		},
+	)
 }

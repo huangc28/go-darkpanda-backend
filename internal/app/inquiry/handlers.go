@@ -577,7 +577,6 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 
 	// Retrieve inquiry by inquiry uuid
 	ctx := context.Background()
-
 	q := models.New(db.GetDB())
 	iq, err := q.GetInquiryByUuid(ctx, params.InquiryUuid)
 
@@ -593,7 +592,37 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	fsm, _ := NewInquiryFSM(iq.InquiryStatus)
+	// Retrieve picker info by uuid
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	picker, err := userDao.GetUserByID(int64(iq.PickerID.Int32))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	fsm, err := NewInquiryFSM(iq.InquiryStatus)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateFSM,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	if err := fsm.Event(AgreePickup.ToString()); err != nil {
 		c.AbortWithError(
@@ -607,14 +636,24 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	// Wrap the following actions in transaction
+	//   - Update inquiry status in DB
+	//   - Update inquiry status in firestore
+	//   - Create and join inquirer and picker in a chatroom
+	//   - Create a chatroom for inquirer and picker in firestore
+	// @TODO wrap the following actions in to a service
+	tx := db.GetDB().MustBegin()
+
 	// Update inquiry status in DB.
-	inquiryDao := NewInquiryDAO(db.GetDB())
+	inquiryDao := NewInquiryDAO(tx)
 	if err := inquiryDao.PatchInquiryStatusByUUID(
 		contracts.PatchInquiryStatusByUUIDParams{
 			UUID:          iq.Uuid,
 			InquiryStatus: models.InquiryStatusChatting,
 		},
 	); err != nil {
+		tx.Rollback()
+
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -628,9 +667,14 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 
 	// Update inquiry status in firestore.
 	df := darkfirestore.Get()
-	if err := df.ChatInquiringUser(ctx, darkfirestore.ChatInquiringUserParams{
-		InquiryUUID: iq.Uuid,
-	}); err != nil {
+	if err := df.ChatInquiringUser(
+		ctx,
+		darkfirestore.ChatInquiringUserParams{
+			InquiryUUID: iq.Uuid,
+		},
+	); err != nil {
+		tx.Rollback()
+
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -642,22 +686,183 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Create private chatroom using chat service.
+	// Create private chatroom record in DB Join both inquirer and picker into the chatroom.
 	var chat contracts.ChatServicer
 	depCon.Make(&chat)
 
-	chat.CreateAndJoinChatroom(
+	chatroom, err := chat.WithTx(tx).CreateAndJoinChatroom(
 		iq.ID,
 		int64(iq.InquirerID.Int32),
+		int64(iq.PickerID.Int32),
 	)
+
+	if err != nil {
+		tx.Rollback()
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreatePrivateChatRoom,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Create private chatroom in firestore
+	if err := df.CreatePrivateChatRoom(
+		ctx,
+		darkfirestore.CreatePrivateChatRoomParams{
+			ChatRoomName: chatroom.ChannelUuid.String,
+			Data: darkfirestore.ChatMessage{
+				Type: darkfirestore.Text,
+				From: c.GetString("uuid"),
+			},
+		},
+	); err != nil {
+		tx.Rollback()
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreatePrivateChatroomInFirestore,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	tx.Commit()
 
 	// Respoonse:
 	//   - service provider's info
-	//   - inquiry info
-	//   - private chat uuid in firestore
-	//trf := NewTransform()
+	//   - private chat uuid in firestore for inquirer to subscribe
+	trf := NewTransform().TransformAgreePickupInquiry(
+		*picker,
+		chatroom.ChannelUuid.String,
+	)
 
-	//c.JSON(http.StatusOK, trf.TransformPickupInquiry(iq))
+	c.JSON(http.StatusOK, trf)
+}
+
+type SkipPickupHandlerBody struct {
+	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
+}
+
+func SkipPickupHandler(c *gin.Context, container container.Container) {
+	body := SkipPickupHandlerBody{}
+
+	if err := c.ShouldBindUri(&body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToBindInquiryUriParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	iqDao := NewInquiryDAO(db.GetDB())
+	iq, err := iqDao.GetInquiryByUuid(body.InquiryUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	fsm, err := NewInquiryFSM(iq.InquiryStatus)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToCreateFSM,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if err := fsm.Event(Skip.ToString()); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.InquiryFSMTransitionFailed,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	ctx := context.Background()
+
+	// Change inquiry status from `asking` to `inquiring` in DB.
+	// Change inquiry status from `asking` to `inquiring` in firestore. We use
+	// inquiry uuid retrieved from DB to find the document in firestore.
+	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
+		q := models.New(tx)
+		iq, err := q.UpdateInquiryByUuid(
+			ctx,
+			models.UpdateInquiryByUuidParams{
+				Uuid:          iq.Uuid,
+				InquiryStatus: models.InquiryStatus(fsm.Current()),
+			},
+		)
+
+		if err != nil {
+			return db.FormatResp{
+				Err:     err,
+				ErrCode: apperr.FailedToUpdateInquiry,
+			}
+		}
+
+		var df darkfirestore.DarkFireStorer
+		container.Make(&df)
+
+		err = df.UpdateInquiryStatus(
+			ctx,
+			darkfirestore.UpdateInquiryStatusParams{
+				InquiryUUID: iq.Uuid,
+				Status:      models.InquiryStatus(fsm.Current()),
+			},
+		)
+
+		if err != nil {
+			return db.FormatResp{
+				Err:     err,
+				ErrCode: apperr.FailedToChangeFirestoreInquiryStatus,
+			}
+		}
+
+		return db.FormatResp{
+			Response: iq,
+		}
+	})
+
+	if transResp.Err != nil {
+		c.AbortWithError(
+			transResp.HttpStatusCode,
+			apperr.NewErr(
+				transResp.Err.Error(),
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	c.JSON(http.StatusOK, struct{}{})
 }

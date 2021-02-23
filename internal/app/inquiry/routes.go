@@ -75,6 +75,17 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
+	// A male user is not interested in chatting the the female
+	// who picked up the inquiry. He can `skip` the pickup request
+	// and proceed to the next girl.
+	g.POST(
+		"/:inquiry/skip",
+		middlewares.IsMale(userDAO),
+		func(c *gin.Context) {
+			SkipPickupHandler(c, container)
+		},
+	)
+
 	// Cancel an inquiry.
 	//g.PATCH(
 	//"/:inquiry_uuid/cancel",
