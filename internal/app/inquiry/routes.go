@@ -87,12 +87,13 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	)
 
 	// Cancel an inquiry.
-	//g.PATCH(
-	//"/:inquiry_uuid/cancel",
-	//ValidateInqiuryURIParams(),
-	//ValidateBeforeAlterInquiryStatus(Cancel),
-	//CancelInquiryHandler,
-	//)
+	g.PATCH(
+		"/:inquiry_uuid/cancel",
+		middlewares.IsMale(userDAO),
+		ValidateInqiuryURIParams(),
+		ValidateBeforeAlterInquiryStatus(Cancel),
+		CancelInquiryHandler,
+	)
 
 	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
 	//g.PATCH(
@@ -114,15 +115,6 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	//ExpireInquiryHandler,
 	//)
 
-	// After chatting, inquiry can be approved by girl
-	//g.POST(
-	//"/:inquiry_uuid/girl-approve",
-	//ValidateInqiuryURIParams(),
-	//middlewares.IsFemale(userDAO),
-	//ValidateBeforeAlterInquiryStatus(GirlApprove),
-	//GirlApproveInquiryHandler,
-	//)
-
 	// Man book the inquiry
 	//g.POST(
 	//"/:inquiry_uuid/book",
@@ -132,4 +124,12 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	//ManApproveInquiry,
 	//)
 
+	// After chatting, inquiry can be approved by girl
+	//g.POST(
+	//"/:inquiry_uuid/girl-approve",
+	//ValidateInqiuryURIParams(),
+	//middlewares.IsFemale(userDAO),
+	//ValidateBeforeAlterInquiryStatus(GirlApprove),
+	//GirlApproveInquiryHandler,
+	//)
 }

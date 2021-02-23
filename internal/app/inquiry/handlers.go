@@ -340,22 +340,63 @@ func CancelInquiryHandler(c *gin.Context) {
 	fsm := efsm.(*fsm.FSM)
 
 	// ------------------- Update inquiry status to cancel  -------------------
-	ctx := context.Background()
-	q := models.New(db.GetDB())
+	transResp := db.TransactWithFormatStruct(
+		db.GetDB(),
+		func(tx *sqlx.Tx) db.FormatResp {
+			ctx := context.Background()
+			q := models.New(tx)
 
-	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
-		InquiryStatus: models.InquiryStatus(fsm.Current()),
-		Uuid:          uriParams.InquiryUuid,
-	})
+			uiq, err := q.PatchInquiryStatusByUuid(
+				ctx, models.PatchInquiryStatusByUuidParams{
+					InquiryStatus: models.InquiryStatus(fsm.Current()),
+					Uuid:          uriParams.InquiryUuid,
+				},
+			)
 
-	if err != nil {
+			if err != nil {
+				return db.FormatResp{
+					HttpStatusCode: http.StatusInternalServerError,
+					Err:            err,
+					ErrCode:        apperr.FailedToPatchInquiryStatus,
+				}
+			}
+
+			df := darkfirestore.Get()
+			err = df.UpdateInquiryStatus(
+				ctx,
+				darkfirestore.UpdateInquiryStatusParams{
+					InquiryUUID: uiq.Uuid,
+					Status:      models.InquiryStatusCanceled,
+				},
+			)
+
+			if err != nil {
+				return db.FormatResp{
+					HttpStatusCode: http.StatusInternalServerError,
+					Err:            err,
+					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
+				}
+			}
+
+			return db.FormatResp{
+				Response: uiq,
+			}
+		},
+	)
+
+	if transResp.Err != nil {
 		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
+			transResp.HttpStatusCode,
+			apperr.NewErr(
+				transResp.ErrCode,
+				transResp.Err.Error(),
+			),
 		)
 
 		return
 	}
+
+	uiq := transResp.Response.(models.ServiceInquiry)
 
 	trf, err := NewTransform().TransformInquiry(uiq)
 

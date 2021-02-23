@@ -8,6 +8,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
@@ -15,8 +17,13 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/inquiry_tests/helpers"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/shopspring/decimal"
@@ -33,7 +40,7 @@ type InquiryTestSuite struct {
 
 func (suite *InquiryTestSuite) SetupSuite() {
 	manager.NewDefaultManager(context.Background())
-	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
+	//suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 }
 
 func (suite *InquiryTestSuite) BeforeTest(suiteName, testName string) {
@@ -48,63 +55,86 @@ func (suite *InquiryTestSuite) BeforeTest(suiteName, testName string) {
 }
 
 func (suite *InquiryTestSuite) TestCancelInquirySuccess() {
-	ctx := context.Background()
-	newUserParams := suite.newUserParams
-	newUserParams.Gender = models.GenderMale
-	q := models.New(db.GetDB())
-	usr, err := q.CreateUser(ctx, *newUserParams)
-
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	newInquiryParams, err := util.GenTestInquiryParams(usr.ID)
-
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	newInquiryParams.InquiryStatus = models.InquiryStatusInquiring
-	newInquiry, err := q.CreateInquiry(ctx, *newInquiryParams)
-
-	if err != nil {
-		suite.T().Fatal(err)
-	}
+	iqResp := helpers.CreateInquiryStatusUser(
+		suite.T(),
+		helpers.CreateInquiryStatusParam{
+			Status: models.InquiryStatusInquiring,
+		},
+	)
 
 	// ------------------- request API -------------------
-	header := util.CreateJwtHeaderMap(usr.Uuid, config.GetAppConf().JwtSecret)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
 
-	resp, err := suite.sendRequest(
+	req, err := util.ComposeTestRequest(
 		"PATCH",
-		fmt.Sprintf("/v1/inquiries/%s/cancel", newInquiry.Uuid),
-		struct{}{},
-		header,
+		fmt.Sprintf(
+			"/v1/inquiries/%s/cancel",
+			iqResp.Inquiry.Uuid,
+		),
+		&url.Values{},
+		util.CreateJwtHeaderMap(
+			iqResp.Inquirer.Uuid,
+			config.GetAppConf().JwtSecret,
+		),
 	)
 
 	if err != nil {
 		suite.T().Fatal(err)
 	}
 
+	c.Request = req
+	c.Params = append(
+		c.Params,
+		gin.Param{
+			Key:   "inquiry_uuid",
+			Value: iqResp.Inquiry.Uuid,
+		},
+	)
+
+	jwtactor.JwtValidator(
+		jwtactor.JwtMiddlewareOptions{
+			Secret: config.GetAppConf().JwtSecret,
+		},
+	)(c)
+	inquiry.ValidateInqiuryURIParams()(c)
+	inquiry.ValidateBeforeAlterInquiryStatus(inquiry.Cancel)(c)
+	inquiry.CancelInquiryHandler(c)
+	apperr.HandleError()(c)
+
+	// ------------------- Assertions -------------------
 	respBody := struct {
-		Uuid          string `json:"uuid"`
-		InquiryStatus string `json:"inquiry_status"`
-		Budget        string `json:"budget"`
-		ChannelID     string `json:"channel_id"`
+		Uuid          string  `json:"inquiry_uuid"`
+		InquiryStatus string  `json:"inquiry_status"`
+		Budget        float64 `json:"budget"`
+		ServiceType   string  `json:"service_type"`
 	}{}
 
-	dec := json.NewDecoder(resp.Result().Body)
-	dec.Decode(&respBody)
+	if err = json.Unmarshal(w.Body.Bytes(), &respBody); err != nil {
+		suite.T().Fatal(err)
+	}
 
-	// ------------------- assert test case -------------------
+	// ------------------- Assert test case -------------------
 	assert := assert.New(suite.T())
-	assert.Equal(http.StatusOK, resp.Result().StatusCode)
+	ctx := context.Background()
+
+	assert.Equal(http.StatusOK, w.Code)
 	assert.Equal(string(models.InquiryStatusCanceled), respBody.InquiryStatus)
 
-	siq, _ := q.GetInquiryByUuid(ctx, newInquiry.Uuid)
+	dfClient := darkfirestore.Get().Client
+	iqDoc, err := dfClient.
+		Collection("inquiries").
+		Doc(iqResp.Inquiry.Uuid).
+		Get(ctx)
 
-	assert.Equal(models.InquiryStatusCanceled, siq.InquiryStatus)
-	assert.NotEmpty(respBody.Budget)
-	assert.Equal(fmt.Sprintf("lobby_%s", usr.Uuid), respBody.ChannelID)
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Equal(
+		string(models.InquiryStatusCanceled),
+		iqDoc.Data()["status"],
+	)
 }
 
 func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
@@ -265,7 +295,12 @@ type GetInquiriesSuite struct {
 }
 
 func (suite *GetInquiriesSuite) SetupSuite() {
-	manager.NewDefaultManager(context.Background())
+	manager.
+		NewDefaultManager(context.Background()).
+		Run(func() {
+			deps.Get().Run()
+		})
+
 	suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 }
 

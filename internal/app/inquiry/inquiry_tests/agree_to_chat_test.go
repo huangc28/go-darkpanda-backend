@@ -113,7 +113,7 @@ func (s *AgreeToChatTestSuite) TestAgreeToChatSuccess() {
 
 	req, err := util.ComposeTestRequest(
 		"POST",
-		fmt.Sprintf("/v1/%s/agree-to-chat", iq.Uuid),
+		fmt.Sprintf("/v1/inquiries/%s/agree-to-chat", iq.Uuid),
 		&url.Values{},
 		util.CreateJwtHeaderMap(
 			inquirer.Uuid,
