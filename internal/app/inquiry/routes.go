@@ -86,7 +86,8 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
-	// Cancel an inquiry.
+	// Inquiry can cancel an inquiry via this API. Only workable when inquiry
+	// status is `inquiring`.
 	g.PATCH(
 		"/:inquiry_uuid/cancel",
 		middlewares.IsMale(userDAO),
@@ -96,15 +97,16 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	)
 
 	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
-	//g.PATCH(
-	//"/:inquiry_uuid/revert-chat",
-	//ValidateInqiuryURIParams(),
-	//middlewares.IsMale(userDAO),
-	//ValidateBeforeAlterInquiryStatus(RevertChat),
-	//func(c *gin.Context) {
-	//RevertChatHandler(c, container)
-	//},
-	//)
+	// Moreover, notify both user in the firestore that the other party has left.
+	g.PATCH(
+		"/:inquiry_uuid/revert-chat",
+		ValidateInqiuryURIParams(),
+		middlewares.IsMale(userDAO),
+		ValidateBeforeAlterInquiryStatus(RevertChat),
+		func(c *gin.Context) {
+			RevertChatHandler(c, container)
+		},
+	)
 
 	// expire an inquiry
 	//g.PATCH(

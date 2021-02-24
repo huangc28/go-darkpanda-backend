@@ -1183,135 +1183,97 @@ func RevertChatHandler(c *gin.Context, depCon container.Container) {
 
 	}
 
-	// Leave chat.
-	ctx := context.Background()
-	tx := db.GetDB().MustBegin()
-
-	removedUsers, err := chatDao.WithTx(tx).LeaveAllMemebers(chatroom.ID)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToLeaveAllMembers,
-				err.Error(),
-			),
-		)
-
-		tx.Rollback()
-		return
+	// Leave chat for both inquirer and picker
+	type TransResult struct {
+		RemovedUsers []models.User
+		Inquiry      models.ServiceInquiry
 	}
 
-	// Soft delete chatroom
-	if err := chatDao.
-		WithTx(tx).
-		DeleteChatRoom(chatroom.ID); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToDeleteChat,
-				err.Error(),
-			),
-		)
+	transResp := db.TransactWithFormatStruct(
+		db.GetDB(),
+		func(tx *sqlx.Tx) db.FormatResp {
+			ctx := context.Background()
 
-		tx.Rollback()
-		return
-	}
-
-	// Change inquiry status to `inquiring` if inquiry has not expired.
-	q := models.New(tx)
-	var lobbyChannelID *string
-	if IsInquiryExpired(iq.ExpiredAt.Time) {
-		*iq, err = q.PatchInquiryStatusByUuid(
-			ctx,
-			models.PatchInquiryStatusByUuidParams{
-				Uuid:          iq.Uuid,
-				InquiryStatus: models.InquiryStatusExpired,
-			},
-		)
-
-		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToPatchInquiryStatus,
-					err.Error(),
-				),
-			)
-
-			tx.Rollback()
-			return
-		}
-	} else {
-		*iq, err = q.PatchInquiryStatusByUuid(
-			ctx,
-			models.PatchInquiryStatusByUuidParams{
-				Uuid:          iq.Uuid,
-				InquiryStatus: models.InquiryStatusInquiring,
-			},
-		)
-
-		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToPatchInquiryStatus,
-					err.Error(),
-				),
-			)
-
-			tx.Rollback()
-			return
-		}
-
-		// If requester is male user. Rejoin the user to lobby
-		isMale, err := userDao.
-			WithTx(tx).
-			CheckIsMaleByUuid(c.GetString("uuid"))
-
-		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToCheckGender,
-					err.Error(),
-				),
-			)
-
-			tx.Rollback()
-			return
-		}
-
-		if isMale {
-			lobbyService := NewLobbyService(NewLobbyDao(db.GetDB()))
-			df := darkfirestore.Get()
-
-			*lobbyChannelID, err = lobbyService.
-				WithTx(tx).
-				JoinLobby(iq.ID, df)
+			removedUsers, err := chatDao.WithTx(tx).LeaveAllMemebers(chatroom.ID)
 
 			if err != nil {
-				c.AbortWithError(
-					http.StatusInternalServerError,
-					apperr.NewErr(
-						apperr.FailedToJoinLobby,
-						err.Error(),
-					),
-				)
-
-				tx.Rollback()
-				return
+				return db.FormatResp{
+					Err:     err,
+					ErrCode: apperr.FailedToLeaveAllMembers,
+				}
 			}
-		}
+
+			// Soft delete chatroom
+			if chatDao.
+				WithTx(tx).
+				DeleteChatRoom(chatroom.ID); err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToDeleteChat,
+					HttpStatusCode: http.StatusBadRequest,
+				}
+			}
+
+			// Change inquiry status to `inquiring`
+			q := models.New(tx)
+			iq, err := q.UpdateInquiryByUuid(
+				ctx,
+				models.UpdateInquiryByUuidParams{
+					Uuid:          iq.Uuid,
+					InquiryStatus: models.InquiryStatusInquiring,
+				},
+			)
+
+			if err != nil {
+				return db.FormatResp{
+					Err:     err,
+					ErrCode: apperr.FailedToPatchInquiryStatus,
+				}
+			}
+
+			// Emit new inquiry status to firestore `inquiring`
+			df := darkfirestore.Get()
+			if err := df.UpdateInquiryStatus(
+				ctx,
+				darkfirestore.UpdateInquiryStatusParams{
+					InquiryUUID: iq.Uuid,
+					Status:      models.InquiryStatusInquiring,
+				},
+			); err != nil {
+				return db.FormatResp{
+					HttpStatusCode: http.StatusBadRequest,
+					Err:            err,
+					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
+				}
+			}
+
+			return db.FormatResp{
+				Response: &TransResult{
+					RemovedUsers: removedUsers,
+					Inquiry:      iq,
+				},
+			}
+		},
+	)
+
+	if transResp.Err != nil {
+		c.AbortWithError(
+			transResp.HttpStatusCode,
+			apperr.NewErr(
+				transResp.ErrCode,
+				transResp.Err,
+			),
+		)
+
+		return
 	}
 
-	tx.Commit()
+	transResult := transResp.Response.(*TransResult)
 
 	c.JSON(http.StatusOK, NewTransform().TransformRevertChatting(
-		removedUsers,
-		*iq,
+		transResult.RemovedUsers,
+		transResult.Inquiry,
 		*chatroom,
-		lobbyChannelID,
 	))
 }
 

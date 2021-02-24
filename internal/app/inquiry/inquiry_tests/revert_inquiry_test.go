@@ -2,15 +2,12 @@ package inquirytests
 
 import (
 	"context"
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
@@ -20,11 +17,14 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/inquiry_tests/helpers"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 )
 
 type RevertRevertInquiryTestSuite struct {
@@ -41,46 +41,30 @@ func (suite *RevertRevertInquiryTestSuite) SetupSuite() {
 		})
 }
 
-func (suite *RevertRevertInquiryTestSuite) TestRevertInquiry() {
+func (suite *RevertRevertInquiryTestSuite) TestRevertInquirySuccess() {
 	// Seed female (service provider) and male user (inquirer)
+	iqResp := helpers.CreateInquiryStatusUser(
+		suite.T(),
+		helpers.CreateInquiryStatusParam{
+			Status: models.InquiryStatusChatting,
+		},
+	)
+
 	ctx := context.Background()
 	q := models.New(db.GetDB())
-
-	maleUserParams, _ := util.GenTestUserParams()
-	maleUserParams.Gender = models.GenderMale
-	maleUser, err := q.CreateUser(ctx, *maleUserParams)
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	femaleUserParams, _ := util.GenTestUserParams()
-	femaleUserParams.Gender = models.GenderFemale
-	femaleUser, err := q.CreateUser(ctx, *femaleUserParams)
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	// Seed inquiry with chatting status.
-	testIqParams, _ := util.GenTestInquiryParams(maleUser.ID)
-	testIqParams.ExpiredAt = sql.NullTime{
-		Time:  time.Now().Add(time.Minute * 27),
-		Valid: true,
-	}
-	testIqParams.InquiryStatus = models.InquiryStatusChatting
-	iq, err := q.CreateInquiry(ctx, *testIqParams)
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	chatParams, _ := util.GenTestChat(iq.ID)
+	chatParams, _ := util.GenTestChat(iqResp.Inquiry.ID)
 	chatroom, err := q.CreateChatroom(ctx, *chatParams)
-	log.Printf("DEBUG chatroom ~ %v ", chatroom.ChannelUuid)
+
 	if err != nil {
 		suite.T().Fatal(err)
 	}
 
 	chatDao := chat.NewChatDao(db.GetDB())
-	if err := chatDao.JoinChat(chatroom.ID, maleUser.ID, femaleUser.ID); err != nil {
+	if err := chatDao.JoinChat(
+		chatroom.ID,
+		iqResp.Inquirer.ID,
+		iqResp.Picker.ID,
+	); err != nil {
 		suite.T().Fatal(err)
 	}
 
@@ -89,10 +73,10 @@ func (suite *RevertRevertInquiryTestSuite) TestRevertInquiry() {
 	c, _ := gin.CreateTestContext(w)
 	req, err := util.ComposeTestRequest(
 		"PATCH",
-		fmt.Sprintf("inquiries/%s/revert-chat", iq.Uuid),
+		fmt.Sprintf("inquiries/%s/revert-chat", iqResp.Inquiry.Uuid),
 		&url.Values{},
 		util.CreateJwtHeaderMap(
-			femaleUser.Uuid,
+			iqResp.Picker.Uuid,
 			config.GetAppConf().JwtSecret,
 		),
 	)
@@ -102,10 +86,16 @@ func (suite *RevertRevertInquiryTestSuite) TestRevertInquiry() {
 
 	c.Request = req
 
-	c.Set("uuid", femaleUser.Uuid)
-	c.Set("inquiry", &iq)
+	c.Set("uuid", iqResp.Inquiry.Uuid)
+	c.Set("inquiry", &iqResp.Inquiry)
 	inquiry.RevertChatHandler(c, suite.container)
 	apperr.HandleError()(c)
+
+	log.Printf(
+		"DEBUG inquiries/%s/revert-chat response %v",
+		iqResp.Inquiry.Uuid,
+		w.Body.String(),
+	)
 
 	// Assertions
 	assert := assert.New(suite.T())
@@ -119,13 +109,13 @@ func (suite *RevertRevertInquiryTestSuite) TestRevertInquiry() {
 
 	// Assert female user is not in chat
 	if err := dbi.DB.QueryRow(`
-SELECT EXISTS (
+	SELECT EXISTS (
 	SELECT 1 FROM chatroom_users
 	WHERE deleted_at IS NOT NULL
 	AND chatroom_id = $1
 	AND user_id = $2
-) as exists;
-	`, chatroom.ID, femaleUser.ID).Scan(&femaleUserNotExists); err != nil {
+	) as exists;
+	`, chatroom.ID, iqResp.Picker.ID).Scan(&femaleUserNotExists); err != nil {
 		suite.T().Fatal(err)
 	}
 
@@ -133,35 +123,45 @@ SELECT EXISTS (
 
 	// Assert chatroom has been removed
 	if err := dbi.DB.QueryRow(`
-SELECT EXISTS (
+	SELECT EXISTS (
 	SELECT 1 FROM chatrooms
 	WHERE deleted_at IS NOT NULL
 	AND id = $1
-) as exists;
+	) as exists;
 	`, chatroom.ID).Scan(&chatroomNotExists); err != nil {
 		suite.T().Fatal(err)
 	}
 
 	assert.True(chatroomNotExists)
+
 	// Check inquiry status is changed to inquiring
 	if err := dbi.DB.QueryRow(`
-SELECT EXISTS (
+	SELECT EXISTS (
 	SELECT 1 FROM service_inquiries
 	WHERE id = $1
 	AND inquiry_status = 'inquiring'
-) as exists;
-	`, iq.ID).Scan(&isStatusInquiring); err != nil {
+	) as exists;
+	`, iqResp.Inquiry.ID).Scan(&isStatusInquiring); err != nil {
 		suite.T().Fatal(err)
 	}
 
 	assert.True(isStatusInquiring)
 
-	trf := inquiry.TransformedRevertChatting{}
-	if err := json.Unmarshal(w.Body.Bytes(), &trf); err != nil {
+	// Check firestore inquiry status has been changed to inquiring
+	dfClient := darkfirestore.Get().Client
+	dfResp, err := dfClient.
+		Collection("inquiries").
+		Doc(iqResp.Inquiry.Uuid).
+		Get(ctx)
+
+	if err != nil {
 		suite.T().Fatal(err)
 	}
 
-	assert.NotEmpty(trf.LobbyChannelID)
+	assert.Equal(
+		string(models.InquiryStatusInquiring),
+		dfResp.Data()["status"],
+	)
 }
 
 func TestRevertInquiryTestSuite(t *testing.T) {

@@ -59,10 +59,18 @@ func TransactWithFormatStruct(db *sqlx.DB, txFunc TxFuncFormatResp) FormatResp {
 			panic(p)
 		} else if fnResp.Err != nil {
 			tx.Rollback()
+
+			// If http status code is not set, default to be `500`
+			if fnResp.HttpStatusCode == 0 {
+				fnResp.HttpStatusCode = http.StatusInternalServerError
+			}
 		} else {
 			fnResp.Err = tx.Commit()
-			fnResp.ErrCode = apperr.FailedToCommitTx
-			fnResp.HttpStatusCode = http.StatusInternalServerError
+
+			if fnResp.Err != nil {
+				fnResp.ErrCode = apperr.FailedToCommitTx
+				fnResp.HttpStatusCode = http.StatusInternalServerError
+			}
 		}
 	}()
 

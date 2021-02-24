@@ -335,10 +335,9 @@ type TransformedRevertChatting struct {
 	RemovedUsers    []RemovedUser   `json:"removed_users"`
 	RemovedChatRoom RemovedChatRoom `json:"removed_chatroom"`
 	RevertedInquiry RevertedInquiry `json:"reverted_inquiry"`
-	LobbyChannelID  *string         `json:"lobby_channel_id"`
 }
 
-func (t *InquiryTransform) TransformRevertChatting(removedUsers []models.User, inquiry models.ServiceInquiry, chatroom models.Chatroom, lobbyChannelID *string) *TransformedRevertChatting {
+func (t *InquiryTransform) TransformRevertChatting(removedUsers []models.User, inquiry models.ServiceInquiry, chatroom models.Chatroom) *TransformedRevertChatting {
 	rusers := make([]RemovedUser, 0)
 
 	for _, removedUser := range removedUsers {
@@ -358,7 +357,6 @@ func (t *InquiryTransform) TransformRevertChatting(removedUsers []models.User, i
 			UUID:          inquiry.Uuid,
 			InquiryStatus: inquiry.InquiryStatus.ToString(),
 		},
-		LobbyChannelID: lobbyChannelID,
 	}
 }
 
