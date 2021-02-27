@@ -64,11 +64,10 @@ func (suite *EmitInquiryTestSuite) TestEmitInquirySuccess() {
 	values := url.Values{}
 	values.Set("budget", "100.10")
 	values.Set("service_type", string(models.ServiceTypeSex))
-	values.Set("appointment_time", time.Date(2020, 1, 23, 2, 50, 00, 00, time.UTC).Format(time.RFC3339))
+	values.Set("appointment_time", time.Date(2021, 1, 23, 2, 50, 00, 00, time.UTC).Format(time.RFC3339))
 	values.Set("service_duration", fmt.Sprintf("%d", 30))
 
 	// Request API
-
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
 

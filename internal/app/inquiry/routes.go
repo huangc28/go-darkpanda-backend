@@ -127,11 +127,11 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	//)
 
 	// After chatting, inquiry can be approved by girl
-	//g.POST(
-	//"/:inquiry_uuid/girl-approve",
-	//ValidateInqiuryURIParams(),
-	//middlewares.IsFemale(userDAO),
-	//ValidateBeforeAlterInquiryStatus(GirlApprove),
-	//GirlApproveInquiryHandler,
-	//)
+	g.POST(
+		"/:inquiry_uuid/girl-approve",
+		middlewares.IsFemale(userDAO),
+		func(c *gin.Context) {
+			GirlApproveInquiryHandler(c, container)
+		},
+	)
 }

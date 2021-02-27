@@ -264,7 +264,7 @@ func SendUrlEncodedRequestToApp(e *gin.Engine) SendUrlEncodedRequest {
 			return nil, err
 		}
 
-		MergeMapToHeader(req, headers)
+		MergeFormUrlEncodedToHeader(req, headers)
 
 		rr := httptest.NewRecorder()
 		e.ServeHTTP(rr, req)
@@ -281,12 +281,20 @@ func CreateJwtHeaderMap(uuid, secret string) map[string]string {
 	return header
 }
 
-func MergeMapToHeader(req *http.Request, headers map[string]string) {
+func MergeMapToHeader(req *http.Request, headers map[string]string, contentType string) {
 	for headerKey, headerVal := range headers {
 		req.Header.Set(headerKey, headerVal)
 	}
 
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", contentType)
+}
+
+func MergeFormUrlEncodedToHeader(req *http.Request, headers map[string]string) {
+	MergeMapToHeader(req, headers, "application/x-www-form-urlencoded")
+}
+
+func MergeJsonToHeader(req *http.Request, headers map[string]string) {
+	MergeMapToHeader(req, headers, "application/json")
 }
 
 func ComposeTestRequest(method, url string, params *url.Values, headers map[string]string) (*http.Request, error) {
@@ -300,7 +308,29 @@ func ComposeTestRequest(method, url string, params *url.Values, headers map[stri
 		return nil, err
 	}
 
-	MergeMapToHeader(req, headers)
+	MergeFormUrlEncodedToHeader(req, headers)
+
+	return req, nil
+}
+
+func ComposeJsonTestRequest(method, url string, jsonBody interface{}, headers map[string]string) (*http.Request, error) {
+	bbody, err := json.Marshal(&jsonBody)
+
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(
+		method,
+		url,
+		bytes.NewBuffer(bbody),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	MergeJsonToHeader(req, headers)
 
 	return req, nil
 }

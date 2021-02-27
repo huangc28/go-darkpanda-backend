@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -14,13 +13,16 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/inquiry_tests/helpers"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/middlewares"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
@@ -33,13 +35,19 @@ import (
 
 type InquiryTestSuite struct {
 	suite.Suite
+	depCon           container.Container
 	sendRequest      util.SendRequest
 	newUserParams    *models.CreateUserParams
 	newInquiryParams *models.CreateInquiryParams
 }
 
 func (suite *InquiryTestSuite) SetupSuite() {
-	manager.NewDefaultManager(context.Background())
+	manager.
+		NewDefaultManager(context.Background()).
+		Run(func() {
+			deps.Get().Run()
+			suite.depCon = deps.Get().Container
+		})
 	//suite.sendRequest = util.SendRequestToApp(app.StartApp(gin.Default()))
 }
 
@@ -138,31 +146,16 @@ func (suite *InquiryTestSuite) TestCancelInquirySuccess() {
 }
 
 func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
-	// Create male / female user
-	ctx := context.Background()
-	maleUserParams := suite.newUserParams
-	maleUserParams.Gender = models.GenderMale
-
-	q := models.New(db.GetDB())
-	maleUser, _ := q.CreateUser(ctx, *maleUserParams)
-
-	femaleUserParams, _ := util.GenTestUserParams()
-	femaleUserParams.Gender = models.GenderFemale
-	femaleUser, _ := q.CreateUser(ctx, *femaleUserParams)
-
-	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
-
-	iqParams.InquiryStatus = models.InquiryStatusChatting
-	iq, err := q.CreateInquiry(ctx, *iqParams)
-
-	if err != nil {
-		suite.T().Fatal(err)
-	}
-
-	headers := util.CreateJwtHeaderMap(
-		femaleUser.Uuid,
-		config.GetAppConf().JwtSecret,
+	iqResp := helpers.CreateInquiryStatusUser(
+		suite.T(),
+		helpers.CreateInquiryStatusParam{
+			Status: models.InquiryStatusChatting,
+		},
 	)
+
+	// Send request
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
 
 	body := struct {
 		Price           float64   `json:"price"`
@@ -178,28 +171,49 @@ func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
 		121.5495119,
 	}
 
-	resp, err := suite.sendRequest(
+	req, err := util.ComposeJsonTestRequest(
 		"POST",
-		fmt.Sprintf("/v1/inquiries/%s/girl-approve", iq.Uuid),
+		"/v1/:inquiry_uuid/girl-approve",
 		&body,
-		headers,
+		util.CreateJwtHeaderMap(
+			iqResp.Picker.Uuid,
+			config.GetAppConf().JwtSecret,
+		),
 	)
 
 	if err != nil {
-		log.Fatal(err)
+		suite.T().Fatal(err)
 	}
+
+	c.Request = req
+	c.Params = append(
+		c.Params,
+		gin.Param{
+			Key:   "inquiry_uuid",
+			Value: iqResp.Inquiry.Uuid,
+		},
+	)
+
+	jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
+		Secret: config.GetAppConf().JwtSecret,
+	})(c)
+
+	var userDAO contracts.UserDAOer
+	suite.depCon.Make(&userDAO)
+
+	middlewares.IsFemale(userDAO)
+	inquiry.GirlApproveInquiryHandler(c, suite.depCon)
+	apperr.HandleError()(c)
 
 	// ------------------- assert test cases -------------------
 	respBody := inquiry.TransformedGirlApproveInquiry{}
-	dec := json.NewDecoder(resp.Result().Body)
-	if err := dec.Decode(&respBody); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &respBody); err != nil {
 		suite.T().Fatal(err)
 	}
 
 	assert := assert.New(suite.T())
-	assert.Equal(http.StatusOK, resp.Result().StatusCode)
+	assert.Equal(http.StatusOK, w.Result().StatusCode)
 	assert.Equal(string(models.InquiryStatusWaitForInquirerApprove), respBody.InquiryStatus)
-
 	assert.Equal("3500.00", respBody.Price)
 	assert.Equal("25.0806874", respBody.Lng)
 	assert.Equal("121.5495119", respBody.Lat)
