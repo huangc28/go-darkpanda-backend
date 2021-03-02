@@ -10,6 +10,25 @@ import (
 	"github.com/google/uuid"
 )
 
+type ChatroomType string
+
+const (
+	ChatroomTypeInquiryChat ChatroomType = "inquiry_chat"
+	ChatroomTypeServiceChat ChatroomType = "service_chat"
+)
+
+func (e *ChatroomType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ChatroomType(s)
+	case string:
+		*e = ChatroomType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ChatroomType: %T", src)
+	}
+	return nil
+}
+
 type Gender string
 
 const (
@@ -172,6 +191,7 @@ type Chatroom struct {
 	ExpiredAt    time.Time      `json:"expired_at"`
 	UpdatedAt    sql.NullTime   `json:"updated_at"`
 	DeletedAt    sql.NullTime   `json:"deleted_at"`
+	ChatroomType ChatroomType   `json:"chatroom_type"`
 }
 
 type ChatroomUser struct {

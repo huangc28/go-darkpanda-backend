@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -220,31 +220,40 @@ func (suite *InquiryTestSuite) TestGirlApproveInquirySuccess() {
 }
 
 func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
-	// ------------------- create test data -------------------
-	// Create male / female user
 	ctx := context.Background()
-	maleUserParams := suite.newUserParams
-	maleUserParams.Gender = models.GenderMale
 
-	q := models.New(db.GetDB())
-	maleUser, _ := q.CreateUser(ctx, *maleUserParams)
+	// ------------------- create test data -------------------
+	iqResp := helpers.CreateInquiryStatusUser(
+		suite.T(),
+		helpers.CreateInquiryStatusParam{
+			Status: models.InquiryStatusWaitForInquirerApprove,
+		},
+	)
 
-	femaleUserParams, _ := util.GenTestUserParams()
-	femaleUserParams.Gender = models.GenderFemale
-	femaleUser, err := q.CreateUser(ctx, *femaleUserParams)
+	// ------------------- create chatroom in db / firestore -------------------
+	var chatSrv contracts.ChatServicer
+	suite.depCon.Make(&chatSrv)
+	chatroom, err := chatSrv.CreateAndJoinChatroom(
+		iqResp.Inquiry.ID,
+		iqResp.Inquirer.ID,
+		iqResp.Picker.ID,
+	)
 
 	if err != nil {
 		suite.T().Fatal(err)
 	}
 
-	iqParams, _ := util.GenTestInquiryParams(maleUser.ID)
-
-	iqParams.InquiryStatus = models.InquiryStatusWaitForInquirerApprove
-	iq, err := q.CreateInquiry(ctx, *iqParams)
-
-	if err != nil {
-		suite.T().Fatal(err)
-	}
+	df := darkfirestore.Get()
+	df.CreatePrivateChatRoom(
+		ctx,
+		darkfirestore.CreatePrivateChatRoomParams{
+			ChatRoomName: chatroom.ChannelUuid.String,
+			Data: darkfirestore.ChatMessage{
+				From: iqResp.Inquirer.Uuid,
+				To:   iqResp.Picker.Uuid,
+			},
+		},
+	)
 
 	// ------------------- request API -------------------
 	body := struct {
@@ -255,6 +264,7 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 		Lat                 float64   `json:"lat"`
 		ServiceType         string    `json:"service_type"`
 		ServiceProviderUuid string    `json:"service_provider_uuid"`
+		ChannelUuid         string    `json:"channel_uuid"`
 	}{
 		3600,
 		180,
@@ -262,41 +272,60 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 		25.0806874,
 		121.5495119,
 		string(models.ServiceTypeSex),
-		femaleUser.Uuid,
+		iqResp.Picker.Uuid,
+		chatroom.ChannelUuid.String,
 	}
 
-	headers := util.CreateJwtHeaderMap(
-		maleUser.Uuid,
-		config.GetAppConf().JwtSecret,
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	req, err := util.ComposeJsonTestRequest(
+		"POST",
+		"/:inquiry_uuid/book",
+		&body,
+		util.CreateJwtHeaderMap(
+			iqResp.Inquirer.Uuid,
+			config.GetAppConf().JwtSecret,
+		),
 	)
 
-	resp, err := suite.sendRequest(
-		"POST",
-		fmt.Sprintf("/v1/inquiries/%s/book", iq.Uuid),
-		&body,
-		headers,
+	c.Params = append(
+		c.Params,
+		gin.Param{
+			Key:   "inquiry_uuid",
+			Value: iqResp.Inquiry.Uuid,
+		},
 	)
 
 	if err != nil {
-		suite.T().Fatalf("request failed: %s", err.Error())
+		suite.T().Fatal(err)
 	}
 
-	if resp.Result().StatusCode != http.StatusOK {
-		bbody, _ := ioutil.ReadAll(resp.Result().Body)
-		suite.T().Fatalf("request failed %s", string(bbody))
+	c.Request = req
+
+	var userDao contracts.UserDAOer
+	suite.depCon.Make(&userDao)
+	middlewares.IsMale(userDao)
+
+	inquiry.ManBookInquiry(c, suite.depCon)
+	apperr.HandleError()(c)
+
+	log.Printf("DEBUG api resp %v", w.Body.String())
+
+	if w.Result().StatusCode != http.StatusOK {
+		suite.T().Fatalf("request failed %s", w.Body.String())
 	}
 
 	// ------------------- assert test case -------------------
 	assert := assert.New(suite.T())
 	respBody := &inquiry.TransformedBookedService{}
 
-	dec := json.NewDecoder(resp.Result().Body)
-	if err := dec.Decode(respBody); err != nil {
+	if err := json.Unmarshal(w.Body.Bytes(), &respBody); err != nil {
 		suite.T().Fatal(err)
 	}
 
-	assert.Equal(femaleUser.Username, respBody.ServiceProvider.Username)
-	assert.Equal(femaleUser.Uuid, respBody.ServiceProvider.Uuid)
+	assert.Equal(iqResp.Picker.Username, respBody.ServiceProvider.Username)
+	assert.Equal(iqResp.Picker.Uuid, respBody.ServiceProvider.Uuid)
 
 	assert.Equal(respBody.Lat, fmt.Sprintf("%s0", decimal.NewFromFloat(body.Lat).String()))
 	assert.Equal(respBody.Lng, fmt.Sprintf("%s0", decimal.NewFromFloat(body.Lng).String()))

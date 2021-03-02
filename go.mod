@@ -33,6 +33,7 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/lib/pq v1.8.0
 	github.com/looplab/fsm v0.1.0
+	github.com/prometheus/common v0.4.0
 	github.com/pubnub/go v4.9.1+incompatible
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.6.0

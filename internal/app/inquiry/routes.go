@@ -118,13 +118,15 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	//)
 
 	// Man book the inquiry
-	//g.POST(
-	//"/:inquiry_uuid/book",
-	//ValidateInqiuryURIParams(),
-	//middlewares.IsMale(userDAO),
-	//ValidateBeforeAlterInquiryStatus(Book),
-	//ManApproveInquiry,
-	//)
+	g.POST(
+		"/:inquiry_uuid/book",
+		//ValidateInqiuryURIParams(),
+		middlewares.IsMale(userDAO),
+		//ValidateBeforeAlterInquiryStatus(Book),
+		func(c *gin.Context) {
+			ManBookInquiry(c, container)
+		},
+	)
 
 	// After chatting, inquiry can be approved by girl
 	g.POST(

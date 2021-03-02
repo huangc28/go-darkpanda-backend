@@ -51,6 +51,7 @@ const (
 	FailedToCreateFSM                        = "3000047"
 	FailedToCreatePrivateChatroomInFirestore = "3000048"
 	FailedToUpdateInquiry                    = "3000049"
+	InquiryUUIDNotInParams                   = "3000050"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
@@ -66,4 +67,5 @@ var InquiryErrCodeMsgMap = map[string]string{
 	OnlyFemaleUserCanAccessAPI:             "Only female user can access API",
 	FailedToPickupInquiryDueToDirtyVersion: "Inquiry has been modified by other requests. Please pick another request or try again later",
 	FailedToPickupStatusNotWaiting:         "Inquiry not available, status is not waiting",
+	InquiryUUIDNotInParams:                 "inquiry uuid not exists in uri param",
 }

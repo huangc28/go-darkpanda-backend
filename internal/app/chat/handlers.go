@@ -57,41 +57,41 @@ func EmitTextMessage(c *gin.Context, depCon container.Container) {
 	depCon.Make(&chatDao)
 
 	// check if chatroom has expired
-	channel, err := chatDao.GetChatRoomByChannelUUID(
-		body.ChannelUUID,
-		"expired_at",
-		"message_count",
-	)
+	// channel, err := chatDao.GetChatRoomByChannelUUID(
+	// 	body.ChannelUUID,
+	// 	"expired_at",
+	// 	"message_count",
+	// )
 
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetChatRoomByChannelUuid,
-				err.Error(),
-			),
-		)
+	// if err != nil {
+	// 	c.AbortWithError(
+	// 		http.StatusInternalServerError,
+	// 		apperr.NewErr(
+	// 			apperr.FailedToGetChatRoomByChannelUuid,
+	// 			err.Error(),
+	// 		),
+	// 	)
 
-		return
-	}
+	// 	return
+	// }
 
-	if IsChatroomExpired(channel.ExpiredAt) {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.ChatRoomHasExpired),
-		)
+	// if IsChatroomExpired(channel.ExpiredAt) {
+	// 	c.AbortWithError(
+	// 		http.StatusBadRequest,
+	// 		apperr.NewErr(apperr.ChatRoomHasExpired),
+	// 	)
 
-		return
-	}
+	// 	return
+	// }
 
-	if IsExceedMaxMessageCount(int(channel.MessageCount.Int32)) {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.MessageExceedMaximumCount),
-		)
+	// if IsExceedMaxMessageCount(int(channel.MessageCount.Int32)) {
+	// 	c.AbortWithError(
+	// 		http.StatusBadRequest,
+	// 		apperr.NewErr(apperr.MessageExceedMaximumCount),
+	// 	)
 
-		return
-	}
+	// 	return
+	// }
 
 	// Emit message to firestore.
 	ctx := context.Background()
@@ -372,6 +372,11 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 			channelUUIDMessageMap,
 		),
 	)
+
+	// c.JSON(
+	// 	http.StatusOK,
+	// 	struct{}{},
+	// )
 }
 
 // GetChatrooms gets list of chatrooms based on chatroom type (service / inquiry). If chatroom type

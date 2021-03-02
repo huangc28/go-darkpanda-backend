@@ -1098,31 +1098,40 @@ func GirlApproveInquiryHandler(c *gin.Context, depCon container.Container) {
 }
 
 // Emit event to girl for the purpose of notifying them the iquiry is booked by the man
-type ManApproveInquiryBody struct {
-	Price               float64   `json:"price"`
-	Duration            int       `json:"duration"`
-	AppointmentTime     time.Time `json:"appointment_time"`
-	Lng                 float64   `json:"lng"`
-	Lat                 float64   `json:"lat"`
-	ServiceType         string    `json:"service_type"`
-	ServiceProviderUuid string    `json:"service_provider_uuid"`
+type ManBookInquiryBody struct {
+	Price               float64   `json:"price" binding:"required"`
+	Duration            int       `json:"duration" binding:"required"`
+	AppointmentTime     time.Time `json:"appointment_time" binding:"required"`
+	Lng                 float64   `json:"lng" binding:"required"`
+	Lat                 float64   `json:"lat" binding:"required"`
+	ServiceType         string    `json:"service_type" binding:"required"`
+	ServiceProviderUuid string    `json:"service_provider_uuid" binding:"required"`
+	ChannelUuid         string    `json:"channel_uuid" binding:required`
 }
 
-func ManApproveInquiry(c *gin.Context) {
-	eup, exists := c.Get("uri_params")
+// BookInquiryTransResp stores the data of the transaction that performs
+// booking inquiry logic.
+type BookInquiryTransResp struct {
+	Service  models.Service
+	Chatroom models.Chatroom
+}
 
-	if !exists {
+func ManBookInquiry(c *gin.Context, depCon container.Container) {
+	inquiryUuid := c.Param("inquiry_uuid")
+
+	if inquiryUuid == "" {
 		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.InquiryUUIDNotInParams),
 		)
 
 		return
+
 	}
 
-	body := ManApproveInquiryBody{}
+	body := ManBookInquiryBody{}
 
-	if err := c.ShouldBindJSON(&body); err != nil {
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -1134,28 +1143,8 @@ func ManApproveInquiry(c *gin.Context) {
 		return
 	}
 
-	// Alter inquiry status to "booked"
-	// Create a new service with "pending"
+	q := models.New(db.GetDB())
 	ctx := context.Background()
-	uriParams := eup.(*InquiryUriParams)
-
-	tx, _ := db.GetDB().Begin()
-	q := models.New(tx)
-
-	iq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
-		Uuid:          uriParams.InquiryUuid,
-		InquiryStatus: models.InquiryStatusBooked,
-	})
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
-		)
-
-		tx.Rollback()
-		return
-	}
 
 	srvProvider, err := q.GetUserByUuid(ctx, body.ServiceProviderUuid)
 
@@ -1163,69 +1152,147 @@ func ManApproveInquiry(c *gin.Context) {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetUserIDByUuid,
+				apperr.FailedToGetUserByUuid,
 				err.Error(),
 			),
 		)
 
-		tx.Rollback()
 		return
 	}
 
-	srv, err := q.CreateService(
-		ctx,
-		models.CreateServiceParams{
-			Price: sql.NullString{
-				String: decimal.NewFromFloat(body.Price).String(),
-				Valid:  true,
-			},
-			Duration: sql.NullInt32{
-				Int32: int32(body.Duration),
-				Valid: true,
-			},
-			AppointmentTime: sql.NullTime{
-				Time:  body.AppointmentTime,
-				Valid: true,
-			},
-			Lng: sql.NullString{
-				String: decimal.NewFromFloat(body.Lng).String(),
+	// Wrap db actions of performing booking inquiry in a transaction
+	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
+		transq := models.New(tx)
 
-				Valid: true,
+		uInquiry, err := transq.UpdateInquiryByUuid(
+			ctx,
+			models.UpdateInquiryByUuidParams{
+				Uuid:          inquiryUuid,
+				InquiryStatus: models.InquiryStatusBooked,
 			},
-			Lat: sql.NullString{
-				String: decimal.NewFromFloat(body.Lat).String(),
-				Valid:  true,
+		)
+
+		if err != nil {
+			return db.FormatResp{
+				Err:     err,
+				ErrCode: apperr.FailedToGetUserIDByUuid,
+			}
+		}
+
+		// Change the inquiry status in firestore to booked
+		df := darkfirestore.Get()
+		if err = df.UpdateInquiryStatus(
+			ctx,
+			darkfirestore.UpdateInquiryStatusParams{
+				InquiryUUID: uInquiry.Uuid,
+				Status:      models.InquiryStatusBooked,
 			},
-			ServiceStatus: models.ServiceStatusUnpaid,
-			ServiceType:   iq.ServiceType,
-			InquiryID:     int32(iq.ID),
-			CustomerID: sql.NullInt32{
-				Int32: iq.InquirerID.Int32,
-				Valid: true,
+		); err != nil {
+			return db.FormatResp{
+				Err:     err,
+				ErrCode: apperr.FailedToChangeFirestoreInquiryStatus,
+			}
+		}
+
+		srv, err := q.CreateService(
+			ctx,
+			models.CreateServiceParams{
+				Price: sql.NullString{
+					String: decimal.NewFromFloat(body.Price).String(),
+					Valid:  true,
+				},
+
+				Duration: sql.NullInt32{
+					Int32: int32(body.Duration),
+					Valid: true,
+				},
+
+				AppointmentTime: sql.NullTime{
+					Time:  body.AppointmentTime,
+					Valid: true,
+				},
+
+				Lng: sql.NullString{
+					String: decimal.NewFromFloat(body.Lng).String(),
+
+					Valid: true,
+				},
+
+				Lat: sql.NullString{
+					String: decimal.NewFromFloat(body.Lat).String(),
+					Valid:  true,
+				},
+
+				ServiceStatus: models.ServiceStatusUnpaid,
+				ServiceType:   uInquiry.ServiceType,
+				InquiryID:     int32(uInquiry.ID),
+				CustomerID: sql.NullInt32{
+					Int32: uInquiry.InquirerID.Int32,
+					Valid: true,
+				},
+
+				ServiceProviderID: sql.NullInt32{
+					Int32: int32(srvProvider.ID),
+					Valid: true,
+				},
 			},
-			ServiceProviderID: sql.NullInt32{
-				Int32: int32(srvProvider.ID),
-				Valid: true,
+		)
+
+		if err != nil {
+			return db.FormatResp{
+				Err:     err,
+				ErrCode: apperr.FailedToCreateService,
+			}
+		}
+
+		// We need to change the chatroom type of the given inquiry to service_chat in DB
+		var chatroomDao contracts.ChatDaoer
+		depCon.Make(&chatroomDao)
+
+		chatroom, err := chatroomDao.
+			WithTx(tx).
+			UpdateChatByUuid(
+				contracts.UpdateChatByUuidParams{
+					ChatroomType: models.ChatroomTypeServiceChat,
+					ChannelUuid:  body.ChannelUuid,
+				},
+			)
+
+		if err != nil {
+			return db.FormatResp{
+				Err:     err,
+				ErrCode: apperr.FailedToUpdateChatroom,
+			}
+		}
+
+		return db.FormatResp{
+			Response: &BookInquiryTransResp{
+				Service:  srv,
+				Chatroom: *chatroom,
 			},
-		},
+		}
+	})
+
+	if transResp.Err != nil {
+		c.AbortWithError(
+			transResp.HttpStatusCode,
+			apperr.NewErr(
+				transResp.ErrCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	transResult := transResp.Response.(*BookInquiryTransResp)
+
+	trf := NewTransform().TransformBookedService(
+		transResult.Service,
+		srvProvider,
 	)
 
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToCreateService,
-				err.Error(),
-			),
-		)
-
-		tx.Rollback()
-		return
-	}
-
-	tx.Commit()
-
-	c.JSON(http.StatusOK, NewTransform().TransformBookedService(srv, srvProvider))
+	c.JSON(http.StatusOK, trf)
 }
 
 // @TODO

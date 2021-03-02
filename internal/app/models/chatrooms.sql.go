@@ -15,7 +15,7 @@ INSERT INTO chatrooms(
     channel_uuid,
     message_count
 ) VALUES ($1, $2, $3)
-RETURNING id, inquiry_id, channel_uuid, message_count, enabled, created_at, expired_at, updated_at, deleted_at
+RETURNING id, inquiry_id, channel_uuid, message_count, enabled, created_at, expired_at, updated_at, deleted_at, chatroom_type
 `
 
 type CreateChatroomParams struct {
@@ -37,6 +37,7 @@ func (q *Queries) CreateChatroom(ctx context.Context, arg CreateChatroomParams) 
 		&i.ExpiredAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
+		&i.ChatroomType,
 	)
 	return i, err
 }

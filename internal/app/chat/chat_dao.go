@@ -10,6 +10,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
+	"github.com/prometheus/common/log"
 	"github.com/teris-io/shortid"
 )
 
@@ -301,4 +302,34 @@ AND picker_id = $2
 	}
 
 	return chatrooms, nil
+}
+
+func (dao *ChatDao) UpdateChatByUuid(params contracts.UpdateChatByUuidParams) (*models.Chatroom, error) {
+	query := `
+UPDATE chatrooms SET
+	message_count = COALESCE($1, message_count),
+	enabled = COALESCE($2, enabled),
+	expired_at = COALESCE($3, expired_at),
+	chatroom_type = COALESCE($4, chatroom_type)
+WHERE channel_uuid = $5
+RETURNING *;
+`
+	var chatroom models.Chatroom
+
+	if err := dao.
+		DB.
+		QueryRowx(
+			query,
+			params.MessageCount,
+			params.Enabled,
+			params.ExpiredAt,
+			params.ChatroomType,
+			params.ChannelUuid,
+		).StructScan(&chatroom); err != nil {
+		log.Errorf("failed to update chatroom %v", err)
+
+		return nil, err
+	}
+
+	return &chatroom, nil
 }
