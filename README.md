@@ -19,52 +19,85 @@ Docker compose environment consist of the following:
 - postgres for testing
 - redis
 
+## Environment variables
+
+Please make sure your environment variable is setup properly before proceeding any development.
+Create `env.toml` in the project directory. Paste the following content in file.
+
+[env.toml](https://gist.github.com/huangc28/0ffa71dffefc462728e602d0919cf9bd)
+
+## Install docker
+
+Please make sure you have installed [docker](https://www.docker.com/get-started) on your machine
+
+## Run on local
+
 run docker compose for local environment
 
 ```
-docker-compose -f build/package/docker-compose.yaml --env-file build/package/.docker.env up -d
-```
-
-
-**list of docker services**
+make run_local
 
 ```
-docker-compose -f build/package/docker-compose.yaml --env-file build/package/.docker.env ps -a
 
+You can then connect to local postgres and redis.
+
+**Local postgres**
+
+```
+host     = "127.0.0.1"
+port     = 5432
+user     = "postgres"
+password = "1234"
+dbname   = "darkpanda"
+```
+
+**Local test postgres**
+
+```
+host     = "127.0.0.1"
+port     = 5433
+user     = "postgres"
+password = "1234"
+dbname   = "darkpanda"
+```
+
+**Local Redis**
+
+```
+addr = "localhost:6379"
+password = ""
+DB = 0
 ```
 
 # Migrations and model generation
 
 We use [go-migration](https://github.com/golang-migrate/migrate) to manage migrations for this project.
 
-**local postgres DSN**
+When first time host up this project, please run the migration first before proceed development.
 
-```
-postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable
-```
-
-**create**
-
-```
-migrate create -ext sql -dir db/migrations -seq ${MIGRATION_NAME}
-```
+Prompt `make migrate_up` to run all migration schemes.
 
 **up**
 
 ```
-migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' up
+make migrate_up
 ```
 
 **down**
 
 ```
-migrate -path=db/migrations/ -database 'postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable' down
+make migrate_down
+```
+**create**
+
+```
+make migrate_create {MIGRATION_NAME}
 ```
 
 Run the following command to generate models in go code from migration contents:
 
 ```
-go run cmd/genmodel/main.go gen
+make gen_model
 ```
 
 It reads and collect migration SQL from `db/migrations`. The collected content will be written to `db/schema.sql`. Moreover, it generate go code via [sqlc](https://github.com/kyleconroy/sqlc) based on SQL in `db/migrations/schema.sql`.
@@ -89,3 +122,11 @@ The content in `db/migrations/schema.sql` will be truncated everytime running th
 ## Notification
 
 - [] Notify male user when is at service appointment time.
+
+# Miscellaneous
+
+**local postgres DSN**
+
+```
+postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable
+```
