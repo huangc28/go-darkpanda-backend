@@ -94,7 +94,9 @@ make migrate_down
 make migrate_create {MIGRATION_NAME}
 ```
 
-Run the following command to generate models in go code from migration contents:
+## Generate models from SQL migration
+
+Every time you apply a migration, the data model in golang should be generated again. Run the following command to generate models in go code from migration contents:
 
 ```
 make gen_model
