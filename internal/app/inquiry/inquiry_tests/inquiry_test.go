@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -310,8 +309,6 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 	inquiry.ManBookInquiry(c, suite.depCon)
 	apperr.HandleError()(c)
 
-	log.Printf("DEBUG api resp %v", w.Body.String())
-
 	if w.Result().StatusCode != http.StatusOK {
 		suite.T().Fatalf("request failed %s", w.Body.String())
 	}
@@ -329,6 +326,22 @@ func (suite *InquiryTestSuite) TestManBooksInquirySuccess() {
 
 	assert.Equal(respBody.Lat, fmt.Sprintf("%s0", decimal.NewFromFloat(body.Lat).String()))
 	assert.Equal(respBody.Lng, fmt.Sprintf("%s0", decimal.NewFromFloat(body.Lng).String()))
+
+	// Makesure inquiry status has changed to `booked`.
+	fsResp, err := df.
+		Client.
+		Collection("inquiries").
+		Doc(iqResp.Inquiry.Uuid).
+		Get(ctx)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	assert.Equal(fsResp.Data()["status"], models.InquiryStatusBooked.ToString())
+
+	// Remove inquiry
+	helpers.RemoveInquiry(ctx, iqResp.Inquiry.Uuid)
 }
 
 // GetInquiriesSuite test cases when retrieving inquiries.

@@ -107,3 +107,13 @@ func CreateInquiryStatusUser(t *testing.T, params CreateInquiryStatusParam) Crea
 		Inquirer: inquirer,
 	}
 }
+
+func RemoveInquiry(ctx context.Context, inquiryUuid string) error {
+	dfClient := darkfirestore.Get().Client
+	_, err := dfClient.
+		Collection("inquiries").
+		Doc(inquiryUuid).
+		Delete(ctx)
+
+	return err
+}

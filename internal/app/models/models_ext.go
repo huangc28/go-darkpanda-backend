@@ -17,8 +17,8 @@ func (s *InquiryStatus) IsValid() bool {
 	}
 }
 
-func (s *InquiryStatus) ToString() string {
-	return string(*s)
+func (s InquiryStatus) ToString() string {
+	return string(s)
 }
 
 func (st *ServiceType) ToString() string {
