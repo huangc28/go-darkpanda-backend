@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"strings"
+	"time"
 
 	faker "github.com/bxcodec/faker/v3"
 	"github.com/gin-gonic/gin"
@@ -46,6 +47,10 @@ func GenTestUserParams() (*models.CreateUserParams, error) {
 	}
 
 	p.Username = faker.Username()
+	p.Description = sql.NullString{
+		Valid:  true,
+		String: faker.Sentence(),
+	}
 	p.Uuid = sid
 	p.Gender = randomGender()
 	p.PhoneVerified = randomBool()
@@ -58,10 +63,10 @@ func GenTestUserParams() (*models.CreateUserParams, error) {
 		String: fmt.Sprintf("%s-%d", GenRandStringRune(3), Gen4DigitNum(1000, 9999)),
 		Valid:  true,
 	}
-	// p.AvatarUrl = sql.NullString{
-	// 	Valid: true,
-	// 	String
-	// }
+	p.AvatarUrl = sql.NullString{
+		Valid:  true,
+		String: faker.URL(),
+	}
 
 	return p, nil
 }
@@ -138,6 +143,11 @@ func GenTestInquiryParams(inquirerID int64) (*models.CreateInquiryParams, error)
 	}
 	p.Lng = sql.NullString{
 		Valid: false,
+	}
+
+	p.AppointmentTime = sql.NullTime{
+		Valid: true,
+		Time:  time.Now().AddDate(0, 0, 1),
 	}
 
 	return p, nil

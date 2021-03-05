@@ -9,7 +9,6 @@ import (
 )
 
 const createChatroom = `-- name: CreateChatroom :one
-
 INSERT INTO chatrooms(
     inquiry_id,
     channel_uuid,

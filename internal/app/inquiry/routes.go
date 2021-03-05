@@ -108,21 +108,10 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
-	// expire an inquiry
-	//g.PATCH(
-	//"/:inquiry_uuid/expire",
-	//ValidateInqiuryURIParams(),
-	//middlewares.IsMale(userDAO),
-	//ValidateBeforeAlterInquiryStatus(Expire),
-	//ExpireInquiryHandler,
-	//)
-
 	// Man book the inquiry
 	g.POST(
 		"/:inquiry_uuid/book",
-		//ValidateInqiuryURIParams(),
 		middlewares.IsMale(userDAO),
-		//ValidateBeforeAlterInquiryStatus(Book),
 		func(c *gin.Context) {
 			ManBookInquiry(c, container)
 		},

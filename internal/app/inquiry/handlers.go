@@ -415,57 +415,6 @@ func CancelInquiryHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, trf)
 }
 
-func ExpireInquiryHandler(c *gin.Context) {
-	eup, uriParamExists := c.Get("uri_params")
-	efsm, nFsmExists := c.Get("next_fsm_state")
-
-	if !uriParamExists || !nFsmExists {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
-		)
-
-		return
-	}
-
-	uriParams := eup.(*InquiryUriParams)
-	fsm := efsm.(*fsm.FSM)
-
-	// ------------------- Update inquiry status to expire  -------------------
-	ctx := context.Background()
-	q := models.New(db.GetDB())
-
-	uiq, err := q.PatchInquiryStatusByUuid(ctx, models.PatchInquiryStatusByUuidParams{
-		InquiryStatus: models.InquiryStatus(fsm.Current()),
-		Uuid:          uriParams.InquiryUuid,
-	})
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(apperr.FailedToPatchInquiryStatus),
-		)
-
-		return
-	}
-
-	trf, err := NewTransform().TransformInquiry(uiq)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToTransformResponse,
-				err.Error(),
-			),
-		)
-		return
-
-	}
-
-	c.JSON(http.StatusOK, trf)
-}
-
 type PickupInquiryHandlerParams struct {
 	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
 }
@@ -1386,7 +1335,8 @@ func RevertChatHandler(c *gin.Context, depCon container.Container) {
 				}
 			}
 
-			// Emit new inquiry status to firestore `inquiring`
+			// Emit new inquiry status to firestore `inquiring` so that the other
+			// party knows to quit the chatroom.
 			df := darkfirestore.Get()
 			if err := df.UpdateInquiryStatus(
 				ctx,
