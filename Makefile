@@ -10,11 +10,18 @@ run_local_docker:
 		-f build/package/docker-compose.yaml \
 		--env-file build/package/.docker.env up \
 		-d
-docker_compose:
+
+docker_compose_restart:
 	docker-compose \
 		-f build/package/docker-compose.yaml \
 		--env-file build/package/.docker.env \
-		$(filter-out $@, $(MAKECMDGOALS))
+		restart
+
+docker_compose_list:
+	docker-compose \
+		-f build/package/docker-compose.yaml \
+		--env-file build/package/.docker.env \
+		ps -a
 
 serve_swagger: build_swagger
 	swagger serve swagger/master.yml -p 3333 --host localhost --flavor=swagger

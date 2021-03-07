@@ -12,7 +12,11 @@ type TransformedGetIncomingService struct {
 	ChannelUuid     string    `json:"channel_uuid"`
 }
 
-func TransformGetIncomingServices(results []IncomingServiceResult) []TransformedGetIncomingService {
+type TransformedGetIncomingServices struct {
+	Services []TransformedGetIncomingService `json:"services"`
+}
+
+func TransformGetServicesResults(results []ServiceResult) TransformedGetIncomingServices {
 	trfRes := make([]TransformedGetIncomingService, 0)
 
 	for _, res := range results {
@@ -29,5 +33,7 @@ func TransformGetIncomingServices(results []IncomingServiceResult) []Transformed
 		trfRes = append(trfRes, c)
 	}
 
-	return trfRes
+	return TransformedGetIncomingServices{
+		Services: trfRes,
+	}
 }

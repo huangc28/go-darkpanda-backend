@@ -3,12 +3,13 @@ package service
 import (
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 
 	cintrnal "github.com/golobby/container/pkg/container"
 )
@@ -39,15 +40,7 @@ func (dao *ServiceDAO) WithTx(tx db.Conn) contracts.ServiceDAOer {
 	return dao
 }
 
-// GetIncomingServicesByProviderId Gets list of services by service provider ID.
-//   - service uuid
-//   - service status
-//   - appointment time
-//   - customer name
-//   - customer uuid
-//   - customer avatar
-//   - chatroom channel uuid to subscribe to chatroom
-type IncomingServiceResult struct {
+type ServiceResult struct {
 	ServiceUuid     sql.NullString `json:"service_uuid"`
 	ServiceStatus   sql.NullString `json:"service_status"`
 	AppointmentTime sql.NullTime   `json:"appointment_time"`
@@ -57,8 +50,44 @@ type IncomingServiceResult struct {
 	ChannelUuid     sql.NullString `json:"channel_uuid"`
 }
 
-func (dao *ServiceDAO) GetIncomingServicesByProviderId(providerID int) ([]IncomingServiceResult, error) {
-	sql := `
+// GetServicesByStatus gets services of given status
+//   - service uuid
+//   - service status
+//   - appointment time
+//   - customer name
+//   - customer uuid
+//   - customer avatar
+//   - chatroom channel uuid to subscribe to chatroom
+func (dao *ServiceDAO) GetServicesByStatus(providerID int, gender models.Gender, offset, perPage int, slist ...models.ServiceStatus) ([]ServiceResult, error) {
+	// Default to have 10 records perpage
+	if perPage == 0 {
+		perPage = 10
+	}
+
+	// Start formatting status condition string
+	sCondStr := ""
+
+	for _, s := range slist {
+		sCondStr += fmt.Sprintf(
+			"services.service_status = '%s' OR ",
+			s.ToString(),
+		)
+	}
+
+	sCondStr = fmt.Sprintf("(%s)", strings.TrimSuffix(sCondStr, " OR "))
+
+	// If gender equals female, the column to match should be `service_provider_id`
+	// If gender equals male, the columns to match should be `customer_id`
+	whereClause := ""
+
+	if gender == models.GenderFemale {
+		whereClause += "services.service_provider_id = $1"
+	} else {
+		whereClause += "services.customer_id = $1"
+	}
+
+	sql := fmt.Sprintf(
+		`
 SELECT
 	services.uuid as service_uuid,
 	services.service_status,
@@ -70,36 +99,36 @@ SELECT
 FROM services
 INNER JOIN users
 	ON services.customer_id = users.id
-JOIN chatrooms
+LEFT JOIN chatrooms
 	ON services.inquiry_id = chatrooms.inquiry_id
 WHERE
-	service_provider_id = $1
-AND
-	(
-		service_status = $2 OR
-		service_status = $3
-	);
-	`
+	%s
+AND %s
+ORDER BY services.created_at DESC
+LIMIT $2
+OFFSET $3;
+	`,
+		whereClause,
+		sCondStr,
+	)
 
 	rows, err := dao.DB.Queryx(
 		sql,
 		providerID,
-		models.ServiceStatusUnpaid,
-		models.ServiceStatusToBeFulfilled,
+		perPage,
+		offset,
 	)
 
 	if err != nil {
-		log.Errorf("Failed to get incoming services")
+		log.Errorf("Failed to get service list")
 
 		return nil, err
 	}
 
 	defer rows.Close()
-
-	srvs := make([]IncomingServiceResult, 0)
-
+	srvs := make([]ServiceResult, 0)
 	for rows.Next() {
-		srv := IncomingServiceResult{}
+		srv := ServiceResult{}
 		if err := rows.StructScan(&srv); err != nil {
 			return nil, err
 		}
@@ -108,6 +137,71 @@ AND
 	}
 
 	return srvs, nil
+}
+
+type GetServicesParams struct {
+	UserID  int
+	Offset  int
+	PerPage int
+}
+
+// GetIncomingServicesByProviderId Gets list of services of following service status:
+//   - unpaid
+//   - to_be_fulfilled
+func (dao *ServiceDAO) GetIncomingServicesByProviderId(p GetServicesParams) ([]ServiceResult, error) {
+	return dao.GetServicesByStatus(
+		p.UserID,
+		models.GenderFemale,
+		p.Offset,
+		p.PerPage,
+		models.ServiceStatusUnpaid,
+		models.ServiceStatusToBeFulfilled,
+	)
+}
+
+// GetOverduedServicesByProviderId Get list of services of following service status:
+//   - canceled
+//   - completed
+//   - failed_due_to_due
+//   - failed_due_to_girl
+//   - failed_due_to_man
+func (dao *ServiceDAO) GetOverduedServicesByProviderId(p GetServicesParams) ([]ServiceResult, error) {
+	return dao.GetServicesByStatus(
+		p.UserID,
+		models.GenderFemale,
+		p.Offset,
+		p.PerPage,
+		models.ServiceStatusCanceled,
+		models.ServiceStatusCompleted,
+		models.ServiceStatusFailedDueToBoth,
+		models.ServiceStatusFailedDueToGirl,
+		models.ServiceStatusFailedDueToMan,
+	)
+}
+
+func (dao *ServiceDAO) GetIncomingServicesByCustomerId(p GetServicesParams) ([]ServiceResult, error) {
+	return dao.GetServicesByStatus(
+		p.UserID,
+		models.GenderMale,
+		p.Offset,
+		p.PerPage,
+		models.ServiceStatusUnpaid,
+		models.ServiceStatusToBeFulfilled,
+	)
+}
+
+func (dao *ServiceDAO) GetOverduedServicesByCustomerId(p GetServicesParams) ([]ServiceResult, error) {
+	return dao.GetServicesByStatus(
+		p.UserID,
+		models.GenderMale,
+		p.Offset,
+		p.PerPage,
+		models.ServiceStatusCanceled,
+		models.ServiceStatusCompleted,
+		models.ServiceStatusFailedDueToBoth,
+		models.ServiceStatusFailedDueToGirl,
+		models.ServiceStatusFailedDueToMan,
+	)
 }
 
 func (dao *ServiceDAO) GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error) {
