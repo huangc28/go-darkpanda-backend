@@ -33,9 +33,7 @@ type RevokeJwtBody struct {
 }
 
 func (ac *AuthController) RevokeJwtHandler(c *gin.Context) {
-	var (
-		ctx context.Context = context.Background()
-	)
+	var ctx context.Context = context.Background()
 
 	jwt := c.GetString("jwt")
 
@@ -61,7 +59,7 @@ type SendLoginVerifyCodeBody struct {
 	Username string `form:"username" json:"username" binding:"required,gt=0"`
 }
 
-func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context) {
+func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	var (
 		body SendLoginVerifyCodeBody
 		ctx  context.Context = context.Background()
@@ -218,10 +216,13 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context) {
 	}
 
 	// send verify code via twilio
-	smsResp, err := ac.TwilioClient.SendSMS(
+	var tc twilio.TwilioServicer
+	depCon.Make(&tc)
+
+	smsResp, err := tc.SendSMS(
 		viper.GetString("twilio.from"),
 		user.Mobile.String,
-		fmt.Sprintf("your darkpanda verify code: \n\n %d", verifyCode.BuildCode()),
+		fmt.Sprintf("your darkpanda verify code: \n\n %s", verifyCode.BuildCode()),
 	)
 
 	if twilio.HandleSendTwilioError(c, err) != nil {
@@ -249,7 +250,7 @@ type VerifyLoginCodeBody struct {
 	VerifyDig  int    `form:"verify_dig" json:"verify_dig" bind:"required,gt=0"`
 }
 
-func (ac *AuthController) VerifyLoginCode(c *gin.Context) {
+func (ac *AuthController) VerifyLoginCode(c *gin.Context, depCon container.Container) {
 	var (
 		body VerifyLoginCodeBody
 		ctx  context.Context = context.Background()
@@ -286,7 +287,29 @@ func (ac *AuthController) VerifyLoginCode(c *gin.Context) {
 
 	// Retrieve auth record from redis
 	authDao := NewAuthDao(db.GetRedis())
-	authRecord, _ := authDao.GetLoginRecord(ctx, user.Uuid)
+	authRecord, err := authDao.GetLoginRecord(ctx, user.Uuid)
+
+	if err != nil {
+		if err == redis.Nil {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(apperr.LoginVerifyCodeNotFound),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetAuthenticatorRecord,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
 
 	if authRecord.VerifyCode != fmt.Sprintf("%s-%d", body.VerifyChar, body.VerifyDig) {
 		c.AbortWithError(
@@ -297,7 +320,7 @@ func (ac *AuthController) VerifyLoginCode(c *gin.Context) {
 		return
 	}
 
-	// Verify code matches, Generate jwt token.
+	// Verify code matches, generate jwt token.
 	jwt, err := jwtactor.CreateToken(
 		user.Uuid,
 		config.GetAppConf().JwtSecret,

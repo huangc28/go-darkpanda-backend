@@ -8,20 +8,24 @@ import (
 )
 
 type UpdateUserInfoParams struct {
-	AvatarURL   *string
-	Nationality *string
-	Region      *string
-	Age         *int
-	Height      *float64
-	Weight      *float64
-	Description *string
-	BreastSize  *string
-	Uuid        string
+	AvatarURL       *string
+	Nationality     *string
+	Region          *string
+	Age             *int
+	Height          *float64
+	Weight          *float64
+	Description     *string
+	BreastSize      *string
+	PhoneVerifyCode *string
+	PhoneVerified   *bool
+	Uuid            string
+	Mobile          string
 }
 
 type UserDAOer interface {
 	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*models.UserWithInquiries, error)
-	UpdateUserInfoByUuid(ctx context.Context, p UpdateUserInfoParams) (*models.User, error)
+	GetUserByUsername(username string, fields ...string) (*models.User, error)
+	UpdateUserInfoByUuid(p UpdateUserInfoParams) (*models.User, error)
 	GetUserByUuid(uuid string, fields ...string) (*models.User, error)
 	GetUserByID(ID int64, fields ...string) (*models.User, error)
 	CheckIsMaleByUuid(uuid string) (bool, error)

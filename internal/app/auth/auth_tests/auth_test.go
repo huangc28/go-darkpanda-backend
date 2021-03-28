@@ -76,8 +76,6 @@ func (suite *UserAuthTestSuite) TestSendLoginVerifyCodeSuccess() {
 		make(map[string]string),
 	)
 
-	//log.Printf("DEBUG resp %v", rr.Body.String())
-
 	if err != nil {
 		log.Fatal(err)
 	}

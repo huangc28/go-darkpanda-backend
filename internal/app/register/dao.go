@@ -41,7 +41,7 @@ func (dao *RegisterDAO) CheckReferCodeExists(ctx context.Context, referCode stri
 
 func (dao *RegisterDAO) GetReferralCodeByReferralCode(refCode string) (models.UserRefcode, error) {
 	query := `
-SELECT id, invitor_id, invitee_id, ref_code, ref_code_type, created_at, updated_at, deleted_at, expired_at FROM user_refcodes
+SELECT id, invitor_id, invitee_id, ref_code, ref_code_type, created_at, updated_at, deleted_at FROM user_refcodes
 WHERE ref_code = $1 LIMIT 1
 `
 	var refCodeM models.UserRefcode

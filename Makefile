@@ -8,19 +8,19 @@ run_local_backend: run_local_docker
 run_local_docker:
 	docker-compose \
 		-f build/package/docker-compose.yaml \
-		--env-file build/package/.docker.env up \
+		--env-file ./.env.dev up \
 		-d
 
 docker_compose_restart:
 	docker-compose \
 		-f build/package/docker-compose.yaml \
-		--env-file build/package/.docker.env \
+		--env-file ./.env.dev \
 		restart
 
 docker_compose_list:
 	docker-compose \
 		-f build/package/docker-compose.yaml \
-		--env-file build/package/.docker.env \
+		--env-file ./.env.dev \
 		ps -a
 
 serve_swagger: build_swagger

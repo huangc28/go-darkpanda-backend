@@ -20,4 +20,11 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		VerifyReferralCodeHandler(c, depCon)
 	})
 
+	g.POST("/send-mobile-verify-code", func(c *gin.Context) {
+		SendMobileVerifyCodeHandler(c, depCon)
+	})
+
+	g.POST("/verify-mobile", func(c *gin.Context) {
+		VerifyMobileHandler(c, depCon)
+	})
 }

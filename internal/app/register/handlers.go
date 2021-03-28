@@ -3,15 +3,24 @@ package register
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
 	container "github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	"github.com/jmoiron/sqlx"
+	"github.com/spf13/viper"
 	"github.com/teris-io/shortid"
 )
 
@@ -163,7 +172,7 @@ func RegisterHandler(c *gin.Context) {
 }
 
 type VerifyUsernameBody struct {
-	Username string `form:"username"`
+	Username string `form:"username" json:"username"`
 }
 
 func VerifyUsernameHandler(c *gin.Context, depCon container.Container) {
@@ -213,7 +222,7 @@ func VerifyUsernameHandler(c *gin.Context, depCon container.Container) {
 }
 
 type VerifyReferralCodeBody struct {
-	ReferralCode string `form:"referral_code" json:"referral_code"`
+	ReferralCode string `form:"referral_code" json:"referral_code" binding:"required"`
 }
 
 func VerifyReferralCodeHandler(c *gin.Context, depCon container.Container) {
@@ -263,4 +272,234 @@ func VerifyReferralCodeHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	c.JSON(http.StatusOK, struct{}{})
+}
+
+type SendMobileVerifyCodeHandlerBody struct {
+	Uuid   string `json:"uuid" form:"uuid" binding:"required,gt=0"`
+	Mobile string `json:"mobile" form:"mobile" binding:"required"`
+}
+
+func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
+	var body SendMobileVerifyCodeHandlerBody
+
+	// Find user by uuid.
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToSendMobileVerifyCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	user, err := userDao.GetUserByUuid(body.Uuid, "id")
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.UserNotFoundByUuid,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Generate phone verify code and update user record.
+	vs := genverifycode.GenVerifyCode()
+	pVs := vs.BuildCode()
+
+	log.Printf("DEBUG user uuid ** %v", body.Uuid)
+
+	if _, err = userDao.UpdateUserInfoByUuid(
+		contracts.UpdateUserInfoParams{
+			Uuid:            body.Uuid,
+			PhoneVerifyCode: &pVs,
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateUserPhoneVerifyCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Send mobile verify code by twilio
+	var tc twilio.TwilioServicer
+	depCon.Make(&tc)
+	smsResp, err := tc.SendSMS(
+		viper.GetString("twilio.from"),
+		body.Mobile,
+		fmt.Sprintf("your darkpanda verify code: \n\n %s", vs.BuildCode()),
+	)
+
+	if twilio.HandleSendTwilioError(c, err) != nil {
+		return
+	}
+
+	log.
+		WithFields(log.Fields{
+			"user_uuid": user.Uuid,
+			"mobile":    user.Mobile.String,
+		}).
+		Infof("sends twilio SMS success, login verify code created ! %v", smsResp.SID)
+
+	c.JSON(
+		http.StatusOK,
+		NewTransform().TransformSendMobileVerifyCode(
+			body.Uuid,
+			vs.Chars,
+		),
+	)
+}
+
+type VerifyMobileBody struct {
+	Mobile     string `form:"mobile" json:"mobile" bind:"required,gt=0"`
+	UUID       string `form:"uuid" json:"uuid" bind:"required,gt=0"`
+	VerifyCode string `form:"verify_code" json:"verify_code" bind:"required,gt=0"`
+}
+
+func VerifyMobileHandler(c *gin.Context, depCon container.Container) {
+	var body VerifyMobileBody
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToValidateRequestBody,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	user, err := userDao.GetUserByUuid(
+		body.UUID,
+		"id",
+		"uuid",
+		"phone_verify_code",
+		"phone_verified",
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.UserNotFoundByUuid,
+					err.Error(),
+				),
+			)
+
+			return
+
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if user.PhoneVerified {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.UserAlreadyMobileVerified,
+			),
+		)
+
+		return
+	}
+
+	if user.PhoneVerifyCode.String != body.VerifyCode {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.PhoneVerifyCodeNotMatch,
+			),
+		)
+
+		return
+	}
+
+	phoneVerified := true
+	if _, err := userDao.UpdateUserInfoByUuid(contracts.UpdateUserInfoParams{
+		Uuid:          body.UUID,
+		PhoneVerified: &phoneVerified,
+		Mobile:        body.Mobile,
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retreive verifier by user uuid
+	// If user already mobile verified, respond with ok status
+	// If user is not mobile verified, try compare the verify code
+	// If verify code matches, update the user to be mobile verified
+	// If verify code isn't match, respond bad request.
+	// Response with auth jwt token.
+	log.Printf("DEBUG create token 1 ~~ %v", user.Uuid)
+
+	jwt, err := jwtactor.CreateToken(
+		user.Uuid,
+		config.GetAppConf().JwtSecret,
+	)
+
+	log.Printf("DEBUG create token 2 ~~ %v", jwt)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateJWTToken,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Jwt string `json:"jwt"`
+	}{jwt})
 }

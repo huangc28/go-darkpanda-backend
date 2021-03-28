@@ -9,7 +9,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 )
 
 type UserDAO interface {
@@ -140,7 +139,7 @@ func (dao *AuthDAO) GetLoginRecord(ctx context.Context, userUuid string) (*Login
 	exists, err := dao.redis.Exists(ctx, fmt.Sprintf(LoginAuthenticatorHashKey, userUuid)).Result()
 
 	if err != nil {
-		log.Fatal("SOME SHIT HAPPENED", err)
+		return nil, err
 	}
 
 	if exists == 0 {

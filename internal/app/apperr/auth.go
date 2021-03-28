@@ -40,6 +40,9 @@ const (
 	VerifyCodeUnmatched                      = "1000037"
 	FailedToCreateJWTToken                   = "1000038"
 	FailedToValidateReferralCode             = "1000039"
+	FailedToValidateFindByUsernameParams     = "1000040"
+	LoginVerifyCodeNotFound                  = "1000041"
+	FailedToGetAuthenticatorRecord           = "1000042"
 )
 
 var AuthErrCodeMsgMap = map[string]string{
@@ -50,8 +53,9 @@ var AuthErrCodeMsgMap = map[string]string{
 	UserNotFoundByVerifyCode:                "user not found by the given verify code",
 	JWTNotProvided:                          "JWT token not exists",
 	FailedToFindInquiryByInquiererID:        "failed to find inquiry by inquirer ID",
-	FailedToCheckSendLoginVerifyCodeParams:  "Failed to find username to send verify code ",
-	UnableToSendVerifyCodeToUnverfiedNumber: "Can not send login code to an unverified mobile number. Please contact customer service",
-	ExceedingLoginRetryLimit:                "Attempt login too many times. Please retry login later",
-	VerifyCodeUnmatched:                     "Mobile verify code not matched",
+	FailedToCheckSendLoginVerifyCodeParams:  "failed to find username to send verify code ",
+	UnableToSendVerifyCodeToUnverfiedNumber: "can not send login code to an unverified mobile number. Please contact customer service",
+	ExceedingLoginRetryLimit:                "attempt login too many times. Please retry login later",
+	VerifyCodeUnmatched:                     "mobile verify code not matched",
+	LoginVerifyCodeNotFound:                 "login verify code not found for the authenticator, please send a new sms login code again",
 }

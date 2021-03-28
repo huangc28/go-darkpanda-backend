@@ -2,7 +2,6 @@ package register
 
 import (
 	"context"
-	"time"
 )
 
 type RegisterService struct {
@@ -24,7 +23,8 @@ var (
 )
 
 type ValidateReferralCodeError struct {
-	ErrCode ErrorCode
+	ErrCode    ErrorCode
+	ErrMessage string
 }
 
 func (e *ValidateReferralCodeError) Error() string {
@@ -36,7 +36,7 @@ func (e *ValidateReferralCodeError) Error() string {
 	case ReferralCodeExpired:
 		return "referral code has expired"
 	default:
-		return "invalid referral code"
+		return e.ErrMessage
 	}
 
 }
@@ -50,7 +50,9 @@ func (s *RegisterService) ValidateReferralCode(ctx context.Context, refCode stri
 	exists, err := s.dao.CheckReferCodeExists(ctx, refCode)
 
 	if err != nil {
-		return err
+		return &ValidateReferralCodeError{
+			ErrMessage: err.Error(),
+		}
 	}
 
 	if !exists {
@@ -62,18 +64,14 @@ func (s *RegisterService) ValidateReferralCode(ctx context.Context, refCode stri
 	m, err := s.dao.GetReferralCodeByReferralCode(refCode)
 
 	if err != nil {
-		return err
+		return &ValidateReferralCodeError{
+			ErrMessage: err.Error(),
+		}
 	}
 
 	if m.InviteeID.Valid {
 		return &ValidateReferralCodeError{
 			ErrCode: ReferralCodeOccupied,
-		}
-	}
-
-	if time.Now().After(m.ExpiredAt.Time) {
-		return &ValidateReferralCodeError{
-			ErrCode: ReferralCodeExpired,
 		}
 	}
 

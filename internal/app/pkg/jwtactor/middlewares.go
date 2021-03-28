@@ -8,7 +8,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
-	log "github.com/sirupsen/logrus"
 )
 
 type JwtValidatorParams struct {
@@ -119,8 +118,6 @@ func JwtValidator(opt JwtMiddlewareOptions) gin.HandlerFunc {
 		// ------------------- set uuid and jwt -------------------
 		c.Set("uuid", claims.Uuid)
 		c.Set("jwt", token)
-
-		log.Infoln("jwt given passes the validation!")
 
 		c.Next()
 	}

@@ -14,11 +14,18 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	g := r.Group("/auth")
 
-	g.POST("/send-verify-code", authController.SendVerifyCodeHandler)
+	g.POST(
+		"/send-verify-code",
+		func(c *gin.Context) {
+			authController.SendVerifyCodeHandler(c, depCon)
+		},
+	)
 
 	// Client attempt to verify login code he / she received via SMS from `/send-verify-code`. If the
 	// If code is verified, grants user auth permission.
-	g.POST("/verify-code", authController.VerifyLoginCode)
+	g.POST("/verify-code", func(c *gin.Context) {
+		authController.VerifyLoginCode(c, depCon)
+	})
 
 	g.POST(
 		"/revoke-jwt",

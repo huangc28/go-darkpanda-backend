@@ -26,17 +26,6 @@ type User struct {
 	Inquiries []*models.ServiceInquiry `json:"inquiries"`
 }
 
-type UserDAOer interface {
-	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*User, error)
-	UpdateUserInfoByUuid(ctx context.Context, p UpdateUserInfoParams) (*models.User, error)
-	GetUserByUuid(uuid string, fields ...string) (*models.User, error)
-	GetUserByID(ID int64, fields ...string) (*models.User, error)
-	CheckIsMaleByUuid(uuid string) (bool, error)
-	CheckIsFemaleByUuid(uuid string) (bool, error)
-	GetUserImagesByUuid(uuid string, offset int, perPage int) ([]models.Image, error)
-	WithTx(tx *sqlx.Tx)
-}
-
 type UserDAO struct {
 	db db.Conn
 }
@@ -116,20 +105,8 @@ func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid strin
 	return nil, nil
 }
 
-type UpdateUserInfoParams struct {
-	AvatarURL   *string
-	Nationality *string
-	Region      *string
-	Age         *int
-	Height      *float64
-	Weight      *float64
-	Description *string
-	BreastSize  *string
-	Uuid        string
-}
-
 // https://stackoverflow.com/questions/13305878/dont-update-column-if-update-value-is-null
-func (dao *UserDAO) UpdateUserInfoByUuid(ctx context.Context, p contracts.UpdateUserInfoParams) (*models.User, error) {
+func (dao *UserDAO) UpdateUserInfoByUuid(p contracts.UpdateUserInfoParams) (*models.User, error) {
 	sql := `
 UPDATE users SET
 	avatar_url = COALESCE($1, avatar_url),
@@ -139,8 +116,11 @@ UPDATE users SET
 	height = COALESCE($5, height),
 	weight = COALESCE($6, weight),
 	description = COALESCE($7, description),
-	breast_size = COALESCE($8, breast_size)
-WHERE uuid = $9
+	breast_size = COALESCE($8, breast_size),
+	phone_verify_code = COALESCE($9, phone_verify_code),
+	phone_verified = COALESCE($10, phone_verified),
+	mobile = COALESCE($11, mobile)
+WHERE uuid = $12
 RETURNING
 	id,
 	username,
@@ -157,7 +137,8 @@ RETURNING
 	weight,
 	habbits,
 	description,
-	breast_size;
+	breast_size,
+	mobile;
 `
 	u := &models.User{}
 
@@ -171,6 +152,9 @@ RETURNING
 		p.Weight,
 		p.Description,
 		p.BreastSize,
+		p.PhoneVerifyCode,
+		p.PhoneVerified,
+		p.Mobile,
 		p.Uuid,
 	).Scan(
 		&u.ID,
@@ -189,6 +173,7 @@ RETURNING
 		&u.Habbits,
 		&u.Description,
 		&u.BreastSize,
+		&u.Mobile,
 	); err != nil {
 		log.Errorf("Failed to update user info %s", err.Error())
 
@@ -297,6 +282,23 @@ WHERE id = $1
 	var user models.User
 
 	if err := dao.db.QueryRowx(query, ID).StructScan(&user); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (dao *UserDAO) GetUserByUsername(username string, fields ...string) (*models.User, error) {
+	baseQuery := `
+SELECT %s
+FROM users
+WHERE username = $1
+`
+	query := fmt.Sprintf(baseQuery, db.ComposeFieldsSQLString(fields...))
+
+	var user models.User
+
+	if err := dao.db.QueryRowx(query, username).StructScan(&user); err != nil {
 		return nil, err
 	}
 

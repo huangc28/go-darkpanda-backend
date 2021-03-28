@@ -2,3 +2,6 @@ build/package/db-volume/*
 build/package/redis-data/*
 dark-panda-gcp-service-account.json
 .env*
+
+# Play Ground
+playground/*

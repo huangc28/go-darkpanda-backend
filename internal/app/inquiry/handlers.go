@@ -542,7 +542,7 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 }
 
 type AgreePickupInquiryHandlerParams struct {
-	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
+	InquiryUuid string `uri:"uuid" binding:"required"`
 }
 
 // AgreePickupInquiryHandler Male user agree to have a chat with the male user.

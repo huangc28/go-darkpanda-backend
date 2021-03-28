@@ -30,6 +30,8 @@ func (h *UserHandlers) GetMyProfileHandler(c *gin.Context) {
 		ctx  context.Context = context.Background()
 	)
 
+	log.Printf("DEBUG uuid %v", uuid)
+
 	tx, err := db.
 		GetDB().
 		BeginTx(ctx, nil)
@@ -201,10 +203,9 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 	}
 
 	// ------------------- Update user info -------------------
-	ctx := context.Background()
 	uuid := c.GetString("uuid")
 	dao := NewUserDAO(db.GetDB())
-	user, err := dao.UpdateUserInfoByUuid(ctx, contracts.UpdateUserInfoParams{
+	user, err := dao.UpdateUserInfoByUuid(contracts.UpdateUserInfoParams{
 		AvatarURL:   body.AvatarURL,
 		Nationality: body.Nationality,
 		Region:      body.Region,
