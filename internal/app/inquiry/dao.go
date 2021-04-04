@@ -54,9 +54,32 @@ type InquiryInfo struct {
 }
 
 // GetInquiries get list of inquiries with 7 records per page.
-func (dao *InquiryDAO) GetInquiries(status models.InquiryStatus, offset int, perpage int) ([]*InquiryInfo, error) {
-	log.Printf("DEBUG  GetInquiries %v %v", offset, perpage)
-	sql := `
+func (dao *InquiryDAO) GetInquiries(offset int, perpage int, statuses ...models.InquiryStatus) ([]*InquiryInfo, error) {
+	statusQuery := "1=1"
+
+	if len(statuses) > 0 {
+		statusStrsArr := make([]string, len(statuses))
+
+		for _, status := range statuses {
+			statusStrsArr = append(
+				statusStrsArr,
+				fmt.Sprintf("si.inquiry_status = '%s' OR", string(status)),
+			)
+		}
+
+		statusQuery = strings.TrimSuffix(
+			strings.Join(
+				statusStrsArr,
+				" ",
+			),
+			"OR",
+		)
+	}
+
+	log.Printf("DEBUG statusQuery %v", statusQuery)
+
+	query := fmt.Sprintf(
+		`
 SELECT
 	si.uuid,
 	si.budget,
@@ -66,6 +89,7 @@ SELECT
 	si.appointment_time,
 	si.lng,
 	si.lat,
+	si.inquiry_status,
 	users.uuid,
 	users.username,
 	users.avatar_url,
@@ -73,20 +97,33 @@ SELECT
 FROM service_inquiries AS si
 INNER JOIN users
 	ON si.inquirer_id = users.id
-WHERE si.inquiry_status = $1
+WHERE (
+	%s
+)
 AND (
 	si.expired_at > now()
 	OR  si.expired_at IS NULL
 )
 ORDER BY si.created_at DESC
-LIMIT $2
-OFFSET $3;
-`
+LIMIT $1
+OFFSET $2;
+`,
+		statusQuery,
+	)
+
+	log.Printf("DEBUG query~~ %v", query)
+
 	inquiries := make([]*InquiryInfo, 0)
-	rows, err := dao.db.Query(sql, status, perpage, offset)
+	rows, err := dao.db.Query(
+		query,
+		perpage,
+		offset,
+	)
 	defer rows.Close()
 
 	if err != nil {
+		log.Printf("DEBUG inquiry error %v", err)
+
 		return nil, err
 	}
 
@@ -103,6 +140,7 @@ OFFSET $3;
 			&iq.AppointmentTime,
 			&iq.Lng,
 			&iq.Lat,
+			&iq.InquiryStatus,
 			&inquirer.Uuid,
 			&inquirer.Username,
 			&inquirer.AvatarUrl,
@@ -182,7 +220,9 @@ AND
 	return time.Now().After(expiredAt), nil
 }
 
-func (dao *InquiryDAO) PickupInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error) {
+// AskingInquiry Alters the inquiry status to `asking`. Meaning that the girl wants to chat with
+// the inquirer and is waiting for the male user to reply.
+func (dao *InquiryDAO) AskingInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error) {
 	sql := `
 UPDATE service_inquiries
 SET
@@ -199,7 +239,7 @@ RETURNING *;
 		db.
 		QueryRowx(
 			sql,
-			models.InquiryStatusChatting,
+			models.InquiryStatusAsking,
 			pickerID,
 			inquiryID,
 		).StructScan(&pickedInquiry); err != nil {

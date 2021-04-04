@@ -341,15 +341,12 @@ const (
 )
 
 type CreateInquiringUserParams struct {
-	Timer         time.Duration
-	InquiryUUID   string
-	InquiryStatus string
+	InquiryUUID string
 }
 
 type InquiringUserInfo struct {
-	InquiryUUID string        `firestore:"inquiry_uuid,omitempty"`
-	Timer       time.Duration `firestore:"timer,omitempty"`
-	Status      string        `firestore:"status,omitempty"`
+	InquiryUUID string `firestore:"inquiry_uuid,omitempty"`
+	Status      string `firestore:"status,omitempty"`
 }
 
 // CreateInquiry Adds user into lobby by creating a user record in the firestore.
@@ -359,7 +356,6 @@ type InquiringUserInfo struct {
 func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error) {
 	data := InquiringUserInfo{
 		InquiryUUID: params.InquiryUUID,
-		Timer:       params.Timer,
 		Status:      string(models.InquiryStatusInquiring),
 	}
 

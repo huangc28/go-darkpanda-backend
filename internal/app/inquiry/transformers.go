@@ -202,15 +202,16 @@ type TransformedGetInquiryInquirer struct {
 }
 
 type TransformedGetInquiryWithInquirer struct {
-	Uuid        string                        `json:"uuid"`
-	Budget      float64                       `json:"budget"`
-	ServiceType string                        `json:"service_type"`
-	Price       *float64                      `json:"price"`
-	Duration    int32                         `json:"duration"`
-	Appointment time.Time                     `json:"appoinment_time"`
-	Lng         *float32                      `json:"lng"`
-	Lat         *float32                      `json:"lat"`
-	Inquirer    TransformedGetInquiryInquirer `json:"inquirer"`
+	Uuid          string                        `json:"uuid"`
+	Budget        float64                       `json:"budget"`
+	ServiceType   string                        `json:"service_type"`
+	Price         *float64                      `json:"price"`
+	Duration      int32                         `json:"duration"`
+	Appointment   time.Time                     `json:"appointment_time"`
+	Lng           *float32                      `json:"lng"`
+	Lat           *float32                      `json:"lat"`
+	InquiryStatus string                        `json:"inquiry_status"`
+	Inquirer      TransformedGetInquiryInquirer `json:"inquirer"`
 }
 
 type TransformedInquiries struct {
@@ -246,14 +247,15 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo, hasM
 		}
 
 		trfedIq := TransformedGetInquiryWithInquirer{
-			Uuid:        oi.Uuid,
-			Budget:      budget,
-			ServiceType: oi.ServiceType.ToString(),
-			Price:       price,
-			Duration:    oi.Duration.Int32,
-			Appointment: oi.AppointmentTime.Time,
-			Lng:         lng,
-			Lat:         lat,
+			Uuid:          oi.Uuid,
+			Budget:        budget,
+			ServiceType:   oi.ServiceType.ToString(),
+			Price:         price,
+			Duration:      oi.Duration.Int32,
+			Appointment:   oi.AppointmentTime.Time,
+			Lng:           lng,
+			Lat:           lat,
+			InquiryStatus: oi.InquiryStatus.ToString(),
 			Inquirer: TransformedGetInquiryInquirer{
 				Uuid:        oi.Inquirer.Uuid,
 				Username:    oi.Inquirer.Username,

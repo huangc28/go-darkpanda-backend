@@ -12,11 +12,12 @@ type Claim struct {
 	jwt.StandardClaims
 }
 
+// TODO: extend jwt token valid time. Extract the time variable to config.
 func CreateToken(uUuid string, jwtSecret string) (string, error) {
 	claim := &Claim{
 		Uuid: uUuid,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 30).Unix(),
+			ExpiresAt: time.Now().Add(time.Hour * 24 * 30).Unix(),
 		},
 	}
 

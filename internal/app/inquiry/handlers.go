@@ -167,10 +167,11 @@ func EmitInquiryHandler(c *gin.Context) {
 	}
 
 	df := darkfirestore.Get()
-	df.CreateInquiringUser(ctx, darkfirestore.CreateInquiringUserParams{
-		InquiryUUID:   iq.Uuid,
-		InquiryStatus: iq.InquiryStatus.ToString(),
-	})
+	df.CreateInquiringUser(
+		ctx, darkfirestore.CreateInquiringUserParams{
+			InquiryUUID: iq.Uuid,
+		},
+	)
 
 	if err != nil {
 		c.AbortWithError(
@@ -230,14 +231,15 @@ func GetInquiriesHandler(c *gin.Context) {
 
 	// offset should be passed from client
 	inquiries, err := inquiryDao.GetInquiries(
-		models.InquiryStatusInquiring,
 		body.Offset,
 		body.PerPage,
+		models.InquiryStatusInquiring,
+		models.InquiryStatusAsking,
 	)
 
 	if err != nil {
 		c.AbortWithError(
-			http.StatusOK,
+			http.StatusInternalServerError,
 			apperr.NewErr(
 				apperr.FailedToGetInquiryList,
 				err.Error(),
@@ -437,6 +439,21 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	ctx := context.Background()
 	q := models.New(db.GetDB())
 
+	// Retrieve inquiry picker's ID which is the ID of the current requester.
+	pickerID, err := q.GetUserIDByUuid(ctx, c.GetString("uuid"))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserIDByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	// Retrieve inquiry information
 	iq, err := q.GetInquiryByUuid(ctx, params.InquiryUuid)
 
@@ -485,18 +502,11 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 			return err, apperr.InquiryFSMTransitionFailed
 		}
 
-		// Patch inquiry status in DB to be `asking`
-		q := models.New(tx)
-		_, err := q.UpdateInquiryByUuid(
-			ctx,
-			models.UpdateInquiryByUuidParams{
-				PickerID: sql.NullInt32{
-					Int32: iq.PickerID.Int32,
-					Valid: true,
-				},
-				InquiryStatus: models.InquiryStatus(fsm.Current()),
-				Uuid:          iq.Uuid,
-			},
+		// Patch inquiry status in DB to be `asking`.
+		iqDao := NewInquiryDAO(tx)
+		_, err := iqDao.AskingInquiry(
+			pickerID,
+			iq.ID,
 		)
 
 		if err != nil {
