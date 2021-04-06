@@ -373,10 +373,6 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 		),
 	)
 
-	// c.JSON(
-	// 	http.StatusOK,
-	// 	struct{}{},
-	// )
 }
 
 // GetChatrooms gets list of chatrooms based on chatroom type (service / inquiry). If chatroom type
