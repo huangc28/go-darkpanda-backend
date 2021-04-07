@@ -3,7 +3,7 @@ run_local: run_local_backend
 	echo 'run successfully on local'
 
 run_local_backend: run_local_docker
-	go run cmd/app/main.go
+	go mod tidy && go run cmd/app/main.go
 
 run_local_docker:
 	docker-compose \
