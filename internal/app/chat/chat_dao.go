@@ -274,7 +274,7 @@ FROM service_inquiries	AS si
 INNER JOIN chatrooms
 	ON chatrooms.inquiry_id = si.id
 	AND chatrooms.deleted_at IS NULL
-	AND CURRENT_TIMESTAMP < chatrooms.expired_at
+	AND chatrooms.enabled=true
 INNER JOIN users AS inquirer
 	ON inquirer.id = si.inquirer_id
 WHERE inquiry_status = $1

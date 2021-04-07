@@ -324,7 +324,6 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 
 	if user.Gender == models.GenderFemale {
 		chatrooms, err = chatDao.GetFemaleInquiryChatRooms(user.ID)
-
 	} else {
 		// Retrieve inquiry chatrooms for male user.
 		log.Println("DEBUG * 3")
@@ -365,13 +364,17 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(
-		http.StatusOK,
-		NewTransformer().TransformInquiryChats(
-			chatrooms,
-			channelUUIDMessageMap,
-		),
-	)
+	log.Printf("DEBUG  channelUUIDMessageMap 1 %v", channelUUIDMessageMap["private_chat:14PA0y2fTuL75W0uI57U"])
+
+	c.JSON(http.StatusOK, struct{}{})
+
+	//c.JSON(
+	//http.StatusOK,
+	//NewTransformer().TransformInquiryChats(
+	//chatrooms,
+	//channelUUIDMessageMap,
+	//),
+	//)
 
 }
 

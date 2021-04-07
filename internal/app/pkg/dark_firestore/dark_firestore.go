@@ -3,6 +3,7 @@ package darkfirestore
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -12,6 +13,8 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -31,7 +34,7 @@ type DarkFireStorer interface {
 	CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error
 	SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error)
 	SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error)
-	GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string]ChatMessage, error)
+	GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string][]*ChatMessage, error)
 	GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]interface{}, error)
 	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
 	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
@@ -89,6 +92,7 @@ type ChatMessage struct {
 	From      string      `firestore:"from,omitempty" json:"from"`
 	To        string      `firestore:"to,omitempty" json:"to"`
 	CreatedAt time.Time   `firestore:"created_at,omitempty" json:"created_at"`
+	Empty     bool        `json:"empty"`
 }
 
 type CreatePrivateChatRoomParams struct {
@@ -208,14 +212,14 @@ func (df *DarkFirestore) SendServiceDetailMessageToChatroom(ctx context.Context,
 	return params.Data, nil
 }
 
-func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string]ChatMessage, error) {
+func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string][]*ChatMessage, error) {
 	privateChatCollection := df.
 		Client.
 		Collection(PrivateChatsCollectionName)
 
 	errChan := make(chan error)
 	quitChan := make(chan struct{})
-	dataChan := make(chan map[string]interface{})
+	dataChan := make(chan []map[string]interface{})
 
 	for _, channelUUID := range channelUUIDs {
 		select {
@@ -223,16 +227,33 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 			break
 		default:
 			go func(channelUUID string) {
+				// What happens if channelUUID does not exists in firestore?
+				_, err := privateChatCollection.Doc(channelUUID).Get(ctx)
+
+				if grpc.Code(err) == codes.NotFound {
+					errChan <- errors.New(fmt.Sprintf("error chatroom channel: %s not found", channelUUID))
+					return
+				}
+
 				iter := privateChatCollection.
 					Doc(channelUUID).
 					Collection(MessageSubCollectionName).
 					OrderBy("created_at", firestore.Desc).
 					Limit(1).
 					Documents(ctx)
+
+				messagesArr := make([]map[string]interface{}, 0)
+
 				for {
 					doc, err := iter.Next()
 
 					if err == iterator.Done {
+						empty := make(map[string]interface{})
+						empty["channel_uuid"] = channelUUID
+						empty["empty"] = true
+
+						messagesArr = append(messagesArr, empty)
+
 						break
 					}
 
@@ -244,31 +265,46 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 
 					data := doc.Data()
 					data["channel_uuid"] = channelUUID
+					data["empty"] = false
 
-					dataChan <- data
+					messagesArr = append(messagesArr, data)
 				}
+
+				dataChan <- messagesArr
 
 			}(channelUUID)
 		}
 	}
 
-	channelMessageMap := make(map[string]ChatMessage)
+	channelMessageMap := make(map[string][]*ChatMessage)
 
 	for range channelUUIDs {
 		select {
 		case err := <-errChan:
 			close(quitChan)
 
-			return nil, err
-		case data := <-dataChan:
-			m := ChatMessage{}
-			if err := MapToStruct(data, &m); err != nil {
-				close(quitChan)
-
-				return nil, err
+			if err == iterator.Done {
+				return nil, errors.New("")
 			}
 
-			channelMessageMap[fmt.Sprintf("%s", data["channel_uuid"])] = m
+			return nil, err
+		case data := <-dataChan:
+			msgArr := make([]*ChatMessage, 0)
+
+			firstMsg := data[0]
+			m := &ChatMessage{}
+
+			if firstMsg["empty"] == false {
+				if err := MapToStruct(firstMsg, m); err != nil {
+					close(quitChan)
+
+					return nil, err
+				}
+
+				msgArr = append(msgArr, m)
+			}
+
+			channelMessageMap[fmt.Sprintf("%s", firstMsg["channel_uuid"])] = msgArr
 		}
 	}
 

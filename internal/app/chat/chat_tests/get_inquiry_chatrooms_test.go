@@ -34,6 +34,7 @@ func (suite *GetInquiryChatTestSuite) SetupSuite() {
 }
 
 func (suite *GetInquiryChatTestSuite) TestGetInquiryChatSuccess() {
+	log.Printf("DEBUG foo bar %v", "aa")
 
 	q := models.New(db.GetDB())
 	ctx := context.Background()
@@ -125,15 +126,15 @@ func (suite *GetInquiryChatTestSuite) TestGetInquiryChatSuccess() {
 	chat.GetInquiryChatRooms(c, suite.depCon)
 	apperr.HandleError()(c)
 
-	// assertions
-	// respStruct := models.InquiryChatRooms{}
-	// if err := json.Unmarshal(w.Body.Bytes(), &respStruct); err != nil {
-	// 	if err != nil {
-	// 		suite.T().Fatal(err)
-	// 	}
-	// }
+	//// assertions
+	//// respStruct := models.InquiryChatRooms{}
+	//// if err := json.Unmarshal(w.Body.Bytes(), &respStruct); err != nil {
+	//// 	if err != nil {
+	//// 		suite.T().Fatal(err)
+	//// 	}
+	//// }
 
-	log.Printf("DEBUG  2 %v", string(w.Body.Bytes()))
+	log.Printf("DEBUG  2 %v", w.Body.String())
 }
 
 func TestGetInquiryChatTestSuite(t *testing.T) {

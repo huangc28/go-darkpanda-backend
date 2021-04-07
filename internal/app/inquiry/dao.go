@@ -111,8 +111,6 @@ OFFSET $2;
 		statusQuery,
 	)
 
-	log.Printf("DEBUG query~~ %v", query)
-
 	inquiries := make([]*InquiryInfo, 0)
 	rows, err := dao.db.Query(
 		query,

@@ -52,5 +52,5 @@ require (
 	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200825200019-8632dd797987 // indirect
-	google.golang.org/grpc v1.31.1 // indirect
+	google.golang.org/grpc v1.31.1
 )

@@ -642,99 +642,94 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	//   - Create and join inquirer and picker in a chatroom
 	//   - Create a chatroom for inquirer and picker in firestore
 	// @TODO wrap the following actions in to a service
-	tx := db.GetDB().MustBegin()
+	tranResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 
-	// Update inquiry status in DB.
-	inquiryDao := NewInquiryDAO(tx)
-	if err := inquiryDao.PatchInquiryStatusByUUID(
-		contracts.PatchInquiryStatusByUUIDParams{
-			UUID:          iq.Uuid,
-			InquiryStatus: models.InquiryStatusChatting,
-		},
-	); err != nil {
-		tx.Rollback()
-
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToPatchInquiryStatus,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// Update inquiry status in firestore.
-	df := darkfirestore.Get()
-	if err := df.ChatInquiringUser(
-		ctx,
-		darkfirestore.ChatInquiringUserParams{
-			InquiryUUID: iq.Uuid,
-		},
-	); err != nil {
-		tx.Rollback()
-
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToChangeFirestoreInquiryStatus,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// Create private chatroom record in DB Join both inquirer and picker into the chatroom.
-	var chat contracts.ChatServicer
-	depCon.Make(&chat)
-
-	chatroom, err := chat.WithTx(tx).CreateAndJoinChatroom(
-		iq.ID,
-		int64(iq.InquirerID.Int32),
-		int64(iq.PickerID.Int32),
-	)
-
-	if err != nil {
-		tx.Rollback()
-
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToCreatePrivateChatRoom,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// Create private chatroom in firestore
-	if err := df.CreatePrivateChatRoom(
-		ctx,
-		darkfirestore.CreatePrivateChatRoomParams{
-			ChatRoomName: chatroom.ChannelUuid.String,
-			Data: darkfirestore.ChatMessage{
-				Type: darkfirestore.Text,
-				From: c.GetString("uuid"),
+		// Update inquiry status in DB.
+		inquiryDao := NewInquiryDAO(tx)
+		if err := inquiryDao.PatchInquiryStatusByUUID(
+			contracts.PatchInquiryStatusByUUIDParams{
+				UUID:          iq.Uuid,
+				InquiryStatus: models.InquiryStatusChatting,
 			},
-		},
-	); err != nil {
-		tx.Rollback()
+		); err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusBadRequest,
+				Err:            err,
+				ErrCode:        apperr.FailedToPatchInquiryStatus,
+			}
 
+		}
+
+		// Update inquiry status in firestore.
+		df := darkfirestore.Get()
+		if err := df.ChatInquiringUser(
+			ctx,
+			darkfirestore.ChatInquiringUserParams{
+				InquiryUUID: iq.Uuid,
+			},
+		); err != nil {
+
+			return db.FormatResp{
+				HttpStatusCode: http.StatusBadRequest,
+				Err:            err,
+				ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
+			}
+		}
+
+		// Create private chatroom record in DB Join both inquirer and picker into the chatroom.
+		var chat contracts.ChatServicer
+		depCon.Make(&chat)
+
+		chatroom, err := chat.WithTx(tx).CreateAndJoinChatroom(
+			iq.ID,
+			int64(iq.InquirerID.Int32),
+			int64(iq.PickerID.Int32),
+		)
+
+		if err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusBadRequest,
+				Err:            err,
+				ErrCode:        apperr.FailedToCreatePrivateChatRoom,
+			}
+		}
+
+		// Create private chatroom in firestore
+		if err := df.CreatePrivateChatRoom(
+			ctx,
+			darkfirestore.CreatePrivateChatRoomParams{
+				ChatRoomName: chatroom.ChannelUuid.String,
+				Data: darkfirestore.ChatMessage{
+					Type: darkfirestore.Text,
+					From: c.GetString("uuid"),
+				},
+			},
+		); err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusInternalServerError,
+				Err:            err,
+				ErrCode:        apperr.FailedToCreatePrivateChatroomInFirestore,
+			}
+		}
+
+		return db.FormatResp{
+			Response: chatroom,
+		}
+	})
+
+	if tranResp.Err != nil {
 		c.AbortWithError(
-			http.StatusInternalServerError,
+			tranResp.HttpStatusCode,
 			apperr.NewErr(
-				apperr.FailedToCreatePrivateChatroomInFirestore,
-				err.Error(),
+				tranResp.ErrCode,
+				tranResp.Err.Error(),
 			),
 		)
 
 		return
 	}
 
-	tx.Commit()
+	chatroom := tranResp.Response.(*models.Chatroom)
 
 	// Respoonse:
 	//   - service provider's info
