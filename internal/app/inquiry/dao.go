@@ -156,21 +156,37 @@ OFFSET $2;
 	return inquiries, nil
 }
 
-func (dao *InquiryDAO) GetInquiryByUuid(iqUuid string, fields ...string) (*models.ServiceInquiry, error) {
+func (dao *InquiryDAO) GetInquiryByUuid(iqUuid string, fields ...string) (*contracts.InquiryResult, error) {
 	if len(fields) == 0 {
-		fields = append(fields, "*")
+		fields = append(fields, "service_inquiries.*")
+	} else {
+		for key, field := range fields {
+			fields[key] = fmt.Sprintf("service_inquiries.%s", field)
+		}
 	}
 
-	fieldsStr := strings.TrimSuffix(strings.Join(fields, ","), ",")
+	fieldsStr := strings.TrimSuffix(
+		strings.Join(
+			fields,
+			",",
+		),
+		",",
+	)
 
 	baseQuery := `
-SELECT %s
+SELECT
+	%s,
+	users.username,
+	users.uuid as user_uuid,
+	users.avatar_url
 FROM service_inquiries
-WHERE uuid = $1
+INNER JOIN users
+	ON service_inquiries.inquirer_id = users.id
+WHERE service_inquiries.uuid = $1
 	`
 	query := fmt.Sprintf(baseQuery, fieldsStr)
 
-	var inquiry models.ServiceInquiry
+	inquiry := contracts.InquiryResult{}
 
 	if err := dao.db.QueryRowx(query, iqUuid).StructScan(&inquiry); err != nil {
 		return nil, err

@@ -395,3 +395,9 @@ ALTER TABLE chatrooms
 ADD COLUMN chatroom_type chatroom_type NOT NULL DEFAULT 'inquiry_chat';
 
 COMMIT;
+BEGIN;
+
+ALTER TABLE service_inquiries
+ADD COLUMN address varchar(255);
+
+COMMIT;

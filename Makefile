@@ -11,18 +11,6 @@ run_local_docker:
 		--env-file ./.env.dev up \
 		-d
 
-docker_compose_restart:
-	docker-compose \
-		-f build/package/docker-compose.yaml \
-		--env-file ./.env.dev \
-		restart
-
-docker_compose_list:
-	docker-compose \
-		-f build/package/docker-compose.yaml \
-		--env-file ./.env.dev \
-		ps -a
-
 serve_swagger: build_swagger
 	swagger serve swagger/master.yml -p 3333 --host localhost --flavor=swagger
 

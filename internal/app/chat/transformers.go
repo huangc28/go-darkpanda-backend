@@ -26,38 +26,41 @@ func (t *ChatTransformer) TransformEmitTextMessage(channelUUID string, msg darkf
 }
 
 type TransformedInquiryChat struct {
-	ServiceType   models.InquiryStatus      `json:"service_type"`
-	Username      string                    `json:"username"`
-	AvatarURL     *string                   `json:"avatar_url"`
-	ChannelUUID   string                    `json:"channel_uuid"`
-	ExpiredAt     time.Time                 `json:"expired_at"`
-	CreatedAt     time.Time                 `json:"created_at"`
-	LatestMessage darkfirestore.ChatMessage `json:"latest_message"`
-	InquiryUUID   string                    `json:"inquiry_uuid"`
+	ServiceType models.InquiryStatus `json:"service_type"`
+	Username    string               `json:"username"`
+	AvatarURL   *string              `json:"avatar_url"`
+	ChannelUUID string               `json:"channel_uuid"`
+	ExpiredAt   time.Time            `json:"expired_at"`
+	CreatedAt   time.Time            `json:"created_at"`
+
+	// Messages only contains the latest message of the chatroom. It's an empty array
+	// If the chatroom does not contain any message.
+	Messages    []*darkfirestore.ChatMessage `json:"messages"`
+	InquiryUUID string                       `json:"inquiry_uuid"`
 }
 
 type TransformedInquiryChats struct {
 	Chats []TransformedInquiryChat `json:"chats"`
 }
 
-func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatRoom, latestMessageMap map[string]darkfirestore.ChatMessage) TransformedInquiryChats {
+func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatRoom, latestMessageMap map[string][]*darkfirestore.ChatMessage) TransformedInquiryChats {
 	chats := make([]TransformedInquiryChat, 0)
 
 	for _, m := range chatModels {
-		chatMsg := darkfirestore.ChatMessage{}
+		chatMsgs := []*darkfirestore.ChatMessage{}
 
 		if v, exists := latestMessageMap[m.ChannelUUID]; exists {
-			chatMsg = v
+			chatMsgs = v
 		}
 
 		trfm := TransformedInquiryChat{
-			ServiceType:   m.ServiceType,
-			Username:      m.Username,
-			ChannelUUID:   m.ChannelUUID,
-			ExpiredAt:     m.ExpiredAt,
-			CreatedAt:     m.CreatedAt,
-			LatestMessage: chatMsg,
-			InquiryUUID:   m.InquiryUUID,
+			ServiceType: m.ServiceType,
+			Username:    m.Username,
+			ChannelUUID: m.ChannelUUID,
+			ExpiredAt:   m.ExpiredAt,
+			CreatedAt:   m.CreatedAt,
+			Messages:    chatMsgs,
+			InquiryUUID: m.InquiryUUID,
 		}
 
 		if m.AvatarURL.Valid {

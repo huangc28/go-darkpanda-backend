@@ -31,7 +31,6 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 
 	g.GET(
 		"/:uuid",
-		middlewares.IsFemale(userDAO),
 		GetInquiryHandler,
 	)
 

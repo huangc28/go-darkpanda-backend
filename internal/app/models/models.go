@@ -272,8 +272,9 @@ type ServiceInquiry struct {
 	Lng             sql.NullString `json:"lng"`
 	Lat             sql.NullString `json:"lat"`
 	// Time that this inquiry will be invalid.
-	ExpiredAt sql.NullTime  `json:"expired_at"`
-	PickerID  sql.NullInt32 `json:"picker_id"`
+	ExpiredAt sql.NullTime   `json:"expired_at"`
+	PickerID  sql.NullInt32  `json:"picker_id"`
+	Address   sql.NullString `json:"address"`
 }
 
 type User struct {

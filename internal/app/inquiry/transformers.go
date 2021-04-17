@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	convertnullsql "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/convert_null_sql"
@@ -273,18 +274,27 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo, hasM
 	}, nil
 }
 
-type TransformedGetInquiry struct {
-	Uuid        string    `json:"uuid"`
-	Budget      float64   `json:"budget"`
-	ServiceType string    `json:"service_type"`
-	Price       *float64  `json:"price"`
-	Duration    int32     `json:"duration"`
-	Appointment time.Time `json:"appoinment_time"`
-	Lng         *float32  `json:"lng"`
-	Lat         *float32  `json:"lat"`
+type Inquirer struct {
+	Username  string `json:"username"`
+	UserUuid  string `json:"user_uuid"`
+	AvatarUrl string `json:"avatar_url"`
 }
 
-func (t *InquiryTransform) TransformGetInquiry(iq models.ServiceInquiry) (*TransformedGetInquiry, error) {
+type TransformedGetInquiry struct {
+	Uuid          string    `json:"uuid"`
+	Budget        float64   `json:"budget"`
+	ServiceType   string    `json:"service_type"`
+	InquiryStatus string    `json:"inquiry_status"`
+	Price         *float64  `json:"price"`
+	Duration      int32     `json:"duration"`
+	Appointment   time.Time `json:"appoinment_time"`
+	Lng           *float32  `json:"lng"`
+	Lat           *float32  `json:"lat"`
+	Address       string    `json:"address"`
+	Inquirer      Inquirer  `json:"inquirer"`
+}
+
+func (t *InquiryTransform) TransformGetInquiry(iq contracts.InquiryResult) (*TransformedGetInquiry, error) {
 	budget, err := strconv.ParseFloat(iq.Budget, 64)
 
 	if err != nil {
@@ -313,11 +323,18 @@ func (t *InquiryTransform) TransformGetInquiry(iq models.ServiceInquiry) (*Trans
 		iq.Uuid,
 		budget,
 		iq.ServiceType.ToString(),
+		iq.InquiryStatus.ToString(),
 		&price,
 		iq.Duration.Int32,
 		iq.AppointmentTime.Time,
 		lng,
 		lat,
+		iq.Address.String,
+		Inquirer{
+			Username:  iq.Username,
+			UserUuid:  iq.UserUuid,
+			AvatarUrl: iq.AvatarUrl.String,
+		},
 	}, nil
 }
 

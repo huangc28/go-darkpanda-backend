@@ -364,17 +364,13 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	log.Printf("DEBUG  channelUUIDMessageMap 1 %v", channelUUIDMessageMap["private_chat:14PA0y2fTuL75W0uI57U"])
-
-	c.JSON(http.StatusOK, struct{}{})
-
-	//c.JSON(
-	//http.StatusOK,
-	//NewTransformer().TransformInquiryChats(
-	//chatrooms,
-	//channelUUIDMessageMap,
-	//),
-	//)
+	c.JSON(
+		http.StatusOK,
+		NewTransformer().TransformInquiryChats(
+			chatrooms,
+			channelUUIDMessageMap,
+		),
+	)
 
 }
 
