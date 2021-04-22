@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -176,21 +177,21 @@ func (h *UserHandlers) GetUserProfileHandler(c *gin.Context) {
 }
 
 type PutUserInfoBody struct {
-	AvatarURL   *string  `json:"avatar_url"`
-	Nationality *string  `json:"nationality"`
-	Region      *string  `json:"region"`
-	Age         *int     `json:"age"`
-	Height      *float64 `json:"height"`
-	Weight      *float64 `json:"weight"`
-	Habbits     *string  `json:"habbits"`
-	Description *string  `json:"description"`
-	BreastSize  *string  `json:"breast_size"`
+	AvatarURL   *string `form:"avatar_url" json:"avatar_url"`
+	Nationality *string `form:"nationality" json:"nationality"`
+	Region      *string `form:"region" json:"region"`
+	Age         int     `form:"age" json:"age"`
+	Height      float64 `form:"height" json:"height"`
+	Weight      float64 `form:"weight" json:"weight"`
+	Habbits     *string `form:"habbits" json:"habbits"`
+	Description *string `form:"description" json:"description"`
+	// BreastSize  *string  `json:"breast_size"`
 }
 
 func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 	body := &PutUserInfoBody{}
 
-	if err := c.ShouldBindJSON(body); err != nil {
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -209,12 +210,12 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 		AvatarURL:   body.AvatarURL,
 		Nationality: body.Nationality,
 		Region:      body.Region,
-		Age:         body.Age,
-		Height:      body.Height,
-		Weight:      body.Weight,
+		Age:         &body.Age,
+		Height:      &body.Height,
+		Weight:      &body.Weight,
 		Description: body.Description,
-		BreastSize:  body.BreastSize,
-		Uuid:        uuid,
+		// BreastSize:  body.BreastSize,
+		Uuid: uuid,
 	})
 
 	if err != nil {

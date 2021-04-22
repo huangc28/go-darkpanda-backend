@@ -61,7 +61,10 @@ func StartApp(e *gin.Engine) *gin.Engine {
 		deps.Get().Container,
 	)
 
-	image.Routes(rv1)
+	image.Routes(
+		rv1,
+		deps.Get().Container,
+	)
 
 	chat.Routes(
 		rv1,
