@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"net/http"
 
@@ -176,15 +177,21 @@ func (h *UserHandlers) GetUserProfileHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, tResp)
 }
 
+type CreateImageParams struct {
+	UserID int64
+	URL    string
+}
+
 type PutUserInfoBody struct {
-	AvatarURL   *string `form:"avatar_url" json:"avatar_url"`
-	Nationality *string `form:"nationality" json:"nationality"`
-	Region      *string `form:"region" json:"region"`
-	Age         int     `form:"age" json:"age"`
-	Height      float64 `form:"height" json:"height"`
-	Weight      float64 `form:"weight" json:"weight"`
-	Habbits     *string `form:"habbits" json:"habbits"`
-	Description *string `form:"description" json:"description"`
+	AvatarURL   *string             `form:"avatar_url" json:"avatar_url"`
+	Nationality *string             `form:"nationality" json:"nationality"`
+	Region      *string             `form:"region" json:"region"`
+	Age         int                 `form:"age" json:"age"`
+	Height      float64             `form:"height" json:"height"`
+	Weight      float64             `form:"weight" json:"weight"`
+	Habbits     *string             `form:"habbits" json:"habbits"`
+	Description *string             `form:"description" json:"description"`
+	Images      []CreateImageParams `form:"imageList" json:"imageList"`
 	// BreastSize  *string  `json:"breast_size"`
 }
 
@@ -232,6 +239,24 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 		)
 
 		return
+	}
+
+	var imageDAO contracts.ImageDAOer
+	h.Container.Make(&imageDAO)
+
+	if len(body.Images) > 0 {
+		imagesParams := make([]models.Image, 0)
+		for i := 0; i < len(body.Images); i++ {
+			imagesParams = append(imagesParams, models.Image{
+				UserID: int32(user.ID),
+				Url:    body.Images[i].URL,
+			})
+		}
+
+		if err := imageDAO.CreateImages(imagesParams); err != nil {
+			log.Fatalf("Failed to insert images %s", err.Error())
+		}
+		fmt.Print(imagesParams)
 	}
 
 	c.JSON(http.StatusOK, NewTransform().TransformPatchedUser(user))

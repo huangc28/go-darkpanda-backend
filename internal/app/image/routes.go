@@ -15,12 +15,8 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		}),
 	)
 
-	handlers := ImageHandlers{
-		Container: depCon,
-	}
-
 	g.POST("", func(c *gin.Context) {
-		handlers.UploadImagesHandler(c, depCon)
+		UploadImagesHandler(c, depCon)
 	})
 
 	g.POST("/avatar", UploadAvatarHandler)

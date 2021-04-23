@@ -1,11 +1,12 @@
 package contracts
 
 import (
-	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	"github.com/jmoiron/sqlx"
 )
 
 type ImageDAOer interface {
-	WithTx(tx db.Conn) ImageDAOer
+	WithTx(tx *sqlx.Tx) ImageDAOer
 	GetImagesByUserID(ID int) ([]models.Image, error)
+	CreateImages(imagesParams []models.Image) error
 }

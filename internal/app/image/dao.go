@@ -7,6 +7,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	"github.com/jmoiron/sqlx"
 )
 
 type ImageDAO struct {
@@ -19,12 +20,6 @@ func NewImageDAO(db db.Conn) *ImageDAO {
 	}
 }
 
-func (dao *ImageDAO) WithTx(tx db.Conn) contracts.ImageDAOer {
-	dao.DB = tx
-
-	return dao
-}
-
 func ImageDAOServiceProvider(c container.Container) func() error {
 	return func() error {
 		c.Transient(func() contracts.ImageDAOer {
@@ -33,6 +28,12 @@ func ImageDAOServiceProvider(c container.Container) func() error {
 
 		return nil
 	}
+}
+
+func (dao *ImageDAO) WithTx(tx *sqlx.Tx) contracts.ImageDAOer {
+	dao.DB = tx
+
+	return dao
 }
 
 func (dao *ImageDAO) GetImagesByUserID(ID int) ([]models.Image, error) {
@@ -62,18 +63,13 @@ WHERE user_id = $1
 	return images, nil
 }
 
-type CreateImageParams struct {
-	UserID int64
-	URL    string
-}
-
-func (dao *ImageDAO) CreateImages(imagesParams []CreateImageParams) error {
+func (dao *ImageDAO) CreateImages(imagesParams []models.Image) error {
 	sqlStr := "INSERT INTO images(user_id, url) VALUES "
 	vals := []interface{}{}
 
 	for _, v := range imagesParams {
 		sqlStr += "(?, ?),"
-		vals = append(vals, v.UserID, v.URL)
+		vals = append(vals, v.UserID, v.Url)
 	}
 
 	sqlStr = strings.TrimSuffix(sqlStr, ",")
