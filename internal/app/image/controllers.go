@@ -79,7 +79,7 @@ func UploadAvatarHandler(c *gin.Context) {
 
 func UploadImagesHandler(c *gin.Context) {
 	// ------------------- Limit upload size to 20 MB -------------------
-	if err := c.Request.ParseMultipartForm(20E6); err != nil {
+	if err := c.Request.ParseMultipartForm(20e6); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(

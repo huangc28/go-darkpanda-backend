@@ -220,7 +220,7 @@ type TransformedInquiries struct {
 	HasMore   bool                                `json:"has_more"`
 }
 
-func (t *InquiryTransform) TransformInquiryList(inquiryList []*InquiryInfo, hasMore bool) (TransformedInquiries, error) {
+func (t *InquiryTransform) TransformInquiryList(inquiryList []*contracts.InquiryInfo, hasMore bool) (TransformedInquiries, error) {
 	trfedIqs := make([]TransformedGetInquiryWithInquirer, 0)
 	for _, oi := range inquiryList {
 		price, err := convertnullsql.ConvertSqlNullStringToFloat64(oi.Price)
@@ -295,16 +295,22 @@ type TransformedGetInquiry struct {
 }
 
 func (t *InquiryTransform) TransformGetInquiry(iq contracts.InquiryResult) (*TransformedGetInquiry, error) {
+	var price *float64
+
 	budget, err := strconv.ParseFloat(iq.Budget, 64)
 
 	if err != nil {
 		return nil, err
 	}
 
-	price, err := strconv.ParseFloat(iq.Budget, 64)
+	if iq.Price.Valid {
+		priceF, err := strconv.ParseFloat(iq.Price.String, 64)
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+
+		price = &priceF
 	}
 
 	lng, err := convertnullsql.ConvertSqlNullStringToFloat32(iq.Lng)
@@ -324,7 +330,7 @@ func (t *InquiryTransform) TransformGetInquiry(iq contracts.InquiryResult) (*Tra
 		budget,
 		iq.ServiceType.ToString(),
 		iq.InquiryStatus.ToString(),
-		&price,
+		price,
 		iq.Duration.Int32,
 		iq.AppointmentTime.Time,
 		lng,
@@ -491,4 +497,52 @@ func (t *InquiryTransform) TransformAgreePickupInquiry(picker models.User, pcUui
 	}
 
 	return trf
+}
+
+type TransformedUpdateInquiry struct {
+	Uuid            string     `json:"uuid"`
+	AppointmentTime *time.Time `json:"appointment_time"`
+	ServiceType     *string    `json:"service_type"`
+	Price           *float32   `json:"price"`
+	Duration        *int32     `json:"duration"`
+	Address         *string    `json:"address"`
+}
+
+func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
+	var (
+		appointmentTime *time.Time
+		priceF          *float32
+		duration        *int32
+		address         *string
+		err             error
+	)
+
+	if inquiry.AppointmentTime.Valid {
+		appointmentTime = &inquiry.AppointmentTime.Time
+	}
+
+	if inquiry.Price.Valid {
+		priceF, err = convertnullsql.ConvertSqlNullStringToFloat32(inquiry.Price)
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if inquiry.Duration.Valid {
+		duration = &inquiry.Duration.Int32
+	}
+
+	if inquiry.Address.Valid {
+		address = &inquiry.Address.String
+	}
+
+	return &TransformedUpdateInquiry{
+		Uuid:            inquiry.Uuid,
+		AppointmentTime: appointmentTime,
+		ServiceType:     (*string)(&inquiry.ServiceType),
+		Price:           priceF,
+		Duration:        duration,
+		Address:         address,
+	}, nil
 }

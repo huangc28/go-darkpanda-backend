@@ -30,8 +30,6 @@ func (h *UserHandlers) GetMyProfileHandler(c *gin.Context) {
 		ctx  context.Context = context.Background()
 	)
 
-	log.Printf("DEBUG uuid %v", uuid)
-
 	tx, err := db.
 		GetDB().
 		BeginTx(ctx, nil)
@@ -176,15 +174,15 @@ func (h *UserHandlers) GetUserProfileHandler(c *gin.Context) {
 }
 
 type PutUserInfoBody struct {
-	AvatarURL   *string  `json:"avatar_url"`
-	Nationality *string  `json:"nationality"`
-	Region      *string  `json:"region"`
-	Age         *int     `json:"age"`
-	Height      *float64 `json:"height"`
-	Weight      *float64 `json:"weight"`
-	Habbits     *string  `json:"habbits"`
-	Description *string  `json:"description"`
-	BreastSize  *string  `json:"breast_size"`
+	AvatarURL   *string  `json:"avatar_url" form:"avatar_url"`
+	Nationality *string  `json:"nationality" form:"nationality"`
+	Region      *string  `json:"region" form:"region"`
+	Age         *int     `json:"age" form:"age"`
+	Height      *float64 `json:"height" form:"height"`
+	Weight      *float64 `json:"weight" form:"weight"`
+	Habbits     *string  `json:"habbits" form:"habbits"`
+	Description *string  `json:"description" form:"description"`
+	BreastSize  *string  `json:"breast_size" form:"breast_size"`
 }
 
 func (h *UserHandlers) PutUserInfo(c *gin.Context) {
