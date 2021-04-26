@@ -3,6 +3,8 @@ package user
 import (
 	"context"
 	"database/sql"
+	"fmt"
+
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -173,22 +175,28 @@ func (h *UserHandlers) GetUserProfileHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, tResp)
 }
 
+type CreateImageParams struct {
+	UserID int64
+	URL    string
+}
+
 type PutUserInfoBody struct {
-	AvatarURL   *string  `json:"avatar_url" form:"avatar_url"`
-	Nationality *string  `json:"nationality" form:"nationality"`
-	Region      *string  `json:"region" form:"region"`
-	Age         *int     `json:"age" form:"age"`
-	Height      *float64 `json:"height" form:"height"`
-	Weight      *float64 `json:"weight" form:"weight"`
-	Habbits     *string  `json:"habbits" form:"habbits"`
-	Description *string  `json:"description" form:"description"`
-	BreastSize  *string  `json:"breast_size" form:"breast_size"`
+	AvatarURL   *string             `form:"avatar_url" json:"avatar_url"`
+	Nationality *string             `form:"nationality" json:"nationality"`
+	Region      *string             `form:"region" json:"region"`
+	Age         int                 `form:"age" json:"age"`
+	Height      float64             `form:"height" json:"height"`
+	Weight      float64             `form:"weight" json:"weight"`
+	Habbits     *string             `form:"habbits" json:"habbits"`
+	Description *string             `form:"description" json:"description"`
+	Images      []CreateImageParams `form:"imageList" json:"imageList"`
+	// BreastSize  *string  `json:"breast_size"`
 }
 
 func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 	body := &PutUserInfoBody{}
 
-	if err := c.ShouldBindJSON(body); err != nil {
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -207,12 +215,12 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 		AvatarURL:   body.AvatarURL,
 		Nationality: body.Nationality,
 		Region:      body.Region,
-		Age:         body.Age,
-		Height:      body.Height,
-		Weight:      body.Weight,
+		Age:         &body.Age,
+		Height:      &body.Height,
+		Weight:      &body.Weight,
 		Description: body.Description,
-		BreastSize:  body.BreastSize,
-		Uuid:        uuid,
+		// BreastSize:  body.BreastSize,
+		Uuid: uuid,
 	})
 
 	if err != nil {
@@ -229,6 +237,24 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 		)
 
 		return
+	}
+
+	var imageDAO contracts.ImageDAOer
+	h.Container.Make(&imageDAO)
+
+	if len(body.Images) > 0 {
+		imagesParams := make([]models.Image, 0)
+		for i := 0; i < len(body.Images); i++ {
+			imagesParams = append(imagesParams, models.Image{
+				UserID: int32(user.ID),
+				Url:    body.Images[i].URL,
+			})
+		}
+
+		if err := imageDAO.CreateImages(imagesParams); err != nil {
+			log.Fatalf("Failed to insert images %s", err.Error())
+		}
+		fmt.Print(imagesParams)
 	}
 
 	c.JSON(http.StatusOK, NewTransform().TransformPatchedUser(user))
