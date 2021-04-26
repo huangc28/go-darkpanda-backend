@@ -57,7 +57,15 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		EmitInquiryHandler,
 	)
 
-	// We need to divert the wildcard route manually
+	// Patch inquiry detail.
+	g.PATCH(
+		"/:inquiry_uuid",
+		ValidateInqiuryURIParams(),
+		func(c *gin.Context) {
+			PatchInquiryHandler(c, container)
+		},
+	)
+
 	g.POST(
 		"/:inquiry_uuid/:sub_route",
 		func(c *gin.Context) {
@@ -114,4 +122,5 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 
 		},
 	)
+
 }

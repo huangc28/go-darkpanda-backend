@@ -2,7 +2,6 @@ package inquiry
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -16,7 +15,7 @@ type InquiryDAO struct {
 	db db.Conn
 }
 
-func NewInquiryDAO(db db.Conn) *InquiryDAO {
+func NewInquiryDAO(db db.Conn) contracts.InquiryDAOer {
 	return &InquiryDAO{
 		db: db,
 	}
@@ -48,13 +47,8 @@ SELECT EXISTS(
 	return exists, err
 }
 
-type InquiryInfo struct {
-	models.ServiceInquiry
-	Inquirer models.User
-}
-
 // GetInquiries get list of inquiries with 7 records per page.
-func (dao *InquiryDAO) GetInquiries(offset int, perpage int, statuses ...models.InquiryStatus) ([]*InquiryInfo, error) {
+func (dao *InquiryDAO) GetInquiries(offset int, perpage int, statuses ...models.InquiryStatus) ([]*contracts.InquiryInfo, error) {
 	statusQuery := "1=1"
 
 	if len(statuses) > 0 {
@@ -75,8 +69,6 @@ func (dao *InquiryDAO) GetInquiries(offset int, perpage int, statuses ...models.
 			"OR",
 		)
 	}
-
-	log.Printf("DEBUG statusQuery %v", statusQuery)
 
 	query := fmt.Sprintf(
 		`
@@ -111,7 +103,7 @@ OFFSET $2;
 		statusQuery,
 	)
 
-	inquiries := make([]*InquiryInfo, 0)
+	inquiries := make([]*contracts.InquiryInfo, 0)
 	rows, err := dao.db.Query(
 		query,
 		perpage,
@@ -120,13 +112,11 @@ OFFSET $2;
 	defer rows.Close()
 
 	if err != nil {
-		log.Printf("DEBUG inquiry error %v", err)
-
 		return nil, err
 	}
 
 	for rows.Next() {
-		iq := InquiryInfo{}
+		iq := contracts.InquiryInfo{}
 		inquirer := models.User{}
 
 		err := rows.Scan(
@@ -304,4 +294,41 @@ WHERE service_inquiries.uuid = $1;
 	}
 
 	return &inquirer, nil
+}
+
+func (dao *InquiryDAO) PatchInquiryByInquiryUUID(params contracts.PatchInquiryParams) (*models.ServiceInquiry, error) {
+	query := `
+UPDATE service_inquiries SET
+	appointment_time = COALESCE($1, appointment_time),
+	service_type = COALESCE($2, service_type),
+	price = COALESCE($3, price),
+	duration = COALESCE($4, duration),
+	address = COALESCE($5, address)
+WHERE
+	uuid = $6
+RETURNING
+	uuid,
+	appointment_time,
+	service_type,
+	price,
+	duration,
+	address;
+`
+	inquiry := models.ServiceInquiry{}
+
+	err := dao.db.QueryRowx(
+		query,
+		params.AppointmentTime,
+		params.ServiceType,
+		params.Price,
+		params.Duration,
+		params.Address,
+		params.Uuid,
+	).StructScan(&inquiry)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &inquiry, nil
 }

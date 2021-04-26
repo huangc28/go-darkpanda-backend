@@ -32,8 +32,6 @@ func (h *UserHandlers) GetMyProfileHandler(c *gin.Context) {
 		ctx  context.Context = context.Background()
 	)
 
-	log.Printf("DEBUG uuid %v", uuid)
-
 	tx, err := db.
 		GetDB().
 		BeginTx(ctx, nil)

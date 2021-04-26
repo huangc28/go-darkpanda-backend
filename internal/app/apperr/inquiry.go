@@ -52,6 +52,9 @@ const (
 	FailedToCreatePrivateChatroomInFirestore = "3000048"
 	FailedToUpdateInquiry                    = "3000049"
 	InquiryUUIDNotInParams                   = "3000050"
+	FailedToValidatePatchInquiryParams       = "3000051"
+	FailedToPatchInquiry                     = "3000052"
+	FailedToTransformUpdateInquiry           = "3000053"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{

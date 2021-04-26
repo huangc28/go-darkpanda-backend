@@ -274,6 +274,7 @@ func GetInquiriesHandler(c *gin.Context) {
 	)
 
 	if err != nil {
+
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -1492,4 +1493,67 @@ func GetInquirerInfo(c *gin.Context, depCon container.Container) {
 	}
 
 	c.JSON(http.StatusOK, trfm)
+}
+
+type PatchInquiryBody struct {
+	Uuid            string     `form:"uuid" json:"uuid" binding:"required"`
+	AppointmentTime *time.Time `form:"appointment_time" json:"appointment_time"`
+	Price           *float32   `form:"price" json:"price"`
+	Duration        *int       `form:"duration" json:"duration"`
+	ServiceType     *string    `form:"service_type" json:"service_type"`
+	Address         *string    `form:"address" json:"address"`
+}
+
+func PatchInquiryHandler(c *gin.Context, depCon container.Container) {
+	body := PatchInquiryBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidatePatchInquiryParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	dao := NewInquiryDAO(db.GetDB())
+	inquiry, err := dao.PatchInquiryByInquiryUUID(contracts.PatchInquiryParams{
+		Uuid:            body.Uuid,
+		AppointmentTime: body.AppointmentTime,
+		Price:           body.Price,
+		Duration:        body.Duration,
+		ServiceType:     body.ServiceType,
+		Address:         body.Address,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToPatchInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	trf, err := NewTransform().TransformUpdateInquiry(inquiry)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformUpdateInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, trf)
 }
