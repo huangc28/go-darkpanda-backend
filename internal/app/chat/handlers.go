@@ -468,13 +468,77 @@ func GetHistoricalMessages(c *gin.Context) {
 	c.JSON(http.StatusOK, NewTransformer().TransformGetHistoricalMessages(msgs))
 }
 
+type EmitInquiryUpdateMessage struct {
+	Price           float64   `json:"price" form:"price" binding:"required"`
+	ChannelUUID     string    `json:"channel_uuid" form:"channel_uuid" binding:"required"`
+	InquiryUUID     string    `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
+	AppointmentTime time.Time `json:"appointment_time" form:"appointment_time" binding:"required"`
+	Duration        int       `json:"duration" form:"duration" binding:"required"`
+	ServiceType     string    `json:"service_type" form:"service_type" binding:"required"`
+}
+
+// EmitInquiryUpdatedMessage emits inquiry updated message to the chatroom.
+// This message notifies the male user to confirm the inquiry detail by clicking
+// on the message bubble.
+func EmitInquiryUpdatedMessage(c *gin.Context, container container.Container) {
+	body := EmitInquiryUpdateMessage{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateRequestBody,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	ctx := context.Background()
+
+	df := darkfirestore.Get()
+	_, msg, err := df.SendUpdateInquiryMessage(
+		ctx,
+		darkfirestore.UpdateInquiryMessage{
+			ChannelUuid: body.ChannelUUID,
+			Data: darkfirestore.InquiryDetailMessage{
+				ChatMessage: darkfirestore.ChatMessage{
+					Content:   "",
+					From:      c.GetString("uuid"),
+					CreatedAt: time.Now(),
+				},
+				Price:           body.Price,
+				Duration:        body.Duration,
+				AppointmentTime: body.AppointmentTime.UnixNano() / 1000,
+				ServiceType:     body.ServiceType,
+			},
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendUpdateInquiryMessage,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	c.JSON(http.StatusOK, msg)
+}
+
 type EmitServiceConfirmedMessageBody struct {
-	Price           float64   `form:"price" binding:"required"`
-	ChannelUUID     string    `form:"channel_uuid" binding:"required"`
-	InquiryUUID     string    `form:"inquiry_uuid" binding:"required"`
-	ServiceTime     time.Time `form:"service_time" binding:"required"`
-	ServiceDuration int       `form:"service_duration" binding:"required"`
-	ServiceType     string    `form:"service_type" binding:"required"`
+	Price           float64   `json:"price" form:"price" binding:"required"`
+	ChannelUUID     string    `json:"channel_uuid" form:"channel_uuid" binding:"required"`
+	InquiryUUID     string    `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
+	ServiceTime     time.Time `json:"service_time" form:"service_time" binding:"required"`
+	ServiceDuration int       `json:"service_duration" form:"service_duration" binding:"required"`
+	ServiceType     string    `json:"service_type" form:"service_type" binding:"required"`
 }
 
 func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {

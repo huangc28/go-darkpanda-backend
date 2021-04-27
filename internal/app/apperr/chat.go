@@ -20,6 +20,7 @@ const (
 	FailedToValidateEmitConfirmedServiceParams            = "7000017"
 	FailedToChangeStatusWhenEmittingServiceConfirmMessage = "7000018"
 	FailedToUpdateChatroom                                = "7000019"
+	FailedToSendUpdateInquiryMessage                      = "7000020"
 )
 
 var ChatErrorMessageMap = map[string]string{

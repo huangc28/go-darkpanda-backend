@@ -287,7 +287,7 @@ type TransformedGetInquiry struct {
 	InquiryStatus string    `json:"inquiry_status"`
 	Price         *float64  `json:"price"`
 	Duration      int32     `json:"duration"`
-	Appointment   time.Time `json:"appoinment_time"`
+	Appointment   time.Time `json:"appointment_time"`
 	Lng           *float32  `json:"lng"`
 	Lat           *float32  `json:"lat"`
 	Address       string    `json:"address"`

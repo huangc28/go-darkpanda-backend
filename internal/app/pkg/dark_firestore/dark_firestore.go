@@ -24,9 +24,10 @@ var _darkFirestore *DarkFirestore
 type MessageType string
 
 const (
-	Text             MessageType = "text"
-	ServiceDetail    MessageType = "service_detail"
-	ConfirmedService MessageType = "confirmed_service"
+	Text                MessageType = "text"
+	UpdateInquiryDetail MessageType = "update_inquiry_detail"
+	ServiceDetail       MessageType = "service_detail"
+	ConfirmedService    MessageType = "confirmed_service"
 )
 
 type DarkFireStorer interface {
@@ -90,7 +91,6 @@ type ChatMessage struct {
 	Type      MessageType `firestore:"type,omitempty" json:"type"`
 	Content   interface{} `firestore:"content,omitempty" json:"content"`
 	From      string      `firestore:"from,omitempty" json:"from"`
-	To        string      `firestore:"to,omitempty" json:"to"`
 	CreatedAt time.Time   `firestore:"created_at,omitempty" json:"created_at"`
 	Empty     bool        `json:"empty"`
 }
@@ -343,6 +343,40 @@ func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHi
 	}
 
 	return msgs, nil
+}
+
+type InquiryDetailMessage struct {
+	ChatMessage
+	Price           float64 `firestore:"price,omitempty" json:"price"`
+	Duration        int     `firestore:"duration,omitempty" json:"duration"`
+	InquiryUuid     string  `firestore:"inquiry_uuid" json:"inquiry_uuid"`
+	AppointmentTime int64   `firestore:"appointment_time,omitempty" json:"appointment_time"`
+	ServiceType     string  `firestore:"service_type,omitempty" json:"service_type"`
+}
+
+type UpdateInquiryMessage struct {
+	ChannelUuid string
+	Data        InquiryDetailMessage
+}
+
+func (df *DarkFirestore) SendUpdateInquiryMessage(ctx context.Context, params UpdateInquiryMessage) (*firestore.DocumentRef, InquiryDetailMessage, error) {
+	if params.Data.Type == "" {
+		params.Data.Type = UpdateInquiryDetail
+	}
+
+	params.Data.CreatedAt = time.Now()
+
+	ref, _, err := df.Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(params.ChannelUuid).
+		Collection(MessageSubCollectionName).
+		Add(ctx, params.Data)
+
+	if err != nil {
+		return nil, params.Data, err
+	}
+
+	return ref, params.Data, nil
 }
 
 type SendServiceConfirmedMessageParams struct {

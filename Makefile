@@ -8,7 +8,7 @@ run_local_backend: run_local_docker
 run_local_docker:
 	docker-compose \
 		-f build/package/docker-compose.yaml \
-		--env-file ./.env.dev up \
+		--env-file build/package/.env.dev up \
 		-d
 
 serve_swagger: build_swagger
