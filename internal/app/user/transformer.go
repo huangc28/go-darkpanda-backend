@@ -127,6 +127,7 @@ func (ut *UserTransform) TransformMaleUser(user models.User) (*TransformedMaleUs
 	)
 
 	if user.Age.Valid {
+		ageI = new(int)
 		*ageI = int(user.Age.Int32)
 	}
 

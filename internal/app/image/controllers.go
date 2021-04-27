@@ -7,11 +7,16 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/gin-gonic/gin"
+	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
 )
+
+type ImageHandlers struct {
+	Container container.Container
+}
 
 // append timestamp on each file name
 // check mime types
@@ -77,7 +82,7 @@ func UploadAvatarHandler(c *gin.Context) {
 	})
 }
 
-func UploadImagesHandler(c *gin.Context) {
+func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 	// ------------------- Limit upload size to 20 MB -------------------
 	if err := c.Request.ParseMultipartForm(20e6); err != nil {
 		c.AbortWithError(
