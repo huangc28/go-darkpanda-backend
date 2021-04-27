@@ -94,6 +94,27 @@ func (e *LobbyStatus) Scan(src interface{}) error {
 	return nil
 }
 
+type OrderStatus string
+
+const (
+	OrderStatusInit     OrderStatus = "init"
+	OrderStatusOrdering OrderStatus = "ordering"
+	OrderStatusSuccess  OrderStatus = "success"
+	OrderStatusFailed   OrderStatus = "failed"
+)
+
+func (e *OrderStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = OrderStatus(s)
+	case string:
+		*e = OrderStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for OrderStatus: %T", src)
+	}
+	return nil
+}
+
 type PremiumType string
 
 const (
@@ -181,6 +202,39 @@ func (e *ServiceType) Scan(src interface{}) error {
 	return nil
 }
 
+type VerifyStatus string
+
+const (
+	VerifyStatusPending      VerifyStatus = "pending"
+	VerifyStatusVerifying    VerifyStatus = "verifying"
+	VerifyStatusVerified     VerifyStatus = "verified"
+	VerifyStatusVerifyFailed VerifyStatus = "verify_failed"
+)
+
+func (e *VerifyStatus) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = VerifyStatus(s)
+	case string:
+		*e = VerifyStatus(s)
+	default:
+		return fmt.Errorf("unsupported scan type for VerifyStatus: %T", src)
+	}
+	return nil
+}
+
+type BankAccount struct {
+	ID            int32        `json:"id"`
+	UserID        int32        `json:"user_id"`
+	BankName      string       `json:"bank_name"`
+	Branch        string       `json:"branch"`
+	AccountNumber string       `json:"account_number"`
+	VerifyStatus  VerifyStatus `json:"verify_status"`
+	CreatedAt     time.Time    `json:"created_at"`
+	UpdatedAt     sql.NullTime `json:"updated_at"`
+	DeletedAt     sql.NullTime `json:"deleted_at"`
+}
+
 type Chatroom struct {
 	ID           int64          `json:"id"`
 	InquiryID    int32          `json:"inquiry_id"`
@@ -201,6 +255,17 @@ type ChatroomUser struct {
 	CreatedAt  time.Time    `json:"created_at"`
 	UpdatedAt  sql.NullTime `json:"updated_at"`
 	DeletedAt  sql.NullTime `json:"deleted_at"`
+}
+
+type CoinOrder struct {
+	ID          int32        `json:"id"`
+	BuyerID     int32        `json:"buyer_id"`
+	Amount      string       `json:"amount"`
+	Cost        string       `json:"cost"`
+	OrderStatus OrderStatus  `json:"order_status"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UpdatedAt   sql.NullTime `json:"updated_at"`
+	DeletedAt   sql.NullTime `json:"deleted_at"`
 }
 
 type Image struct {

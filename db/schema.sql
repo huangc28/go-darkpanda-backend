@@ -401,3 +401,66 @@ ALTER TABLE service_inquiries
 ADD COLUMN address varchar(255);
 
 COMMIT;
+BEGIN;
+
+CREATE TYPE verify_status AS ENUM (
+	'pending',
+	'verifying',
+	'verified',
+	'verify_failed'
+);
+
+CREATE TABLE bank_accounts(
+	id SERIAL PRIMARY KEY,
+	user_id INT REFERENCES users (id) NOT NULL,
+
+	bank_name VARCHAR(255) NOT NULL,
+	branch VARCHAR(255) NOT NULL,
+	account_number VARCHAR(255) NOT NULL,
+	verify_status verify_status  NOT NULL DEFAULT 'pending',
+
+	created_at timestamp NOT NULL DEFAULT NOW(),
+	updated_at timestamp NULL DEFAULT current_timestamp,
+	deleted_at timestamp
+);
+
+COMMIT;
+BEGIN;
+
+CREATE TYPE order_status AS ENUM (
+	'init',
+	'ordering',
+	'success',
+	'failed'
+);
+
+CREATE TABLE coin_orders(
+	id SERIAL PRIMARY KEY,
+	buyer_id INT REFERENCES users(id) NOT NULL,
+	amount numeric(12, 2) NOT NULL,
+	cost numeric(12, 2) NOT NULL,
+	order_status order_status NOT NULL DEFAULT 'init',
+
+	created_at timestamp NOT NULL DEFAULT NOW(),
+	updated_at timestamp NULL DEFAULT current_timestamp,
+	deleted_at timestamp
+);
+
+COMMENT ON coin_orders.amount IS 'amount of DP coins to buy';
+COMMENT ON coin_orders.cost IS 'cost to buy, currency in TWD';
+
+COMMIT;
+BEGIN;
+
+CREATE TABLE block_list(
+	id SERIAL PRIMARY KEY,
+	user_id INT REFERENCES users (id) NOT NULL,
+	blocked_user_id INT REFERENCES users (id) NOT NULL,
+
+	created_at timestamp NOT NULL DEFAULT NOW(),
+	updated_at timestamp NULL DEFAULT current_timestamp,
+	deleted_at timestamp
+);
+
+
+COMMIT;
