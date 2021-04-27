@@ -19,7 +19,7 @@ CREATE TABLE coin_orders(
 	deleted_at timestamp
 );
 
-COMMENT ON coin_orders.amount IS 'amount of DP coins to buy';
-COMMENT ON coin_orders.cost IS 'cost to buy, currency in TWD';
+COMMENT ON COLUMN coin_orders.amount IS 'amount of DP coins to buy';
+COMMENT ON COLUMN coin_orders.cost IS 'cost to buy, currency in TWD';
 
 COMMIT;
