@@ -19,6 +19,8 @@ import (
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
+
+	convertnullsql "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/convert_null_sql"
 )
 
 type ChatHandlers struct {
@@ -533,12 +535,8 @@ func EmitInquiryUpdatedMessage(c *gin.Context, container container.Container) {
 }
 
 type EmitServiceConfirmedMessageBody struct {
-	//Price           float64   `json:"price" form:"price" binding:"required"`
 	ChannelUUID string `json:"channel_uuid" form:"channel_uuid" binding:"required"`
 	InquiryUUID string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
-	//ServiceTime     time.Time `json:"service_time" form:"service_time" binding:"required"`
-	//ServiceDuration int       `json:"service_duration" form:"service_duration" binding:"required"`
-	//ServiceType     string    `json:"service_type" form:"service_type" binding:"required"`
 }
 
 func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
@@ -580,17 +578,15 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	log.Printf("DEBUG iq result %v", iqRes)
-
 	// Wrap service and inquiry update in a transaction.
 	// Change inquiry status from `chatting` to `booked`
 	// Create a new service. Transform service status from `negotiating` to `unpaid`
-	resp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
+	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 		serviceDBCli := models.New(tx)
 
 		statusUnpaid := models.ServiceStatusUnpaid
 
-		serviceDBCli.CreateService(
+		service, err := serviceDBCli.CreateService(
 			ctx,
 			models.CreateServiceParams{
 				CustomerID:        iqRes.InquirerID,
@@ -617,18 +613,39 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			UUID:          body.InquiryUUID,
 		})
 
-		//if err != nil {
-		//return err, nil
-		//}
+		if err != nil {
+			return db.FormatResp{
+				Err:            err,
+				ErrCode:        apperr.FailedToPatchInquiryStatus,
+				HttpStatusCode: http.StatusInternalServerError,
+			}
+		}
 
-		return db.FormatResp{}
+		return db.FormatResp{
+			Response: &service,
+		}
 	})
+
+	if transResp.Err != nil {
+		c.AbortWithError(
+			transResp.HttpStatusCode,
+			apperr.NewErr(
+				transResp.ErrCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	service := transResp.Response.(*models.Service)
+	price, err := convertnullsql.ConvertSqlNullStringToFloat32(service.Price)
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToChangeStatusWhenEmittingServiceConfirmMessage,
+				apperr.FailedToConvertNullSQLStringToFloat,
 				err.Error(),
 			),
 		)
@@ -646,23 +663,24 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 					From:      c.GetString("uuid"),
 					CreatedAt: time.Now(),
 				},
-				Price:       body.Price,
-				Duration:    body.ServiceDuration,
+				Price:       float64(*price),
+				Duration:    int(service.Duration.Int32),
 				ServiceUUID: service.Uuid.String(),
-				ServiceType: body.ServiceType,
+				ServiceType: service.ServiceType.ToString(),
 				// Convert unix nano to unix micro so that the flutter can parse it using DateTime.
-				ServiceTime: body.ServiceTime.UnixNano() / 1000,
+				ServiceTime: service.AppointmentTime.Time.UnixNano() / 1000,
 			},
 		},
 	)
-
 	resp := struct {
 		Message   interface{} `json:"message"`
 		MessageID string      `json:"message_id"`
+		ChannelID string      `json:"channel_id"`
 	}{
 		Message:   msg,
 		MessageID: docRef.ID,
+		ChannelID: body.ChannelUUID,
 	}
 
-	c.JSON(http.StatusOK, struct{}{})
+	c.JSON(http.StatusOK, resp)
 }
