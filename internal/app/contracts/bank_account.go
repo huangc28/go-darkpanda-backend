@@ -1,8 +1,8 @@
 package contracts
 
 import (
+	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
-	"github.com/jmoiron/sqlx"
 )
 
 type PatchBankAccountParams struct {
@@ -22,6 +22,6 @@ type InsertBankAccountParams struct {
 }
 
 type BankAccountDAOer interface {
-	WithTx(tx *sqlx.Tx) BankAccountDAOer
+	WithTx(tx db.Conn) BankAccountDAOer
 	GetUserBankAccount(uuid string) (*models.BankAccount, error)
 }

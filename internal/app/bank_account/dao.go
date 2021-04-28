@@ -1,11 +1,10 @@
-package bank_account
+package bankAccount
 
 import (
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
-	"github.com/jmoiron/sqlx"
 )
 
 type BankAccountDAO struct {
@@ -32,7 +31,7 @@ func BankAccountDAOServiceProvider(c container.Container) func() error {
 	}
 }
 
-func (dao *BankAccountDAO) WithTx(tx *sqlx.Tx) contracts.BankAccountDAOer {
+func (dao *BankAccountDAO) WithTx(tx db.Conn) contracts.BankAccountDAOer {
 	dao.db = tx
 
 	return dao
@@ -60,7 +59,7 @@ func (dao *BankAccountDAO) GetUserBankAccount(uuid string) (*models.BankAccount,
 }
 
 func (dao *BankAccountDAO) CheckHasBankAccountByUUID(uuid string) (bool, error) {
-	sql := `
+	query := `
 	SELECT EXISTS(
 		SELECT 1
 		FROM bank_accounts ba 
@@ -70,7 +69,7 @@ func (dao *BankAccountDAO) CheckHasBankAccountByUUID(uuid string) (bool, error) 
 	`
 	var exists bool
 
-	if err := dao.db.QueryRow(sql, uuid).Scan(&exists); err != nil {
+	if err := dao.db.QueryRow(query, uuid).Scan(&exists); err != nil {
 		return false, err
 	}
 
@@ -78,7 +77,7 @@ func (dao *BankAccountDAO) CheckHasBankAccountByUUID(uuid string) (bool, error) 
 }
 
 func (dao *BankAccountDAO) PatchBankAccount(uuid string, params contracts.PatchBankAccountParams) error {
-	sql := `
+	query := `
 		UPDATE bank_accounts 
 		SET bank_name = COALESCE($1, bank_name), 
 			branch = COALESCE($2, branch), 
@@ -88,7 +87,7 @@ func (dao *BankAccountDAO) PatchBankAccount(uuid string, params contracts.PatchB
 	`
 
 	_, err := dao.db.Exec(
-		sql,
+		query,
 		params.BankName,
 		params.Branch,
 		params.AccountNumber,
@@ -104,7 +103,7 @@ func (dao *BankAccountDAO) PatchBankAccount(uuid string, params contracts.PatchB
 }
 
 func (dao *BankAccountDAO) InsertBankAccount(params contracts.InsertBankAccountParams) error {
-	sql := `
+	query := `
 		INSERT INTO bank_accounts (
 			user_id, 
 			bank_name, 
@@ -119,7 +118,7 @@ func (dao *BankAccountDAO) InsertBankAccount(params contracts.InsertBankAccountP
 	`
 
 	_, err := dao.db.Exec(
-		sql,
+		query,
 		params.UserID,
 		params.BankName,
 		params.Branch,

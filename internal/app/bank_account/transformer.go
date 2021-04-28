@@ -1,4 +1,4 @@
-package bank_account
+package bankAccount
 
 import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"

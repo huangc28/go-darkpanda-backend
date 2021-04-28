@@ -1,4 +1,4 @@
-package bank_account
+package bankAccount
 
 import (
 	"net/http"
@@ -100,7 +100,7 @@ func InsertBankAccount(c *gin.Context, depCon container.Container) {
 			BankName:      body.BankName,
 			Branch:        body.Branch,
 			AccountNumber: body.AccountNumber,
-			VerifyStatus:  body.VerifyStatus,
+			VerifyStatus:  models.VerifyStatusPending,
 		})
 
 		if err != nil {
@@ -132,7 +132,7 @@ func InsertBankAccount(c *gin.Context, depCon container.Container) {
 			BankName:      body.BankName,
 			Branch:        body.Branch,
 			AccountNumber: body.AccountNumber,
-			VerifyStatus:  body.VerifyStatus,
+			VerifyStatus:  models.VerifyStatusPending,
 		})
 
 		if err1 != nil {
