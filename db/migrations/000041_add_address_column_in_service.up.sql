@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE services
+ADD COLUMN address VARCHAR(500);
+
+COMMIT;

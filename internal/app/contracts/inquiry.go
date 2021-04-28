@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
@@ -34,6 +35,7 @@ type PatchInquiryParams struct {
 }
 
 type InquiryDAOer interface {
+	WithTx(tx db.Conn)
 	CheckHasActiveInquiryByID(id int64) (bool, error)
 	GetInquiries(offset int, perpage int, statuses ...models.InquiryStatus) ([]*InquiryInfo, error)
 	GetInquiryByUuid(iqUuid string, fields ...string) (*InquiryResult, error)

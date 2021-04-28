@@ -235,6 +235,15 @@ type BankAccount struct {
 	DeletedAt     sql.NullTime `json:"deleted_at"`
 }
 
+type BlockList struct {
+	ID            int32        `json:"id"`
+	UserID        int32        `json:"user_id"`
+	BlockedUserID int32        `json:"blocked_user_id"`
+	CreatedAt     time.Time    `json:"created_at"`
+	UpdatedAt     sql.NullTime `json:"updated_at"`
+	DeletedAt     sql.NullTime `json:"deleted_at"`
+}
+
 type Chatroom struct {
 	ID           int64          `json:"id"`
 	InquiryID    int32          `json:"inquiry_id"`
@@ -258,9 +267,11 @@ type ChatroomUser struct {
 }
 
 type CoinOrder struct {
-	ID          int32        `json:"id"`
-	BuyerID     int32        `json:"buyer_id"`
-	Amount      string       `json:"amount"`
+	ID      int32 `json:"id"`
+	BuyerID int32 `json:"buyer_id"`
+	// amount of DP coins to buy
+	Amount string `json:"amount"`
+	// cost to buy, currency in TWD
 	Cost        string       `json:"cost"`
 	OrderStatus OrderStatus  `json:"order_status"`
 	CreatedAt   time.Time    `json:"created_at"`
@@ -319,6 +330,7 @@ type Service struct {
 	Budget            sql.NullString `json:"budget"`
 	InquiryID         int32          `json:"inquiry_id"`
 	ServiceStatus     ServiceStatus  `json:"service_status"`
+	Address           sql.NullString `json:"address"`
 }
 
 type ServiceInquiry struct {

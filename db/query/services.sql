@@ -12,6 +12,7 @@ INSERT INTO services(
 	lat,
 	service_type,
 	girl_ready,
-	man_ready
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	man_ready,
+	address
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;

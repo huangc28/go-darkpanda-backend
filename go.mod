@@ -31,7 +31,6 @@ require (
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/json-iterator/go v1.1.10 // indirect
-	github.com/kyleconroy/sqlc v1.7.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/lib/pq v1.10.0
 	github.com/looplab/fsm v0.1.0

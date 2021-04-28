@@ -31,6 +31,10 @@ func InquiryDaoServiceProvider(c cintrnal.Container) func() error {
 	}
 }
 
+func (dao *InquiryDAO) WithTx(db db.Conn) {
+	dao.db = db
+}
+
 func (dao *InquiryDAO) CheckHasActiveInquiryByID(id int64) (bool, error) {
 	sql := `
 SELECT EXISTS(

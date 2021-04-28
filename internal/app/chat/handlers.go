@@ -533,12 +533,12 @@ func EmitInquiryUpdatedMessage(c *gin.Context, container container.Container) {
 }
 
 type EmitServiceConfirmedMessageBody struct {
-	Price           float64   `json:"price" form:"price" binding:"required"`
-	ChannelUUID     string    `json:"channel_uuid" form:"channel_uuid" binding:"required"`
-	InquiryUUID     string    `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
-	ServiceTime     time.Time `json:"service_time" form:"service_time" binding:"required"`
-	ServiceDuration int       `json:"service_duration" form:"service_duration" binding:"required"`
-	ServiceType     string    `json:"service_type" form:"service_type" binding:"required"`
+	//Price           float64   `json:"price" form:"price" binding:"required"`
+	ChannelUUID string `json:"channel_uuid" form:"channel_uuid" binding:"required"`
+	InquiryUUID string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
+	//ServiceTime     time.Time `json:"service_time" form:"service_time" binding:"required"`
+	//ServiceDuration int       `json:"service_duration" form:"service_duration" binding:"required"`
+	//ServiceType     string    `json:"service_type" form:"service_type" binding:"required"`
 }
 
 func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
@@ -565,18 +565,14 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	depCon.Make(&serviceDao)
 	depCon.Make(&inquiryDao)
 
-	// Retrieve service by inquiry uuid
-	service, err := serviceDao.GetServiceByInquiryUUID(
-		body.InquiryUUID,
-		"services.id",
-		"services.uuid",
-	)
+	// Retrieve inquiry by inquiry uuid.
+	iqRes, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID)
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetServiceByInquiryUUID,
+				apperr.FailedToGetInquiryByUuid,
 				err.Error(),
 			),
 		)
@@ -584,21 +580,36 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	log.Printf("DEBUG iq result %v", iqRes)
+
 	// Wrap service and inquiry update in a transaction.
 	// Change inquiry status from `chatting` to `booked`
-	// Change service status from `negotiating` to `unpaid`
-	err, _ = db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
-		serviceDao.WithTx(tx)
+	// Create a new service. Transform service status from `negotiating` to `unpaid`
+	resp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
+		serviceDBCli := models.New(tx)
 
 		statusUnpaid := models.ServiceStatusUnpaid
 
-		_, err := serviceDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
-			ID:            service.ID,
-			ServiceStatus: &statusUnpaid,
-		})
+		serviceDBCli.CreateService(
+			ctx,
+			models.CreateServiceParams{
+				CustomerID:        iqRes.InquirerID,
+				ServiceProviderID: iqRes.PickerID,
+				Price:             iqRes.Price,
+				Duration:          iqRes.Duration,
+				AppointmentTime:   iqRes.AppointmentTime,
+				InquiryID:         int32(iqRes.ID),
+				ServiceStatus:     statusUnpaid,
+				ServiceType:       iqRes.ServiceType,
+				Address:           iqRes.Address,
+			},
+		)
 
 		if err != nil {
-			return err, nil
+			return db.FormatResp{
+				Err:     err,
+				ErrCode: apperr.FailedToCreateService,
+			}
 		}
 
 		err = inquiryDao.PatchInquiryStatusByUUID(contracts.PatchInquiryStatusByUUIDParams{
@@ -606,11 +617,11 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			UUID:          body.InquiryUUID,
 		})
 
-		if err != nil {
-			return err, nil
-		}
+		//if err != nil {
+		//return err, nil
+		//}
 
-		return nil, nil
+		return db.FormatResp{}
 	})
 
 	if err != nil {
@@ -653,5 +664,5 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		MessageID: docRef.ID,
 	}
 
-	c.JSON(http.StatusOK, resp)
+	c.JSON(http.StatusOK, struct{}{})
 }
