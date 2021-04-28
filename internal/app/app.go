@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/bank_account"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
@@ -67,6 +68,11 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	)
 
 	chat.Routes(
+		rv1,
+		deps.Get().Container,
+	)
+
+	bank_account.Routes(
 		rv1,
 		deps.Get().Container,
 	)

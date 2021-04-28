@@ -224,15 +224,15 @@ func (e *VerifyStatus) Scan(src interface{}) error {
 }
 
 type BankAccount struct {
-	ID            int32        `json:"id"`
-	UserID        int32        `json:"user_id"`
-	BankName      string       `json:"bank_name"`
-	Branch        string       `json:"branch"`
-	AccountNumber string       `json:"account_number"`
-	VerifyStatus  VerifyStatus `json:"verify_status"`
-	CreatedAt     time.Time    `json:"created_at"`
-	UpdatedAt     sql.NullTime `json:"updated_at"`
-	DeletedAt     sql.NullTime `json:"deleted_at"`
+	ID            int32          `json:"id"`
+	UserID        int32          `json:"user_id"`
+	BankName      sql.NullString `json:"bank_name"`
+	Branch        sql.NullString `json:"branch"`
+	AccountNumber sql.NullString `json:"account_number"`
+	VerifyStatus  sql.NullString `json:"verify_status"`
+	CreatedAt     time.Time      `json:"created_at"`
+	UpdatedAt     sql.NullTime   `json:"updated_at"`
+	DeletedAt     sql.NullTime   `json:"deleted_at"`
 }
 
 type Chatroom struct {
