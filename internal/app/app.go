@@ -8,6 +8,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	bankAccount "github.com/huangc28/go-darkpanda-backend/internal/app/bank_account"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/coin"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
@@ -73,6 +74,11 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	)
 
 	bankAccount.Routes(
+		rv1,
+		deps.Get().Container,
+	)
+
+	coin.Routes(
 		rv1,
 		deps.Get().Container,
 	)
