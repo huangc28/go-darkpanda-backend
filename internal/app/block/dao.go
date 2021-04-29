@@ -71,6 +71,25 @@ func (dao *BlockDAO) GetUserBlock(uuid string) ([]contracts.GetUserBlockListPara
 	return blocks, nil
 }
 
+func (dao *BlockDAO) InsertUserBlock(params contracts.InsertUserBlockListParams) error {
+	query := `
+		INSERT INTO block_list(
+			user_id,
+			blocked_user_id
+		) VALUES ($1, $2);
+	`
+
+	if _, err := dao.db.Exec(
+		query,
+		params.UserId,
+		params.BlockedUserId,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (dao *BlockDAO) DeleteUserBlock(blockId string) error {
 	query := `
 		DELETE FROM block_list 

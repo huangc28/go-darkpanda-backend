@@ -7,6 +7,8 @@ import (
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 )
 
 type GetUserBankAccountBody struct {
@@ -51,12 +53,22 @@ func GetUserBlock(c *gin.Context, depCon container.Container) {
 }
 
 func InsertUserBlock(c *gin.Context, depCon container.Container) {
-	var (
-		blockId string = c.Param("id")
-	)
+	body := contracts.InsertUserBlockListParams{}
+
+	if err := requestbinder.Bind(c, body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateEmitInquiryParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	q := NewBlockDAO(db.GetDB())
-	err := q.DeleteUserBlock(blockId)
+	err := q.InsertUserBlock(body)
 
 	if err != nil {
 		c.AbortWithError(
