@@ -12,6 +12,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/middlewares"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/rate"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/referral"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/register"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
@@ -73,6 +74,11 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	)
 
 	bankAccount.Routes(
+		rv1,
+		deps.Get().Container,
+	)
+
+	rate.Routes(
 		rv1,
 		deps.Get().Container,
 	)
