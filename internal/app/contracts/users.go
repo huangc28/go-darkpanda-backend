@@ -31,5 +31,6 @@ type UserDAOer interface {
 	CheckIsMaleByUuid(uuid string) (bool, error)
 	CheckIsFemaleByUuid(uuid string) (bool, error)
 	GetUserImagesByUuid(uuid string, offset int, perPage int) ([]models.Image, error)
+	DeleteUserImages(url string) error
 	WithTx(tx *sqlx.Tx) UserDAOer
 }
