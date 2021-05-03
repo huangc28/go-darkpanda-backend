@@ -263,6 +263,16 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 
 		if err := imageDAO.CreateImages(imagesParams); err != nil {
 			log.Fatalf("Failed to insert images %s", err.Error())
+
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.FailedToSendMobileVerifyCode,
+					err.Error(),
+				),
+			)
+
+			return
 		}
 		fmt.Print(imagesParams)
 	}
