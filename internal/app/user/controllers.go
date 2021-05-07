@@ -181,15 +181,16 @@ type CreateImageParams struct {
 }
 
 type PutUserInfoBody struct {
-	AvatarURL   *string             `form:"avatar_url" json:"avatar_url"`
-	Nationality *string             `form:"nationality" json:"nationality"`
-	Region      *string             `form:"region" json:"region"`
-	Age         int                 `form:"age" json:"age"`
-	Height      float64             `form:"height" json:"height"`
-	Weight      float64             `form:"weight" json:"weight"`
-	Habbits     *string             `form:"habbits" json:"habbits"`
-	Description *string             `form:"description" json:"description"`
-	Images      []CreateImageParams `form:"imageList" json:"imageList"`
+	AvatarURL    *string             `form:"avatar_url" json:"avatar_url"`
+	Nationality  *string             `form:"nationality" json:"nationality"`
+	Region       *string             `form:"region" json:"region"`
+	Age          int                 `form:"age" json:"age"`
+	Height       float64             `form:"height" json:"height"`
+	Weight       float64             `form:"weight" json:"weight"`
+	Habbits      *string             `form:"habbits" json:"habbits"`
+	Description  *string             `form:"description" json:"description"`
+	Images       []CreateImageParams `form:"imageList" json:"imageList"`
+	RemoveImages []CreateImageParams `form:"removeImageList" json:"removeImageList"`
 	// BreastSize  *string  `json:"breast_size"`
 }
 
@@ -239,6 +240,15 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 		return
 	}
 
+	if len(body.RemoveImages) > 0 {
+
+		for i := 0; i < len(body.RemoveImages); i++ {
+			if err := dao.DeleteUserImages(body.RemoveImages[i].URL); err != nil {
+				log.Fatalf("Failed to remove images %s", err.Error())
+			}
+		}
+	}
+
 	var imageDAO contracts.ImageDAOer
 	h.Container.Make(&imageDAO)
 
@@ -253,6 +263,16 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 
 		if err := imageDAO.CreateImages(imagesParams); err != nil {
 			log.Fatalf("Failed to insert images %s", err.Error())
+
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.FailedToSendMobileVerifyCode,
+					err.Error(),
+				),
+			)
+
+			return
 		}
 		fmt.Print(imagesParams)
 	}

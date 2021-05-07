@@ -304,3 +304,21 @@ WHERE username = $1
 
 	return &user, nil
 }
+
+func (dao *UserDAO) DeleteUserImages(url string) error {
+	query := `
+		DELETE FROM images
+		WHERE url=$1
+	`
+
+	_, err := dao.db.Exec(
+		query,
+		url,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+}
