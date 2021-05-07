@@ -35,8 +35,9 @@ type TransformedInquiryChat struct {
 
 	// Messages only contains the latest message of the chatroom. It's an empty array
 	// If the chatroom does not contain any message.
-	Messages    []*darkfirestore.ChatMessage `json:"messages"`
-	InquiryUUID string                       `json:"inquiry_uuid"`
+	Messages     []*darkfirestore.ChatMessage `json:"messages"`
+	InquiryUUID  string                       `json:"inquiry_uuid"`
+	InquirerUUID string                       `json:"inquirer_uuid"`
 }
 
 type TransformedInquiryChats struct {
@@ -54,13 +55,14 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 		}
 
 		trfm := TransformedInquiryChat{
-			ServiceType: m.ServiceType,
-			Username:    m.Username,
-			ChannelUUID: m.ChannelUUID,
-			ExpiredAt:   m.ExpiredAt,
-			CreatedAt:   m.CreatedAt,
-			Messages:    chatMsgs,
-			InquiryUUID: m.InquiryUUID,
+			ServiceType:  m.ServiceType,
+			Username:     m.Username,
+			ChannelUUID:  m.ChannelUUID,
+			ExpiredAt:    m.ExpiredAt,
+			CreatedAt:    m.CreatedAt,
+			Messages:     chatMsgs,
+			InquiryUUID:  m.InquiryUUID,
+			InquirerUUID: m.InquirerUUID,
 		}
 
 		if m.AvatarURL.Valid {

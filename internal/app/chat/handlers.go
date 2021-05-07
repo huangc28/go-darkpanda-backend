@@ -534,8 +534,8 @@ func EmitInquiryUpdatedMessage(c *gin.Context, container container.Container) {
 	c.JSON(http.StatusOK, msg)
 }
 
+// @TODO the client shouldn't need be needing to provide channel uuid. We should get channel uuid by inquiry uuid.
 type EmitServiceConfirmedMessageBody struct {
-	ChannelUUID string `json:"channel_uuid" form:"channel_uuid" binding:"required"`
 	InquiryUUID string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
 }
 
@@ -558,10 +558,12 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	var (
 		serviceDao contracts.ServiceDAOer
 		inquiryDao contracts.InquiryDAOer
+		chatDao    contracts.ChatDaoer
 	)
 
 	depCon.Make(&serviceDao)
 	depCon.Make(&inquiryDao)
+	depCon.Make(&chatDao)
 
 	// Retrieve inquiry by inquiry uuid.
 	iqRes, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID)
@@ -571,6 +573,21 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			http.StatusInternalServerError,
 			apperr.NewErr(
 				apperr.FailedToGetInquiryByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve chatroom by inquiry id.
+	chatroom, err := chatDao.GetChatRoomByInquiryID(iqRes.ID, "channel_uuid")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetChatRoomByInquiryID,
 				err.Error(),
 			),
 		)
@@ -656,7 +673,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	docRef, msg, err := darkfirestore.Get().SendServiceConfirmedMessage(
 		ctx,
 		darkfirestore.SendServiceConfirmedMessageParams{
-			ChannelUUID: body.ChannelUUID,
+			ChannelUUID: chatroom.ChannelUuid.String,
 			Data: darkfirestore.ServiceDetailMessage{
 				ChatMessage: darkfirestore.ChatMessage{
 					Content:   "",
@@ -679,7 +696,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	}{
 		Message:   msg,
 		MessageID: docRef.ID,
-		ChannelID: body.ChannelUUID,
+		ChannelID: chatroom.ChannelUuid.String,
 	}
 
 	c.JSON(http.StatusOK, resp)
