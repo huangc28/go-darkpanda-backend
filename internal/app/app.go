@@ -17,6 +17,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/rate"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/referral"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/register"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/service"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
 )
 
@@ -65,6 +66,11 @@ func StartApp(e *gin.Engine) *gin.Engine {
 		deps.Get().Container,
 	)
 
+	service.Routes(
+		rv1,
+		deps.Get().Container,
+	)
+
 	image.Routes(
 		rv1,
 		deps.Get().Container,
@@ -81,12 +87,12 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	)
 
 	coin.Routes(
-    rv1,
+		rv1,
 		deps.Get().Container,
 	)
 
 	rate.Routes(
-    rv1,
+		rv1,
 		deps.Get().Container,
 	)
 

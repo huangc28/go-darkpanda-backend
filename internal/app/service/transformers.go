@@ -10,6 +10,7 @@ type TransformedGetIncomingService struct {
 	UserUuid        string    `json:"user_uuid"`
 	AvatarUrl       string    `json:"avatar_url"`
 	ChannelUuid     string    `json:"channel_uuid"`
+	InquiryUuid     string    `json:"inquiry_uuid"`
 }
 
 type TransformedGetIncomingServices struct {
@@ -28,6 +29,7 @@ func TransformGetServicesResults(results []ServiceResult) TransformedGetIncoming
 			res.UserUuid.String,
 			res.AvatarUrl.String,
 			res.ChannelUuid.String,
+			res.InquiryUuid.String,
 		}
 
 		trfRes = append(trfRes, c)

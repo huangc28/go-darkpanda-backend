@@ -48,6 +48,7 @@ type ServiceResult struct {
 	UserUuid        sql.NullString `json:"user_uuid"`
 	AvatarUrl       sql.NullString `json:"avatar_url"`
 	ChannelUuid     sql.NullString `json:"channel_uuid"`
+	InquiryUuid     sql.NullString `json:"inquiry_uuid"`
 }
 
 // GetServicesByStatus gets services of given status
@@ -86,7 +87,7 @@ func (dao *ServiceDAO) GetServicesByStatus(providerID int, gender models.Gender,
 		whereClause += "services.customer_id = $1"
 	}
 
-	sql := fmt.Sprintf(
+	query := fmt.Sprintf(
 		`
 SELECT
 	services.uuid as service_uuid,
@@ -95,10 +96,13 @@ SELECT
 	users.username,
 	users.uuid as user_uuid,
 	users.avatar_url,
-	chatrooms.channel_uuid
+	chatrooms.channel_uuid,
+	service_inquiries.uuid as inquiry_uuid
 FROM services
 INNER JOIN users
 	ON services.customer_id = users.id
+INNER JOIN service_inquiries
+	ON services.inquiry_id = service_inquiries.id
 LEFT JOIN chatrooms
 	ON services.inquiry_id = chatrooms.inquiry_id
 WHERE
@@ -113,7 +117,7 @@ OFFSET $3;
 	)
 
 	rows, err := dao.DB.Queryx(
-		sql,
+		query,
 		providerID,
 		perPage,
 		offset,
