@@ -37,9 +37,7 @@ type EmitTextMessageBody struct {
 
 // @TODOs
 //   - Check if chatroom has expired
-//   - Check if message count is still within valid range
 func EmitTextMessage(c *gin.Context, depCon container.Container) {
-
 	body := EmitTextMessageBody{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -57,43 +55,6 @@ func EmitTextMessage(c *gin.Context, depCon container.Container) {
 	var chatDao contracts.ChatDaoer
 
 	depCon.Make(&chatDao)
-
-	// check if chatroom has expired
-	// channel, err := chatDao.GetChatRoomByChannelUUID(
-	// 	body.ChannelUUID,
-	// 	"expired_at",
-	// 	"message_count",
-	// )
-
-	// if err != nil {
-	// 	c.AbortWithError(
-	// 		http.StatusInternalServerError,
-	// 		apperr.NewErr(
-	// 			apperr.FailedToGetChatRoomByChannelUuid,
-	// 			err.Error(),
-	// 		),
-	// 	)
-
-	// 	return
-	// }
-
-	// if IsChatroomExpired(channel.ExpiredAt) {
-	// 	c.AbortWithError(
-	// 		http.StatusBadRequest,
-	// 		apperr.NewErr(apperr.ChatRoomHasExpired),
-	// 	)
-
-	// 	return
-	// }
-
-	// if IsExceedMaxMessageCount(int(channel.MessageCount.Int32)) {
-	// 	c.AbortWithError(
-	// 		http.StatusBadRequest,
-	// 		apperr.NewErr(apperr.MessageExceedMaximumCount),
-	// 	)
-
-	// 	return
-	// }
 
 	// Emit message to firestore.
 	ctx := context.Background()
