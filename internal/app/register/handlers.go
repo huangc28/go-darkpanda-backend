@@ -172,7 +172,7 @@ func RegisterHandler(c *gin.Context) {
 }
 
 type VerifyUsernameBody struct {
-	Username string `form:"username" json:"username"`
+	Username string `form:"username" json:"username" binding:"required,gt=0"`
 }
 
 func VerifyUsernameHandler(c *gin.Context, depCon container.Container) {
@@ -221,8 +221,9 @@ func VerifyUsernameHandler(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, struct{}{})
 }
 
+// @TODO check if referral code has been used or not.
 type VerifyReferralCodeBody struct {
-	ReferralCode string `form:"referral_code" json:"referral_code" binding:"required"`
+	ReferralCode string `form:"referral_code" json:"referral_code" binding:"required,gt=0"`
 }
 
 func VerifyReferralCodeHandler(c *gin.Context, depCon container.Container) {
@@ -276,7 +277,7 @@ func VerifyReferralCodeHandler(c *gin.Context, depCon container.Container) {
 
 type SendMobileVerifyCodeHandlerBody struct {
 	Uuid   string `json:"uuid" form:"uuid" binding:"required,gt=0"`
-	Mobile string `json:"mobile" form:"mobile" binding:"required"`
+	Mobile string `json:"mobile" form:"mobile" binding:"required" binding:"required,gt=0"`
 }
 
 func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
@@ -478,7 +479,6 @@ func VerifyMobileHandler(c *gin.Context, depCon container.Container) {
 	// If verify code matches, update the user to be mobile verified
 	// If verify code isn't match, respond bad request.
 	// Response with auth jwt token.
-	log.Printf("DEBUG create token 1 ~~ %v", user.Uuid)
 
 	jwt, err := jwtactor.CreateToken(
 		user.Uuid,

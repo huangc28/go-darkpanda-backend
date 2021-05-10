@@ -6,4 +6,10 @@ const (
 	FailedToCommitTx                    = "0000003"
 	FailedToValidateRequestBody         = "0000004"
 	FailedToConvertNullSQLStringToFloat = "0000005"
+	FailedToBindJwtInHeader             = "0000006"
+	MissingAuthToken                    = "0000007"
 )
+
+var GeneralErrorMessageMap = map[string]string{
+	MissingAuthToken: "Missing auth token",
+}

@@ -29,7 +29,7 @@ type AuthController struct {
 
 // store jwt token in redis and db
 type RevokeJwtBody struct {
-	Jwt string `json:"jwt" binding:"required,gt=0"`
+	Jwt string ` form:"jwt" json:"jwt" binding:"required,gt=0"`
 }
 
 func (ac *AuthController) RevokeJwtHandler(c *gin.Context) {

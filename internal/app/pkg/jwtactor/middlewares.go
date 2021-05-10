@@ -1,7 +1,6 @@
 package jwtactor
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -10,52 +9,36 @@ import (
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 )
 
-type JwtValidatorParams struct {
-	Jwt string `json:"jwt"`
-}
+func ExtractTokenFromRequest(c *gin.Context) (string, error) {
+	headerJwt := JwtToken{}
 
-func ExtractTokenFromHeader(req *http.Request) string {
-	bearToken := req.Header.Get("Authorization")
-	strArr := strings.Split(bearToken, " ")
-	if len(strArr) == 2 {
-		return strArr[1]
-	}
-
-	return ""
-}
-
-func ExtractTokenFromBody(req *http.Request) (string, error) {
-	bodyStruct := struct {
-		Jwt string `json:"jwt"`
-	}{}
-
-	dec := json.NewDecoder(req.Body)
-
-	if err := dec.Decode(&bodyStruct); err != nil {
+	if err := c.ShouldBindHeader(&headerJwt); err != nil {
 		return "", err
 	}
 
-	return bodyStruct.Jwt, nil
-}
+	if len(headerJwt.AuthJwt) > 0 {
+		strArr := strings.Split(headerJwt.AuthJwt, " ")
 
-func ExtractTokenFromRequest(req *http.Request) (string, error) {
-	token := ExtractTokenFromHeader(req)
+		if len(strArr) >= 2 {
+			return strArr[1], nil
+		}
 
-	if token != "" && len(token) > 0 {
-		return token, nil
+		return headerJwt.AuthJwt, nil
 	}
 
-	token, err := ExtractTokenFromBody(req)
-
-	if err != nil {
-		return "", nil
+	if err := c.ShouldBindQuery(&headerJwt); err != nil {
+		return "", err
 	}
 
-	return token, nil
+	return headerJwt.AuthJwt, nil
 }
 
 type JwtMiddlewareOptions struct {
 	Secret string
+}
+
+type JwtToken struct {
+	AuthJwt string `header:"Authorization" form:"jwt"`
 }
 
 func JwtValidator(opt JwtMiddlewareOptions) gin.HandlerFunc {
@@ -63,15 +46,28 @@ func JwtValidator(opt JwtMiddlewareOptions) gin.HandlerFunc {
 		// retrieve jwt token from either header or url
 		// header:
 		//   Authorization: Bearer ${JWT}
-		token, err := ExtractTokenFromRequest(c.Request)
+		token, err := ExtractTokenFromRequest(c)
 
 		if err != nil {
 			c.AbortWithError(
-				http.StatusUnauthorized,
-				apperr.NewErr(apperr.JWTNotProvided),
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToBindJwtInHeader,
+					err.Error(),
+				),
 			)
 
 			return
+		}
+
+		if len(token) <= 0 {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(apperr.MissingAuthToken),
+			)
+
+			return
+
 		}
 
 		claims := &Claim{}
