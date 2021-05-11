@@ -487,10 +487,7 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	if iq.InquiryStatus != models.InquiryStatusInquiring {
 		c.AbortWithError(
 			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToPickupStatusNotInquiring,
-				err.Error(),
-			),
+			apperr.NewErr(apperr.FailedToPickupStatusNotInquiring),
 		)
 
 		return
@@ -1435,68 +1432,12 @@ func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, trfed)
 }
 
-func GetInquirerInfo(c *gin.Context, depCon container.Container) {
-	iqUUID := c.Param("uuid")
-
-	// Retrieve inquiry info by UUID
-	var (
-		inquiryDAO contracts.InquiryDAOer
-		imageDAO   contracts.ImageDAOer
-	)
-
-	depCon.Make(&inquiryDAO)
-	depCon.Make(&imageDAO)
-
-	inquirer, err := inquiryDAO.GetInquirerByInquiryUUID(iqUUID)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetInquirerByInquiryUUID,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	images, err := imageDAO.GetImagesByUserID(int(inquirer.ID))
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetImagesByUserID,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	trfm, err := NewTransform().TransformGetInquirerInfo(
-		*inquirer,
-		images,
-	)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToTransformInquirerResponse,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	c.JSON(http.StatusOK, trfm)
+type PatchInquiryUriUuid struct {
+	Uuid string `uri:"inquiry_uuid"`
 }
 
 type PatchInquiryBody struct {
-	Uuid            string     `form:"uuid" json:"uuid" binding:"required"`
+	Uuid            string     `uri:"inquiry_uuid" form:"uuid" json:"uuid"`
 	AppointmentTime *time.Time `form:"appointment_time" json:"appointment_time"`
 	Price           *float32   `form:"price" json:"price"`
 	Duration        *int       `form:"duration" json:"duration"`
@@ -1519,9 +1460,15 @@ func PatchInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	iqUuidUri := PatchInquiryUriUuid{}
+
+	if err := c.BindUri(&iqUuidUri); err != nil {
+		return
+	}
+
 	dao := NewInquiryDAO(db.GetDB())
 	inquiry, err := dao.PatchInquiryByInquiryUUID(contracts.PatchInquiryParams{
-		Uuid:            body.Uuid,
+		Uuid:            iqUuidUri.Uuid,
 		AppointmentTime: body.AppointmentTime,
 		Price:           body.Price,
 		Duration:        body.Duration,
