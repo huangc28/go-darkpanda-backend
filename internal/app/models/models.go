@@ -387,12 +387,13 @@ type User struct {
 }
 
 type UserBalance struct {
-	ID int64 `json:"id"`
+	ID     int64 `json:"id"`
+	UserID int32 `json:"user_id"`
 	// use for update when reading the column
-	Balance   sql.NullInt32 `json:"balance"`
-	CreatedAt time.Time     `json:"created_at"`
-	UpdatedAt sql.NullTime  `json:"updated_at"`
-	DeletedAt sql.NullTime  `json:"deleted_at"`
+	Balance   string       `json:"balance"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+	DeletedAt sql.NullTime `json:"deleted_at"`
 }
 
 type UserRating struct {

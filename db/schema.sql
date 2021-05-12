@@ -484,7 +484,8 @@ BEGIN;
 
 CREATE TABLE user_balance (
 	id BIGSERIAL PRIMARY KEY,
-	balance INT,
+	user_id INT REFERENCES users (id) NOT NULL,
+	balance numeric(12, 2) NOT NULL DEFAULT 0,
 
 	created_at timestamp NOT NULL DEFAULT NOW(),
 	updated_at timestamp NULL DEFAULT current_timestamp,
