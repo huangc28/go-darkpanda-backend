@@ -224,15 +224,15 @@ func (e *VerifyStatus) Scan(src interface{}) error {
 }
 
 type BankAccount struct {
-	ID            int32          `json:"id"`
-	UserID        int32          `json:"user_id"`
-	BankName      sql.NullString `json:"bank_name"`
-	Branch        sql.NullString `json:"branch"`
-	AccountNumber sql.NullString `json:"account_number"`
-	VerifyStatus  sql.NullString `json:"verify_status"`
-	CreatedAt     time.Time      `json:"created_at"`
-	UpdatedAt     sql.NullTime   `json:"updated_at"`
-	DeletedAt     sql.NullTime   `json:"deleted_at"`
+	ID            int32        `json:"id"`
+	UserID        int32        `json:"user_id"`
+	BankName      string       `json:"bank_name"`
+	Branch        string       `json:"branch"`
+	AccountNumber string       `json:"account_number"`
+	VerifyStatus  VerifyStatus `json:"verify_status"`
+	CreatedAt     time.Time    `json:"created_at"`
+	UpdatedAt     sql.NullTime `json:"updated_at"`
+	DeletedAt     sql.NullTime `json:"deleted_at"`
 }
 
 type BlockList struct {
@@ -277,6 +277,13 @@ type CoinOrder struct {
 	CreatedAt   time.Time    `json:"created_at"`
 	UpdatedAt   sql.NullTime `json:"updated_at"`
 	DeletedAt   sql.NullTime `json:"deleted_at"`
+}
+
+type CoinPackage struct {
+	ID       int64          `json:"id"`
+	DbCoins  sql.NullInt32  `json:"db_coins"`
+	Cost     sql.NullInt32  `json:"cost"`
+	Currency sql.NullString `json:"currency"`
 }
 
 type Image struct {
@@ -377,6 +384,15 @@ type User struct {
 	Description       sql.NullString `json:"description"`
 	BreastSize        sql.NullString `json:"breast_size"`
 	Mobile            sql.NullString `json:"mobile"`
+}
+
+type UserBalance struct {
+	ID int64 `json:"id"`
+	// use for update when reading the column
+	Balance   sql.NullInt32 `json:"balance"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt sql.NullTime  `json:"updated_at"`
+	DeletedAt sql.NullTime  `json:"deleted_at"`
 }
 
 type UserRating struct {

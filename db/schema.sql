@@ -470,3 +470,27 @@ ALTER TABLE services
 ADD COLUMN address VARCHAR(500);
 
 COMMIT;
+BEGIN;
+
+CREATE TABLE coin_packages (
+	id BIGSERIAL PRIMARY KEY,
+	db_coins INT,
+	cost INT,
+	currency varchar(10) DEFAULT 'TWD'
+);
+
+COMMIT;
+BEGIN;
+
+CREATE TABLE user_balance (
+	id BIGSERIAL PRIMARY KEY,
+	balance INT,
+
+	created_at timestamp NOT NULL DEFAULT NOW(),
+	updated_at timestamp NULL DEFAULT current_timestamp,
+	deleted_at timestamp
+);
+
+COMMENT ON COLUMN user_balance.balance IS 'use for update when reading the column';
+
+COMMIT;

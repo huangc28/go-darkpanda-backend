@@ -1,0 +1,5 @@
+BEGIN;
+
+DROP TABLE IF NOT EXISTS user_balance;
+
+COMMIT;
