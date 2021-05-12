@@ -6,9 +6,14 @@ import (
 )
 
 type OrderCoinParams struct {
-	BuyerID     int32              `json:"buyer_id"`
-	Amount      float32            `json:"amount"`
-	Cost        float32            `json:"cost"`
+	BuyerID     int                `json:"buyer_id"`
+	Amount      int                `json:"amount"`
+	Cost        int                `json:"cost"`
+	OrderStatus models.OrderStatus `json:"order_status"`
+}
+
+type UpdateOrderCoinStatusParams struct {
+	ID          int                `json:"id"`
 	OrderStatus models.OrderStatus `json:"order_status"`
 }
 
