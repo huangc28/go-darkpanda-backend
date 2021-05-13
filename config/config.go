@@ -60,6 +60,12 @@ type FirestoreCredentials struct {
 	CredentialFile string `mapstructure:"credential_file"`
 }
 
+type TapPayCredential struct {
+	EndPoint   string `mapstructure:"tappay_endpoint"`
+	PartnerKey string `mapstructure:"partner_key"`
+	MerchantID string `mapstructure:"merchant_id"`
+}
+
 type AppConf struct {
 	Port           string          `mapstructure:"port"`
 	JwtSecret      string          `mapstructure:"jwt_secret"`
@@ -69,10 +75,11 @@ type AppConf struct {
 	TwilioConf     *TwilioConf     `mapstructure:"twilio"`
 	GCSCredentials *GCSCredentials `mapstructure:"gcs"`
 
-	// @deprecated
+	// @Deprecated: PubnubCredentials
 	PubnubCredentials *PubnubCredentials `mapstructure:"pubnub"`
 
-	Firestore *FirestoreCredentials `mapstructure:"firestore"`
+	Firestore        *FirestoreCredentials `mapstructure:"firestore"`
+	TapPayCredential *TapPayCredential     `mapstructure:"tappay"`
 }
 
 var appConf AppConf

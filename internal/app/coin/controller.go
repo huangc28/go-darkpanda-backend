@@ -1,19 +1,18 @@
 package coin
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
+	"github.com/jmoiron/sqlx"
 )
 
 type PaymentResponse struct {
@@ -21,44 +20,18 @@ type PaymentResponse struct {
 	Msg    string `json:"msg"`
 }
 
-type PaymentParam struct {
-	Prime       string     `json:"prime"`
-	Partner_key string     `json:"partner_key"`
-	Merchant_id string     `json:"merchant_id"`
-	Details     string     `json:"details"`
-	Amount      string     `json:"amount"`
-	Currency    string     `json:"currency"`
-	Cardholder  CardHolder `json:"cardholder"`
-	Remember    bool       `json:"remember"`
-}
-type CardHolder struct {
-	Phone_number string `json:"phone_number"`
-	Name         string `json:"name"`
-	Email        string `json:"email"`
-	Zip_code     string `json:"zip_code"`
-	Address      string `json:"address"`
-	National_id  string `json:"national_id"`
+type BuyCoinBody struct {
+	PackageId  int    `form:"package_id" json:"package_id" binding:"required"`
+	CardNumber string `form:"card_number" json:"card_number" binding:"required,gt=0"`
+	Name       string `form:"name" json:"name" binding:"required,gt=0"`
+	Month      string `form:"month" json:"month" binding:"required,gt=0"`
+	Year       string `form:"year" json:"year" binding:"required,gt=0"`
+	Cvv        int    `form:"cvv" json:"cvv" binding:"required,gt=0"`
+	Prime      string `form:"prime" json:"prime" binding:"required,gt=0"`
 }
 
-type PaymentCard struct {
-	Number string `form:"number" json:"number"`
-	Name   string `form:"name" json:"name"`
-	Month  string `form:"month" json:"month"`
-	Year   string `form:"year" json:"year"`
-	Cvv    int    `form:"cvv" json:"cvv"`
-	Prime  string `form:"prime" json:"prime"`
-}
-
-type OrderCoinBody struct {
-	UUID        string             `form:"uuid"`
-	Amount      int                `form:"amount"`
-	Cost        int                `form:"cost"`
-	OrderStatus models.OrderStatus `form:"order_status"`
-	PaymentCard PaymentCard        `form:"paymentCard"`
-}
-
-func OrderCoin(c *gin.Context, depCon container.Container) {
-	body := &OrderCoinBody{}
+func BuyCoin(c *gin.Context, depCon container.Container) {
+	body := &BuyCoinBody{}
 
 	if err := requestbinder.Bind(c, body); err != nil {
 		c.AbortWithError(
@@ -73,162 +46,143 @@ func OrderCoin(c *gin.Context, depCon container.Container) {
 	}
 
 	uuid := c.GetString("uuid")
+
 	var userDao contracts.UserDAOer
 	depCon.Make(&userDao)
 
 	// Get User ID
-	user, errUser := userDao.GetUserByUuid(uuid)
+	user, err := userDao.GetUserByUuid(uuid, "id")
 
-	if errUser != nil {
+	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
-				errUser.Error(),
-			),
+			apperr.NewErr(apperr.FailedToGetUserByUuid),
 		)
 
 		return
 	}
 
 	// Insert into coin_order with order_status=ordering
-	q := NewCoinDAO(db.GetDB())
-	coin, errCoin := q.OrderCoin(contracts.OrderCoinParams{
-		BuyerID:     int(user.ID),
-		Amount:      body.Amount,
-		Cost:        body.Cost,
-		OrderStatus: models.OrderStatusOrdering,
-	})
+	//q := NewCoinDAO(db.GetDB())
+	//coinModel, err := q.OrderCoin(contracts.OrderCoinParams{
+	//BuyerID:     int(user.ID),
+	//Amount:      body.Amount,
+	//Cost:        body.Cost,
+	//OrderStatus: models.OrderStatusOrdering,
+	//})
 
-	if errCoin != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
-				errCoin.Error(),
-			),
-		)
+	//if err != nil {
+	//c.AbortWithError(
+	//http.StatusInternalServerError,
+	//apperr.NewErr(apperr.FailedToGetUserByUuid),
+	//)
 
-		return
-	}
+	//return
+	//}
 
-	// Call TapPay API - Pay By Prime
-	fmt.Println(body.PaymentCard.Prime)
-	url := "https://sandbox.tappaysdk.com/tpc/payment/pay-by-prime"
-	values := &PaymentParam{
-		Prime:       body.PaymentCard.Prime,
-		Partner_key: "partner_tzcz4DPLdBH86XxaQtDtPHyXmpx5M5Edn6EuIVJMpQ77hz0qlROGCapa",
-		Merchant_id: "huangc28_CTBC",
-		Details:     "Tappay test",
-		Amount:      strconv.Itoa(body.Amount),
-		Currency:    "TWD",
-		Cardholder: CardHolder{
-			Phone_number: user.Mobile.String,
-			Name:         "",
-			Email:        "",
-			Zip_code:     "",
-			Address:      "",
-			National_id:  "",
+	tpCred := config.GetAppConf().TapPayCredential
+
+	tpayer := NewTapPayer(
+		TapPayerConf{
+			Url:        tpCred.EndPoint,
+			PartnerKey: tpCred.PartnerKey,
+			MerchantId: tpCred.MerchantID,
 		},
-		Remember: false,
-	}
+	)
 
-	jsonValue, err := json.Marshal(values)
+	tpResp, err := tpayer.PayByPrime(
+		PayByPrimeParams{
+			Prime:    body.Prime,
+			Details:  "Tappay test",
+			Amount:   strconv.Itoa(100),
+			Currency: "TWD",
+			Cardholder: CardHolderParams{
+				PhoneNumber: user.Mobile.String,
+				Name:        "",
+				Email:       "",
+				ZipCode:     "",
+				Address:     "",
+				NationalId:  "",
+			},
+			Remember: false,
+		},
+	)
 
 	if err != nil {
-		fmt.Println(err)
-		return
-	}
+		// If payment failed to proceed, update the payment status to be 'failed'
 
-	// create client
-	req, _ := http.NewRequest("POST", url, bytes.NewBuffer(jsonValue))
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("x-api-key", "partner_tzcz4DPLdBH86XxaQtDtPHyXmpx5M5Edn6EuIVJMpQ77hz0qlROGCapa")
-
-	// make a request
-	client := &http.Client{}
-	resp, errResp := client.Do(req)
-
-	if err != nil {
 		c.AbortWithError(
-			http.StatusInternalServerError,
+			http.StatusBadRequest,
 			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
-				errResp.Error(),
+				apperr.TapPayFailedToPayByPrime,
+				err.Error(),
 			),
 		)
 
 		return
 	}
 
-	if resp.StatusCode == http.StatusOK {
-		var (
-			m PaymentResponse
-		)
+	// TapPay API request success, we now perform the following:
+	// - Change the order status to success.
+	// - Topup balance for the user.
+	db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
+		coinDao := NewCoinDAO(tx)
 
-		ma := json.NewDecoder(resp.Body)
+		//coinDao
 
-		if errMa := ma.Decode(&m); err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToGetUserByUuid,
-					errMa.Error(),
-				),
-			)
+		return db.FormatResp{}
+	})
+	log.Printf("DEBUG tpResp %v", tpResp)
 
-			return
-		}
+	//if m.Status == 0 {
+	//// Update coin_order order_status=success
+	//errUpdate := q.UpdateOrderCoinStatus(contracts.UpdateOrderCoinStatusParams{
+	//ID:          int(coin.ID),
+	//OrderStatus: models.OrderStatusSuccess,
+	//})
 
-		if m.Status == 0 {
-			// Update coin_order order_status=success
-			errUpdate := q.UpdateOrderCoinStatus(contracts.UpdateOrderCoinStatusParams{
-				ID:          int(coin.ID),
-				OrderStatus: models.OrderStatusSuccess,
-			})
+	//if errUpdate != nil {
+	//c.AbortWithError(
+	//http.StatusInternalServerError,
+	//apperr.NewErr(
+	//apperr.FailedToGetUserByUuid,
+	//errUpdate.Error(),
+	//),
+	//)
 
-			if errUpdate != nil {
-				c.AbortWithError(
-					http.StatusInternalServerError,
-					apperr.NewErr(
-						apperr.FailedToGetUserByUuid,
-						errUpdate.Error(),
-					),
-				)
+	//return
+	//}
+	//} else {
+	//// Update coin_order order_status=failed
+	//errUpdate := q.UpdateOrderCoinStatus(contracts.UpdateOrderCoinStatusParams{
+	//ID:          int(coin.ID),
+	//OrderStatus: models.OrderStatusFailed,
+	//})
 
-				return
-			}
-		} else {
-			// Update coin_order order_status=failed
-			errUpdate := q.UpdateOrderCoinStatus(contracts.UpdateOrderCoinStatusParams{
-				ID:          int(coin.ID),
-				OrderStatus: models.OrderStatusFailed,
-			})
+	//if errUpdate != nil {
+	//c.AbortWithError(
+	//http.StatusInternalServerError,
+	//apperr.NewErr(
+	//apperr.FailedToGetUserByUuid,
+	//errUpdate.Error(),
+	//),
+	//)
 
-			if errUpdate != nil {
-				c.AbortWithError(
-					http.StatusInternalServerError,
-					apperr.NewErr(
-						apperr.FailedToGetUserByUuid,
-						errUpdate.Error(),
-					),
-				)
+	//return
+	//}
 
-				return
-			}
+	//c.AbortWithError(
+	//http.StatusInternalServerError,
+	//apperr.NewErr(
+	//strconv.Itoa(m.Status),
+	//m.Msg,
+	//),
+	//)
 
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					strconv.Itoa(m.Status),
-					m.Msg,
-				),
-			)
+	//return
+	//}
 
-			return
-		}
-
-	}
+	//}
 
 	c.JSON(http.StatusOK, struct{}{})
 }
