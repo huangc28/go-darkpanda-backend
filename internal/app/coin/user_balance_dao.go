@@ -1,8 +1,6 @@
 package coin
 
 import (
-	"log"
-
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
@@ -23,8 +21,6 @@ type CreateOrTopUpBalanceParams struct {
 }
 
 func (dao *UserBalanceDAO) CreateOrTopUpBalance(params CreateOrTopUpBalanceParams) (*models.UserBalance, error) {
-	log.Printf("DEBUG spot 1** %v", params.UserId)
-
 	query := `
 INSERT INTO user_balance (user_id, balance)
 VALUES ($1, $2)
