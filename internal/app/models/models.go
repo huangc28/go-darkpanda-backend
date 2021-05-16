@@ -269,14 +269,16 @@ type ChatroomUser struct {
 type CoinOrder struct {
 	ID      int32 `json:"id"`
 	BuyerID int32 `json:"buyer_id"`
-	// amount of DP coins to buy
-	Amount string `json:"amount"`
 	// cost to buy, currency in TWD
-	Cost        string       `json:"cost"`
-	OrderStatus OrderStatus  `json:"order_status"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   sql.NullTime `json:"updated_at"`
-	DeletedAt   sql.NullTime `json:"deleted_at"`
+	Cost        string         `json:"cost"`
+	OrderStatus OrderStatus    `json:"order_status"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   sql.NullTime   `json:"updated_at"`
+	DeletedAt   sql.NullTime   `json:"deleted_at"`
+	PackageID   sql.NullInt32  `json:"package_id"`
+	Quantity    int32          `json:"quantity"`
+	RecTradeID  sql.NullString `json:"rec_trade_id"`
+	Raw         sql.NullString `json:"raw"`
 }
 
 type CoinPackage struct {

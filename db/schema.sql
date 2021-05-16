@@ -495,3 +495,20 @@ CREATE TABLE user_balance (
 COMMENT ON COLUMN user_balance.balance IS 'use for update when reading the column';
 
 COMMIT;
+BEGIN;
+
+ALTER TABLE coin_orders
+DROP COLUMN amount,
+ADD COLUMN package_id INT REFERENCES coin_packages(id),
+ADD COLUMN quantity INT NOT NULL DEFAULT 1;
+
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE coin_orders
+ADD COLUMN rec_trade_id VARCHAR(255),
+ADD COLUMN raw text;
+
+COMMIT;
+ALTER TABLE user_balance ADD CONSTRAINT uniq_user_balance_user_id UNIQUE (user_id);

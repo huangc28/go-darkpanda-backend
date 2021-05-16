@@ -6,10 +6,11 @@ import (
 )
 
 type OrderCoinParams struct {
-	BuyerID     int                `json:"buyer_id"`
-	Amount      int                `json:"amount"`
-	Cost        int                `json:"cost"`
-	OrderStatus models.OrderStatus `json:"order_status"`
+	BuyerID     int
+	PackageId   int
+	Quantity    int
+	Cost        int
+	OrderStatus models.OrderStatus
 }
 
 type UpdateOrderCoinStatusParams struct {
@@ -19,4 +20,5 @@ type UpdateOrderCoinStatusParams struct {
 
 type CoinDAOer interface {
 	WithTx(tx db.Conn) CoinDAOer
+	OrderCoin(params OrderCoinParams) (*models.CoinOrder, error)
 }

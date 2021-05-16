@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io/ioutil"
 	"net/http"
 )
 
@@ -57,15 +58,16 @@ type TapPayResponse struct {
 	AuthCode          string  `json:"auth_code"`
 	Amount            float64 `json:"amount"`
 	Currency          string  `json:"currency"`
+	Raw               string
 }
 
-func (t *TapPayer) PayByPrime(params PayByPrimeParams) (*TapPayResponse, error) {
+func (t *TapPayer) PayByPrime(params PayByPrimeParams) (*TapPayResponse, string, error) {
 	params.TapPayerConf = t.conf
 
 	buf, err := json.Marshal(params)
 
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	req, _ := http.NewRequest(
@@ -80,24 +82,26 @@ func (t *TapPayer) PayByPrime(params PayByPrimeParams) (*TapPayResponse, error) 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 
+	respByte, err := ioutil.ReadAll(resp.Body)
+	respStr := string(respByte)
+
+	// Marsh tp response to json string.
 	if err != nil {
-		return nil, err
+		return nil, respStr, err
 	}
 
 	defer resp.Body.Close()
 
 	tpResp := TapPayResponse{}
 
-	if err := json.
-		NewDecoder(resp.Body).
-		Decode(&tpResp); err != nil {
-		return nil, err
+	if err := json.Unmarshal(respByte, &tpResp); err != nil {
+		return nil, respStr, err
 	}
 
 	// If tappay returns error response, we compose an error here.
 	if tpResp.Status != PayByPrimeOk {
-		return nil, errors.New(tpResp.Msg)
+		return nil, respStr, errors.New(tpResp.Msg)
 	}
 
-	return &tpResp, nil
+	return &tpResp, respStr, nil
 }
