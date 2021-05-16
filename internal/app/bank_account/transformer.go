@@ -19,9 +19,9 @@ type TransformedBankAccount struct {
 
 func (ba *BankAccountTransform) TransformBankAccount(bank *models.BankAccount) *TransformedBankAccount {
 	return &TransformedBankAccount{
-		BankName:      bank.BankName.String,
-		Branch:        bank.Branch.String,
-		AccountNumber: bank.AccountNumber.String,
-		VerifyStatus:  models.VerifyStatus(bank.VerifyStatus.String),
+		BankName:      bank.BankName,
+		Branch:        bank.Branch,
+		AccountNumber: bank.AccountNumber,
+		VerifyStatus:  models.VerifyStatus(bank.VerifyStatus),
 	}
 }

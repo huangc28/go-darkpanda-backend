@@ -16,6 +16,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	)
 
 	g.POST("", func(c *gin.Context) {
-		OrderCoin(c, depCon)
+		BuyCoin(c, depCon)
 	})
 }
