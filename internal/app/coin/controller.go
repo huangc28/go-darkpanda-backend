@@ -23,7 +23,11 @@ type PaymentResponse struct {
 type BuyCoinBody struct {
 	PackageId  int    `form:"package_id" json:"package_id" binding:"required"`
 	CardNumber string `form:"card_number" json:"card_number" binding:"required,gt=0"`
-	Name       string `form:"name" json:"name" binding:"required,gt=0"`
+	Name       string `form:"name" json:"name"`
+	Email      string `form:"email" json:"email"`
+	ZipCode    int    `form:"zip_code" json:"zip_code"`
+	Address    string `form:"address" json:"address"`
+	NationalId int    `form:"national_id" json:"national_id"`
 	Month      string `form:"month" json:"month" binding:"required,gt=0"`
 	Year       string `form:"year" json:"year" binding:"required,gt=0"`
 	Cvv        int    `form:"cvv" json:"cvv" binding:"required,gt=0"`
