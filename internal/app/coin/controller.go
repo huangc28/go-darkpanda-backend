@@ -23,11 +23,16 @@ type PaymentResponse struct {
 type BuyCoinBody struct {
 	PackageId  int    `form:"package_id" json:"package_id" binding:"required"`
 	CardNumber string `form:"card_number" json:"card_number" binding:"required,gt=0"`
-	Name       string `form:"name" json:"name" binding:"required,gt=0"`
-	Month      string `form:"month" json:"month" binding:"required,gt=0"`
-	Year       string `form:"year" json:"year" binding:"required,gt=0"`
-	Cvv        int    `form:"cvv" json:"cvv" binding:"required,gt=0"`
-	Prime      string `form:"prime" json:"prime" binding:"required,gt=0"`
+	Name       string `form:"name" json:"name"`
+	Email      string `form:"email" json:"email"`
+	ZipCode    string `form:"zip_code" json:"zip_code"`
+	Address    string `form:"address" json:"address"`
+	NationalId string `form:"national_id" json:"national_id"`
+
+	Month string `form:"month" json:"month" binding:"required,gt=0"`
+	Year  string `form:"year" json:"year" binding:"required,gt=0"`
+	Cvv   int    `form:"cvv" json:"cvv" binding:"required,gt=0"`
+	Prime string `form:"prime" json:"prime" binding:"required,gt=0"`
 }
 
 func BuyCoin(c *gin.Context, depCon container.Container) {
@@ -120,11 +125,11 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 			Currency: "TWD",
 			Cardholder: CardHolderParams{
 				PhoneNumber: user.Mobile.String,
-				Name:        "",
-				Email:       "",
-				ZipCode:     "",
-				Address:     "",
-				NationalId:  "",
+				Name:        body.Name,
+				Email:       body.Email,
+				ZipCode:     body.ZipCode,
+				Address:     body.Address,
+				NationalId:  body.NationalId,
 			},
 			Remember: false,
 		},
@@ -222,4 +227,8 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 
 	// respond with the following:
 	c.JSON(http.StatusOK, respStruct)
+}
+
+func GetConBalance(c *gin.Context) {
+	//
 }
