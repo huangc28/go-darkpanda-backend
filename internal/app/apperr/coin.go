@@ -7,4 +7,6 @@ const (
 	FailedToUpdateCoinOrder       = "1200004"
 	FailedToTopupUserBalance      = "1200005"
 	FailedToUpdateCoinOrderStatus = "1200006"
+	FailedToGetUserBalance        = "1200007"
+	FailedToCreateUserBalance     = "1200008"
 )

@@ -1,6 +1,7 @@
 package coin
 
 import (
+	"database/sql"
 	"net/http"
 	"strconv"
 
@@ -229,6 +230,63 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, respStruct)
 }
 
-func GetConBalance(c *gin.Context) {
-	//
+func GetCoinBalance(c *gin.Context, depCon container.Container) {
+	// Get requester uuid.
+	uuid := c.GetString("uuid")
+
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	user, err := userDao.GetUserByUuid(uuid, "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve user coin balance info. If balance record not exists, create the balance record for the user.
+	userBalDao := NewUserBalanceDAO(db.GetDB())
+	userBal, err := userBalDao.GetCoinBalanceByUserId(int(user.ID))
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			userBal, err = userBalDao.CreateOrTopUpBalance(CreateOrTopUpBalanceParams{
+				UserId: int(user.ID),
+			})
+
+			if err != nil {
+				c.AbortWithError(
+					http.StatusInternalServerError,
+					apperr.NewErr(
+						apperr.FailedToCreateUserBalance,
+						err.Error(),
+					),
+				)
+
+				return
+			}
+		} else {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToGetUserBalance,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+	}
+
+	respStruct, _ := TransformGetCoinBalance(userBal.Balance)
+
+	c.JSON(http.StatusOK, respStruct)
 }

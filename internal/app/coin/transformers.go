@@ -2,19 +2,30 @@ package coin
 
 import "strconv"
 
-type TransformedBuyCoin struct {
+type TransformedCoinBalance struct {
 	Balance float64 `json:"balance"`
 }
 
-func TransformBuyCoin(bal string) (TransformedBuyCoin, error) {
+func TransformBuyCoin(bal string) (TransformedCoinBalance, error) {
 	balFloat, err := strconv.ParseFloat(bal, 32)
 
 	if err != nil {
-		return TransformedBuyCoin{}, err
-
+		return TransformedCoinBalance{}, err
 	}
 
-	return TransformedBuyCoin{
+	return TransformedCoinBalance{
+		Balance: balFloat,
+	}, nil
+}
+
+func TransformGetCoinBalance(bal string) (TransformedCoinBalance, error) {
+	balFloat, err := strconv.ParseFloat(bal, 32)
+
+	if err != nil {
+		return TransformedCoinBalance{}, err
+	}
+
+	return TransformedCoinBalance{
 		Balance: balFloat,
 	}, nil
 }

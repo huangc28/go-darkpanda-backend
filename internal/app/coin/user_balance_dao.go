@@ -42,3 +42,19 @@ RETURNING *;
 
 	return &userBalance, nil
 }
+
+func (dao *UserBalanceDAO) GetCoinBalanceByUserId(userId int) (*models.UserBalance, error) {
+	query := `
+SELECT * FROM user_balance WHERE user_id = $1;
+`
+	userBal := models.UserBalance{}
+
+	if err := dao.db.QueryRowx(
+		query,
+		userId,
+	).StructScan(&userBal); err != nil {
+		return (*models.UserBalance)(nil), err
+	}
+
+	return &userBal, nil
+}

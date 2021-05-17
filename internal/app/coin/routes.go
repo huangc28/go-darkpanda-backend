@@ -15,6 +15,14 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		}),
 	)
 
+	// Get my coin current coin balance.
+	g.GET(
+		"",
+		func(c *gin.Context) {
+			GetCoinBalance(c, depCon)
+		},
+	)
+
 	g.POST("", func(c *gin.Context) {
 		BuyCoin(c, depCon)
 	})
