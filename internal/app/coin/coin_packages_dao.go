@@ -15,6 +15,32 @@ func NewCoinPackagesDAO(db db.Conn) *CoinPackagesDAO {
 	}
 }
 
+func (dao *CoinPackagesDAO) GetPackages() ([]models.CoinPackage, error) {
+	query := `
+SELECT * FROM coin_packages;
+	`
+
+	rows, err := dao.db.Queryx(query)
+
+	pkgs := make([]models.CoinPackage, 0)
+
+	if err != nil {
+		return pkgs, err
+	}
+
+	for rows.Next() {
+		pkg := models.CoinPackage{}
+
+		if err := rows.StructScan(&pkg); err != nil {
+			return pkgs, err
+		}
+
+		pkgs = append(pkgs, pkg)
+	}
+
+	return pkgs, nil
+}
+
 func (dao *CoinPackagesDAO) GetPackageById(Id int) (*models.CoinPackage, error) {
 	query := `
 SELECT *

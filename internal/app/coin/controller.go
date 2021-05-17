@@ -291,3 +291,26 @@ func GetCoinBalance(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, respStruct)
 }
+
+func GetCoinPackages(c *gin.Context) {
+	// Get list of coin packages.
+	newConPkgDao := NewCoinPackagesDAO(db.GetDB())
+	pkgs, err := newConPkgDao.GetPackages()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetCoinPackages,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	trfPkgs := TransformCoinPakcages(pkgs)
+
+	c.JSON(http.StatusOK, trfPkgs)
+}

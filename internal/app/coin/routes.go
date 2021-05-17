@@ -23,7 +23,16 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
+	// Deposit coin to user balance.
 	g.POST("", func(c *gin.Context) {
 		BuyCoin(c, depCon)
 	})
+
+	// Get list of coin packages for purchasing.
+	g.GET(
+		"/packages",
+		func(c *gin.Context) {
+			GetCoinPackages(c)
+		},
+	)
 }
