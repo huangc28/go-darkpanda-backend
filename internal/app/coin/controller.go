@@ -24,6 +24,7 @@ type PaymentResponse struct {
 type BuyCoinBody struct {
 	PackageId  int    `form:"package_id" json:"package_id" binding:"required"`
 	CardNumber string `form:"card_number" json:"card_number" binding:"required,gt=0"`
+
 	Name       string `form:"name" json:"name"`
 	Email      string `form:"email" json:"email"`
 	ZipCode    string `form:"zip_code" json:"zip_code"`
