@@ -1,7 +1,5 @@
 module github.com/huangc28/go-darkpanda-backend
 
-// +heroku install ./cmd/app
-
 go 1.14
 
 require (

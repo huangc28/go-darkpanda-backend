@@ -96,12 +96,31 @@ func GetProjRootPath() string {
 	return filepath.Join(basepath, "..")
 }
 
+// List of environments.
+type Env string
+
+var (
+	Production  Env = "production"
+	Staging     Env = "staging"
+	Development Env = "development"
+	Test        Env = "test"
+)
+
+// Note: not in use at the moment
+// Each environment corresponds to a specific name.
+var EnvConfigNameMap map[Env]string = map[Env]string{
+	Production:  ".env.prod",
+	Staging:     ".env.staging",
+	Development: ".env.toml",
+	Test:        ".env.test",
+}
+
 // reads config from .env.toml
 func InitConfig() {
 	viper.SetConfigName(".env")
 	viper.SetConfigType("toml")
 
-	// config path can be at project root directory
+	// Config path can be at project root directory
 	cwd, err := os.Getwd()
 	// retrieve executable path
 
@@ -128,6 +147,7 @@ func InitConfig() {
 	if err = viper.Unmarshal(&appConf); err != nil {
 		log.Fatalf("failed to unmarshal app config to struct %s", err.Error())
 	}
+
 }
 
 func GetDBConf() *DBConf {
