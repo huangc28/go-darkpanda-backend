@@ -70,9 +70,6 @@ prod_migrate_up:
 
 # Build & Deploy
 deploy: build
-	#echo 'pushing binary to server...';
-	#scp bin/darkpanda_backend root@hookie.club:~/darkpanda/go-darkpanda-backend/bin; \ # copy binary to server
-	#echo 'restarting app process with systemctl...';
 	ssh -t root@hookie.club 'cd ~/darkpanda/go-darkpanda-backend && \
 		git pull https://$(GITHUB_USER):$(GITHUB_ACCESS_TOKEN)@github.com/huangc28/go-darkpanda-backend.git && \
 		make build && \
