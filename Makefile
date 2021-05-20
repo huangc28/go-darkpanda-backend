@@ -1,3 +1,10 @@
+# Export variable in .app.env.
+ifneq (,$(wildcard ./.app.env))
+	include .app.env
+	export
+endif
+
+
 # Spin up project on local.
 run_local: run_local_backend
 	echo 'run successfully on local'
@@ -12,13 +19,13 @@ run_local_docker:
 		-d
 
 # ---------- Deprecated ----------
-serve_swagger: build_swagger
-	swagger serve swagger/master.yml -p 3333 --host localhost --flavor=swagger
+#serve_swagger: build_swagger
+	#swagger serve swagger/master.yml -p 3333 --host localhost --flavor=swagger
 
-build_swagger:
-	swagger flatten swagger/general.yml \
-	--output=swagger/master.yml \
-	--format=yaml
+#build_swagger:
+	#swagger flatten swagger/general.yml \
+	#--output=swagger/master.yml \
+	#--format=yaml
 # --------------------------------
 
 .PHONY: docker_compose
@@ -36,9 +43,8 @@ MIGRATE_CREATE_CMD=create
 MIGRATE_UP_CMD=up
 MIGRATE_UP_CMD=down
 
-PG_DEV_DSN=postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable
-PG_TEST_DSN=postgres://postgres:1234@127.0.0.1:5433/darkpanda?sslmode=disable
-PG_PROD_DSN=postgres://postgres:postgres@178.128.25.198:5432/darkpanda?sslmode=disable
+PG_DSN=postgres://$(PG_USER):$(PG_PASSWORD)@$(PG_HOST):$(PG_PORT)/darkpanda?sslmode=disable
+PG_TEST_DSN=postgres://$(TEST_PG_USER):$(TEST_PG_PASSWORD)@$(TEST_PG_HOST):$(TEST_PG_PORT)/darkpanda?sslmode=disable
 
 # Create a new migration file.
 # Usage:
@@ -62,6 +68,8 @@ prod_migrate_up:
 	$(MIGRATE_CMD) -path=db/migrations/ -database $(PG_PROD_DSN) $(MIGRATE_UP_CMD)
 
 
-# Build production
+# Build
 build:
 	cd cmd/app; ENV=production go build -o ../../bin/darkpanda_backend -v .
+
+.PHONY: build
