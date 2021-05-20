@@ -20,7 +20,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	"github.com/jmoiron/sqlx"
-	"github.com/spf13/viper"
 	"github.com/teris-io/shortid"
 )
 
@@ -329,8 +328,6 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	vs := genverifycode.GenVerifyCode()
 	pVs := vs.BuildCode()
 
-	log.Printf("DEBUG user uuid ** %v", body.Uuid)
-
 	if _, err = userDao.UpdateUserInfoByUuid(
 		contracts.UpdateUserInfoParams{
 			Uuid:            body.Uuid,
@@ -352,7 +349,7 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	var tc twilio.TwilioServicer
 	depCon.Make(&tc)
 	smsResp, err := tc.SendSMS(
-		viper.GetString("twilio.from"),
+		config.GetAppConf().TwilioFrom,
 		body.Mobile,
 		fmt.Sprintf("your darkpanda verify code: \n\n %s", vs.BuildCode()),
 	)
@@ -484,8 +481,6 @@ func VerifyMobileHandler(c *gin.Context, depCon container.Container) {
 		user.Uuid,
 		config.GetAppConf().JwtSecret,
 	)
-
-	log.Printf("DEBUG create token 2 ~~ %v", jwt)
 
 	if err != nil {
 		c.AbortWithError(

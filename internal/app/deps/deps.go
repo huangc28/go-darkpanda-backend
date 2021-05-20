@@ -21,7 +21,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/service"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
-	"github.com/spf13/viper"
 )
 
 type DepContainer struct {
@@ -49,9 +48,11 @@ func Get() *DepContainer {
 func (dep *DepContainer) TwilioServiceProvider(c cintrnal.Container) DepRegistrar {
 	return func() error {
 		c.Transient(func() twilio.TwilioServicer {
+			appConf := config.GetAppConf()
+
 			return twilio.New(twilio.TwilioConf{
-				AccountSID:   viper.GetString("twilio.account_id"),
-				AccountToken: viper.GetString("twilio.auth_token"),
+				AccountSID:   appConf.TwilioAccountID,
+				AccountToken: appConf.TwilioAuthToken,
 			})
 		})
 
