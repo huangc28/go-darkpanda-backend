@@ -8,6 +8,7 @@ const (
 	FailedToConvertNullSQLStringToFloat = "0000005"
 	FailedToBindJwtInHeader             = "0000006"
 	MissingAuthToken                    = "0000007"
+	FailedToBindBodyParams              = "0000008"
 )
 
 var GeneralErrorMessageMap = map[string]string{

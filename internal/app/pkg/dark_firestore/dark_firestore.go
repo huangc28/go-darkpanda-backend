@@ -156,17 +156,32 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 
 	params.Data.CreatedAt = time.Now()
 
-	_, _, err := df.Client.
+	// Create private chatroom by adding a dummy field "created_at".
+	_, err := df.Client.
 		Collection(PrivateChatsCollectionName).
 		Doc(params.ChatroomName).
-		Collection(MessageSubCollectionName).
-		Add(ctx, params.Data)
+		Set(ctx, map[string]interface{}{
+			"created_at": time.Now(),
+		})
 
 	if err != nil {
 		return params.Data, err
+
 	}
 
-	return params.Data, err
+	// Once private chatroom is created, we send a welcome message here.
+	msgDoc := df.
+		Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(params.ChatroomName).
+		Collection(MessageSubCollectionName).
+		NewDoc()
+
+	if _, err := msgDoc.Set(ctx, params.Data); err != nil {
+		return params.Data, err
+	}
+
+	return params.Data, nil
 }
 
 type ServiceDetailMessage struct {
@@ -232,6 +247,7 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 
 				if grpc.Code(err) == codes.NotFound {
 					errChan <- errors.New(fmt.Sprintf("error chatroom channel: %s not found", channelUUID))
+
 					return
 				}
 

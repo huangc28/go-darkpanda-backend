@@ -1,8 +1,6 @@
 package inquiry
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	cintrnal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -56,61 +54,75 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
+	// ------------------- Change inquiry status  -------------------
+	// A Female user pickups an inquiry.
 	g.POST(
-		"/:inquiry_uuid/:sub_route",
+		"/pickup",
+		middlewares.IsFemale(userDAO),
 		func(c *gin.Context) {
-			subRoute := c.Param("sub_route")
-
-			switch subRoute {
-
-			// A Female user can pickup an inquiry.
-			case "pickup":
-				middlewares.IsFemale(userDAO)(c)
-				PickupInquiryHandler(c, container)
-
-			// A Male user agreed to chat with the female. Both parties
-			// would enter
-			case "agree-to-chat":
-				middlewares.IsMale(userDAO)(c)
-				AgreeToChatInquiryHandler(c, container)
-
-			// A male user is not interested in chatting the the female
-			// who picked up the inquiry. He can `skip` the pickup request
-			// and proceed to the next girl.
-			case "skip":
-				middlewares.IsMale(userDAO)(c)
-				SkipPickupHandler(c, container)
-
-			// Inquiry can cancel an inquiry via this API. Only workable when inquiry
-			// status is `inquiring`.
-			case "cancel":
-				middlewares.IsMale(userDAO)(c)
-				ValidateInqiuryURIParams()(c)
-				ValidateBeforeAlterInquiryStatus(Cancel)(c)
-				CancelInquiryHandler(c)
-
-			// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
-			// Moreover, notify both user in the firestore that the other party has left.
-			case "revert-chat":
-				ValidateInqiuryURIParams()(c)
-				middlewares.IsMale(userDAO)(c)
-				ValidateBeforeAlterInquiryStatus(RevertChat)(c)
-				RevertChatHandler(c, container)
-
-			// Man book the inquiry
-			case "book":
-				middlewares.IsMale(userDAO)(c)
-				ManBookInquiry(c, container)
-
-			// After inquiry chatting, inquiry can be approved by girl
-			case "girl-approve":
-				middlewares.IsFemale(userDAO)(c)
-				GirlApproveInquiryHandler(c, container)
-			default:
-				c.String(http.StatusNotFound, "page not found")
-			}
-
+			PickupInquiryHandler(c, container)
 		},
 	)
 
+	g.POST(
+		"/agree-to-chat",
+		middlewares.IsMale(userDAO),
+		func(c *gin.Context) {
+			AgreeToChatInquiryHandler(c, container)
+		},
+	)
+
+	// A male user is not interested in chatting the the female
+	// who picked up the inquiry. He can `skip` the pickup request
+	// and proceed to the next girl.
+	g.POST(
+		"/skip",
+		middlewares.IsMale(userDAO),
+		func(c *gin.Context) {
+			SkipPickupHandler(c, container)
+		},
+	)
+
+	// Inquiry can cancel an inquiry via this API. Only workable when inquiry status is `inquiring`.
+	g.POST(
+		"/cancel",
+		middlewares.IsMale(userDAO),
+		ValidateBeforeAlterInquiryStatus(Cancel),
+		func(c *gin.Context) {
+			CancelInquiryHandler(c)
+		},
+	)
+
+	// ------------------- APIs to be fixed -------------------
+
+	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
+	// Moreover, notify both user in the firestore that the other party has left.
+	//g.POST(
+	//"/revert-chat",
+	//ValidateInqiuryURIParams(),
+	//middlewares.IsMale(userDAO),
+	//ValidateBeforeAlterInquiryStatus(RevertChat),
+	//func(c *gin.Context) {
+	//RevertChatHandler(c, container)
+	//},
+	//)
+
+	// Man book the inquiry.
+	//g.POST(
+	//"/book",
+	//middlewares.IsMale(userDAO),
+	//func(c *gin.Context) {
+	//ManBookInquiry(c, container)
+	//},
+	//)
+
+	//g.POST(
+	//"/girl-approve",
+	//middlewares.IsFemale(userDAO),
+	//func(c *gin.Context) {
+	//GirlApproveInquiryHandler(c, container)
+	//},
+	//)
+
+	// ------------------- APIs to be fixed end -------------------
 }

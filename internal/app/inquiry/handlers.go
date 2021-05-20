@@ -325,21 +325,27 @@ func GetInquiryHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, trfIq)
 }
 
-func CancelInquiryHandler(c *gin.Context) {
-	// ------------------- gather information from middleware -------------------
-	eup, uriParamExists := c.Get("uri_params")
-	efsm, nFsmExists := c.Get("next_fsm_state")
+type CancelInquiryParam struct {
+	InquiryUuid string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
+}
 
-	if !uriParamExists || !nFsmExists {
+func CancelInquiryHandler(c *gin.Context) {
+	body := CancelInquiryParam{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.ParamsNotProperlySetInTheMiddleware),
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
 		)
 
 		return
 	}
 
-	uriParams := eup.(*InquiryUriParams)
+	efsm, _ := c.Get("next_fsm_state")
+
 	fsm := efsm.(*fsm.FSM)
 
 	// ------------------- Update inquiry status to cancel  -------------------
@@ -352,7 +358,7 @@ func CancelInquiryHandler(c *gin.Context) {
 			uiq, err := q.PatchInquiryStatusByUuid(
 				ctx, models.PatchInquiryStatusByUuidParams{
 					InquiryStatus: models.InquiryStatus(fsm.Current()),
-					Uuid:          uriParams.InquiryUuid,
+					Uuid:          body.InquiryUuid,
 				},
 			)
 
@@ -419,13 +425,13 @@ func CancelInquiryHandler(c *gin.Context) {
 }
 
 type PickupInquiryHandlerParams struct {
-	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
+	InquiryUuid string `form:"inquiry_uuid" json:"inquiry_uuid" binding:"required"`
 }
 
 func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	var params PickupInquiryHandlerParams
 
-	if err := c.ShouldBindUri(&params); err != nil {
+	if err := requestbinder.Bind(c, &params); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -549,8 +555,8 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 
 }
 
-type AgreePickupInquiryHandlerParams struct {
-	InquiryUuid string `uri:"uuid" binding:"required"`
+type AgreeToChatParams struct {
+	InquiryUuid string `form:"inquiry_uuid" json:"inquiry_uuid"`
 }
 
 // AgreePickupInquiryHandler Male user agree to have a chat with the male user.
@@ -559,9 +565,9 @@ type AgreePickupInquiryHandlerParams struct {
 //   - Change inquiry status to `chatting` on DB
 //   - Change inquiry status to `chatting` on firestore
 func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
-	var params AgreePickupInquiryHandlerParams
+	var params AgreeToChatParams
 
-	if err := c.ShouldBindUri(&params); err != nil {
+	if err := requestbinder.Bind(c, &params); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -741,13 +747,13 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 }
 
 type SkipPickupHandlerBody struct {
-	InquiryUuid string `uri:"inquiry_uuid" binding:"required"`
+	InquiryUuid string `form:"inquiry_uuid" json:"inquiry_uuid" binding:"required"`
 }
 
 func SkipPickupHandler(c *gin.Context, container container.Container) {
 	body := SkipPickupHandlerBody{}
 
-	if err := c.ShouldBindUri(&body); err != nil {
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -1245,6 +1251,10 @@ func ManBookInquiry(c *gin.Context, depCon container.Container) {
 	)
 
 	c.JSON(http.StatusOK, trf)
+}
+
+type RevertChatParams struct {
+	InquiryUuid string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
 }
 
 // @TODO
