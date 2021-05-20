@@ -76,11 +76,12 @@ deploy: build
 	ssh -t root@hookie.club 'cd ~/darkpanda/go-darkpanda-backend && \
 		git pull https://huangc28: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@github.com/huangc28/go-darkpanda-backend.git && \
 		make build && \
-		sudo systemctl daemon-reload'
+		sudo systemctl stop darkpanda.service && \
+		sudo systemctl start darkpanda.service'
 
 build:
 	echo 'building production binary...';
-	cd cmd/app; GOOS=linux GOARCH=amd64 go build -o ../../bin/darkpanda_backend -v .
+	cd cmd/app && GOOS=linux GOARCH=amd64 go build -o ../../bin/darkpanda_backend -v .
 
 .PHONY: build
 .PHONY: deploy
