@@ -68,8 +68,19 @@ prod_migrate_up:
 	$(MIGRATE_CMD) -path=db/migrations/ -database $(PG_PROD_DSN) $(MIGRATE_UP_CMD)
 
 
-# Build
+# Build & Deploy
+deploy: build
+	#echo 'pushing binary to server...';
+	#scp bin/darkpanda_backend root@hookie.club:~/darkpanda/go-darkpanda-backend/bin; \ # copy binary to server
+	#echo 'restarting app process with systemctl...';
+	ssh -t root@hookie.club 'cd ~/darkpanda/go-darkpanda-backend && \
+		git pull https://huangc28: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@github.com/huangc28/go-darkpanda-backend.git && \
+		make build && \
+		sudo systemctl daemon-reload'
+
 build:
-	cd cmd/app; ENV=production go build -o ../../bin/darkpanda_backend -v .
+	echo 'building production binary...';
+	cd cmd/app; GOOS=linux GOARCH=amd64 go build -o ../../bin/darkpanda_backend -v .
 
 .PHONY: build
+.PHONY: deploy
