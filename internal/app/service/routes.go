@@ -19,7 +19,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	var userDAO contracts.UserDAOer
 	container.Make(&userDAO)
 
-	// User can retrieve a list of all `unpaid` and `to be fulfilled` services.
+	// User can retrieve a list of all `unpaid` and `to_be_fulfilled` services.
 	// If the gender of the requester is `male`, use `customer_id` as the matching
 	// criteria. If is `female`, use `service_provider_id` as the matching criteria.
 	g.GET(

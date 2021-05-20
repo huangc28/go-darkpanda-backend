@@ -109,13 +109,14 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	tpCred := config.GetAppConf().TapPayCredential
+	//tpCred := config.GetAppConf().TapPayCredential
+	appConf := config.GetAppConf()
 
 	tpayer := NewTapPayer(
 		TapPayerConf{
-			Url:        tpCred.EndPoint,
-			PartnerKey: tpCred.PartnerKey,
-			MerchantId: tpCred.MerchantID,
+			Url:        appConf.TappayEndpoint,
+			PartnerKey: appConf.TappayPartnerKey,
+			MerchantId: appConf.TappayMerchantId,
 		},
 	)
 

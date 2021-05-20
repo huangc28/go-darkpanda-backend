@@ -22,12 +22,16 @@ type ImageHandlers struct {
 // check mime types
 func UploadAvatarHandler(c *gin.Context) {
 	// ------------------- initialize gcs storage client -------------------
-	gcsCreds := config.GetAppConf().GCSCredentials
+	appConf := config.GetAppConf()
 
 	ctx := context.Background()
 	client, err := storage.NewClient(
 		ctx,
-		option.WithServiceAccountFile(fmt.Sprintf("%s/%s", config.GetProjRootPath(), gcsCreds.GoogleServiceAccountName)),
+		option.WithServiceAccountFile(
+			fmt.Sprintf("%s/%s", config.GetProjRootPath(),
+				appConf.GcsGoogleServiceAccountName,
+			),
+		),
 	)
 
 	if err != nil {
@@ -42,7 +46,10 @@ func UploadAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	enhancer := NewGCSEnhancer(client, gcsCreds.BucketName)
+	enhancer := NewGCSEnhancer(
+		client,
+		appConf.GcsBucketName,
+	)
 
 	// ------------------- retrieve file from multipart -------------------
 	file, handler, err := c.Request.FormFile("image")
@@ -99,12 +106,14 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 
 	fileHeaders := c.Request.MultipartForm.File["image"]
 
-	gcsCreds := config.GetAppConf().GCSCredentials
+	appConf := config.GetAppConf()
 
 	ctx := context.Background()
 	client, err := storage.NewClient(
 		ctx,
-		option.WithServiceAccountFile(fmt.Sprintf("%s/%s", config.GetProjRootPath(), gcsCreds.GoogleServiceAccountName)),
+		option.WithServiceAccountFile(
+			fmt.Sprintf("%s/%s", config.GetProjRootPath(), appConf.GcsGoogleServiceAccountName),
+		),
 	)
 
 	if err != nil {
@@ -119,7 +128,7 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	enhancer := NewGCSEnhancer(client, gcsCreds.BucketName)
+	enhancer := NewGCSEnhancer(client, appConf.GcsBucketName)
 	linkList, err := enhancer.UploadMultiple(ctx, fileHeaders)
 
 	if err != nil {

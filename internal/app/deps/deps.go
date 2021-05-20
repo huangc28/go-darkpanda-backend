@@ -66,7 +66,7 @@ func (dep *DepContainer) DarkFirestoreServiceProvider(c cintrnal.Container) DepR
 		err := darkfirestore.InitFireStore(
 			ctx,
 			darkfirestore.InitOptions{
-				CredentialFile: config.GetAppConf().Firestore.CredentialFile,
+				CredentialFile: config.GetAppConf().FirestoreCredentialFile,
 			},
 		)
 

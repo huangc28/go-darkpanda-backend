@@ -28,23 +28,22 @@ var GenJwtTokenByName = &cobra.Command{
 func init() {
 	// initialize database
 	config.InitConfig()
-	dbConf := config.GetDBConf()
-	testDBConf := config.GetTestDBConf()
+	appConf := config.GetAppConf()
 
 	db.InitDB(
 		db.DBConf{
-			Host:     dbConf.Host,
-			Port:     dbConf.Port,
-			User:     dbConf.User,
-			Password: dbConf.Password,
-			Dbname:   dbConf.Dbname,
+			Host:     appConf.PGHost,
+			Port:     appConf.PGPort,
+			User:     appConf.PGUser,
+			Password: appConf.PGPassword,
+			Dbname:   appConf.PGDbname,
 		},
 		db.TestDBConf{
-			Host:     testDBConf.Host,
-			Port:     testDBConf.Port,
-			User:     testDBConf.User,
-			Password: testDBConf.Password,
-			Dbname:   testDBConf.Dbname,
+			Host:     appConf.TestPGHost,
+			Port:     appConf.TestPGPort,
+			User:     appConf.TestPgUser,
+			Password: appConf.TestPGPassword,
+			Dbname:   appConf.TestPGDbname,
 		},
 		false,
 	)

@@ -10,76 +10,44 @@ import (
 	"github.com/spf13/viper"
 )
 
-const (
-	ConfigName = ".env"
-	ConfigType = "toml"
-)
-
-type DBConf struct {
-	Host     string
-	Port     uint
-	User     string
-	Password string
-	Dbname   string
-}
-
-type TestDBConf struct {
-	Host     string
-	Port     uint
-	User     string
-	Password string
-	Dbname   string
-}
-
-type RedisConf struct {
-	Addr     string `mapstructure:"addr"`
-	Password string `mapstructure:"password"`
-	DB       int    `mapstructure:"db"`
-}
-
-type TwilioConf struct {
-	AccountId string `mapstructure:"account_id"`
-	AuthToken string `mapstructure:"auth_token"`
-	From      string `mapstructure:"from"`
-}
-
-// GCSCredentials for manipulating google cloud storage.
-type GCSCredentials struct {
-	GoogleServiceAccountName string `mapstructure:"google_service_account_name"`
-	BucketName               string `mapstructure:"bucket_name"`
-}
-
-// @deprecated
-type PubnubCredentials struct {
-	PublishKey   string `mapstructure:"publish_key"`
-	SubscribeKey string `mapstructure:"subscribe_key"`
-	SecretKey    string `mapstructure:"secret_key"`
-}
-
-type FirestoreCredentials struct {
-	CredentialFile string `mapstructure:"credential_file"`
-}
-
-type TapPayCredential struct {
-	EndPoint   string `mapstructure:"tappay_endpoint"`
-	PartnerKey string `mapstructure:"partner_key"`
-	MerchantID string `mapstructure:"merchant_id"`
-}
-
 type AppConf struct {
-	Port           string          `mapstructure:"port"`
-	JwtSecret      string          `mapstructure:"jwt_secret"`
-	DBConf         *DBConf         `mapstructure:"db"`
-	TestDBConf     *TestDBConf     `mapstructure:"test_db"`
-	RedisConf      *RedisConf      `mapstructure:"redis"`
-	TwilioConf     *TwilioConf     `mapstructure:"twilio"`
-	GCSCredentials *GCSCredentials `mapstructure:"gcs"`
+	Port      string `mapstructure:"PORT"`
+	JwtSecret string `mapstructure:"JWT_SECRET"`
 
-	// @Deprecated: PubnubCredentials
-	PubnubCredentials *PubnubCredentials `mapstructure:"pubnub"`
+	PGHost     string `mapstructure:"PG_HOST"`
+	PGPort     uint   `mapstructure:"PG_PORT"`
+	PGUser     string `mapstructure:"PG_USER"`
+	PGPassword string `mapstructure:"PG_PASSWORD"`
+	PGDbname   string `mapstructure:"PG_DBNAME"`
 
-	Firestore        *FirestoreCredentials `mapstructure:"firestore"`
-	TapPayCredential *TapPayCredential     `mapstructure:"tappay"`
+	TestPGHost     string `mapstructure:"TEST_PG_HOST"`
+	TestPGPort     uint   `mapstructure:"TEST_PG_PORT"`
+	TestPGUser     string `mapstructure:"TEST_PG_USER"`
+	TestPGPassword string `mapstructure:"TEST_PG_PASSWORD"`
+	TestPGDbname   string `mapstructure:"TEST_PG_DBNAME"`
+
+	RedisHost     string `mapstructure:"REDIS_HOST"`
+	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
+	RedisDb       uint   `mapstructure:"REDIS_DB"`
+
+	TwilioAccountID string `mapstructure:"TWILIO_ACCOUNT_ID"`
+	TwilioAuthToken string `mapstructure:"TWILIO_AUTH_TOKEN"`
+	TwilioFrom      string `mapstructure:"TWILIO_FROM"`
+
+	GcpProjectID string `mapstructure:"GCP_PROJECT_ID"`
+
+	GcsGoogleServiceAccountName string `mapstructure:"GCS_GOOGLE_SERVICE_ACCOUNT_NAME"`
+	GcsBucketName               string `mapstructure:"GCS_BUCKET_NAME"`
+
+	PubnubPublishKey   string `mapstructure:"PUBNUB_PUBLISH_KEY"`
+	PubnubSubscribeKey string `mapstructure:"PUBNUB_SUBSCRIBE_KEY"`
+	PubnubSecretKey    string `mapstructure:"PUBNUB_SECRET_KEY"`
+
+	FirestoreCredentialFile string `mapstructure:"FIRESTORE_CREDENTIAL_FILE"`
+
+	TappayEndpoint   string `mapstructure:"TAPPAY_ENDPOINT"`
+	TappayPartnerKey string `mapstructure:"TAPPAY_PARTNER_KEY"`
+	TappayMerchantId string `mapstructure:"TAPPAY_MERCHANT_ID"`
 }
 
 var appConf AppConf
@@ -97,6 +65,7 @@ func GetProjRootPath() string {
 }
 
 // List of environments.
+// Note: not in use at the moment
 type Env string
 
 var (
@@ -106,19 +75,10 @@ var (
 	Test        Env = "test"
 )
 
-// Note: not in use at the moment
-// Each environment corresponds to a specific name.
-var EnvConfigNameMap map[Env]string = map[Env]string{
-	Production:  ".env.prod",
-	Staging:     ".env.staging",
-	Development: ".env.toml",
-	Test:        ".env.test",
-}
-
-// reads config from .env.toml
+// reads config from .env
 func InitConfig() {
-	viper.SetConfigName(".env")
-	viper.SetConfigType("toml")
+	viper.SetConfigType("env")
+	viper.SetConfigName(".app")
 
 	// Config path can be at project root directory
 	cwd, err := os.Getwd()
@@ -148,14 +108,8 @@ func InitConfig() {
 		log.Fatalf("failed to unmarshal app config to struct %s", err.Error())
 	}
 
-}
+	log.Printf("DEBUG appConf! %v", &appConf)
 
-func GetDBConf() *DBConf {
-	return GetAppConf().DBConf
-}
-
-func GetTestDBConf() *TestDBConf {
-	return GetAppConf().TestDBConf
 }
 
 func GetAppConf() *AppConf {

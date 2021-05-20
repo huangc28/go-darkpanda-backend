@@ -64,22 +64,20 @@ func (m *Manager) ExecDBInit() *Manager {
 	m.Exec("init DB", func() error {
 		conf := config.GetAppConf()
 
-		log.Printf("app conf %v", conf.DBConf)
-
 		db.InitDB(
 			db.DBConf{
-				Host:     conf.DBConf.Host,
-				Port:     conf.DBConf.Port,
-				User:     conf.DBConf.User,
-				Password: conf.DBConf.Password,
-				Dbname:   conf.DBConf.Dbname,
+				Host:     conf.PGHost,
+				Port:     conf.PGPort,
+				User:     conf.PGUser,
+				Password: conf.PGPassword,
+				Dbname:   conf.PGDbname,
 			},
 			db.TestDBConf{
-				Host:     conf.TestDBConf.Host,
-				Port:     conf.TestDBConf.Port,
-				User:     conf.TestDBConf.User,
-				Password: conf.TestDBConf.Password,
-				Dbname:   conf.TestDBConf.Dbname,
+				Host:     conf.TestPGHost,
+				Port:     conf.TestPGPort,
+				User:     conf.TestPGUser,
+				Password: conf.TestPGPassword,
+				Dbname:   conf.TestPGDbname,
 			},
 			flag.Lookup("test.v") != nil,
 		)
@@ -93,12 +91,12 @@ func (m *Manager) ExecDBInit() *Manager {
 func (m *Manager) ExecRedisInit() *Manager {
 	m.Exec("init redis", func() error {
 
-		rdsConf := config.GetAppConf().RedisConf
+		appConf := config.GetAppConf()
 
 		err := db.InitRedis(db.RedisConf{
-			Addr:     rdsConf.Addr,
-			Password: rdsConf.Password,
-			DB:       rdsConf.DB,
+			Addr:     appConf.RedisHost,
+			Password: appConf.RedisPassword,
+			DB:       int(appConf.RedisDb),
 		})
 
 		if err != nil {
@@ -112,10 +110,12 @@ func (m *Manager) ExecRedisInit() *Manager {
 }
 
 func (m *Manager) ExecFireStoreInit() *Manager {
+	log.Printf("DEBUG FirestoreCredentialFile %v", config.GetAppConf().FirestoreCredentialFile)
+
 	err := darkfirestore.InitFireStore(
 		m.ctx,
 		darkfirestore.InitOptions{
-			CredentialFile: config.GetAppConf().Firestore.CredentialFile,
+			CredentialFile: config.GetAppConf().FirestoreCredentialFile,
 		},
 	)
 
