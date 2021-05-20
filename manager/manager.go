@@ -110,8 +110,6 @@ func (m *Manager) ExecRedisInit() *Manager {
 }
 
 func (m *Manager) ExecFireStoreInit() *Manager {
-	log.Printf("DEBUG FirestoreCredentialFile %v", config.GetAppConf().FirestoreCredentialFile)
-
 	err := darkfirestore.InitFireStore(
 		m.ctx,
 		darkfirestore.InitOptions{

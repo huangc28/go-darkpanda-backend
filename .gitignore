@@ -3,6 +3,7 @@ build/package/redis-data/*
 dark-panda-gcp-service-account.json
 
 .app.env
+.app.prod.env
 
 # Play Ground
 playground/*

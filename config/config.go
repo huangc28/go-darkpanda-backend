@@ -107,9 +107,6 @@ func InitConfig() {
 	if err = viper.Unmarshal(&appConf); err != nil {
 		log.Fatalf("failed to unmarshal app config to struct %s", err.Error())
 	}
-
-	log.Printf("DEBUG appConf! %v", &appConf)
-
 }
 
 func GetAppConf() *AppConf {
