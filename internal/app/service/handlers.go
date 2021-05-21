@@ -64,26 +64,14 @@ func GetListOfCurrentServicesHandler(c *gin.Context, depCon container.Container)
 
 	srvDao := NewServiceDAO(db.GetDB())
 
-	if user.Gender == models.GenderFemale {
-		srvs, err = srvDao.GetIncomingServicesByProviderId(
-			GetServicesParams{
-				UserID:  int(user.ID),
-				Offset:  body.Offset,
-				PerPage: body.PerPage,
-			},
-		)
-	}
-
-	if user.Gender == models.GenderMale {
-		srvs, err = srvDao.GetOverduedServicesByCustomerId(
-			GetServicesParams{
-				UserID:  int(user.ID),
-				Offset:  body.Offset,
-				PerPage: body.PerPage,
-			},
-		)
-
-	}
+	srvs, err = srvDao.GetServicesByStatus(
+		int(user.ID),
+		user.Gender,
+		body.Offset,
+		body.PerPage,
+		models.ServiceStatusUnpaid,
+		models.ServiceStatusToBeFulfilled,
+	)
 
 	if err != nil {
 		c.AbortWithError(
@@ -106,7 +94,7 @@ func GetListOfCurrentServicesHandler(c *gin.Context, depCon container.Container)
 
 type GetOverduedServicesBody struct {
 	Offset  int `form:"offset,default=0"`
-	PerPage int `form:"perpage,default=5"`
+	PerPage int `form:"per_page,default=5"`
 }
 
 // GetOverduedServicesHandlers retrieve those service of the following status:
@@ -156,26 +144,17 @@ func GetOverduedServicesHandlers(c *gin.Context, depCon container.Container) {
 
 	// Retrieve list of overdued services
 	srvDao := NewServiceDAO(db.GetDB())
-
-	if user.Gender == models.GenderFemale {
-		srvRes, err = srvDao.GetOverduedServicesByProviderId(
-			GetServicesParams{
-				UserID:  int(user.ID),
-				Offset:  body.Offset,
-				PerPage: body.PerPage,
-			},
-		)
-	}
-
-	if user.Gender == models.GenderMale {
-		srvRes, err = srvDao.GetOverduedServicesByCustomerId(
-			GetServicesParams{
-				UserID:  int(user.ID),
-				Offset:  body.Offset,
-				PerPage: body.PerPage,
-			},
-		)
-	}
+	srvRes, err = srvDao.GetServicesByStatus(
+		int(user.ID),
+		user.Gender,
+		body.Offset,
+		body.PerPage,
+		models.ServiceStatusCanceled,
+		models.ServiceStatusCompleted,
+		models.ServiceStatusFailedDueToBoth,
+		models.ServiceStatusFailedDueToGirl,
+		models.ServiceStatusFailedDueToMan,
+	)
 
 	if err != nil {
 		c.AbortWithError(

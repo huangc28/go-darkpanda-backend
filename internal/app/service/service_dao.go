@@ -81,10 +81,18 @@ func (dao *ServiceDAO) GetServicesByStatus(providerID int, gender models.Gender,
 	// If gender equals male, the columns to match should be `customer_id`
 	whereClause := ""
 
+	// Female user requesting service list, we retrieve customer info.
+	// vice versa, male user requesting service list, we retrieve service
+	// provider info.
+	joinTargetPersonClause := ""
 	if gender == models.GenderFemale {
 		whereClause += "services.service_provider_id = $1"
+
+		joinTargetPersonClause += "services.customer_id = users.id"
 	} else {
 		whereClause += "services.customer_id = $1"
+
+		joinTargetPersonClause += "services.service_provider_id = users.id"
 	}
 
 	query := fmt.Sprintf(
@@ -100,7 +108,7 @@ SELECT
 	service_inquiries.uuid as inquiry_uuid
 FROM services
 INNER JOIN users
-	ON services.customer_id = users.id
+	ON %s
 INNER JOIN service_inquiries
 	ON services.inquiry_id = service_inquiries.id
 LEFT JOIN chatrooms
@@ -112,6 +120,7 @@ ORDER BY services.created_at DESC
 LIMIT $2
 OFFSET $3;
 	`,
+		joinTargetPersonClause,
 		whereClause,
 		sCondStr,
 	)
@@ -141,71 +150,6 @@ OFFSET $3;
 	}
 
 	return srvs, nil
-}
-
-type GetServicesParams struct {
-	UserID  int
-	Offset  int
-	PerPage int
-}
-
-// GetIncomingServicesByProviderId Gets list of services of following service status:
-//   - unpaid
-//   - to_be_fulfilled
-func (dao *ServiceDAO) GetIncomingServicesByProviderId(p GetServicesParams) ([]ServiceResult, error) {
-	return dao.GetServicesByStatus(
-		p.UserID,
-		models.GenderFemale,
-		p.Offset,
-		p.PerPage,
-		models.ServiceStatusUnpaid,
-		models.ServiceStatusToBeFulfilled,
-	)
-}
-
-// GetOverduedServicesByProviderId Get list of services of following service status:
-//   - canceled
-//   - completed
-//   - failed_due_to_due
-//   - failed_due_to_girl
-//   - failed_due_to_man
-func (dao *ServiceDAO) GetOverduedServicesByProviderId(p GetServicesParams) ([]ServiceResult, error) {
-	return dao.GetServicesByStatus(
-		p.UserID,
-		models.GenderFemale,
-		p.Offset,
-		p.PerPage,
-		models.ServiceStatusCanceled,
-		models.ServiceStatusCompleted,
-		models.ServiceStatusFailedDueToBoth,
-		models.ServiceStatusFailedDueToGirl,
-		models.ServiceStatusFailedDueToMan,
-	)
-}
-
-func (dao *ServiceDAO) GetIncomingServicesByCustomerId(p GetServicesParams) ([]ServiceResult, error) {
-	return dao.GetServicesByStatus(
-		p.UserID,
-		models.GenderMale,
-		p.Offset,
-		p.PerPage,
-		models.ServiceStatusUnpaid,
-		models.ServiceStatusToBeFulfilled,
-	)
-}
-
-func (dao *ServiceDAO) GetOverduedServicesByCustomerId(p GetServicesParams) ([]ServiceResult, error) {
-	return dao.GetServicesByStatus(
-		p.UserID,
-		models.GenderMale,
-		p.Offset,
-		p.PerPage,
-		models.ServiceStatusCanceled,
-		models.ServiceStatusCompleted,
-		models.ServiceStatusFailedDueToBoth,
-		models.ServiceStatusFailedDueToGirl,
-		models.ServiceStatusFailedDueToMan,
-	)
 }
 
 func (dao *ServiceDAO) GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error) {
