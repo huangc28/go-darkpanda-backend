@@ -18,7 +18,6 @@ import (
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
-	"github.com/looplab/fsm"
 	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 	"github.com/teris-io/shortid"
@@ -344,9 +343,53 @@ func CancelInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	efsm, _ := c.Get("next_fsm_state")
+	// Check if requester is the inquiry owner.
+	ctx := context.Background()
+	q := models.New(db.GetDB())
+	err := q.CheckUserOwnsInquiry(
+		ctx, models.CheckUserOwnsInquiryParams{
+			Uuid:   c.GetString("uuid"),
+			Uuid_2: body.InquiryUuid,
+		},
+	)
 
-	fsm := efsm.(*fsm.FSM)
+	if err == sql.ErrNoRows {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.UserNotOwnInquiry),
+		)
+
+		return
+	}
+
+	// Emit fsm state transition.
+	iq, err := q.GetInquiryByUuid(ctx, body.InquiryUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	fsm, _ := NewInquiryFSM(iq.InquiryStatus)
+	if err := fsm.Event(Cancel.ToString()); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.InquiryFSMTransitionFailed,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	// ------------------- Update inquiry status to cancel  -------------------
 	transResp := db.TransactWithFormatStruct(
