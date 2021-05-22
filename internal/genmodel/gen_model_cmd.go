@@ -94,23 +94,21 @@ func Gen(cmd *cobra.Command, args []string) error {
 
 	psqlDSN := fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		appConf.DBConf.Host,
-		appConf.DBConf.Port,
-		appConf.DBConf.User,
-		appConf.DBConf.Password,
-		appConf.DBConf.Dbname,
+		appConf.PGHost,
+		appConf.PGPort,
+		appConf.PGUser,
+		appConf.PGPassword,
+		appConf.PGDbname,
 	)
 
 	if env == "test" {
-		testDBConf := config.GetTestDBConf()
-
 		psqlDSN = fmt.Sprintf(
 			"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-			testDBConf.Host,
-			testDBConf.Port,
-			testDBConf.User,
-			testDBConf.Password,
-			testDBConf.Dbname,
+			appConf.TestPGHost,
+			appConf.TestPGPort,
+			appConf.TestPGUser,
+			appConf.TestPGPassword,
+			appConf.TestPGDbname,
 		)
 	}
 
