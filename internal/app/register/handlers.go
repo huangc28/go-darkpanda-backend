@@ -220,7 +220,6 @@ func VerifyUsernameHandler(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, struct{}{})
 }
 
-// @TODO check if referral code has been used or not.
 type VerifyReferralCodeBody struct {
 	ReferralCode string `form:"referral_code" json:"referral_code" binding:"required,gt=0"`
 }

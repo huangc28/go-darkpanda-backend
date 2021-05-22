@@ -64,15 +64,12 @@ test_migrate_up:
 test_migrate_down:
 	ENV=test $(MIGRATE_CMD) -path=db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_DOWN_CMD)
 
-prod_migrate_up:
-	$(MIGRATE_CMD) -path=db/migrations/ -database $(PG_DSN) $(MIGRATE_UP_CMD)
-
-
 # Build & Deploy
 deploy: build
 	ssh -t root@hookie.club 'cd ~/darkpanda/go-darkpanda-backend && \
 		git pull https://$(GITHUB_USER):$(GITHUB_ACCESS_TOKEN)@github.com/huangc28/go-darkpanda-backend.git && \
 		git reset --hard origin/master && \
+		make migrate_up && \
 		make build && \
 		sudo systemctl stop darkpanda.service && \
 		sudo systemctl start darkpanda.service'
