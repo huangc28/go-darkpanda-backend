@@ -72,6 +72,7 @@ prod_migrate_up:
 deploy: build
 	ssh -t root@hookie.club 'cd ~/darkpanda/go-darkpanda-backend && \
 		git pull https://$(GITHUB_USER):$(GITHUB_ACCESS_TOKEN)@github.com/huangc28/go-darkpanda-backend.git && \
+		git reset --hard && \
 		make build && \
 		sudo systemctl stop darkpanda.service && \
 		sudo systemctl start darkpanda.service'
