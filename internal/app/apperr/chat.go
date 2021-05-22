@@ -21,9 +21,14 @@ const (
 	FailedToChangeStatusWhenEmittingServiceConfirmMessage = "7000018"
 	FailedToUpdateChatroom                                = "7000019"
 	FailedToSendUpdateInquiryMessage                      = "7000020"
+	UserIsNotInTheChatroom                                = "7000021"
+	FailedToGetInquiryByChannelUuid                       = "7000022"
+	FailedToCheckIsUserInChatroom                         = "7000023"
 )
 
 var ChatErrorMessageMap = map[string]string{
-	MessageExceedMaximumCount: "Exceed maximum message count. chatroom is closed",
-	ChatRoomHasExpired:        "Chatroom has expired, please create another inquiry to proceed chatroom",
+	MessageExceedMaximumCount:       "Exceed maximum message count. chatroom is closed",
+	ChatRoomHasExpired:              "Chatroom has expired, please create another inquiry to proceed chatroom",
+	UserIsNotInTheChatroom:          "User is not in the chatroom",
+	FailedToGetInquiryByChannelUuid: "Chatroom is not in relate to any inquiry",
 }

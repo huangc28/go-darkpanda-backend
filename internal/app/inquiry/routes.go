@@ -87,26 +87,12 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	g.POST(
 		"/cancel",
 		middlewares.IsMale(userDAO),
-		ValidateBeforeAlterInquiryStatus(Cancel),
 		func(c *gin.Context) {
 			CancelInquiryHandler(c)
 		},
 	)
 
 	// ------------------- APIs to be fixed -------------------
-
-	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
-	// Moreover, notify both user in the firestore that the other party has left.
-	//g.POST(
-	//"/revert-chat",
-	//ValidateInqiuryURIParams(),
-	//middlewares.IsMale(userDAO),
-	//ValidateBeforeAlterInquiryStatus(RevertChat),
-	//func(c *gin.Context) {
-	//RevertChatHandler(c, container)
-	//},
-	//)
-
 	// Man book the inquiry.
 	//g.POST(
 	//"/book",

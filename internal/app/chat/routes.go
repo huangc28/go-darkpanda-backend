@@ -65,8 +65,18 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
+	// Get historical messages of a specific chatroom.
 	g.GET(
 		"/:channel_uuid/messages",
 		GetHistoricalMessages,
+	)
+
+	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
+	// Moreover, notify both user in the firestore that the other party has left.
+	g.POST(
+		"/quit-chatroom",
+		func(c *gin.Context) {
+			QuitChatroomHandler(c, depCon)
+		},
 	)
 }

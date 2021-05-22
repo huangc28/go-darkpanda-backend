@@ -662,3 +662,183 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, resp)
 }
+
+type QuitChatroomBody struct {
+	ChannelUuid string `json:"channel_uuid" form:"channel_uuid" binding:"required,gt=0"`
+}
+
+// QuitChatroomHandler either party can choose to euit the chatroom.
+// Both parties will notified. The inquiry status will be changed to
+// "inquiring".
+func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
+	body := QuitChatroomBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	// Retrieve inqiury by channel uuid.
+	chatDao := NewChatDao(db.GetDB())
+	iq, err := chatDao.GetInquiryByChannelUuid(body.ChannelUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByChannelUuid,
+			),
+		)
+
+		return
+	}
+
+	// Check if user is in the chatroom.
+	exists, err := chatDao.IsUserInChatroom(
+		c.GetString("uuid"),
+		body.ChannelUuid,
+	)
+
+	log.Printf("DEBUG **&&^^ %v", err)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckIsUserInChatroom,
+				err.Error(),
+			),
+		)
+	}
+
+	if !exists {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.UserIsNotInTheChatroom,
+			),
+		)
+
+		return
+	}
+
+	chatroom, err := chatDao.GetChatRoomByChannelUUID(
+		body.ChannelUuid,
+		"id",
+		"channel_uuid",
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetChatRoomByChannelUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Both inquirer and picker leave the chatroom.
+	type TransResult struct {
+		RemovedUsers []models.User
+		Inquiry      models.ServiceInquiry
+	}
+
+	transResp := db.TransactWithFormatStruct(
+		db.GetDB(),
+		func(tx *sqlx.Tx) db.FormatResp {
+			ctx := context.Background()
+
+			removedUsers, err := chatDao.WithTx(tx).LeaveAllMemebers(chatroom.ID)
+
+			if err != nil {
+				return db.FormatResp{
+					Err:     err,
+					ErrCode: apperr.FailedToLeaveAllMembers,
+				}
+			}
+
+			// Soft delete chatroom
+			if chatDao.
+				WithTx(tx).
+				DeleteChatRoom(chatroom.ID); err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToDeleteChat,
+					HttpStatusCode: http.StatusBadRequest,
+				}
+			}
+
+			// Change inquiry status to `inquiring`
+			q := models.New(tx)
+			iq, err := q.UpdateInquiryByUuid(
+				ctx,
+				models.UpdateInquiryByUuidParams{
+					Uuid:          iq.Uuid,
+					InquiryStatus: models.InquiryStatusInquiring,
+				},
+			)
+
+			if err != nil {
+				return db.FormatResp{
+					Err:     err,
+					ErrCode: apperr.FailedToPatchInquiryStatus,
+				}
+			}
+
+			// Emit new inquiry status to firestore `inquiring` so that the other
+			// party knows it's time to quit the chatroom.
+			df := darkfirestore.Get()
+			if err := df.UpdateInquiryStatus(
+				ctx,
+				darkfirestore.UpdateInquiryStatusParams{
+					InquiryUUID: iq.Uuid,
+					Status:      models.InquiryStatusInquiring,
+				},
+			); err != nil {
+				return db.FormatResp{
+					HttpStatusCode: http.StatusBadRequest,
+					Err:            err,
+					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
+				}
+			}
+
+			return db.FormatResp{
+				Response: &TransResult{
+					RemovedUsers: removedUsers,
+					Inquiry:      iq,
+				},
+			}
+		},
+	)
+
+	if transResp.Err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				transResp.ErrCode,
+				transResp.Err.Error(),
+			),
+		)
+
+		return
+	}
+
+	transResult := transResp.Response.(*TransResult)
+
+	c.JSON(http.StatusOK, TransformRevertChatting(
+		transResult.RemovedUsers,
+		transResult.Inquiry,
+		*chatroom,
+	))
+}

@@ -87,7 +87,44 @@ func (t *ChatTransformer) TransformGetHistoricalMessages(messageData []interface
 	}
 }
 
-type TransformedSendConfirmedServiceMessage struct {
+type RemovedUser struct {
+	UUID string `json:"uuid"`
 }
 
-func (t *ChatTransformer) TransformSendConfirmedServiceMessage() {}
+type RevertedInquiry struct {
+	UUID          string `json:"uuid"`
+	InquiryStatus string `json:"inquiry_status"`
+}
+
+type RemovedChatroom struct {
+	ChannelUUID string `json:"channel_uuid"`
+}
+
+type TransformedRevertChatting struct {
+	RemovedUsers    []RemovedUser   `json:"removed_users"`
+	RemovedChatroom RemovedChatroom `json:"removed_chatroom"`
+	RevertedInquiry RevertedInquiry `json:"reverted_inquiry"`
+}
+
+func TransformRevertChatting(removedUsers []models.User, inquiry models.ServiceInquiry, chatroom models.Chatroom) *TransformedRevertChatting {
+	rusers := make([]RemovedUser, 0)
+
+	for _, removedUser := range removedUsers {
+		ruser := RemovedUser{
+			UUID: removedUser.Uuid,
+		}
+
+		rusers = append(rusers, ruser)
+	}
+
+	return &TransformedRevertChatting{
+		RemovedUsers: rusers,
+		RemovedChatroom: RemovedChatroom{
+			ChannelUUID: chatroom.ChannelUuid.String,
+		},
+		RevertedInquiry: RevertedInquiry{
+			UUID:          inquiry.Uuid,
+			InquiryStatus: inquiry.InquiryStatus.ToString(),
+		},
+	}
+}

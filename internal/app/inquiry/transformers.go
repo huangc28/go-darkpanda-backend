@@ -357,9 +357,9 @@ type RemovedChatRoom struct {
 	ChanelUUID string `json:"chanel_uuid"`
 }
 type TransformedRevertChatting struct {
-	RemovedUsers    []RemovedUser   `json:"removed_users"`
-	RemovedChatRoom RemovedChatRoom `json:"removed_chatroom"`
-	RevertedInquiry RevertedInquiry `json:"reverted_inquiry"`
+	RemovedUsers    []RemovedUser   `json:"users"`
+	RemovedChatRoom RemovedChatRoom `json:"chatroom"`
+	RevertedInquiry RevertedInquiry `json:"inquiry"`
 }
 
 func (t *InquiryTransform) TransformRevertChatting(removedUsers []models.User, inquiry models.ServiceInquiry, chatroom models.Chatroom) *TransformedRevertChatting {

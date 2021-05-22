@@ -10,7 +10,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
-	"github.com/prometheus/common/log"
 	"github.com/teris-io/shortid"
 )
 
@@ -112,7 +111,8 @@ INSERT INTO chatroom_users (
 
 func (dao *ChatDao) LeaveChat(chatID int64, userIDs ...int64) error {
 	baseQuery := `
-UPDATE chatroom_users SET deleted_at = now()
+UPDATE chatroom_users SET
+	deleted_at = now()
 WHERE user_id IN (%s)
 AND chatroom_id = $1;
 	`
@@ -171,8 +171,11 @@ WHERE inquiry_id = $1;
 
 func (dao *ChatDao) DeleteChatRoom(ID int64) error {
 	sql := `
-UPDATE chatrooms
-SET deleted_at = now()
+UPDATE
+	chatrooms
+SET
+	deleted_at = now(),
+	enabled = false
 WHERE id = $1;
 	`
 	if _, err := dao.DB.Exec(sql, ID); err != nil {
@@ -326,10 +329,55 @@ RETURNING *;
 			params.ChatroomType,
 			params.ChannelUuid,
 		).StructScan(&chatroom); err != nil {
-		log.Errorf("failed to update chatroom %v", err)
 
 		return nil, err
 	}
 
 	return &chatroom, nil
+}
+
+// IsUserInTheChatroom checks if a given user is in the chatroom.
+func (dao *ChatDao) IsUserInChatroom(userUuid string, chatroomUuid string) (bool, error) {
+	query := `
+	SELECT EXISTS(
+		SELECT
+			1
+		FROM
+			chatroom_users
+		INNER JOIN users AS u
+			ON u.id = chatroom_users.user_id
+		INNER JOIN chatrooms AS c
+			ON c.id = chatroom_users.chatroom_id
+		WHERE
+			u.uuid = $1 AND
+			c.channel_uuid = $2
+	);
+
+`
+	var exists bool
+	if err := dao.DB.QueryRow(query, userUuid, chatroomUuid).Scan(&exists); err != nil {
+		return exists, err
+	}
+
+	return exists, nil
+
+}
+
+func (dao *ChatDao) GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error) {
+	query := `
+SELECT
+	service_inquiries.*
+FROM
+	service_inquiries
+INNER JOIN chatrooms AS c
+	ON service_inquiries.id = c.inquiry_id
+WHERE c.channel_uuid = $1;
+	`
+	var iqModel models.ServiceInquiry
+
+	if err := dao.DB.QueryRowx(query, channelUuid).StructScan(&iqModel); err != nil {
+		return nil, err
+	}
+
+	return &iqModel, nil
 }
