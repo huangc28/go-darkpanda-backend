@@ -6,9 +6,11 @@ package deps
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"sync"
 
+	"cloud.google.com/go/storage"
 	"github.com/golobby/container"
 	cintrnal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -18,9 +20,12 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+
+	gcsenhancer "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/gcs_enhancer"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/service"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
+	"google.golang.org/api/option"
 )
 
 type DepContainer struct {
@@ -83,10 +88,44 @@ func (dep *DepContainer) DarkFirestoreServiceProvider(c cintrnal.Container) DepR
 	}
 }
 
+func (dep *DepContainer) GcsEnhancerServiceProvider(c cintrnal.Container) DepRegistrar {
+	return func() error {
+		ctx := context.Background()
+
+		client, err := storage.NewClient(
+			ctx,
+			option.WithServiceAccountFile(
+				fmt.Sprintf(
+					"%s/%s",
+					config.GetProjRootPath(),
+					config.GetAppConf().GcsGoogleServiceAccountName,
+				),
+			),
+		)
+
+		if err != nil {
+			log.Fatalf("failed to initialize google cloud storage %v", err)
+		}
+
+		enhancer := gcsenhancer.NewGCSEnhancer(
+			client,
+			config.GetAppConf().GcsBucketName,
+		)
+
+		c.Singleton(func() gcsenhancer.GCSEnhancerInterface {
+			return enhancer
+		})
+
+		return nil
+	}
+}
+
 func (dep *DepContainer) Run() error {
 	depRegistrars := []DepRegistrar{
 		dep.TwilioServiceProvider(dep.Container),
 		dep.DarkFirestoreServiceProvider(dep.Container),
+		dep.GcsEnhancerServiceProvider(dep.Container),
+
 		user.UserDaoServiceProvider(dep.Container),
 		service.ServiceDAOServiceProvider(dep.Container),
 		inquiry.InquiryDaoServiceProvider(dep.Container),

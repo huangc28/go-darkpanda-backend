@@ -9,13 +9,11 @@ import (
 	"net/http"
 	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/golobby/container/pkg/container"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
 	"github.com/skip2/go-qrcode"
 	"github.com/teris-io/shortid"
-	"google.golang.org/api/option"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -525,14 +523,16 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	}
 
 	var (
-		serviceDao contracts.ServiceDAOer
-		inquiryDao contracts.InquiryDAOer
-		chatDao    contracts.ChatDaoer
+		serviceDao  contracts.ServiceDAOer
+		inquiryDao  contracts.InquiryDAOer
+		chatDao     contracts.ChatDaoer
+		gcsEnhancer gcsenhancer.GCSEnhancerInterface
 	)
 
 	depCon.Make(&serviceDao)
 	depCon.Make(&inquiryDao)
 	depCon.Make(&chatDao)
+	depCon.Make(&gcsEnhancer)
 
 	// Retrieve inquiry by inquiry uuid.
 	iqRes, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID)
@@ -626,23 +626,15 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 
 	// We need to create QR code file. Upload it to cloud storage and store qrcode public url.
 	// Encode the following info:
-	//   - Service qrcode uuid.
-	client, err := storage.NewClient(
-		ctx,
-		option.WithServiceAccountFile(
-			fmt.Sprintf(
-				"%s/%s",
-				config.GetProjRootPath(),
-				config.GetAppConf().GcsGoogleServiceAccountName,
-			),
-		),
-	)
+	//  - qrcode_uuid
+	//  - qrcode secret
+	srvUuid, err := shortid.Generate()
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToInitGCSClient,
+				apperr.FailedToGenQRCodeUuid,
 				err.Error(),
 			),
 		)
@@ -650,22 +642,12 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	enhancer := gcsenhancer.NewGCSEnhancer(
-		client,
-		config.GetAppConf().GcsBucketName,
-	)
-
-	//log.Printf("DEBUG  GcsGoogleServiceAccountName %v", config.GetAppConf().GcsGoogleServiceAccountName)
-
-	// Encode "service_uuid" and "qrcode secret" to qrcode png.
-	srvUuid, err := shortid.Generate()
-
 	qrcodeEncodeContent := map[string]interface{}{
 		"qrcode_secret": config.GetAppConf().ServiceQrCodeSecret,
 		"qrcode_uuid":   srvUuid,
 	}
 
-	qrcodeContentByte, _ := json.Marshal(qrcodeEncodeContent)
+	qrcodeContentByte, err := json.Marshal(qrcodeEncodeContent)
 
 	qrcodePngByte, err := qrcode.Encode(
 		string(qrcodeContentByte),
@@ -673,7 +655,19 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		256,
 	)
 
-	qrcodeUrl, err := enhancer.Upload(
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToMarshQRCodeContent,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	qrcodeUrl, err := gcsEnhancer.Upload(
 		ctx,
 		bytes.NewReader(qrcodePngByte),
 		fmt.Sprintf("s_qrcode_%s.png", srvUuid),
@@ -694,13 +688,23 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	service := transResp.Response.(*models.Service)
 
 	// Create service qrcode record.
-	sqrc, err := serviceDao.CreateServiceQRCode(contracts.CreateServiceQRCodeParams{
+	_, err = serviceDao.CreateServiceQRCode(contracts.CreateServiceQRCodeParams{
 		Uuid:      srvUuid,
 		Url:       qrcodeUrl,
 		ServiceId: int(service.ID),
 	})
 
-	log.Printf("DEBUG service qrc %v", sqrc)
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateServiceQRCodeRecord,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	price, err := convertnullsql.ConvertSqlNullStringToFloat32(service.Price)
 

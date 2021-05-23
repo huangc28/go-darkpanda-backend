@@ -17,6 +17,12 @@ import (
 
 const GCSPublicHost = "storage.googleapis.com"
 
+type GCSEnhancerInterface interface {
+	ObjectLink(attr *storage.ObjectAttrs) string
+	Upload(ctx context.Context, file io.Reader, uploadFilename string) (string, error)
+	UploadMultiple(ctx context.Context, headers []*multipart.FileHeader) ([]string, error)
+}
+
 type GCSEnhancer struct {
 	client     *storage.Client
 	bucketName string
@@ -73,7 +79,6 @@ func (e *GCSEnhancer) Upload(ctx context.Context, file io.Reader, uploadFilename
 	return e.ObjectLink(attr), nil
 }
 
-//timeFactor = time.Now().Format("20060102150405")
 func appendUnixTimeStampToFilename(filename string) string {
 	secs := strings.Split(filename, ".")
 	timeFactor := time.Now().Format("20060102150405")

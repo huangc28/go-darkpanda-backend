@@ -24,7 +24,11 @@ const (
 	UserIsNotInTheChatroom                                = "7000021"
 	FailedToGetInquiryByChannelUuid                       = "7000022"
 	FailedToCheckIsUserInChatroom                         = "7000023"
-	FailedToUploadQRCode                                  = "7000024"
+
+	FailedToUploadQRCode              = "7000024"
+	FailedToGenQRCodeUuid             = "7000025"
+	FailedToMarshQRCodeContent        = "7000026"
+	FailedToCreateServiceQRCodeRecord = "7000027"
 )
 
 var ChatErrorMessageMap = map[string]string{
