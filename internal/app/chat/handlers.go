@@ -1,22 +1,30 @@
 package chat
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/golobby/container/pkg/container"
 	"github.com/jmoiron/sqlx"
 	log "github.com/sirupsen/logrus"
+	"github.com/skip2/go-qrcode"
+	"github.com/teris-io/shortid"
+	"google.golang.org/api/option"
 
 	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	gcsenhancer "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/gcs_enhancer"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/util"
 
@@ -186,7 +194,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 					Valid: true,
 				},
 				InquiryID:     int32(inquiry.ID),
-				ServiceStatus: models.ServiceStatusNegotiating,
+				ServiceStatus: models.ServiceStatusUnpaid,
 				ServiceType:   models.ServiceType(body.ServiceType),
 			})
 
@@ -616,7 +624,84 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	// We need to create QR code file. Upload it to cloud storage and store qrcode public url.
+	// Encode the following info:
+	//   - Service qrcode uuid.
+	client, err := storage.NewClient(
+		ctx,
+		option.WithServiceAccountFile(
+			fmt.Sprintf(
+				"%s/%s",
+				config.GetProjRootPath(),
+				config.GetAppConf().GcsGoogleServiceAccountName,
+			),
+		),
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToInitGCSClient,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	enhancer := gcsenhancer.NewGCSEnhancer(
+		client,
+		config.GetAppConf().GcsBucketName,
+	)
+
+	//log.Printf("DEBUG  GcsGoogleServiceAccountName %v", config.GetAppConf().GcsGoogleServiceAccountName)
+
+	// Encode "service_uuid" and "qrcode secret" to qrcode png.
+	srvUuid, err := shortid.Generate()
+
+	qrcodeEncodeContent := map[string]interface{}{
+		"qrcode_secret": config.GetAppConf().ServiceQrCodeSecret,
+		"qrcode_uuid":   srvUuid,
+	}
+
+	qrcodeContentByte, _ := json.Marshal(qrcodeEncodeContent)
+
+	qrcodePngByte, err := qrcode.Encode(
+		string(qrcodeContentByte),
+		qrcode.Medium,
+		256,
+	)
+
+	qrcodeUrl, err := enhancer.Upload(
+		ctx,
+		bytes.NewReader(qrcodePngByte),
+		fmt.Sprintf("s_qrcode_%s.png", srvUuid),
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUploadQRCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	service := transResp.Response.(*models.Service)
+
+	// Create service qrcode record.
+	sqrc, err := serviceDao.CreateServiceQRCode(contracts.CreateServiceQRCodeParams{
+		Uuid:      srvUuid,
+		Url:       qrcodeUrl,
+		ServiceId: int(service.ID),
+	})
+
+	log.Printf("DEBUG service qrc %v", sqrc)
+
 	price, err := convertnullsql.ConvertSqlNullStringToFloat32(service.Price)
 
 	if err != nil {
@@ -631,7 +716,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	docRef, msg, err := darkfirestore.Get().SendServiceConfirmedMessage(
+	_, msg, err := darkfirestore.Get().SendServiceConfirmedMessage(
 		ctx,
 		darkfirestore.SendServiceConfirmedMessageParams{
 			ChannelUUID: chatroom.ChannelUuid.String,
@@ -652,12 +737,12 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	)
 	resp := struct {
 		Message   interface{} `json:"message"`
-		MessageID string      `json:"message_id"`
-		ChannelID string      `json:"channel_id"`
+		ChannelID string      `json:"channel_uuid"`
+		QrCodeUrl string      `json:"qrcode_url"`
 	}{
 		Message:   msg,
-		MessageID: docRef.ID,
 		ChannelID: chatroom.ChannelUuid.String,
+		QrCodeUrl: qrcodeUrl,
 	}
 
 	c.JSON(http.StatusOK, resp)
@@ -706,8 +791,6 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 		c.GetString("uuid"),
 		body.ChannelUuid,
 	)
-
-	log.Printf("DEBUG **&&^^ %v", err)
 
 	if err != nil {
 		c.AbortWithError(

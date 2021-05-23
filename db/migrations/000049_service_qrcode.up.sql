@@ -1,0 +1,10 @@
+BEGIN;
+
+CREATE TABLE service_qrcode (
+	id BIGSERIAL PRIMARY KEY,
+	service_id INT REFERENCES services (id) NOT NULL,
+	uuid VARCHAR(255) UNIQUE,
+	url VARCHAR(255)
+);
+
+COMMIT;

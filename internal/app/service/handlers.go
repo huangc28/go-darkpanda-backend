@@ -151,9 +151,7 @@ func GetOverduedServicesHandlers(c *gin.Context, depCon container.Container) {
 		body.PerPage,
 		models.ServiceStatusCanceled,
 		models.ServiceStatusCompleted,
-		models.ServiceStatusFailedDueToBoth,
-		models.ServiceStatusFailedDueToGirl,
-		models.ServiceStatusFailedDueToMan,
+		models.ServiceStatusExpired,
 	)
 
 	if err != nil {

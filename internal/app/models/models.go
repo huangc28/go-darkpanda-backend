@@ -156,16 +156,13 @@ func (e *RefCodeType) Scan(src interface{}) error {
 type ServiceStatus string
 
 const (
-	ServiceStatusUnpaid          ServiceStatus = "unpaid"
-	ServiceStatusToBeFulfilled   ServiceStatus = "to_be_fulfilled"
-	ServiceStatusCanceled        ServiceStatus = "canceled"
-	ServiceStatusFailedDueToBoth ServiceStatus = "failed_due_to_both"
-	ServiceStatusGirlWaiting     ServiceStatus = "girl_waiting"
-	ServiceStatusFufilling       ServiceStatus = "fufilling"
-	ServiceStatusFailedDueToGirl ServiceStatus = "failed_due_to_girl"
-	ServiceStatusFailedDueToMan  ServiceStatus = "failed_due_to_man"
-	ServiceStatusCompleted       ServiceStatus = "completed"
-	ServiceStatusNegotiating     ServiceStatus = "negotiating"
+	ServiceStatusUnpaid        ServiceStatus = "unpaid"
+	ServiceStatusPaymentFailed ServiceStatus = "payment_failed"
+	ServiceStatusToBeFulfilled ServiceStatus = "to_be_fulfilled"
+	ServiceStatusCanceled      ServiceStatus = "canceled"
+	ServiceStatusExpired       ServiceStatus = "expired"
+	ServiceStatusFulfilling    ServiceStatus = "fulfilling"
+	ServiceStatusCompleted     ServiceStatus = "completed"
 )
 
 func (e *ServiceStatus) Scan(src interface{}) error {
@@ -363,11 +360,17 @@ type ServiceInquiry struct {
 	Address   sql.NullString `json:"address"`
 }
 
+type ServiceQrcode struct {
+	ID        int64          `json:"id"`
+	ServiceID int32          `json:"service_id"`
+	Uuid      sql.NullString `json:"uuid"`
+	Url       sql.NullString `json:"url"`
+}
+
 type User struct {
 	ID                int64          `json:"id"`
 	Username          string         `json:"username"`
 	PhoneVerified     bool           `json:"phone_verified"`
-	AuthSmsCode       sql.NullInt32  `json:"auth_sms_code"`
 	Gender            Gender         `json:"gender"`
 	PremiumType       PremiumType    `json:"premium_type"`
 	PremiumExpiryDate sql.NullTime   `json:"premium_expiry_date"`

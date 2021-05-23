@@ -11,8 +11,9 @@ import (
 )
 
 type AppConf struct {
-	Port      string `mapstructure:"PORT"`
-	JwtSecret string `mapstructure:"JWT_SECRET"`
+	Port                string `mapstructure:"PORT"`
+	JwtSecret           string `mapstructure:"JWT_SECRET"`
+	ServiceQrCodeSecret string `mapstructure:"SERVICE_QRCODE_SECRET"`
 
 	PGHost     string `mapstructure:"PG_HOST"`
 	PGPort     uint   `mapstructure:"PG_PORT"`

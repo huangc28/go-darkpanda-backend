@@ -68,7 +68,6 @@ test_migrate_down:
 deploy: build
 	ssh -t root@hookie.club 'cd ~/darkpanda/go-darkpanda-backend && \
 		git pull https://$(GITHUB_USER):$(GITHUB_ACCESS_TOKEN)@github.com/huangc28/go-darkpanda-backend.git && \
-		git reset --hard origin/master && \
 		make migrate_up && \
 		make build && \
 		sudo systemctl stop darkpanda.service && \

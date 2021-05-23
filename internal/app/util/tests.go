@@ -88,11 +88,8 @@ func randomSericeStatus() models.ServiceStatus {
 		models.ServiceStatusUnpaid,
 		models.ServiceStatusToBeFulfilled,
 		models.ServiceStatusCanceled,
-		models.ServiceStatusFailedDueToBoth,
-		models.ServiceStatusGirlWaiting,
-		models.ServiceStatusFufilling,
-		models.ServiceStatusFailedDueToGirl,
-		models.ServiceStatusFailedDueToMan,
+		models.ServiceStatusFulfilling,
+		models.ServiceStatusExpired,
 		models.ServiceStatusCompleted,
 	}
 

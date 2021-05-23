@@ -216,7 +216,7 @@ WHERE service_inquiries.uuid = $1;
 }
 
 func (dao *ServiceDAO) UpdateServiceByID(params contracts.UpdateServiceByIDParams) (*models.Service, error) {
-	sql := `
+	query := `
 UPDATE services SET
 	price = COALESCE($1, price),
 	uuid = uuid,
@@ -235,7 +235,7 @@ RETURNING
 	service := models.Service{}
 
 	if err := dao.DB.QueryRowx(
-		sql,
+		query,
 		params.Price,
 		params.Duration,
 		params.Appointment,
@@ -247,4 +247,27 @@ RETURNING
 	}
 
 	return &service, nil
+}
+
+func (dao *ServiceDAO) CreateServiceQRCode(params contracts.CreateServiceQRCodeParams) (*models.ServiceQrcode, error) {
+	query := `
+INSERT INTO service_qrcode (
+	uuid,
+	url,
+	service_id
+) VALUES ($1, $2, $3)
+RETURNING *;
+`
+	var m models.ServiceQrcode
+
+	if err := dao.DB.QueryRowx(
+		query,
+		params.Uuid,
+		params.Url,
+		params.ServiceId,
+	).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }

@@ -38,6 +38,7 @@ require (
 	github.com/pubnub/go v4.9.1+incompatible
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.6.0
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/smartystreets/assertions v0.0.0-20190116191733-b6c0e53d7304 // indirect
 	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v1.1.3

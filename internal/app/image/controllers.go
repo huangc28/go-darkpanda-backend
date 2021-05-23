@@ -10,6 +10,8 @@ import (
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	gcsenhancer "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/gcs_enhancer"
+
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/option"
 )
@@ -46,7 +48,7 @@ func UploadAvatarHandler(c *gin.Context) {
 		return
 	}
 
-	enhancer := NewGCSEnhancer(
+	enhancer := gcsenhancer.NewGCSEnhancer(
 		client,
 		appConf.GcsBucketName,
 	)
@@ -112,7 +114,11 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 	client, err := storage.NewClient(
 		ctx,
 		option.WithServiceAccountFile(
-			fmt.Sprintf("%s/%s", config.GetProjRootPath(), appConf.GcsGoogleServiceAccountName),
+			fmt.Sprintf(
+				"%s/%s",
+				config.GetProjRootPath(),
+				appConf.GcsGoogleServiceAccountName,
+			),
 		),
 	)
 
@@ -128,7 +134,7 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	enhancer := NewGCSEnhancer(client, appConf.GcsBucketName)
+	enhancer := gcsenhancer.NewGCSEnhancer(client, appConf.GcsBucketName)
 	linkList, err := enhancer.UploadMultiple(ctx, fileHeaders)
 
 	if err != nil {

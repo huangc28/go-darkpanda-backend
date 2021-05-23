@@ -16,9 +16,16 @@ type UpdateServiceByIDParams struct {
 	ServiceStatus *models.ServiceStatus
 }
 
+type CreateServiceQRCodeParams struct {
+	Uuid      string
+	Url       string
+	ServiceId int
+}
+
 type ServiceDAOer interface {
 	GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error)
 	GetServiceByInquiryUUID(uuid string, fields ...string) (*models.Service, error)
 	UpdateServiceByID(params UpdateServiceByIDParams) (*models.Service, error)
+	CreateServiceQRCode(params CreateServiceQRCodeParams) (*models.ServiceQrcode, error)
 	WithTx(tx db.Conn) ServiceDAOer
 }

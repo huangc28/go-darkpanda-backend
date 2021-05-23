@@ -14,15 +14,14 @@ INSERT INTO users (
 	uuid,
 	phone_verify_code,
 	phone_verified,
-	auth_sms_code,
 	gender,
 	premium_type,
 	premium_expiry_date,
 	avatar_url,
 	mobile,
 	description
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile
 `
 
 type CreateUserParams struct {
@@ -30,7 +29,6 @@ type CreateUserParams struct {
 	Uuid              string         `json:"uuid"`
 	PhoneVerifyCode   sql.NullString `json:"phone_verify_code"`
 	PhoneVerified     bool           `json:"phone_verified"`
-	AuthSmsCode       sql.NullInt32  `json:"auth_sms_code"`
 	Gender            Gender         `json:"gender"`
 	PremiumType       PremiumType    `json:"premium_type"`
 	PremiumExpiryDate sql.NullTime   `json:"premium_expiry_date"`
@@ -45,7 +43,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.Uuid,
 		arg.PhoneVerifyCode,
 		arg.PhoneVerified,
-		arg.AuthSmsCode,
 		arg.Gender,
 		arg.PremiumType,
 		arg.PremiumExpiryDate,
@@ -58,7 +55,6 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.ID,
 		&i.Username,
 		&i.PhoneVerified,
-		&i.AuthSmsCode,
 		&i.Gender,
 		&i.PremiumType,
 		&i.PremiumExpiryDate,
@@ -82,7 +78,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
+SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -93,7 +89,6 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.ID,
 		&i.Username,
 		&i.PhoneVerified,
-		&i.AuthSmsCode,
 		&i.Gender,
 		&i.PremiumType,
 		&i.PremiumExpiryDate,
@@ -117,7 +112,7 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
+SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -128,7 +123,6 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.ID,
 		&i.Username,
 		&i.PhoneVerified,
-		&i.AuthSmsCode,
 		&i.Gender,
 		&i.PremiumType,
 		&i.PremiumExpiryDate,
@@ -152,7 +146,7 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 }
 
 const getUserByUuid = `-- name: GetUserByUuid :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
+SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -163,7 +157,6 @@ func (q *Queries) GetUserByUuid(ctx context.Context, uuid string) (User, error) 
 		&i.ID,
 		&i.Username,
 		&i.PhoneVerified,
-		&i.AuthSmsCode,
 		&i.Gender,
 		&i.PremiumType,
 		&i.PremiumExpiryDate,
@@ -187,7 +180,7 @@ func (q *Queries) GetUserByUuid(ctx context.Context, uuid string) (User, error) 
 }
 
 const getUserByVerifyCode = `-- name: GetUserByVerifyCode :one
-SELECT id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
+SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
 WHERE phone_verify_code = $1 LIMIT 1
 `
 
@@ -198,7 +191,6 @@ func (q *Queries) GetUserByVerifyCode(ctx context.Context, phoneVerifyCode sql.N
 		&i.ID,
 		&i.Username,
 		&i.PhoneVerified,
-		&i.AuthSmsCode,
 		&i.Gender,
 		&i.PremiumType,
 		&i.PremiumExpiryDate,
@@ -237,7 +229,7 @@ const patchUserInfoByUuid = `-- name: PatchUserInfoByUuid :one
 UPDATE users
 SET avatar_url = $1, nationality = $2, region = $3, age = $4, height = $5, weight = $6, description = $7, breast_size = $8
 WHERE uuid = $9
-RETURNING id, username, phone_verified, auth_sms_code, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile
+RETURNING id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, phone_verify_code, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile
 `
 
 type PatchUserInfoByUuidParams struct {
@@ -269,7 +261,6 @@ func (q *Queries) PatchUserInfoByUuid(ctx context.Context, arg PatchUserInfoByUu
 		&i.ID,
 		&i.Username,
 		&i.PhoneVerified,
-		&i.AuthSmsCode,
 		&i.Gender,
 		&i.PremiumType,
 		&i.PremiumExpiryDate,
