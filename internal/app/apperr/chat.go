@@ -29,6 +29,8 @@ const (
 	FailedToGenQRCodeUuid             = "7000025"
 	FailedToMarshQRCodeContent        = "7000026"
 	FailedToCreateServiceQRCodeRecord = "7000027"
+
+	ServiceStartTimeNotValid = "7000028"
 )
 
 var ChatErrorMessageMap = map[string]string{

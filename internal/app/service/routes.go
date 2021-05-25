@@ -41,4 +41,11 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			GetOverduedServicesHandlers(c, container)
 		},
 	)
+
+	g.POST(
+		"/scan-service-qrcode",
+		func(c *gin.Context) {
+			ScanServiceQrCode(c, container)
+		},
+	)
 }

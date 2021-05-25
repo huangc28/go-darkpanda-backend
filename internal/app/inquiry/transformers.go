@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
@@ -19,11 +20,11 @@ func NewTransform() *InquiryTransform {
 }
 
 type TransformedInquiry struct {
-	Uuid          string    `json:"inquiry_uuid"`
-	Budget        float64   `json:"budget"`
-	ServiceType   string    `json:"service_type"`
-	InquiryStatus string    `json:"inquiry_status"`
-	CreatedAt     time.Time `json:"created_at"`
+	Uuid            string    `json:"inquiry_uuid"`
+	Budget          float64   `json:"budget"`
+	ServiceType     string    `json:"service_type"`
+	InquiryStatus   string    `json:"inquiry_status"`
+	AppointmentTime time.Time `json:"appointment_time"`
 }
 
 func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (TransformedInquiry, error) {
@@ -33,12 +34,16 @@ func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (Transf
 		return TransformedInquiry{}, err
 	}
 
+	// Convert appointment time to application specific timezone before responding.
+	loc, _ := time.LoadLocation(config.GetAppConf().AppTimeZone)
+	tzAp := m.AppointmentTime.Time.In(loc)
+
 	tiq := TransformedInquiry{
-		Uuid:          m.Uuid,
-		Budget:        budget,
-		ServiceType:   string(m.ServiceType),
-		InquiryStatus: string(m.InquiryStatus),
-		CreatedAt:     m.CreatedAt,
+		Uuid:            m.Uuid,
+		Budget:          budget,
+		ServiceType:     string(m.ServiceType),
+		InquiryStatus:   string(m.InquiryStatus),
+		AppointmentTime: tzAp,
 	}
 
 	return tiq, nil
@@ -58,7 +63,6 @@ func (t *InquiryTransform) TransformInquiry(m models.ServiceInquiry) (Transforme
 		Budget:        badget,
 		ServiceType:   string(m.ServiceType),
 		InquiryStatus: string(m.InquiryStatus),
-		CreatedAt:     m.CreatedAt,
 	}
 
 	return tiq, nil

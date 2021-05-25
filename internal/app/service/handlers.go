@@ -1,10 +1,14 @@
 package service
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
@@ -170,4 +174,174 @@ func GetOverduedServicesHandlers(c *gin.Context, depCon container.Container) {
 		http.StatusOK,
 		TransformGetServicesResults(srvRes),
 	)
+}
+
+type ScanServiceQrCodeBody struct {
+	QrcodeSecret string `json:"qrcode_secret" form:"qrcode_secret" binding:"required,gt=0"`
+	QrcodeUuid   string `json:"qrcode_uuid" form:"qrcode_uuid" binding:"required,gt=0"`
+}
+
+// ScanServiceQrCode Upon meetup, female / male user would scan service QR code to
+// start fulfilling the service. This API checks the following conditions before
+// change the service status to `fulfilling`:
+//   1. Check if the current datetime is within the range of appointment time.
+//   2. If the scanner is one of the participants of this service. The scanner has
+//      to be either inquirer or service provider.
+//   3. the service status is `to_be_fulfilled`
+func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
+	body := ScanServiceQrCodeBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindApiBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if body.QrcodeSecret != config.GetAppConf().ServiceQrCodeSecret {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedServiceQrCodeSecretNotMatch,
+			),
+		)
+
+		return
+
+	}
+
+	// Retrieve service by qrcode uuid.
+	srvDao := NewServiceDAO(db.GetDB())
+	srv, err := srvDao.GetServiceByQrcodeUuid(body.QrcodeUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByQrCodeUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Check if current time is in between service appointment and the buffer time.
+	// We have service `appointment time ` and `service duration`
+	err = IsTimeInRange(
+		srv.AppointmentTime.Time,
+		srv.AppointmentTime.Time.Add(4*time.Hour),
+	)
+
+	srvStatusExp := models.ServiceStatusExpired
+	if errors.Is(err, ErrorExpired) {
+		// Change service type to expired.
+		srvDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
+			ID:            srv.ID,
+			ServiceStatus: &srvStatusExp,
+		})
+	}
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.ServiceStartTimeNotValid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Check if qrcode scanner is either inquirer or service provider.
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+	user, err := userDao.GetUserByUuid(
+		c.GetString("uuid"),
+		"id",
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if srv.ServiceProviderID.Int32 != int32(user.ID) && srv.CustomerID.Int32 != int32(user.ID) {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.NotAServiceParticipant),
+		)
+
+		return
+	}
+
+	// Makesure the service status is `to_be_fulfilled`
+	if srv.ServiceStatus != models.ServiceStatusToBeFulfilled {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.InvalidServiceStatus,
+				fmt.Sprintf(
+					"Invalid service status: %s. Unable to change to 'to_be_fulfilled' status",
+					srv.ServiceStatus.ToString(),
+				),
+			),
+		)
+
+		return
+	}
+
+	// Change service status to `to_be_fulfilled`
+	fsm := NewServiceFSM(srv.ServiceStatus)
+	if err := fsm.Event(StartService.ToString()); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToChangeServiceStatus,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	srvStatus := models.ServiceStatus(fsm.Current())
+	startTime := time.Now().UTC()
+	endTime := startTime.Add(
+		time.Duration(srv.Duration.Int32) * time.Minute,
+	)
+
+	usrv, err := srvDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
+		ID:            srv.ID,
+		ServiceStatus: &srvStatus,
+		StartTime:     &startTime,
+		EndTime:       &endTime,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateService,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, TransformScanServiceQrCode(usrv))
 }

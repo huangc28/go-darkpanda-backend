@@ -71,6 +71,7 @@ func (m *Manager) ExecDBInit() *Manager {
 				User:     conf.PGUser,
 				Password: conf.PGPassword,
 				Dbname:   conf.PGDbname,
+				TimeZone: conf.PGTimeZone,
 			},
 			db.TestDBConf{
 				Host:     conf.TestPGHost,
@@ -78,6 +79,7 @@ func (m *Manager) ExecDBInit() *Manager {
 				User:     conf.TestPGUser,
 				Password: conf.TestPGPassword,
 				Dbname:   conf.TestPGDbname,
+				TimeZone: conf.TestPGTimeZone,
 			},
 			flag.Lookup("test.v") != nil,
 		)

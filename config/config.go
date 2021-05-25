@@ -14,18 +14,21 @@ type AppConf struct {
 	Port                string `mapstructure:"PORT"`
 	JwtSecret           string `mapstructure:"JWT_SECRET"`
 	ServiceQrCodeSecret string `mapstructure:"SERVICE_QRCODE_SECRET"`
+	AppTimeZone         string `mapstructure:"APP_TIME_ZONE"`
 
 	PGHost     string `mapstructure:"PG_HOST"`
 	PGPort     uint   `mapstructure:"PG_PORT"`
 	PGUser     string `mapstructure:"PG_USER"`
 	PGPassword string `mapstructure:"PG_PASSWORD"`
 	PGDbname   string `mapstructure:"PG_DBNAME"`
+	PGTimeZone string `mapstructure:"PG_TIMEZONE"`
 
 	TestPGHost     string `mapstructure:"TEST_PG_HOST"`
 	TestPGPort     uint   `mapstructure:"TEST_PG_PORT"`
 	TestPGUser     string `mapstructure:"TEST_PG_USER"`
 	TestPGPassword string `mapstructure:"TEST_PG_PASSWORD"`
 	TestPGDbname   string `mapstructure:"TEST_PG_DBNAME"`
+	TestPGTimeZone string `mapstructure:"TEST_PG_TIMEZONE"`
 
 	RedisHost     string `mapstructure:"REDIS_HOST"`
 	RedisPassword string `mapstructure:"REDIS_PASSWORD"`

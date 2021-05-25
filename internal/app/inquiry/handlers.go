@@ -146,6 +146,12 @@ func EmitInquiryHandler(c *gin.Context) {
 			Time:  time.Now().Add(InquiryDuration),
 			Valid: true,
 		},
+		AppointmentTime: sql.NullTime{
+			Valid: true,
+
+			// Convert appointment time to UTC to be consistent.
+			Time: body.AppointmentTime.UTC(),
+		},
 	})
 
 	if err != nil {

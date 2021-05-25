@@ -223,14 +223,19 @@ UPDATE services SET
 	duration = COALESCE($2, duration),
 	appointment_time = COALESCE($3, appointment_time),
 	service_status = COALESCE($4, service_status),
-	service_type = COALESCE($5, service_type)
-WHERE id = $6
+	service_type = COALESCE($5, service_type),
+	start_time = COALESCE($6, start_time),
+	end_time = COALESCE($7, end_time)
+WHERE id = $8
 RETURNING
 	uuid,
 	price,
 	duration,
 	appointment_time,
-	service_type;
+	service_status,
+	service_type,
+	start_time,
+	end_time
 	`
 	service := models.Service{}
 
@@ -241,6 +246,8 @@ RETURNING
 		params.Appointment,
 		params.ServiceStatus,
 		params.ServiceType,
+		params.StartTime,
+		params.EndTime,
 		params.ID,
 	).StructScan(&service); err != nil {
 		return (*models.Service)(nil), err
@@ -266,6 +273,26 @@ RETURNING *;
 		params.Url,
 		params.ServiceId,
 	).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+func (dao *ServiceDAO) GetServiceByQrcodeUuid(qrCodeUuid string) (*models.Service, error) {
+	query := `
+SELECT
+	services.*
+FROM
+	services
+INNER JOIN service_qrcode
+	ON service_qrcode.service_id = services.id
+WHERE
+	service_qrcode.uuid = $1;
+`
+
+	var m models.Service
+
+	if err := dao.DB.QueryRowx(query, qrCodeUuid).StructScan(&m); err != nil {
 		return nil, err
 	}
 

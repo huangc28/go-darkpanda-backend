@@ -6,8 +6,16 @@ const (
 	FailedToGetIncomingService = "1100003"
 	FailedToGetOverdueService  = "1100004"
 	FailedToBindApiBodyParams  = "1100005"
+
+	FailedServiceQrCodeSecretNotMatch = "1100006"
+	FailedToGetServiceByQrCodeUuid    = "1100007"
+	NotAServiceParticipant            = "1100008"
+	InvalidServiceStatus              = "1100009"
+	FailedToChangeServiceStatus       = "1100010"
 )
 
 var ServiceErrorMessageMap = map[string]string{
-	FailedToCreateService: "Failed to create service",
+	FailedToCreateService:             "Failed to create service.",
+	FailedServiceQrCodeSecretNotMatch: "QR code secret does not match.",
+	NotAServiceParticipant:            "Scanner is not a service participant",
 }

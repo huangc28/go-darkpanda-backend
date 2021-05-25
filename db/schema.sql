@@ -544,3 +544,10 @@ CREATE TABLE service_qrcode (
 );
 
 COMMIT;
+BEGIN;
+
+ALTER TABLE services
+ADD COLUMN start_time timestamp,
+ADD COLUMN end_time timestamp;
+
+COMMIT;

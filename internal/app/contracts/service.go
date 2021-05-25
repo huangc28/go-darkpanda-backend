@@ -14,6 +14,8 @@ type UpdateServiceByIDParams struct {
 	Appointment   *time.Time
 	ServiceType   *models.ServiceType
 	ServiceStatus *models.ServiceStatus
+	StartTime     *time.Time
+	EndTime       *time.Time
 }
 
 type CreateServiceQRCodeParams struct {

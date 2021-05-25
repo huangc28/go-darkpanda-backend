@@ -30,6 +30,7 @@ type DBConf struct {
 	User     string
 	Password string
 	Dbname   string
+	TimeZone string
 }
 
 type TestDBConf struct {
@@ -38,6 +39,7 @@ type TestDBConf struct {
 	User     string
 	Password string
 	Dbname   string
+	TimeZone string
 }
 
 func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
@@ -52,12 +54,13 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 
 	// we need to recognize the running environment
 	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
 		conf.Host,
 		conf.Port,
 		conf.User,
 		conf.Password,
 		conf.Dbname,
+		conf.TimeZone,
 	)
 
 	driver, err := sqlx.Open("postgres", dsn)
@@ -76,12 +79,13 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 
 func initTestDB(testConf TestDBConf) {
 	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
 		testConf.Host,
 		testConf.Port,
 		testConf.User,
 		testConf.Password,
 		testConf.Dbname,
+		testConf.TimeZone,
 	)
 
 	txdb.Register("txdb", "postgres", dsn)

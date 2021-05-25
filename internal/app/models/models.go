@@ -337,6 +337,8 @@ type Service struct {
 	InquiryID         int32          `json:"inquiry_id"`
 	ServiceStatus     ServiceStatus  `json:"service_status"`
 	Address           sql.NullString `json:"address"`
+	StartTime         sql.NullTime   `json:"start_time"`
+	EndTime           sql.NullTime   `json:"end_time"`
 }
 
 type ServiceInquiry struct {
