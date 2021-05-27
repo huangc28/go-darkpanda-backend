@@ -19,7 +19,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
-	"github.com/spf13/viper"
 )
 
 type AuthController struct {
@@ -220,7 +219,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 	depCon.Make(&tc)
 
 	smsResp, err := tc.SendSMS(
-		viper.GetString("twilio.from"),
+		config.GetAppConf().TwilioFrom,
 		user.Mobile.String,
 		fmt.Sprintf("your darkpanda verify code: \n\n %s", verifyCode.BuildCode()),
 	)
