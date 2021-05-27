@@ -12,6 +12,8 @@ const (
 	NotAServiceParticipant            = "1100008"
 	InvalidServiceStatus              = "1100009"
 	FailedToChangeServiceStatus       = "1100010"
+
+	FirestoreFailedToUpdateService = "1100011"
 )
 
 var ServiceErrorMessageMap = map[string]string{

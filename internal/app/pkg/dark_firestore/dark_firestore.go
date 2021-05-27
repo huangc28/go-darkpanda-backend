@@ -65,6 +65,7 @@ type DarkFireStorer interface {
 	UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) error
 
 	CreateService(ctx context.Context, params CreateServiceParams) error
+	UpdateService(ctx context.Context, params UpdateServiceParams) error
 }
 
 type DarkFirestore struct {
@@ -535,6 +536,33 @@ func (df *DarkFirestore) CreateService(ctx context.Context, params CreateService
 	if err != nil {
 		return err
 
+	}
+
+	return nil
+}
+
+type UpdateServiceParams struct {
+	ServiceUuid   string `firestore:"service_uuid,omitempty" json:"service_uuid"`
+	ServiceStatus string `firestore:"service_status,omitempty" json:"service_status"`
+}
+
+func (df *DarkFirestore) UpdateService(ctx context.Context, params UpdateServiceParams) error {
+	_, err := df.
+		Client.
+		Collection(ServiceCollectionName).
+		Doc(params.ServiceUuid).
+		Update(
+			ctx,
+			[]firestore.Update{
+				{
+					Path:  "service_status",
+					Value: params.ServiceStatus,
+				},
+			},
+		)
+
+	if err != nil {
+		return err
 	}
 
 	return nil

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -13,7 +14,9 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
+	"github.com/jmoiron/sqlx"
 )
 
 // GetListOfCurrentServicesHandler retrieve those service of the following status:
@@ -238,8 +241,20 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 		srv.AppointmentTime.Time.Add(4*time.Hour),
 	)
 
+	df := darkfirestore.Get()
+	ctx := context.Background()
+
 	srvStatusExp := models.ServiceStatusExpired
 	if errors.Is(err, ErrorExpired) {
+		// Update service status in firestore.
+		df.UpdateService(
+			ctx,
+			darkfirestore.UpdateServiceParams{
+				ServiceUuid:   srv.Uuid.String(),
+				ServiceStatus: srv.ServiceStatus.ToString(),
+			},
+		)
+
 		// Change service type to expired.
 		srvDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
 			ID:            srv.ID,
@@ -324,24 +339,57 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 		time.Duration(srv.Duration.Int32) * time.Minute,
 	)
 
-	usrv, err := srvDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
-		ID:            srv.ID,
-		ServiceStatus: &srvStatus,
-		StartTime:     &startTime,
-		EndTime:       &endTime,
-	})
+	// Change service status to be `fulfilling`.
+	transResp := db.TransactWithFormatStruct(
+		db.GetDB(),
+		func(tx *sqlx.Tx) db.FormatResp {
+			srvDao.WithTx(tx)
+			usrv, err := srvDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
+				ID:            srv.ID,
+				ServiceStatus: &srvStatus,
+				StartTime:     &startTime,
+				EndTime:       &endTime,
+			})
 
-	if err != nil {
+			if err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToUpdateService,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			err = df.UpdateService(ctx, darkfirestore.UpdateServiceParams{
+				ServiceUuid:   usrv.Uuid.String(),
+				ServiceStatus: usrv.ServiceStatus.ToString(),
+			})
+
+			if err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FirestoreFailedToUpdateService,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			return db.FormatResp{
+				Response: usrv,
+			}
+		},
+	)
+
+	if transResp.Err != nil {
 		c.AbortWithError(
-			http.StatusInternalServerError,
+			transResp.HttpStatusCode,
 			apperr.NewErr(
-				apperr.FailedToUpdateService,
-				err.Error(),
+				transResp.ErrCode,
+				transResp.Err.Error(),
 			),
 		)
-
 		return
 	}
+
+	usrv := transResp.Response.(*models.Service)
 
 	c.JSON(http.StatusOK, TransformScanServiceQrCode(usrv))
 }

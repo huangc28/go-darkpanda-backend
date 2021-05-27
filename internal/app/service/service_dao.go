@@ -227,15 +227,7 @@ UPDATE services SET
 	start_time = COALESCE($6, start_time),
 	end_time = COALESCE($7, end_time)
 WHERE id = $8
-RETURNING
-	uuid,
-	price,
-	duration,
-	appointment_time,
-	service_status,
-	service_type,
-	start_time,
-	end_time
+RETURNING *;
 	`
 	service := models.Service{}
 
