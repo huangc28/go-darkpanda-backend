@@ -30,7 +30,8 @@ const (
 	FailedToMarshQRCodeContent        = "7000026"
 	FailedToCreateServiceQRCodeRecord = "7000027"
 
-	ServiceStartTimeNotValid = "7000028"
+	ServiceStartTimeNotValid       = "7000028"
+	FirestoreFailedToCreateService = "7000029"
 )
 
 var ChatErrorMessageMap = map[string]string{

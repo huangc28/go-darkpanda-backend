@@ -30,17 +30,41 @@ const (
 	ConfirmedService    MessageType = "confirmed_service"
 )
 
+const (
+	// Key value of the `inquries` collection in firestore.
+	InquiryCollectionName = "inquiries"
+
+	// Key value of the `services` collection in firestore.
+	ServiceCollectionName = "services"
+
+	// Key value of the `private_chats` collection in firestore.
+	PrivateChatsCollectionName = "private_chats"
+
+	// Key value of the subcollection `messages` of `private_chats` collection.
+	MessageSubCollectionName = "messages"
+
+	// Message content template when inquiry is created
+	CreatePrivateChatBotContent = "Welcome! %s has picked up your inquiry."
+
+	// Message content template when female user has updated the service detail.
+	ServiceDetailMessageContent = "Service updated:\n"
+)
+
 type DarkFireStorer interface {
 	GetClient() *firestore.Client
+
 	CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error
 	SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error)
 	SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error)
 	GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string][]*ChatMessage, error)
 	GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]interface{}, error)
 	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
+
 	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
 	AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error
 	UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) error
+
+	CreateService(ctx context.Context, params CreateServiceParams) error
 }
 
 type DarkFirestore struct {
@@ -79,12 +103,6 @@ func InitFireStore(ctx context.Context, options InitOptions) error {
 func (df *DarkFirestore) GetClient() *firestore.Client {
 	return _darkFirestore.Client
 }
-
-const (
-	PrivateChatsCollectionName  = "private_chats"
-	MessageSubCollectionName    = "messages"
-	CreatePrivateChatBotContent = "Welcome! %s has picked up your inquiry."
-)
 
 // @TODO remove `To` column.
 type ChatMessage struct {
@@ -156,12 +174,12 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 
 	params.Data.CreatedAt = time.Now()
 
-	// Create private chatroom by adding a dummy field "created_at".
+	// Create private chatroom by adding a dummy field "last_touched".
 	_, err := df.Client.
 		Collection(PrivateChatsCollectionName).
 		Doc(params.ChatroomName).
 		Set(ctx, map[string]interface{}{
-			"created_at": time.Now(),
+			"last_touched": time.Now(),
 		})
 
 	if err != nil {
@@ -197,10 +215,6 @@ type SendServiceDetailMessageParams struct {
 	ChatroomName string
 	Data         ServiceDetailMessage
 }
-
-const (
-	ServiceDetailMessageContent = "Service updated:\n"
-)
 
 func (df *DarkFirestore) SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error) {
 	if params.Data.Type == "" {
@@ -422,10 +436,6 @@ func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params
 	return ref, params.Data, nil
 }
 
-const (
-	InquiryCollectionName = "inquiries"
-)
-
 type CreateInquiringUserParams struct {
 	InquiryUUID string
 }
@@ -435,10 +445,7 @@ type InquiringUserInfo struct {
 	Status      string `firestore:"status,omitempty"`
 }
 
-// CreateInquiry Adds user into lobby by creating a user record in the firestore.
-// User record includes following info:
-//   - timer countdown in second.
-//   - lobby status.
+// CreateInquiry creates new record in inquiries collection.
 func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error) {
 	data := InquiringUserInfo{
 		InquiryUUID: params.InquiryUUID,
@@ -510,4 +517,25 @@ func (df *DarkFirestore) ChatInquiringUser(ctx context.Context, params ChatInqui
 			Status:      models.InquiryStatusChatting,
 		},
 	)
+}
+
+type CreateServiceParams struct {
+	ServiceUuid   string `firestore:"service_uuid,omitempty" json:"service_uuid"`
+	ServiceStatus string `firestore:"service_status,omitempty" json:"service_status"`
+}
+
+func (df *DarkFirestore) CreateService(ctx context.Context, params CreateServiceParams) error {
+	// Create a service record.
+	_, err := df.
+		Client.
+		Collection(ServiceCollectionName).
+		Doc(params.ServiceUuid).
+		Set(ctx, params)
+
+	if err != nil {
+		return err
+
+	}
+
+	return nil
 }

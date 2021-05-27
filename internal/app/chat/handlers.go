@@ -566,7 +566,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 
 	// Wrap service and inquiry update in a transaction.
 	// Change inquiry status from `chatting` to `booked`
-	// Create a new service. Transform service status from `negotiating` to `unpaid`
+	// Create a new service with status `unpaid`
 	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 		serviceDBCli := models.New(tx)
 
@@ -591,6 +591,24 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			return db.FormatResp{
 				Err:     err,
 				ErrCode: apperr.FailedToCreateService,
+			}
+		}
+
+		// Create a new service record in firestore
+		df := darkfirestore.Get()
+		err = df.CreateService(
+			ctx,
+			darkfirestore.CreateServiceParams{
+				ServiceUuid:   service.Uuid.String(),
+				ServiceStatus: service.ServiceStatus.ToString(),
+			},
+		)
+
+		if err != nil {
+			return db.FormatResp{
+				Err:            err,
+				ErrCode:        apperr.FirestoreFailedToCreateService,
+				HttpStatusCode: http.StatusInternalServerError,
 			}
 		}
 
@@ -740,13 +758,15 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		},
 	)
 	resp := struct {
-		Message   interface{} `json:"message"`
-		ChannelID string      `json:"channel_uuid"`
-		QrCodeUrl string      `json:"qrcode_url"`
+		Message            interface{} `json:"message"`
+		ChannelID          string      `json:"channel_uuid"`
+		ServiceChannelUuid string      `json:"service_channel_uuid"`
+		QrCodeUrl          string      `json:"qrcode_url"`
 	}{
-		Message:   msg,
-		ChannelID: chatroom.ChannelUuid.String,
-		QrCodeUrl: qrcodeUrl,
+		Message:            msg,
+		ServiceChannelUuid: service.Uuid.String(),
+		ChannelID:          chatroom.ChannelUuid.String,
+		QrCodeUrl:          qrcodeUrl,
 	}
 
 	c.JSON(http.StatusOK, resp)
