@@ -151,7 +151,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 			vc := genverifycode.GenVerifyCode()
 
 			smsResp, err := tc.SendSMS(
-				viper.GetString("twilio.from"),
+				config.GetAppConf().TwilioFrom,
 				user.Mobile.String,
 				fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
 			)
