@@ -270,6 +270,7 @@ RETURNING *;
 
 	return &m, nil
 }
+
 func (dao *ServiceDAO) GetServiceByQrcodeUuid(qrCodeUuid string) (*models.Service, error) {
 	query := `
 SELECT
@@ -289,4 +290,79 @@ WHERE
 	}
 
 	return &m, nil
+}
+
+// ScanExpiredServices scan services with service status `to_be_fulfilled`.
+// If current time is later than the service end_time, we set the service status to be `expired`
+func (dao *ServiceDAO) ScanExpiredServices() ([]*models.Service, error) {
+	return dao.ScanAndUpdateServiceStatusIfNeeded(
+		ScanAndUpdateServiceStatusIfNeededParams{
+			ScanStatus:     string(models.ServiceStatusToBeFulfilled),
+			UpdateToStatus: string(models.ServiceStatusExpired),
+		},
+	)
+}
+
+// ScanCompletedServices scan those services with status `fulfilling`. If current time
+// is greater than `end_time`, update the status to `completed`
+func (dao *ServiceDAO) ScanCompletedServices() ([]*models.Service, error) {
+	return dao.ScanAndUpdateServiceStatusIfNeeded(
+		ScanAndUpdateServiceStatusIfNeededParams{
+			ScanStatus:     string(models.ServiceStatusFulfilling),
+			UpdateToStatus: string(models.ServiceStatusCompleted),
+		},
+	)
+}
+
+type ScanAndUpdateServiceStatusIfNeededParams struct {
+	ScanStatus     string
+	UpdateToStatus string
+}
+
+func (dao *ServiceDAO) ScanAndUpdateServiceStatusIfNeeded(params ScanAndUpdateServiceStatusIfNeededParams) ([]*models.Service, error) {
+	query := `
+WITH found_services AS (
+	SELECT
+		id,
+		uuid
+	FROM
+		services
+	WHERE
+		service_status = $1 AND
+		now() >= end_time
+), updated AS (
+	UPDATE
+		services
+	SET
+		service_status = $2
+	FROM
+		 found_services
+	WHERE
+		found_services.id = services.id
+)
+SELECT id, uuid from found_services;
+`
+	rows, err := dao.DB.Queryx(
+		query,
+		params.ScanStatus,
+		params.UpdateToStatus,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	srvs := make([]*models.Service, 0)
+
+	for rows.Next() {
+		srv := models.Service{}
+
+		if err := rows.StructScan(&srv); err != nil {
+			return nil, err
+		}
+
+		srvs = append(srvs, &srv)
+	}
+
+	return srvs, nil
 }

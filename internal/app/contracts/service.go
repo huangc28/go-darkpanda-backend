@@ -30,4 +30,6 @@ type ServiceDAOer interface {
 	UpdateServiceByID(params UpdateServiceByIDParams) (*models.Service, error)
 	CreateServiceQRCode(params CreateServiceQRCodeParams) (*models.ServiceQrcode, error)
 	WithTx(tx db.Conn) ServiceDAOer
+	ScanExpiredServices() ([]*models.Service, error)
+	ScanCompletedServices() ([]*models.Service, error)
 }

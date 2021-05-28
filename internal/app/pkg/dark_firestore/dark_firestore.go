@@ -567,3 +567,28 @@ func (df *DarkFirestore) UpdateService(ctx context.Context, params UpdateService
 
 	return nil
 }
+
+type UpdateMultipleServiceStatusParams struct {
+	ServiceUuids  []string
+	ServiceStatus string
+}
+
+func (df *DarkFirestore) UpdateMultipleServiceStatus(ctx context.Context, params UpdateMultipleServiceStatusParams) error {
+	batch := df.Client.Batch()
+
+	for _, sUuid := range params.ServiceUuids {
+		docRef := df.
+			Client.
+			Collection(ServiceCollectionName).
+			Doc(sUuid)
+
+		batch.Set(docRef, map[string]interface {
+		}{
+			"service_status": params.ServiceStatus,
+		}, firestore.MergeAll)
+	}
+
+	_, err := batch.Commit(ctx)
+
+	return err
+}
