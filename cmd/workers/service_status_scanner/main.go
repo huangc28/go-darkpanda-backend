@@ -129,7 +129,7 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 }
 
 func main() {
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(5 * time.Second)
 	if err := deps.Get().Run(); err != nil {
 		log.Fatalf("failed to initialize dependency container %s", err.Error())
 	}
