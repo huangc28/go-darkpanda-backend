@@ -11,3 +11,6 @@ google-service-account.json
 
 # Play Ground
 playground/*
+
+# worker error logs path
+errors_logs
