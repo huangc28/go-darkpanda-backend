@@ -1,3 +1,5 @@
+CURRENT_DIR = $(shell pwd)
+
 # Export variable in .app.env.
 ifneq (,$(wildcard ./.app.env))
 	include .app.env
@@ -72,9 +74,13 @@ deploy: build
 		sudo systemctl stop darkpanda.service && \
 		sudo systemctl start darkpanda.service'
 
-build:
-	echo 'building production binary...';
-	cd cmd/app && GOOS=linux GOARCH=amd64 go build -o ../../bin/darkpanda_backend -v .
+build: build_service_status_scanner
+	echo 'building production binary...'
+	cd $(CURRENT_DIR)/cmd/app && GOOS=linux GOARCH=amd64 go build -o ../../bin/darkpanda_backend -v .
+
+build_service_status_scanner:
+	echo 'building worker binary...'
+	cd $(CURRENT_DIR)/cmd/workers/service_status_scanner && GOOS=linux GOARCH=amd64 go build -o ../../../bin/service_status_scanner -v .
 
 .PHONY: build
 .PHONY: deploy
