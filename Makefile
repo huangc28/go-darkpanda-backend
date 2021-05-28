@@ -75,13 +75,10 @@ deploy: build
 	ssh -t root@hookie.club 'cd ~/darkpanda/go-darkpanda-backend && \
 		git pull https://$(GITHUB_USER):$(GITHUB_ACCESS_TOKEN)@github.com/huangc28/go-darkpanda-backend.git && \
 		make build && \
-
 		sudo systemctl stop $(APP_SERVICE_NAME) && \
 		sudo systemctl start $(APP_SERVICE_NAME) && \
-
 		sudo systemctl stop $(SERVICE_STATUS_SCANNER_SERVICE_NAME) && \
-		sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)
-'
+		sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)'
 
 build: build_service_status_scanner
 	echo 'building production binary...'
