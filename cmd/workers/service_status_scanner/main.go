@@ -46,14 +46,14 @@ func initErrLogger() {
 	file, err := os.OpenFile(
 		fmt.Sprintf("%s/%s_service_status_scanner_error.log", errLogPath, time.Now().Format("01-02-2006")),
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
-		0666,
+		0755,
 	)
 
 	if err != nil {
 		log.Fatalf("failed to open log file: %v", err)
 	}
 
-	errLogger.SetOutput(file)
+	errLogger.Out = file
 	errLogger.SetLevel(log.ErrorLevel)
 }
 
@@ -69,14 +69,14 @@ func initInfoLogger() {
 	file, err := os.OpenFile(
 		fmt.Sprintf("%s/%s_service_status_scanner_info.log", infoLogPath, time.Now().Format("01-02-2006")),
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
-		0666,
+		0755,
 	)
 
 	if err != nil {
 		log.Fatalf("failed to open log file: %v", err)
 	}
 
-	infoLogger.SetOutput(file)
+	infoLogger.Out = file
 	infoLogger.SetLevel(log.InfoLevel)
 }
 
@@ -163,7 +163,6 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 
 func main() {
 	tickSec := 60
-
 	tickSecEnv := os.Getenv("TICK_INTERVAL_IN_SECOND")
 
 	if len(tickSecEnv) > 0 {
@@ -174,7 +173,7 @@ func main() {
 		}
 	}
 
-	ticker := time.NewTicker(time.Duration(tickSec) * time.Minute)
+	ticker := time.NewTicker(time.Duration(tickSec) * time.Second)
 	if err := deps.Get().Run(); err != nil {
 		log.Fatalf("failed to initialize dependency container %s", err.Error())
 	}
