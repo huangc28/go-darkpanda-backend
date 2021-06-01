@@ -35,16 +35,16 @@ var (
 )
 
 func initErrLogger() {
-	errLogPath := config.GetAppConf().ServiceStatusScannerErrorLogPath
+	errLogPath := config.GetAppConf().ErrorLogPath
 
 	if err := os.MkdirAll(errLogPath, os.ModePerm); err != nil {
-		log.Fatalf("failed to create error file: %v", err)
+		log.Fatalf("failed to create file: %v", err)
 	}
 
 	errLogger.SetFormatter(&log.JSONFormatter{})
 
 	file, err := os.OpenFile(
-		fmt.Sprintf("%s/%s_error.log", errLogPath, time.Now().Format("01-02-2006")),
+		fmt.Sprintf("%s/%s_service_status_scanner_error.log", errLogPath, time.Now().Format("01-02-2006")),
 		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
 		0666,
 	)
@@ -57,10 +57,35 @@ func initErrLogger() {
 	errLogger.SetLevel(log.ErrorLevel)
 }
 
+func initInfoLogger() {
+	infoLogPath := config.GetAppConf().InfoLogPath
+
+	if err := os.MkdirAll(infoLogPath, os.ModePerm); err != nil {
+		log.Fatalf("failed to create file: %v", err)
+	}
+
+	errLogger.SetFormatter(&log.JSONFormatter{})
+
+	file, err := os.OpenFile(
+		fmt.Sprintf("%s/%s_service_status_scanner_info.log", infoLogPath, time.Now().Format("01-02-2006")),
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
+		0666,
+	)
+
+	if err != nil {
+		log.Fatalf("failed to open log file: %v", err)
+	}
+
+	infoLogger.SetOutput(file)
+	infoLogger.SetLevel(log.InfoLevel)
+}
+
 func init() {
 	ctx := context.Background()
 	manager.NewDefaultManager(ctx).Run(func() {
 		initErrLogger()
+
+		initInfoLogger()
 	})
 }
 
@@ -95,7 +120,7 @@ func ScanCompletedServices(srvDao contracts.ServiceDAOer) error {
 		}
 	}
 
-	log.Info("Done update service status to completed")
+	infoLogger.Info("Done update service status to completed")
 
 	return nil
 }
@@ -131,7 +156,7 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 
 	}
 
-	log.Info("Done update service status to expired")
+	infoLogger.Info("Done update service status to expired")
 
 	return nil
 }

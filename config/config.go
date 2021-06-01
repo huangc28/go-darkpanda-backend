@@ -53,7 +53,8 @@ type AppConf struct {
 	TappayPartnerKey string `mapstructure:"TAPPAY_PARTNER_KEY"`
 	TappayMerchantId string `mapstructure:"TAPPAY_MERCHANT_ID"`
 
-	ServiceStatusScannerErrorLogPath string `mapstructure:"SERVICE_STATUS_SCANNER_ERROR_LOG_PATH"`
+	ErrorLogPath string `mapstructure:"ERROR_LOG_PATH"`
+	InfoLogPath  string `mapstructure:"INFO_LOG_PATH"`
 }
 
 var appConf AppConf
