@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -28,31 +29,38 @@ import (
 // Completed:
 //    If service status is `fulfilling` and current time is greater or equal to `end_time`, we will set the
 //    `service_status` of the service to be `completed`.
-var errLogger = log.New()
+var (
+	errLogger  = log.New()
+	infoLogger = log.New()
+)
+
+func initErrLogger() {
+	errLogPath := config.GetAppConf().ServiceStatusScannerErrorLogPath
+
+	if err := os.MkdirAll(errLogPath, os.ModePerm); err != nil {
+		log.Fatalf("failed to create error file: %v", err)
+	}
+
+	errLogger.SetFormatter(&log.JSONFormatter{})
+
+	file, err := os.OpenFile(
+		fmt.Sprintf("%s/%s_error.log", errLogPath, time.Now().Format("01-02-2006")),
+		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
+		0666,
+	)
+
+	if err != nil {
+		log.Fatalf("failed to open log file: %v", err)
+	}
+
+	errLogger.SetOutput(file)
+	errLogger.SetLevel(log.ErrorLevel)
+}
 
 func init() {
 	ctx := context.Background()
 	manager.NewDefaultManager(ctx).Run(func() {
-		errLogPath := config.GetAppConf().ServiceStatusScannerErrorLogPath
-
-		if err := os.MkdirAll(errLogPath, os.ModePerm); err != nil {
-			log.Fatalf("failed to create error file: %v", err)
-		}
-
-		errLogger.SetFormatter(&log.JSONFormatter{})
-
-		file, err := os.OpenFile(
-			fmt.Sprintf("%s/%s_error.log", errLogPath, time.Now().Format("01-02-2006")),
-			os.O_CREATE|os.O_WRONLY|os.O_APPEND,
-			0666,
-		)
-
-		if err != nil {
-			log.Fatalf("failed to open log file: %v", err)
-		}
-
-		errLogger.SetOutput(file)
-		errLogger.SetLevel(log.ErrorLevel)
+		initErrLogger()
 	})
 }
 
@@ -129,7 +137,19 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 }
 
 func main() {
-	ticker := time.NewTicker(5 * time.Second)
+	tickSec := 60
+
+	tickSecEnv := os.Getenv("TICK_INTERVAL_IN_SECOND")
+
+	if len(tickSecEnv) > 0 {
+		tickSecEnvInt, err := strconv.Atoi(tickSecEnv)
+
+		if err != nil {
+			tickSec = tickSecEnvInt
+		}
+	}
+
+	ticker := time.NewTicker(time.Duration(tickSec) * time.Minute)
 	if err := deps.Get().Run(); err != nil {
 		log.Fatalf("failed to initialize dependency container %s", err.Error())
 	}
@@ -138,7 +158,6 @@ func main() {
 
 	go func() {
 		for {
-			// Create a new ticker every minute.
 			select {
 			case <-ticker.C:
 				depCon := deps.Get().Container
