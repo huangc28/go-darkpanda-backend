@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"net/http"
@@ -392,4 +393,57 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 	usrv := transResp.Response.(*models.Service)
 
 	c.JSON(http.StatusOK, TransformScanServiceQrCode(usrv))
+}
+
+type GetServiceQRCodeBody struct {
+	ServiceUuid string `uri:"seg"`
+}
+
+func GetServiceQRCode(c *gin.Context, depCon container.Container) {
+	body := GetServiceQRCodeBody{}
+
+	if err := c.ShouldBindUri(&body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToBindApiBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	// Retrieve QRCode url by service uuid.
+	srvDao := NewServiceDAO(db.GetDB())
+	qrCode, err := srvDao.GetQrcodeByServiceUuid(body.ServiceUuid)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.NoQRCodeFound,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetQrCodeByServiceUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		QrCodeUrl string `json:"qrcode_url"`
+	}{qrCode.Url.String})
 }

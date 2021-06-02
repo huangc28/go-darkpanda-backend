@@ -366,3 +366,24 @@ SELECT id, uuid from found_services;
 
 	return srvs, nil
 }
+
+func (dao *ServiceDAO) GetQrcodeByServiceUuid(srvUuid string) (*models.ServiceQrcode, error) {
+	query := `
+SELECT
+	service_qrcode.*
+FROM
+	service_qrcode
+INNER JOIN services
+	ON service_qrcode.service_id = services.id
+	AND services.uuid = $1;
+
+`
+
+	var m models.ServiceQrcode
+
+	if err := dao.DB.QueryRowx(query, srvUuid).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
