@@ -5,28 +5,74 @@ import (
 
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 )
 
-type TransformedGetIncomingService struct {
+type TransformedService struct {
 	ServiceUuid     string    `json:"service_uuid"`
 	ServiceStatus   string    `json:"service_status"`
 	AppointmentTime time.Time `json:"appointment_time"`
-	Username        string    `json:"username"`
-	UserUuid        string    `json:"user_uuid"`
-	AvatarUrl       string    `json:"avatar_url"`
+	Username        string    `json:"chat_partner_username"`
+	UserUuid        string    `json:"chat_partner_user_uuid"`
+	AvatarUrl       string    `json:"chat_partner_avatar_url"`
 	ChannelUuid     string    `json:"channel_uuid"`
 	InquiryUuid     string    `json:"inquiry_uuid"`
+}
+
+type TransformedGetIncomingService struct {
+	TransformedService
+
+	// Messages only contains the latest message of the chatroom. It's an empty array
+	// If the chatroom does not contain any message.
+	Messages []*darkfirestore.ChatMessage `json:"messages"`
 }
 
 type TransformedGetIncomingServices struct {
 	Services []TransformedGetIncomingService `json:"services"`
 }
 
-func TransformGetServicesResults(results []ServiceResult) TransformedGetIncomingServices {
+func TransformGetIncomingServices(results []ServiceResult, latestMessageMap map[string][]*darkfirestore.ChatMessage) TransformedGetIncomingServices {
+
 	trfRes := make([]TransformedGetIncomingService, 0)
 
 	for _, res := range results {
+		chatMsgs := []*darkfirestore.ChatMessage{}
+
+		if v, exists := latestMessageMap[res.ChannelUuid.String]; exists {
+			chatMsgs = v
+		}
+
 		c := TransformedGetIncomingService{
+			TransformedService{
+				res.ServiceUuid.String,
+				res.ServiceStatus.String,
+				res.AppointmentTime.Time,
+				res.Username.String,
+				res.UserUuid.String,
+				res.AvatarUrl.String,
+				res.ChannelUuid.String,
+				res.InquiryUuid.String,
+			},
+			chatMsgs,
+		}
+
+		trfRes = append(trfRes, c)
+	}
+
+	return TransformedGetIncomingServices{
+		Services: trfRes,
+	}
+}
+
+type TransformedGetOverdueServices struct {
+	Services []TransformedService `json:"services"`
+}
+
+func TransformOverDueServices(results []ServiceResult) TransformedGetOverdueServices {
+	trfRes := make([]TransformedService, 0)
+
+	for _, res := range results {
+		c := TransformedService{
 			res.ServiceUuid.String,
 			res.ServiceStatus.String,
 			res.AppointmentTime.Time,
@@ -40,7 +86,7 @@ func TransformGetServicesResults(results []ServiceResult) TransformedGetIncoming
 		trfRes = append(trfRes, c)
 	}
 
-	return TransformedGetIncomingServices{
+	return TransformedGetOverdueServices{
 		Services: trfRes,
 	}
 }

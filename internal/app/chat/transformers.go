@@ -26,18 +26,18 @@ func (t *ChatTransformer) TransformEmitTextMessage(channelUUID string, msg darkf
 }
 
 type TransformedInquiryChat struct {
-	ServiceType models.InquiryStatus `json:"service_type"`
-	Username    string               `json:"username"`
-	AvatarURL   *string              `json:"avatar_url"`
-	ChannelUUID string               `json:"channel_uuid"`
-	ExpiredAt   time.Time            `json:"expired_at"`
-	CreatedAt   time.Time            `json:"created_at"`
+	ServiceType  models.InquiryStatus `json:"service_type"`
+	Username     string               `json:"username"`
+	AvatarURL    *string              `json:"avatar_url"`
+	ChannelUUID  string               `json:"channel_uuid"`
+	ExpiredAt    time.Time            `json:"expired_at"`
+	CreatedAt    time.Time            `json:"created_at"`
+	InquiryUUID  string               `json:"inquiry_uuid"`
+	InquirerUUID string               `json:"inquirer_uuid"`
 
 	// Messages only contains the latest message of the chatroom. It's an empty array
 	// If the chatroom does not contain any message.
-	Messages     []*darkfirestore.ChatMessage `json:"messages"`
-	InquiryUUID  string                       `json:"inquiry_uuid"`
-	InquirerUUID string                       `json:"inquirer_uuid"`
+	Messages []*darkfirestore.ChatMessage `json:"messages"`
 }
 
 type TransformedInquiryChats struct {

@@ -28,7 +28,7 @@ type GetListOfCurrentServicesBody struct {
 	PerPage int `form:"perpage,default=5"`
 }
 
-func GetListOfCurrentServicesHandler(c *gin.Context, depCon container.Container) {
+func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 	body := GetListOfCurrentServicesBody{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -93,10 +93,36 @@ func GetListOfCurrentServicesHandler(c *gin.Context, depCon container.Container)
 		return
 	}
 
+	// Retrieve latest message for each chatroom. Collect slice of chatroom uuids.
+	channelUuids := make([]string, 0)
+	ctx := context.Background()
+
+	for _, srv := range srvs {
+		channelUuids = append(channelUuids, srv.ChannelUuid.String)
+	}
+
+	df := darkfirestore.Get()
+	msgs, err := df.GetLatestMessageForEachChatroom(ctx, channelUuids)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMessageFromFireStore,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	// Retrieve service provider uuid
 	c.JSON(
 		http.StatusOK,
-		TransformGetServicesResults(srvs),
+		TransformGetIncomingServices(
+			srvs,
+			msgs,
+		),
 	)
 }
 
@@ -176,7 +202,7 @@ func GetOverduedServicesHandlers(c *gin.Context, depCon container.Container) {
 
 	c.JSON(
 		http.StatusOK,
-		TransformGetServicesResults(srvRes),
+		TransformOverDueServices(srvRes),
 	)
 }
 

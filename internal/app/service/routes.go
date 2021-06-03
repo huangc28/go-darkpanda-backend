@@ -29,7 +29,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			// User can retrieve a list of all `unpaid` and `to_be_fulfilled` services.
 			// If the gender of the requester is `male`, use `customer_id` as the matching
 			// criteria. If is `female`, use `service_provider_id` as the matching criteria.
-			GetListOfCurrentServicesHandler(c, container)
+			GetIncomingServicesHandler(c, container)
 
 		case "overdue":
 
