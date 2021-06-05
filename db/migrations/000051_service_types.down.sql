@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS service_types;
+DROP TABLE IF EXISTS service_name;

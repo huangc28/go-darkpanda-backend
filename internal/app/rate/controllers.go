@@ -42,3 +42,7 @@ func GetUserRating(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, tResp)
 }
+
+func CreateUserRating(c *gin.Context) {
+
+}

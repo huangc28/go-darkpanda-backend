@@ -1,6 +1,6 @@
 BEGIN;
 
-CREATE TABLE service_types (
+CREATE TABLE service_names (
 	id BIGSERIAL PRIMARY KEY,
 	service_name service_type,
 

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -472,4 +473,26 @@ func GetServiceQRCode(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, struct {
 		QrCodeUrl string `json:"qrcode_url"`
 	}{qrCode.Url.String})
+}
+
+func GetServicesAvailable(c *gin.Context) {
+	srvDao := NewServiceDAO(db.GetDB())
+
+	srvNames, err := srvDao.GetServiceNames()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceNames,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	log.Printf("DEBUG srvNames %v", srvNames)
+
+	c.JSON(http.StatusOK, TransformServiceName(srvNames))
 }

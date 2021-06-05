@@ -348,6 +348,8 @@ SELECT id, uuid from found_services;
 		params.UpdateToStatus,
 	)
 
+	defer rows.Close()
+
 	if err != nil {
 		return nil, err
 	}
@@ -386,4 +388,33 @@ INNER JOIN services
 	}
 
 	return &m, nil
+}
+func (dao *ServiceDAO) GetServiceNames() ([]*models.ServiceName, error) {
+	query := `
+SELECT
+	service_names.*
+FROM service_names;
+`
+
+	rows, err := dao.DB.Queryx(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	srvNames := make([]*models.ServiceName, 0)
+
+	for rows.Next() {
+		srvName := models.ServiceName{}
+
+		if err := rows.StructScan(&srvName); err != nil {
+			return nil, err
+		}
+
+		srvNames = append(srvNames, &srvName)
+	}
+
+	return srvNames, nil
 }

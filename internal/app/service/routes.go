@@ -40,6 +40,11 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			//   - failed_due_to_man
 			//   - failed_due_to_girl
 			GetOverduedServicesHandlers(c, container)
+
+		case "service-list":
+
+			// Get list of services available.
+			GetServicesAvailable(c)
 		}
 	})
 

@@ -110,3 +110,28 @@ func TransformScanServiceQrCode(srv *models.Service) *TransformedScanServiceQrCo
 		EndTime:       tzEt,
 	}
 }
+
+type TrfmedServiceName struct {
+	ServiceName string `json:"name"`
+}
+
+type TrfmedServiceNames struct {
+	ServiceNames []TrfmedServiceName `json:"service_names"`
+}
+
+func TransformServiceName(serviceNames []*models.ServiceName) TrfmedServiceNames {
+	ns := make([]TrfmedServiceName, 0)
+
+	for _, name := range serviceNames {
+		n := TrfmedServiceName{
+			ServiceName: string(name.ServiceName),
+		}
+
+		ns = append(ns, n)
+	}
+
+	return TrfmedServiceNames{
+		ServiceNames: ns,
+	}
+
+}

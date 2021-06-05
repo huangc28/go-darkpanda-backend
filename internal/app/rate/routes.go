@@ -18,4 +18,8 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	g.GET("/:uuid", func(c *gin.Context) {
 		GetUserRating(c, depCon)
 	})
+
+	g.POST("", func(c *gin.Context) {
+		CreateUserRating(c)
+	})
 }

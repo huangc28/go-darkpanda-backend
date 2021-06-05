@@ -362,19 +362,19 @@ type ServiceInquiry struct {
 	Address   sql.NullString `json:"address"`
 }
 
-type ServiceQrcode struct {
-	ID        int64          `json:"id"`
-	ServiceID int32          `json:"service_id"`
-	Uuid      sql.NullString `json:"uuid"`
-	Url       sql.NullString `json:"url"`
-}
-
-type ServiceType struct {
+type ServiceName struct {
 	ID          int64        `json:"id"`
 	ServiceName ServiceType  `json:"service_name"`
 	CreatedAt   time.Time    `json:"created_at"`
 	UpdatedAt   sql.NullTime `json:"updated_at"`
 	DeletedAt   sql.NullTime `json:"deleted_at"`
+}
+
+type ServiceQrcode struct {
+	ID        int64          `json:"id"`
+	ServiceID int32          `json:"service_id"`
+	Uuid      sql.NullString `json:"uuid"`
+	Url       sql.NullString `json:"url"`
 }
 
 type User struct {

@@ -16,6 +16,7 @@ const (
 	FirestoreFailedToUpdateService = "1100011"
 	FailedToGetQrCodeByServiceUuid = "1100012"
 	NoQRCodeFound                  = "1100013"
+	FailedToGetServiceNames        = "1100014"
 )
 
 var ServiceErrorMessageMap = map[string]string{
