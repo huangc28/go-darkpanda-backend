@@ -369,6 +369,14 @@ type ServiceQrcode struct {
 	Url       sql.NullString `json:"url"`
 }
 
+type ServiceType struct {
+	ID          int64        `json:"id"`
+	ServiceName ServiceType  `json:"service_name"`
+	CreatedAt   time.Time    `json:"created_at"`
+	UpdatedAt   sql.NullTime `json:"updated_at"`
+	DeletedAt   sql.NullTime `json:"deleted_at"`
+}
+
 type User struct {
 	ID                int64          `json:"id"`
 	Username          string         `json:"username"`
