@@ -43,6 +43,9 @@ const (
 	FailedToValidateFindByUsernameParams     = "1000040"
 	LoginVerifyCodeNotFound                  = "1000041"
 	FailedToGetAuthenticatorRecord           = "1000042"
+	FailedToParseJwtToken                    = "1000043"
+	FailedToValidateToken                    = "1000044"
+	TokenIsInvalidated                       = "1000045"
 )
 
 var AuthErrCodeMsgMap = map[string]string{

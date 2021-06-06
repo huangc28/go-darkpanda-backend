@@ -16,16 +16,20 @@ type ChatRoutesParams struct {
 }
 
 func Routes(r *gin.RouterGroup, depCon container.Container) {
+	var (
+		userDao contracts.UserDAOer
+		authDao contracts.AuthDaoer
+	)
+
+	depCon.Make(&userDao)
+	depCon.Make(&authDao)
+
 	g := r.Group(
 		"/chat",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 			Secret: config.GetAppConf().JwtSecret,
-		}),
+		}, authDao),
 	)
-
-	var userDao contracts.UserDAOer
-
-	depCon.Make(&userDao)
 
 	g.GET("", func(c *gin.Context) {
 		GetChatrooms(c, depCon)

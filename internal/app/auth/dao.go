@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	"github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
 )
@@ -66,7 +69,7 @@ SELECT id FROM users WHERE username = $1 LIMIT 1;
 }
 
 const (
-	INVALIDATE_TOKEN_REDIS_KEY = "invalidate_token"
+	INVALIDATE_TOKEN_REDIS_KEY = "invalid_tokens"
 )
 
 type AuthDAOer interface {
@@ -80,14 +83,37 @@ type AuthDAO struct {
 	redis *redis.Client
 }
 
+func AuthDaoerServiceProvider(c container.Container) func() error {
+	return func() error {
+		c.Transient(func() contracts.AuthDaoer {
+			return NewAuthDao(db.GetRedis())
+		})
+
+		return nil
+	}
+}
+
 func NewAuthDao(redis *redis.Client) *AuthDAO {
 	return &AuthDAO{
 		redis: redis,
 	}
 }
 
-func (dao *AuthDAO) RevokeJwt(ctx context.Context, jwt string) error {
-	if err := dao.redis.SAdd(ctx, INVALIDATE_TOKEN_REDIS_KEY, jwt).Err(); err != nil {
+// We store the invalid jwt tokens in the following struct in redis.
+//
+// invalid_tokens: {
+//	{token_1}: expired_date_1
+//	{token_2}: expired_date_2
+//	{token_3}: expired_date_3
+// }
+func (dao *AuthDAO) RevokeJwt(ctx context.Context, jwt string, expTs int64) error {
+
+	if err := dao.redis.HSet(
+		ctx,
+		INVALIDATE_TOKEN_REDIS_KEY,
+		jwt,
+		expTs,
+	).Err(); err != nil {
 		return err
 	}
 
@@ -209,4 +235,18 @@ func (dao *AuthDAO) CreateLoginVerifyCode(ctx context.Context, loginVerifyCode, 
 	}
 
 	return ParseLoginAuthenticatorFromMap(val)
+}
+
+func (dao *AuthDAO) IsTokenInvalid(ctx context.Context, jwtToken string) (bool, error) {
+	exists, err := dao.redis.HExists(
+		ctx,
+		INVALIDATE_TOKEN_REDIS_KEY,
+		jwtToken,
+	).Result()
+
+	if err != nil {
+		return false, err
+	}
+
+	return exists, nil
 }

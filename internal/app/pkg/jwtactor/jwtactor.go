@@ -30,3 +30,21 @@ func CreateToken(uUuid string, jwtSecret string) (string, error) {
 
 	return token, nil
 }
+
+func ParseToken(jwtToken, secret string) (*Claim, error) {
+	claims := &Claim{}
+
+	_, err := jwt.ParseWithClaims(
+		jwtToken,
+		claims,
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(secret), nil
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return claims, nil
+}

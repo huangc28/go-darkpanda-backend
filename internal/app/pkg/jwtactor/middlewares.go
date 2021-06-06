@@ -1,12 +1,14 @@
 package jwtactor
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 )
 
 func ExtractTokenFromRequest(c *gin.Context) (string, error) {
@@ -41,7 +43,7 @@ type JwtToken struct {
 	AuthJwt string `header:"Authorization" form:"jwt"`
 }
 
-func JwtValidator(opt JwtMiddlewareOptions) gin.HandlerFunc {
+func JwtValidator(opt JwtMiddlewareOptions, authDaoer contracts.AuthDaoer) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// retrieve jwt token from either header or url
 		// header:
@@ -104,6 +106,34 @@ func JwtValidator(opt JwtMiddlewareOptions) gin.HandlerFunc {
 				http.StatusUnauthorized,
 				apperr.NewErr(
 					apperr.InvalidSigature,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		// Check redis to makesure the jwt token is valid.
+		ctx := context.Background()
+		isInvalid, err := authDaoer.IsTokenInvalid(ctx, token)
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToValidateToken,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		if isInvalid {
+			c.AbortWithError(
+				http.StatusForbidden,
+				apperr.NewErr(
+					apperr.TokenIsInvalidated,
 					err.Error(),
 				),
 			)

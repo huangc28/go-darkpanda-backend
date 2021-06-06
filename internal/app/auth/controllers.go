@@ -16,6 +16,7 @@ import (
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
+
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
@@ -36,10 +37,25 @@ func (ac *AuthController) RevokeJwtHandler(c *gin.Context) {
 
 	jwt := c.GetString("jwt")
 
+	// Retrieve expired timestamp of the jwt token
+	claims, err := jwtactor.ParseToken(jwt, config.GetAppConf().JwtSecret)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToParseJwtToken,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	// ------------------- invalidate jwt -------------------
 	authDao := NewAuthDao(db.GetRedis())
 
-	if err := authDao.RevokeJwt(ctx, jwt); err != nil {
+	if err := authDao.RevokeJwt(ctx, jwt, claims.ExpiresAt); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(

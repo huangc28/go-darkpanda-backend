@@ -10,16 +10,20 @@ import (
 )
 
 func Routes(r *gin.RouterGroup, container cintrnal.Container) {
+	var (
+		userDAO contracts.UserDAOer
+		authDao contracts.AuthDaoer
+	)
+
+	container.Make(&userDAO)
+	container.Make(&authDao)
+
 	g := r.Group(
 		"/inquiries",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 			Secret: config.GetAppConf().JwtSecret,
-		}),
+		}, authDao),
 	)
-
-	var userDAO contracts.UserDAOer
-
-	container.Make(&userDAO)
 
 	g.GET(
 		"",

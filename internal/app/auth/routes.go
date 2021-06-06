@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
@@ -11,6 +12,9 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	authController := AuthController{
 		Container: depCon,
 	}
+
+	var authDaoer contracts.AuthDaoer
+	depCon.Make(&authDaoer)
 
 	g := r.Group("/auth")
 
@@ -29,9 +33,12 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	g.POST(
 		"/revoke-jwt",
-		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
-			Secret: config.GetAppConf().JwtSecret,
-		}),
+		jwtactor.JwtValidator(
+			jwtactor.JwtMiddlewareOptions{
+				Secret: config.GetAppConf().JwtSecret,
+			},
+			authDaoer,
+		),
 		authController.RevokeJwtHandler,
 	)
 }
