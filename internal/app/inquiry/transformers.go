@@ -507,6 +507,7 @@ type TransformedUpdateInquiry struct {
 	Uuid            string     `json:"uuid"`
 	AppointmentTime *time.Time `json:"appointment_time"`
 	ServiceType     *string    `json:"service_type"`
+	InquiryStatus   string     `json:"inquiry_status"`
 	Price           *float32   `json:"price"`
 	Duration        *int32     `json:"duration"`
 	Address         *string    `json:"address"`
@@ -544,6 +545,7 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 	return &TransformedUpdateInquiry{
 		Uuid:            inquiry.Uuid,
 		AppointmentTime: appointmentTime,
+		InquiryStatus:   inquiry.InquiryStatus.ToString(),
 		ServiceType:     (*string)(&inquiry.ServiceType),
 		Price:           priceF,
 		Duration:        duration,
