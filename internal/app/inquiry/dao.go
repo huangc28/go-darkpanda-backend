@@ -343,7 +343,10 @@ SELECT * FROM service_inquiries
 WHERE
 	inquirer_id = $1
 AND
-	inquiry_status='inquiring'
+	(
+		inquiry_status='inquiring' OR
+		inquiry_status='asking'
+	)
 ORDER BY created_at DESC
 LIMIT 1;
 	`
