@@ -44,4 +44,5 @@ type InquiryDAOer interface {
 	PatchInquiryStatusByUUID(params PatchInquiryStatusByUUIDParams) error
 	GetInquirerByInquiryUUID(uuid string, fields ...string) (*models.User, error)
 	PatchInquiryByInquiryUUID(params PatchInquiryParams) (*models.ServiceInquiry, error)
+	GetActiveInquiry(inquirerId int) (*models.ServiceInquiry, error)
 }

@@ -31,10 +31,16 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		GetInquiriesHandler,
 	)
 
-	g.GET(
-		"/:uuid",
-		GetInquiryHandler,
-	)
+	g.GET("/:uuid", func(c *gin.Context) {
+		seg := c.Param("uuid")
+
+		switch seg {
+		case "active-inquiry":
+			GetActiveInquiry(c, container)
+		default:
+			GetInquiryHandler(c)
+		}
+	})
 
 	g.GET(
 		"/:uuid/service",
@@ -103,14 +109,6 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	//middlewares.IsMale(userDAO),
 	//func(c *gin.Context) {
 	//ManBookInquiry(c, container)
-	//},
-	//)
-
-	//g.POST(
-	//"/girl-approve",
-	//middlewares.IsFemale(userDAO),
-	//func(c *gin.Context) {
-	//GirlApproveInquiryHandler(c, container)
 	//},
 	//)
 

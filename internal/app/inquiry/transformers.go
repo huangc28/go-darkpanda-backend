@@ -550,3 +550,7 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 		Address:         address,
 	}, nil
 }
+
+func (t *InquiryTransform) TransformActiveInquiry(iq *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
+	return t.TransformUpdateInquiry(iq)
+}

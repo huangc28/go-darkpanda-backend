@@ -55,6 +55,9 @@ const (
 	FailedToValidatePatchInquiryParams       = "3000051"
 	FailedToPatchInquiry                     = "3000052"
 	FailedToTransformUpdateInquiry           = "3000053"
+	FailedToActiveInquiry                    = "3000054"
+	FailedToTransformActiveInquiry           = "3000055"
+	NoActiveInquiry                          = "3000056"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{

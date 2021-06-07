@@ -15,7 +15,7 @@ type InquiryDAO struct {
 	db db.Conn
 }
 
-func NewInquiryDAO(db db.Conn) contracts.InquiryDAOer {
+func NewInquiryDAO(db db.Conn) *InquiryDAO {
 	return &InquiryDAO{
 		db: db,
 	}
@@ -335,4 +335,22 @@ RETURNING
 	}
 
 	return &inquiry, nil
+}
+
+func (dao *InquiryDAO) GetActiveInquiry(inquirerId int) (*models.ServiceInquiry, error) {
+	query := `
+SELECT * FROM service_inquiries
+WHERE
+	inquirer_id = $1
+AND
+	inquiry_status='inquiring'
+ORDER BY created_at DESC
+LIMIT 1;
+	`
+	var m models.ServiceInquiry
+	if err := dao.db.QueryRowx(query, inquirerId).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }

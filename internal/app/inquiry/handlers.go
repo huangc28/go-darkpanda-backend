@@ -915,195 +915,6 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 	c.JSON(http.StatusOK, struct{}{})
 }
 
-// Girl has approved the inquiry, thus, update the inquiry content.
-//   - price
-//   - duration
-//   - appointment time
-//   - lng
-//   - lat
-type GirlApproveInquiryBody struct {
-	InquiryUuid     string    `uri:"inquiry_uuid" binding:"required"`
-	Price           float64   `json:"price"`
-	Duration        int       `json:"duration"`
-	AppointmentTime time.Time `json:"appointment_time"`
-	Lat             float64   `json:"lat"`
-	Lng             float64   `json:"lng"`
-}
-
-func GirlApproveInquiryHandler(c *gin.Context, depCon container.Container) {
-	body := GirlApproveInquiryBody{}
-
-	if err := c.ShouldBindUri(&body); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToBindInquiryUriParams,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	if err := c.ShouldBindJSON(&body); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.GirlApproveInquiry,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// ------------------- Updates inquiry content -------------------
-	var iqDaoer contracts.InquiryDAOer
-	depCon.Make(&iqDaoer)
-	iq, err := iqDaoer.GetInquiryByUuid(body.InquiryUuid)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetInquiryByUuid,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// Perform inquiry status transition
-	fsm, err := NewInquiryFSM(iq.InquiryStatus)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToCreateFSM,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	if err := fsm.Event(GirlApprove.ToString()); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.InquiryFSMTransitionFailed,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// Wrap the following actions in a transaction:
-	//   - Update inquiry status in DB
-	//   - Update inquiry status in firestore
-	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
-		ctx := context.Background()
-
-		q := models.New(tx)
-
-		// Update inqiury status in DB
-		latDec := decimal.NewFromFloat(body.Lng)
-		lngDec := decimal.NewFromFloat(body.Lat)
-
-		uiq, err := q.UpdateInquiryByUuid(
-			ctx,
-			models.UpdateInquiryByUuidParams{
-				Price: sql.NullString{
-					String: fmt.Sprintf("%f", body.Price),
-					Valid:  true,
-				},
-
-				Duration: sql.NullInt32{
-					Int32: int32(body.Duration),
-					Valid: true,
-				},
-
-				AppointmentTime: sql.NullTime{
-					Time:  body.AppointmentTime,
-					Valid: true,
-				},
-
-				Lng: sql.NullString{
-					String: latDec.String(),
-					Valid:  true,
-				},
-
-				Lat: sql.NullString{
-					String: lngDec.String(),
-					Valid:  true,
-				},
-
-				Uuid:          body.InquiryUuid,
-				InquiryStatus: models.InquiryStatus(fsm.Current()),
-			},
-		)
-
-		if err != nil {
-			return db.FormatResp{
-				Err:     err,
-				ErrCode: apperr.FailedToUpdateInquiry,
-			}
-		}
-
-		// Update inquiry status in firestore
-		df := darkfirestore.Get()
-		if err := df.UpdateInquiryStatus(
-			ctx,
-			darkfirestore.UpdateInquiryStatusParams{
-				InquiryUUID: iq.Uuid,
-				Status:      models.InquiryStatus(fsm.Current()),
-			},
-		); err != nil {
-			return db.FormatResp{
-				Err:     err,
-				ErrCode: apperr.FailedToChangeFirestoreInquiryStatus,
-			}
-		}
-
-		return db.FormatResp{
-			Response: &uiq,
-		}
-	})
-
-	if transResp.Err != nil {
-		c.AbortWithError(
-			transResp.HttpStatusCode,
-			apperr.NewErr(
-				transResp.ErrCode,
-				transResp.Err,
-			),
-		)
-
-		return
-	}
-
-	uiq := transResp.Response.(*models.ServiceInquiry)
-
-	trf, err := NewTransform().TransformGirlApproveInquiry(*uiq)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToTransformGirlApproveInquiry,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	c.JSON(http.StatusOK, trf)
-}
-
 // Emit event to girl for the purpose of notifying them the iquiry is booked by the man
 type ManBookInquiryBody struct {
 	Price               float64   `json:"price" binding:"required"`
@@ -1417,6 +1228,71 @@ func PatchInquiryHandler(c *gin.Context, depCon container.Container) {
 		)
 
 		return
+	}
+
+	c.JSON(http.StatusOK, trf)
+}
+
+func GetActiveInquiry(c *gin.Context, depCon container.Container) {
+	userUuid := c.GetString("uuid")
+
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	user, err := userDao.GetUserByUuid(userUuid, "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	iqDao := NewInquiryDAO(db.GetDB())
+	iq, err := iqDao.GetActiveInquiry(int(user.ID))
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusNotFound,
+				apperr.NewErr(
+					apperr.NoActiveInquiry,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToActiveInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	trf, err := NewTransform().TransformActiveInquiry(iq)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformActiveInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+
 	}
 
 	c.JSON(http.StatusOK, trf)
