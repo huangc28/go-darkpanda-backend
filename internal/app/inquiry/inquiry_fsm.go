@@ -18,6 +18,7 @@ var (
 	GirlApprove InquiryActions = "girl_approve"
 	Book        InquiryActions = "book"
 	RevertChat  InquiryActions = "revert_chat"
+	Disapprove  InquiryActions = "disapprove"
 )
 
 func (a *InquiryActions) ToString() string {
@@ -73,6 +74,13 @@ func NewInquiryFSM(initial models.InquiryStatus) (*fsm.FSM, error) {
 					string(models.InquiryStatusChatting),
 				},
 				Dst: string(models.InquiryStatusWaitForInquirerApprove),
+			},
+			{
+				Name: Disapprove.ToString(),
+				Src: []string{
+					string(models.InquiryStatusWaitForInquirerApprove),
+				},
+				Dst: string(models.InquiryStatusChatting),
 			},
 			{
 				Name: Book.ToString(),

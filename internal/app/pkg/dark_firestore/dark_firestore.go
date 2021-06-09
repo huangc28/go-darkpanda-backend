@@ -390,6 +390,15 @@ type UpdateInquiryMessage struct {
 	Data        InquiryDetailMessage
 }
 
+func (df *DarkFirestore) GetMessageColllectionRef(channelUuid string) *firestore.CollectionRef {
+	ref := df.Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(channelUuid).
+		Collection(MessageSubCollectionName)
+
+	return ref
+}
+
 func (df *DarkFirestore) SendUpdateInquiryMessage(ctx context.Context, params UpdateInquiryMessage) (*firestore.DocumentRef, InquiryDetailMessage, error) {
 	if params.Data.Type == "" {
 		params.Data.Type = UpdateInquiryDetail
@@ -397,17 +406,15 @@ func (df *DarkFirestore) SendUpdateInquiryMessage(ctx context.Context, params Up
 
 	params.Data.CreatedAt = time.Now()
 
-	ref, _, err := df.Client.
-		Collection(PrivateChatsCollectionName).
-		Doc(params.ChannelUuid).
-		Collection(MessageSubCollectionName).
-		Add(ctx, params.Data)
+	msgColRef := df.GetMessageColllectionRef(params.ChannelUuid)
+
+	msgDocRef, _, err := msgColRef.Add(ctx, params.Data)
 
 	if err != nil {
 		return nil, params.Data, err
 	}
 
-	return ref, params.Data, nil
+	return msgDocRef, params.Data, nil
 }
 
 type SendServiceConfirmedMessageParams struct {

@@ -449,7 +449,7 @@ type EmitInquiryUpdateMessage struct {
 // EmitInquiryUpdatedMessage emits inquiry updated message to the chatroom.
 // This message notifies the male user to confirm the inquiry detail by clicking
 // on the message bubble.
-func EmitInquiryUpdatedMessage(c *gin.Context, container container.Container) {
+func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 	body := EmitInquiryUpdateMessage{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -467,36 +467,91 @@ func EmitInquiryUpdatedMessage(c *gin.Context, container container.Container) {
 	ctx := context.Background()
 
 	df := darkfirestore.Get()
-	_, msg, err := df.SendUpdateInquiryMessage(
-		ctx,
-		darkfirestore.UpdateInquiryMessage{
-			ChannelUuid: body.ChannelUUID,
-			Data: darkfirestore.InquiryDetailMessage{
-				ChatMessage: darkfirestore.ChatMessage{
-					Content:   "",
-					From:      c.GetString("uuid"),
-					CreatedAt: time.Now(),
+
+	// - Send update inquiry message
+	// - Change inquiry status in firestore
+	// - Update inquiry status in DB
+	var iqDao contracts.InquiryDAOer
+	depCon.Make(&iqDao)
+
+	txResp := db.TransactWithFormatStruct(
+		db.GetDB(),
+		func(tx *sqlx.Tx) db.FormatResp {
+			iqDao.WithTx(tx)
+			err := iqDao.PatchInquiryStatusByUUID(
+				contracts.PatchInquiryStatusByUUIDParams{
+					InquiryStatus: models.InquiryStatusWaitForInquirerApprove,
+					UUID:          body.InquiryUUID,
 				},
-				Price:           body.Price,
-				Duration:        body.Duration,
-				AppointmentTime: body.AppointmentTime.UnixNano() / 1000,
-				ServiceType:     body.ServiceType,
-			},
+			)
+
+			if err != nil {
+				return db.FormatResp{
+					ErrCode:        apperr.FailedToPatchInquiryStatus,
+					Err:            err,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			if err = df.UpdateInquiryStatus(
+				ctx,
+				darkfirestore.UpdateInquiryStatusParams{
+					InquiryUUID: body.InquiryUUID,
+					Status:      models.InquiryStatusWaitForInquirerApprove,
+				},
+			); err != nil {
+				return db.FormatResp{
+					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
+					Err:            err,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			_, msg, err := df.SendUpdateInquiryMessage(
+				ctx,
+				darkfirestore.UpdateInquiryMessage{
+					ChannelUuid: body.ChannelUUID,
+					Data: darkfirestore.InquiryDetailMessage{
+						ChatMessage: darkfirestore.ChatMessage{
+							Content:   "",
+							From:      c.GetString("uuid"),
+							CreatedAt: time.Now(),
+						},
+						Price:           body.Price,
+						Duration:        body.Duration,
+						AppointmentTime: body.AppointmentTime.UnixNano() / 1000,
+						ServiceType:     body.ServiceType,
+					},
+				},
+			)
+
+			if err != nil {
+				return db.FormatResp{
+					ErrCode:        apperr.FailedToSendUpdateInquiryMessage,
+					Err:            err,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			return db.FormatResp{
+				Response: &msg,
+			}
 		},
 	)
 
-	if err != nil {
+	if txResp.Err != nil {
 		c.AbortWithError(
-			http.StatusInternalServerError,
+			txResp.HttpStatusCode,
 			apperr.NewErr(
-				apperr.FailedToSendUpdateInquiryMessage,
-				err.Error(),
+				txResp.ErrCode,
+				txResp.Err.Error(),
 			),
 		)
 
 		return
-
 	}
+
+	msg := txResp.Response.(*darkfirestore.InquiryDetailMessage)
 
 	c.JSON(http.StatusOK, msg)
 }
