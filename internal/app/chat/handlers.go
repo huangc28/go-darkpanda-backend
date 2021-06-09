@@ -465,13 +465,13 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 	}
 
 	ctx := context.Background()
-
 	df := darkfirestore.Get()
 
 	// - Send update inquiry message
 	// - Change inquiry status in firestore
 	// - Update inquiry status in DB
 	var iqDao contracts.InquiryDAOer
+
 	depCon.Make(&iqDao)
 
 	txResp := db.TransactWithFormatStruct(
