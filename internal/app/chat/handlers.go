@@ -1008,7 +1008,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 // Emit disapprove message when male user disagree with the inquiry detail set by the female user
 
 type EmitDisagreeInquiry struct {
-	ChannelUuid string `json:"channel_uuid" form:"channel_uuid" binding:"required:gt=0"`
+	ChannelUuid string `json:"channel_uuid" form:"channel_uuid" binding:"required,gt=0"`
 }
 
 func EmitDisagreeInquiryHandler(c *gin.Context, depCon container.Container) {
