@@ -26,12 +26,13 @@ type InquiryInfo struct {
 }
 
 type PatchInquiryParams struct {
-	Uuid            string     `json:"uuid"`
-	AppointmentTime *time.Time `json:"appointment_time"`
-	Price           *float32   `json:"price"`
-	Duration        *int       `json:"duration"`
-	ServiceType     *string    `json:"service_type"`
-	Address         *string    `json:"address"`
+	Uuid            string                `json:"uuid"`
+	AppointmentTime *time.Time            `json:"appointment_time"`
+	Price           *float32              `json:"price"`
+	Duration        *int                  `json:"duration"`
+	ServiceType     *string               `json:"service_type"`
+	InquiryStatus   *models.InquiryStatus `json:"inquiry_status"`
+	Address         *string               `json:"address"`
 }
 
 type InquiryDAOer interface {

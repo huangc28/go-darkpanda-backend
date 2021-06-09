@@ -305,11 +305,12 @@ func (dao *InquiryDAO) PatchInquiryByInquiryUUID(params contracts.PatchInquiryPa
 UPDATE service_inquiries SET
 	appointment_time = COALESCE($1, appointment_time),
 	service_type = COALESCE($2, service_type),
-	price = COALESCE($3, price),
-	duration = COALESCE($4, duration),
-	address = COALESCE($5, address)
+	inquiry_status = COALESCE($3, inquiry_status),
+	price = COALESCE($4, price),
+	duration = COALESCE($5, duration),
+	address = COALESCE($6, address)
 WHERE
-	uuid = $6
+	uuid = $7
 RETURNING
 	uuid,
 	appointment_time,
@@ -324,6 +325,7 @@ RETURNING
 		query,
 		params.AppointmentTime,
 		params.ServiceType,
+		params.InquiryStatus,
 		params.Price,
 		params.Duration,
 		params.Address,

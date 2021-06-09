@@ -556,3 +556,7 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 func (t *InquiryTransform) TransformActiveInquiry(iq *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
 	return t.TransformUpdateInquiry(iq)
 }
+
+func (t *InquiryTransform) TransformRevertedInquiry(iq *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
+	return t.TransformUpdateInquiry(iq)
+}

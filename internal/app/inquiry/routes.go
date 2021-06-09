@@ -102,6 +102,13 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
+	g.POST(
+		"/revert-chat",
+		func(c *gin.Context) {
+			RevertChatHandler(c, container)
+		},
+	)
+
 	// ------------------- APIs to be fixed -------------------
 	// Man book the inquiry.
 	//g.POST(
