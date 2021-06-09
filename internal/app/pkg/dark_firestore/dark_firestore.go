@@ -28,6 +28,7 @@ const (
 	UpdateInquiryDetail MessageType = "update_inquiry_detail"
 	ServiceDetail       MessageType = "service_detail"
 	ConfirmedService    MessageType = "confirmed_service"
+	DisagreeInquiry     MessageType = "disagree_inquiry"
 )
 
 const (
@@ -439,6 +440,32 @@ func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params
 
 	if err != nil {
 		return nil, params.Data, err
+	}
+
+	return ref, params.Data, nil
+}
+
+type SendDisagreeInquiryMessageParams struct {
+	ChannelUuid string
+	Data        ChatMessage
+}
+
+func (df *DarkFirestore) SendDisagreeInquiryMessage(ctx context.Context, params SendDisagreeInquiryMessageParams) (*firestore.DocumentRef, ChatMessage, error) {
+	if params.Data.Type == "" {
+		params.Data.Type = DisagreeInquiry
+	}
+
+	params.Data.CreatedAt = time.Now()
+
+	ref, _, err := df.
+		Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(params.ChannelUuid).
+		Collection(MessageSubCollectionName).
+		Add(ctx, params.Data)
+
+	if err != nil {
+		return nil, params.Data, nil
 	}
 
 	return ref, params.Data, nil

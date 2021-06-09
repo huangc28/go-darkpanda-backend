@@ -74,6 +74,14 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		GetHistoricalMessages,
 	)
 
+	// If male user disagree with the inquiry detail set by the female user in the inquiry chatroom.
+	g.POST(
+		"/disagree",
+		func(c *gin.Context) {
+			EmitDisagreeInquiryHandler(c, depCon)
+		},
+	)
+
 	// If either user leaves the chat, we should perform soft delete on both the user and the chatroom.
 	// Moreover, notify both user in the firestore that the other party has left.
 	g.POST(

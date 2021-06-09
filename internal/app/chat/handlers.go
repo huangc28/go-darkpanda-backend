@@ -493,7 +493,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 				}
 			}
 
-			if err = df.UpdateInquiryStatus(
+			if err := df.UpdateInquiryStatus(
 				ctx,
 				darkfirestore.UpdateInquiryStatusParams{
 					InquiryUUID: body.InquiryUUID,
@@ -1003,4 +1003,120 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 		transResult.Inquiry,
 		*chatroom,
 	))
+}
+
+// Emit disapprove message when male user disagree with the inquiry detail set by the female user
+
+type EmitDisagreeInquiry struct {
+	ChannelUuid string `json:"channel_uuid" form:"channel_uuid" binding:"required:gt=0"`
+}
+
+func EmitDisagreeInquiryHandler(c *gin.Context, depCon container.Container) {
+	body := EmitDisagreeInquiry{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// - Change inquiry status in DB
+	// - Change inquiry status in firestore
+	// - Emit disapprove message
+	var iqDao contracts.InquiryDAOer
+	depCon.Make(&iqDao)
+	ctx := context.Background()
+
+	iq, err := iqDao.GetInquiryByChannelUuid(body.ChannelUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByChannelUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	txResp := db.TransactWithFormatStruct(
+		db.GetDB(),
+		func(tx *sqlx.Tx) db.FormatResp {
+			iqDao.WithTx(tx)
+			if err := iqDao.PatchInquiryStatusByUUID(contracts.PatchInquiryStatusByUUIDParams{
+				UUID:          iq.Uuid,
+				InquiryStatus: models.InquiryStatusChatting,
+			}); err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToPatchInquiryStatus,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			df := darkfirestore.Get()
+
+			if err := df.UpdateInquiryStatus(
+				ctx,
+				darkfirestore.UpdateInquiryStatusParams{
+					InquiryUUID: iq.Uuid,
+					Status:      models.InquiryStatusChatting,
+				},
+			); err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			_, msg, err := df.SendDisagreeInquiryMessage(
+				ctx,
+				darkfirestore.SendDisagreeInquiryMessageParams{
+					ChannelUuid: body.ChannelUuid,
+					Data: darkfirestore.ChatMessage{
+						Content:   "",
+						From:      c.GetString("uuid"),
+						CreatedAt: time.Now(),
+					},
+				},
+			)
+
+			if err != nil {
+				return db.FormatResp{
+					ErrCode:        apperr.FailedToSendTextMessage,
+					Err:            err,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			return db.FormatResp{
+				Response: &msg,
+			}
+		},
+	)
+
+	if txResp.Err != nil {
+		c.AbortWithError(
+			txResp.HttpStatusCode,
+			apperr.NewErr(
+				txResp.ErrCode,
+				txResp.Err.Error(),
+			),
+		)
+
+		return
+	}
+
+	msg := txResp.Response.(*darkfirestore.ChatMessage)
+
+	c.JSON(http.StatusOK, msg)
 }

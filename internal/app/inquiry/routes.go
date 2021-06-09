@@ -102,6 +102,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
+	// @Deprecated, use `/v1/chat/quit-chatroom` instead.
 	g.POST(
 		"/revert-chat",
 		func(c *gin.Context) {
@@ -109,15 +110,4 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
-	// ------------------- APIs to be fixed -------------------
-	// Man book the inquiry.
-	//g.POST(
-	//"/book",
-	//middlewares.IsMale(userDAO),
-	//func(c *gin.Context) {
-	//ManBookInquiry(c, container)
-	//},
-	//)
-
-	// ------------------- APIs to be fixed end -------------------
 }

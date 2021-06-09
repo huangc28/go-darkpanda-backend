@@ -359,3 +359,21 @@ LIMIT 1;
 
 	return &m, nil
 }
+
+func (dao *InquiryDAO) GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error) {
+	query := `
+SELECT service_inquiries.* FROM service_inquiries
+INNER JOIN
+	chatrooms ON chatrooms.inquiry_id = service_inquiries.id
+	AND chatrooms.channel_uuid = $1;
+`
+
+	var m models.ServiceInquiry
+
+	if err := dao.db.QueryRowx(query, channelUuid).StructScan(&m); err != nil {
+		return nil, err
+
+	}
+
+	return &m, nil
+}

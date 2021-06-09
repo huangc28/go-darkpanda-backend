@@ -46,4 +46,5 @@ type InquiryDAOer interface {
 	GetInquirerByInquiryUUID(uuid string, fields ...string) (*models.User, error)
 	PatchInquiryByInquiryUUID(params PatchInquiryParams) (*models.ServiceInquiry, error)
 	GetActiveInquiry(inquirerId int) (*models.ServiceInquiry, error)
+	GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error)
 }
