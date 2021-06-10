@@ -785,9 +785,33 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	var chatDao contracts.ChatDaoer
 	depCon.Make(&chatDao)
 
-	chatInfoModel, _ := chatDao.GetCompleteChatroomInfoById(int(chatroom.ID))
+	chatInfoModel, err := chatDao.GetCompleteChatroomInfoById(int(chatroom.ID))
 
-	inquirer, _ := userDao.GetUserByID(int64(iq.InquirerID.Int32))
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetChatroomById,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	inquirer, err := userDao.GetUserByID(int64(iq.InquirerID.Int32))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	// Respoonse:
 	//   - service provider's info

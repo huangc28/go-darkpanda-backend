@@ -59,6 +59,7 @@ const (
 	FailedToTransformActiveInquiry           = "3000055"
 	NoActiveInquiry                          = "3000056"
 	InquiryHasNoPicker                       = "3000057"
+	FailedToGetChatroomById                  = "3000058"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
