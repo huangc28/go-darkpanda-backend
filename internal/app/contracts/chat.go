@@ -33,4 +33,5 @@ type ChatDaoer interface {
 	UpdateChatByUuid(params UpdateChatByUuidParams) (*models.Chatroom, error)
 	IsUserInChatroom(userUuid string, chatroomUuid string) (bool, error)
 	GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error)
+	GetCompleteChatroomInfoById(id int) (*models.CompleteChatroomInfoModel, error)
 }

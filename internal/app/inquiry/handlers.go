@@ -605,7 +605,7 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 }
 
 type AgreeToChatParams struct {
-	InquiryUuid string `form:"inquiry_uuid" json:"inquiry_uuid"`
+	InquiryUuid string `form:"inquiry_uuid" json:"inquiry_uuid" binding:"required,gt=0"`
 }
 
 // AgreePickupInquiryHandler Male user agree to have a chat with the male user.
@@ -654,10 +654,7 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByID,
-				err.Error(),
-			),
+			apperr.NewErr(apperr.InquiryHasNoPicker),
 		)
 
 		return
@@ -784,12 +781,21 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 
 	chatroom := tranResp.Response.(*models.Chatroom)
 
+	// Retrieve chatroom relative information.
+	var chatDao contracts.ChatDaoer
+	depCon.Make(&chatDao)
+
+	chatInfoModel, _ := chatDao.GetCompleteChatroomInfoById(int(chatroom.ID))
+
+	inquirer, _ := userDao.GetUserByID(int64(iq.InquirerID.Int32))
+
 	// Respoonse:
 	//   - service provider's info
 	//   - private chat uuid in firestore for inquirer to subscribe
 	trf := NewTransform().TransformAgreePickupInquiry(
 		*picker,
-		chatroom.ChannelUuid.String,
+		*inquirer,
+		chatInfoModel,
 	)
 
 	c.JSON(http.StatusOK, trf)

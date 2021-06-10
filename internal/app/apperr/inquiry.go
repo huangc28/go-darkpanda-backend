@@ -58,6 +58,7 @@ const (
 	FailedToActiveInquiry                    = "3000054"
 	FailedToTransformActiveInquiry           = "3000055"
 	NoActiveInquiry                          = "3000056"
+	InquiryHasNoPicker                       = "3000057"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
@@ -75,4 +76,5 @@ var InquiryErrCodeMsgMap = map[string]string{
 	FailedToPickupStatusNotWaiting:         "inquiry not available, status is not waiting",
 	InquiryUUIDNotInParams:                 "Inquiry uuid not exists in uri param",
 	FailedToPickupStatusNotInquiring:       "can not pickup inquiry since status is not inquiring",
+	InquiryHasNoPicker:                     "can not start a chat since inquiry has not picker.",
 }

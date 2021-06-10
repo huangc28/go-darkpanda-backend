@@ -467,7 +467,7 @@ func (t *InquiryTransform) TransformGetInquirerInfo(inquirer models.User, images
 	}, nil
 }
 
-type ServiceProvider struct {
+type ChatroomUser struct {
 	Username    string `json:"username"`
 	AvatarUrl   string `json:"avatar_url"`
 	Uuid        string `json:"uuid"`
@@ -476,8 +476,12 @@ type ServiceProvider struct {
 }
 
 type TransformedAgreePickupInquiry struct {
-	ServiceProvider ServiceProvider `json:"service_provider"`
-	ChannelUuid     string          `json:"channel_uuid"`
+	Picker        ChatroomUser `json:"picker"`
+	Inquirer      ChatroomUser `json:"inquirer"`
+	ChannelUuid   string       `json:"channel_uuid"`
+	ServiceType   string       `json:"service_type"`
+	InquiryStatus string       `json:"inquiry_status"`
+	CreatedAt     time.Time    `json:"created_at"`
 }
 
 // TransformAgreePickupInquiry respond with the following data
@@ -489,15 +493,24 @@ type TransformedAgreePickupInquiry struct {
 //      - description
 //   - inquiry info
 //   - private chat uuid in firestore for inquirer to subscribe
-func (t *InquiryTransform) TransformAgreePickupInquiry(picker models.User, pcUuid string) TransformedAgreePickupInquiry {
+func (t *InquiryTransform) TransformAgreePickupInquiry(picker models.User, inquirer models.User, m *models.CompleteChatroomInfoModel) TransformedAgreePickupInquiry {
 	trf := TransformedAgreePickupInquiry{
-		ServiceProvider: ServiceProvider{
+		Picker: ChatroomUser{
 			Username:    picker.Username,
 			AvatarUrl:   picker.AvatarUrl.String,
 			Uuid:        picker.Uuid,
 			Description: picker.Description.String,
 		},
-		ChannelUuid: pcUuid,
+		Inquirer: ChatroomUser{
+			Username:    inquirer.Username,
+			AvatarUrl:   inquirer.AvatarUrl.String,
+			Uuid:        inquirer.Uuid,
+			Description: inquirer.Description.String,
+		},
+		ChannelUuid:   m.ChannelUuid.String,
+		ServiceType:   m.ServiceType.ToString(),
+		InquiryStatus: m.InquiryStatus.ToString(),
+		CreatedAt:     m.CreatedAt,
 	}
 
 	return trf

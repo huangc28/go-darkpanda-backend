@@ -381,3 +381,27 @@ WHERE c.channel_uuid = $1;
 
 	return &iqModel, nil
 }
+
+// GetIntactChatroomById gets more complete information about the chatroom.
+func (dao *ChatDao) GetCompleteChatroomInfoById(id int) (*models.CompleteChatroomInfoModel, error) {
+	query := `
+SELECT
+	si.service_type,
+	si.inquiry_status,
+	si.uuid AS inquiry_uuid,
+	si.inquirer_id,
+	si.picker_id,
+	chatrooms.*
+FROM chatrooms
+INNER JOIN service_inquiries AS si ON si.id = chatrooms.inquiry_id
+WHERE chatrooms.id = $1;
+`
+
+	var m models.CompleteChatroomInfoModel
+
+	if err := dao.DB.QueryRowx(query, id).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
