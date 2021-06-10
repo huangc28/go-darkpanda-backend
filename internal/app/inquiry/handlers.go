@@ -423,7 +423,7 @@ func CancelInquiryHandler(c *gin.Context) {
 			err = df.UpdateInquiryStatus(
 				ctx,
 				darkfirestore.UpdateInquiryStatusParams{
-					InquiryUUID: uiq.Uuid,
+					InquiryUuid: uiq.Uuid,
 					Status:      models.InquiryStatusCanceled,
 				},
 			)
@@ -572,7 +572,8 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 		err = df.AskingInquiringUser(
 			ctx,
 			darkfirestore.AskingInquiringUserParams{
-				InquiryUUID: iq.Uuid,
+				InquiryUuid: iq.Uuid,
+				PickerUuid:  c.GetString("uuid"),
 			},
 		)
 
@@ -913,8 +914,9 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 		err = df.UpdateInquiryStatus(
 			ctx,
 			darkfirestore.UpdateInquiryStatusParams{
-				InquiryUUID: iq.Uuid,
+				InquiryUuid: iq.Uuid,
 				Status:      models.InquiryStatus(fsm.Current()),
+				PickerUuid:  "",
 			},
 		)
 
@@ -1128,113 +1130,4 @@ func GetActiveInquiry(c *gin.Context, depCon container.Container) {
 	}
 
 	c.JSON(http.StatusOK, trf)
-}
-
-type RevertChatHandlerBody struct {
-	InquiryUuid string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required,gt=0"`
-}
-
-func RevertChatHandler(c *gin.Context, depCon container.Container) {
-	body := RevertChatHandlerBody{}
-
-	if err := requestbinder.Bind(c, &body); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToBindApiBodyParams,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	ctx := context.Background()
-
-	// Retrieve service inquiry by inquiry uuid
-	iqDao := NewInquiryDAO(db.GetDB())
-	iq, err := iqDao.GetInquiryByUuid(body.InquiryUuid)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetInquiryByUuid,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	fsm, _ := NewInquiryFSM(iq.InquiryStatus)
-
-	if err := fsm.Event(RevertChat.ToString()); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.InquiryFSMTransitionFailed,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// Change inquiry status in DB.
-	txResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
-		iqDao.WithTx(tx)
-		err := iqDao.PatchInquiryStatusByUUID(
-			contracts.PatchInquiryStatusByUUIDParams{
-				UUID:          iq.Uuid,
-				InquiryStatus: models.InquiryStatus(fsm.Current()),
-			},
-		)
-
-		if err != nil {
-			return db.FormatResp{
-				ErrCode:        apperr.FailedToPatchInquiryStatus,
-				Err:            err,
-				HttpStatusCode: http.StatusInternalServerError,
-			}
-		}
-
-		// Change inquiry status in firestore to notify the chat partner that the chatroom has been canceled.
-		df := darkfirestore.Get()
-		err = df.UpdateInquiryStatus(
-			ctx,
-			darkfirestore.UpdateInquiryStatusParams{
-				InquiryUUID: iq.Uuid,
-				Status:      models.InquiryStatus(fsm.Current()),
-			},
-		)
-
-		if err != nil {
-			return db.FormatResp{
-				ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
-				Err:            err,
-				HttpStatusCode: http.StatusInternalServerError,
-			}
-		}
-
-		return db.FormatResp{}
-	})
-
-	if txResp.Err != nil {
-		c.AbortWithError(
-			txResp.HttpStatusCode,
-			apperr.NewErr(
-				txResp.ErrCode,
-				txResp.Err.Error(),
-			),
-		)
-
-		return
-	}
-
-	iq.InquiryStatus = models.InquiryStatusInquiring
-
-	trfIq, _ := NewTransform().TransformRevertedInquiry(&iq.ServiceInquiry)
-
-	c.JSON(http.StatusOK, trfIq)
 }

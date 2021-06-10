@@ -101,13 +101,4 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			CancelInquiryHandler(c)
 		},
 	)
-
-	// @Deprecated, use `/v1/chat/quit-chatroom` instead.
-	g.POST(
-		"/revert-chat",
-		func(c *gin.Context) {
-			RevertChatHandler(c, container)
-		},
-	)
-
 }

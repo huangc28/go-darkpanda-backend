@@ -496,7 +496,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 			if err := df.UpdateInquiryStatus(
 				ctx,
 				darkfirestore.UpdateInquiryStatusParams{
-					InquiryUUID: body.InquiryUUID,
+					InquiryUuid: body.InquiryUUID,
 					Status:      models.InquiryStatusWaitForInquirerApprove,
 				},
 			); err != nil {
@@ -964,7 +964,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			if err := df.UpdateInquiryStatus(
 				ctx,
 				darkfirestore.UpdateInquiryStatusParams{
-					InquiryUUID: iq.Uuid,
+					InquiryUuid: iq.Uuid,
 					Status:      models.InquiryStatusInquiring,
 				},
 			); err != nil {
@@ -1067,7 +1067,7 @@ func EmitDisagreeInquiryHandler(c *gin.Context, depCon container.Container) {
 			if err := df.UpdateInquiryStatus(
 				ctx,
 				darkfirestore.UpdateInquiryStatusParams{
-					InquiryUUID: iq.Uuid,
+					InquiryUuid: iq.Uuid,
 					Status:      models.InquiryStatusChatting,
 				},
 			); err != nil {
