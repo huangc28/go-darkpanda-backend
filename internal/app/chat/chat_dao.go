@@ -280,13 +280,16 @@ INNER JOIN chatrooms
 	AND chatrooms.enabled=true
 INNER JOIN users AS inquirer
 	ON inquirer.id = si.inquirer_id
-WHERE inquiry_status = $1
-AND picker_id = $2
+WHERE
+	si.inquiry_status = $1 OR
+	si.inquiry_status = $2
+AND picker_id = $3
 	`
 
 	rows, err := dao.DB.Queryx(
 		query,
 		models.InquiryStatusChatting,
+		models.InquiryStatusWaitForInquirerApprove,
 		userID,
 	)
 

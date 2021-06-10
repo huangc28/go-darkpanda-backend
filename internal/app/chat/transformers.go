@@ -26,14 +26,15 @@ func (t *ChatTransformer) TransformEmitTextMessage(channelUUID string, msg darkf
 }
 
 type TransformedInquiryChat struct {
-	ServiceType  models.InquiryStatus `json:"service_type"`
-	Username     string               `json:"username"`
-	AvatarURL    *string              `json:"avatar_url"`
-	ChannelUUID  string               `json:"channel_uuid"`
-	ExpiredAt    time.Time            `json:"expired_at"`
-	CreatedAt    time.Time            `json:"created_at"`
-	InquiryUUID  string               `json:"inquiry_uuid"`
-	InquirerUUID string               `json:"inquirer_uuid"`
+	ServiceType   models.InquiryStatus `json:"service_type"`
+	Username      string               `json:"username"`
+	AvatarURL     *string              `json:"avatar_url"`
+	ChannelUUID   string               `json:"channel_uuid"`
+	ExpiredAt     time.Time            `json:"expired_at"`
+	CreatedAt     time.Time            `json:"created_at"`
+	InquiryUUID   string               `json:"inquiry_uuid"`
+	InquirerUUID  string               `json:"inquirer_uuid"`
+	InquiryStatus string               `json:"inquiry_status"`
 
 	// Messages only contains the latest message of the chatroom. It's an empty array
 	// If the chatroom does not contain any message.
@@ -55,14 +56,15 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 		}
 
 		trfm := TransformedInquiryChat{
-			ServiceType:  m.ServiceType,
-			Username:     m.Username,
-			ChannelUUID:  m.ChannelUUID,
-			ExpiredAt:    m.ExpiredAt,
-			CreatedAt:    m.CreatedAt,
-			Messages:     chatMsgs,
-			InquiryUUID:  m.InquiryUUID,
-			InquirerUUID: m.InquirerUUID,
+			ServiceType:   m.ServiceType,
+			Username:      m.Username,
+			ChannelUUID:   m.ChannelUUID,
+			ExpiredAt:     m.ExpiredAt,
+			CreatedAt:     m.CreatedAt,
+			Messages:      chatMsgs,
+			InquiryUUID:   m.InquiryUUID,
+			InquirerUUID:  m.InquirerUUID,
+			InquiryStatus: m.InquiryStatus,
 		}
 
 		if m.AvatarURL.Valid {
