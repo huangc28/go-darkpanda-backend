@@ -542,6 +542,7 @@ func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingI
 		UpdateInquiryStatusParams{
 			InquiryUuid: params.InquiryUuid,
 			Status:      models.InquiryStatusAsking,
+			PickerUuid:  params.PickerUuid,
 		},
 	)
 }
