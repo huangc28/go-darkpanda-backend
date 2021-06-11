@@ -958,8 +958,6 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 				}
 			}
 
-			// Emit new inquiry status to firestore `inquiring` so that the other
-			// party knows it's time to quit the chatroom.
 			df := darkfirestore.Get()
 			if err := df.UpdateInquiryStatus(
 				ctx,
@@ -973,6 +971,27 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 					Err:            err,
 					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
 				}
+			}
+
+			// Emit quit chatroom messsage to firestore `inquiring` so that the other
+			// party knows it's time to quit the chatroom.
+			_, _, err = df.SendQuitChatroomMessage(
+				ctx,
+				darkfirestore.QuitChatroomMessageParams{
+					Data: darkfirestore.ChatMessage{
+						Content: "",
+						From:    c.GetString("uuid"),
+					},
+				},
+			)
+
+			if err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToSendQuitChatroomMsg,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+
 			}
 
 			return db.FormatResp{

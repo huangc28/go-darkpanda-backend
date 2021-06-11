@@ -29,6 +29,7 @@ const (
 	ServiceDetail       MessageType = "service_detail"
 	ConfirmedService    MessageType = "confirmed_service"
 	DisagreeInquiry     MessageType = "disagree_inquiry"
+	QuitChatroom        MessageType = "quit_chatroom"
 )
 
 const (
@@ -55,11 +56,13 @@ type DarkFireStorer interface {
 	GetClient() *firestore.Client
 
 	CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error
+
 	SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error)
 	SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error)
+	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
+
 	GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string][]*ChatMessage, error)
 	GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]interface{}, error)
-	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
 
 	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
 	AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error
@@ -435,6 +438,31 @@ func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params
 	ref, _, err := df.Client.
 		Collection(PrivateChatsCollectionName).
 		Doc(params.ChannelUUID).
+		Collection(MessageSubCollectionName).
+		Add(ctx, params.Data)
+
+	if err != nil {
+		return nil, params.Data, err
+	}
+
+	return ref, params.Data, nil
+}
+
+type QuitChatroomMessageParams struct {
+	ChannelUuid string
+	Data        ChatMessage
+}
+
+func (df *DarkFirestore) SendQuitChatroomMessage(ctx context.Context, params QuitChatroomMessageParams) (*firestore.DocumentRef, ChatMessage, error) {
+	if params.Data.Type == "" {
+		params.Data.Type = QuitChatroom
+	}
+
+	params.Data.CreatedAt = time.Now()
+
+	ref, _, err := df.Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(params.ChannelUuid).
 		Collection(MessageSubCollectionName).
 		Add(ctx, params.Data)
 

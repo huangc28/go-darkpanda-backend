@@ -60,6 +60,7 @@ const (
 	NoActiveInquiry                          = "3000056"
 	InquiryHasNoPicker                       = "3000057"
 	FailedToGetChatroomById                  = "3000058"
+	FailedToSendQuitChatroomMsg              = "3000059"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
@@ -75,7 +76,8 @@ var InquiryErrCodeMsgMap = map[string]string{
 	OnlyFemaleUserCanAccessAPI:             "only female user can access API",
 	FailedToPickupInquiryDueToDirtyVersion: "inquiry has been modified by other requests. Please pick another request or try again later",
 	FailedToPickupStatusNotWaiting:         "inquiry not available, status is not waiting",
-	InquiryUUIDNotInParams:                 "Inquiry uuid not exists in uri param",
+	InquiryUUIDNotInParams:                 "inquiry uuid not exists in uri param",
 	FailedToPickupStatusNotInquiring:       "can not pickup inquiry since status is not inquiring",
 	InquiryHasNoPicker:                     "can not start a chat since inquiry has not picker.",
+	FailedToSendQuitChatroomMsg:            "failed to get send quit chatroom message",
 }
