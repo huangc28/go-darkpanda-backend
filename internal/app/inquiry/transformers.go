@@ -568,7 +568,7 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 
 type TrfedActiveInquiry struct {
 	TransformedUpdateInquiry
-	PickerUuid string `json:"picker_uuid"`
+	PickerUuid *string `json:"picker_uuid"`
 }
 
 func (t *InquiryTransform) TransformActiveInquiry(iq *models.ActiveInquiry) (*TrfedActiveInquiry, error) {
@@ -578,9 +578,15 @@ func (t *InquiryTransform) TransformActiveInquiry(iq *models.ActiveInquiry) (*Tr
 		return nil, err
 	}
 
+	var pickerUuid *string
+
+	if iq.PickerUuid.Valid == true {
+		*pickerUuid = iq.PickerUuid.String
+	}
+
 	return &TrfedActiveInquiry{
 		*ts,
-		iq.PickerUuid,
+		pickerUuid,
 	}, nil
 }
 

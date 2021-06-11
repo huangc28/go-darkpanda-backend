@@ -34,5 +34,5 @@ type CompleteChatroomInfoModel struct {
 
 type ActiveInquiry struct {
 	ServiceInquiry
-	PickerUuid string `json:"picker_uuid"`
+	PickerUuid sql.NullString `json:"picker_uuid"`
 }
