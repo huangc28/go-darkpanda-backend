@@ -31,3 +31,8 @@ type CompleteChatroomInfoModel struct {
 	InquirerId    int           `json:"inquirer_id"`
 	PickerId      int           `json:"picker_id"`
 }
+
+type ActiveInquiry struct {
+	ServiceInquiry
+	PickerUuid string `json:"picker_uuid"`
+}

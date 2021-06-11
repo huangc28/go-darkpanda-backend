@@ -339,9 +339,13 @@ RETURNING
 	return &inquiry, nil
 }
 
-func (dao *InquiryDAO) GetActiveInquiry(inquirerId int) (*models.ServiceInquiry, error) {
+func (dao *InquiryDAO) GetActiveInquiry(inquirerId int) (*models.ActiveInquiry, error) {
 	query := `
-SELECT * FROM service_inquiries
+SELECT
+	service_inquiries.*,
+	users.uuid AS picker_uuid
+FROM service_inquiries
+LEFT JOIN users ON service_inquiries.picker_id = users.id
 WHERE
 	inquirer_id = $1
 AND
@@ -352,7 +356,7 @@ AND
 ORDER BY created_at DESC
 LIMIT 1;
 	`
-	var m models.ServiceInquiry
+	var m models.ActiveInquiry
 	if err := dao.db.QueryRowx(query, inquirerId).StructScan(&m); err != nil {
 		return nil, err
 	}

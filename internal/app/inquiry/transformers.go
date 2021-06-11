@@ -566,8 +566,22 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 	}, nil
 }
 
-func (t *InquiryTransform) TransformActiveInquiry(iq *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
-	return t.TransformUpdateInquiry(iq)
+type TrfedActiveInquiry struct {
+	TransformedUpdateInquiry
+	PickerUuid string `json:"picker_uuid"`
+}
+
+func (t *InquiryTransform) TransformActiveInquiry(iq *models.ActiveInquiry) (*TrfedActiveInquiry, error) {
+	ts, err := t.TransformUpdateInquiry(&iq.ServiceInquiry)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &TrfedActiveInquiry{
+		*ts,
+		iq.PickerUuid,
+	}, nil
 }
 
 func (t *InquiryTransform) TransformRevertedInquiry(iq *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
