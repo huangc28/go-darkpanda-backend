@@ -581,7 +581,7 @@ func (t *InquiryTransform) TransformActiveInquiry(iq *models.ActiveInquiry) (*Tr
 	var pickerUuid *string
 
 	if iq.PickerUuid.Valid == true {
-		*pickerUuid = iq.PickerUuid.String
+		pickerUuid = &iq.PickerUuid.String
 	}
 
 	return &TrfedActiveInquiry{
