@@ -32,11 +32,13 @@ const (
 
 	ServiceStartTimeNotValid       = "7000028"
 	FirestoreFailedToCreateService = "7000029"
+	ChatroomNotExists              = "7000030"
 )
 
 var ChatErrorMessageMap = map[string]string{
-	MessageExceedMaximumCount:       "Exceed maximum message count. chatroom is closed",
-	ChatRoomHasExpired:              "Chatroom has expired, please create another inquiry to proceed chatroom",
-	UserIsNotInTheChatroom:          "User is not in the chatroom",
-	FailedToGetInquiryByChannelUuid: "Chatroom is not in relate to any inquiry",
+	MessageExceedMaximumCount:       "exceed maximum message count. chatroom is closed",
+	ChatRoomHasExpired:              "chatroom has expired, please create another inquiry to proceed chatroom",
+	UserIsNotInTheChatroom:          "user is not in the chatroom",
+	FailedToGetInquiryByChannelUuid: "chatroom is not in relate to any inquiry",
+	ChatroomNotExists:               "chatroom not exists",
 }

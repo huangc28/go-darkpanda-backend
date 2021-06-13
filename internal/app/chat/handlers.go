@@ -14,6 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/skip2/go-qrcode"
 	"github.com/teris-io/shortid"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -526,6 +528,14 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 			)
 
 			if err != nil {
+				if grpc.Code(err) == codes.NotFound {
+					return db.FormatResp{
+						ErrCode:        apperr.ChatroomNotExists,
+						Err:            err,
+						HttpStatusCode: http.StatusBadRequest,
+					}
+				}
+
 				return db.FormatResp{
 					ErrCode:        apperr.FailedToSendUpdateInquiryMessage,
 					Err:            err,
@@ -978,6 +988,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			_, _, err = df.SendQuitChatroomMessage(
 				ctx,
 				darkfirestore.QuitChatroomMessageParams{
+					ChannelUuid: chatroom.ChannelUuid.String,
 					Data: darkfirestore.ChatMessage{
 						Content: "",
 						From:    c.GetString("uuid"),
