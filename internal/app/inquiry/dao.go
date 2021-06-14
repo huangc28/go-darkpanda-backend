@@ -307,7 +307,7 @@ UPDATE service_inquiries SET
 	service_type = COALESCE($2, service_type),
 	inquiry_status = COALESCE($3, inquiry_status),
 	price = COALESCE($4, price),
-	budget = = COALESCE($5, budget) ,
+	budget = COALESCE($5, budget),
 	duration = COALESCE($6, duration),
 	address = COALESCE($7, address)
 WHERE

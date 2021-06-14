@@ -133,26 +133,33 @@ func EmitInquiryHandler(c *gin.Context) {
 
 	// ------------------- create a new inquiry -------------------
 	sid, _ := shortid.Generate()
-	iq, err := q.CreateInquiry(ctx, models.CreateInquiryParams{
-		Uuid: sid,
-		InquirerID: sql.NullInt32{
-			Int32: int32(usr.ID),
-			Valid: true,
-		},
-		Budget:        decimal.NewFromFloat(body.Budget).String(),
-		ServiceType:   models.ServiceType(body.ServiceType),
-		InquiryStatus: models.InquiryStatusInquiring,
-		ExpiredAt: sql.NullTime{
-			Time:  time.Now().Add(InquiryDuration),
-			Valid: true,
-		},
-		AppointmentTime: sql.NullTime{
-			Valid: true,
+	iq, err := q.CreateInquiry(
+		ctx,
+		models.CreateInquiryParams{
+			Uuid: sid,
+			InquirerID: sql.NullInt32{
+				Int32: int32(usr.ID),
+				Valid: true,
+			},
+			Budget:        decimal.NewFromFloat(body.Budget).String(),
+			ServiceType:   models.ServiceType(body.ServiceType),
+			InquiryStatus: models.InquiryStatusInquiring,
+			ExpiredAt: sql.NullTime{
+				Time:  time.Now().Add(InquiryDuration),
+				Valid: true,
+			},
+			AppointmentTime: sql.NullTime{
+				Valid: true,
 
-			// Convert appointment time to UTC to be consistent.
-			Time: body.AppointmentTime.UTC(),
+				// Convert appointment time to UTC to be consistent.
+				Time: body.AppointmentTime.UTC(),
+			},
+			Duration: sql.NullInt32{
+				Valid: true,
+				Int32: int32(body.ServiceDuration),
+			},
 		},
-	})
+	)
 
 	if err != nil {
 		log.WithFields(log.Fields{
