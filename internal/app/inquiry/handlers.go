@@ -994,10 +994,6 @@ func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, trfed)
 }
 
-type PatchInquiryUriUuid struct {
-	Uuid string `uri:"inquiry_uuid"`
-}
-
 type PatchInquiryBody struct {
 	Uuid            string     `uri:"inquiry_uuid" form:"uuid" json:"uuid"`
 	AppointmentTime *time.Time `form:"appointment_time" json:"appointment_time"`
@@ -1023,16 +1019,10 @@ func PatchInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	iqUuidUri := PatchInquiryUriUuid{}
-
-	if err := c.BindUri(&iqUuidUri); err != nil {
-		return
-	}
-
 	dao := NewInquiryDAO(db.GetDB())
 	inquiry, err := dao.PatchInquiryByInquiryUUID(
 		contracts.PatchInquiryParams{
-			Uuid:            iqUuidUri.Uuid,
+			Uuid:            c.Param("inquiry_uuid"),
 			Budget:          body.Budget,
 			AppointmentTime: body.AppointmentTime,
 			Price:           body.Price,
