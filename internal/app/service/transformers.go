@@ -135,3 +135,39 @@ func TransformServiceName(serviceNames []*models.ServiceName) TrfmedServiceNames
 	}
 
 }
+
+type TrfedPaymentDetail struct {
+	Price      float64 `json:"price"`
+	RecTradeId string  `json:"rec_trade_id"`
+
+	Address   string    `json:"address"`
+	StartTime time.Time `json:"start_time"`
+	Duration  *int64    `json:"duration"`
+
+	PickerUuid      string  `json:"picker_uuid"`
+	PickerUsername  string  `json:"picker_username"`
+	PickerAvatarUrl *string `json:"picker_avatar_url"`
+}
+
+func TrfPaymentDetail(m *models.ServicePaymentDetail) TrfedPaymentDetail {
+	trf := TrfedPaymentDetail{
+		Price:      m.Price,
+		RecTradeId: m.RecTradeID,
+
+		Address:   m.Address,
+		StartTime: m.StartTime,
+
+		PickerUuid:     m.PickerUuid,
+		PickerUsername: m.PickerUsername,
+	}
+
+	if m.Duration.Valid {
+		trf.Duration = &m.Duration.Int64
+	}
+
+	if m.PickerAvatarUrl.Valid {
+		trf.PickerAvatarUrl = &m.PickerAvatarUrl.String
+	}
+
+	return trf
+}

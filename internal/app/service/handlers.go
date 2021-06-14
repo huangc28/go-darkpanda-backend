@@ -495,7 +495,7 @@ func GetAvailableServices(c *gin.Context) {
 }
 
 func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
-	srvUuid := c.GetString("seg")
+	srvUuid := c.Param("seg")
 
 	// Retrieve payment detail of the service.
 	var srvDao contracts.ServiceDAOer
@@ -527,5 +527,22 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, struct{}{})
+	var pDaoer contracts.PaymentDAOer
+	depCon.Make(&pDaoer)
+
+	p, err := pDaoer.GetPaymentByServiceUuid(srvUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetPaymentByServiceUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, TrfPaymentDetail(p))
 }

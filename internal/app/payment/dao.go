@@ -1,8 +1,6 @@
 package payment
 
 import (
-	"log"
-
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
@@ -104,11 +102,10 @@ INNER JOIN users AS payer ON payer.id = payment.payer_id;
 	return paymentInfos, nil
 }
 
-func GetPaymentByServiceUuid(uuid string) {
+func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServicePaymentDetail, error) {
 	query := `
 SELECT
   -- Retrieve payment info
-  payments.id,
   payments.price,
   payments.rec_trade_id,
 
@@ -127,5 +124,15 @@ INNER JOIN services
 	AND services.uuid =  $1
 INNER JOIN users AS pickers ON pickers.id = payments.payee_id;
 `
-	log.Printf("DEBUG query %v", query)
+
+	var m models.ServicePaymentDetail
+
+	if err := dao.DB.QueryRowx(
+		query,
+		srvUuid,
+	).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }

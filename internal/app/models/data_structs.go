@@ -10,7 +10,7 @@ type UserWithInquiries struct {
 	Inquiries []*ServiceInquiry `json:"inquiries"`
 }
 
-// InquiryChatRooms data models to be returned for method `GetFemaleInquiryChatRooms1.
+// InquiryChatRooms data models to be returned for method `GetFemaleInquiryChatRooms`.
 type InquiryChatRoom struct {
 	ServiceType   InquiryStatus  `json:"service_type"`
 	InquiryStatus string         `json:"inquiry_status"`
@@ -38,9 +38,14 @@ type ActiveInquiry struct {
 }
 
 type ServicePaymentDetail struct {
-	User
-	Address   string    `json:"address"`
-	StartTime time.Time `json:"start_time"`
-	Duration  int       `json:"duration"`
-	Price     float64   `json:"price"`
+	Price      float64 `json:"price"`
+	RecTradeID string  `json:"rec_trade_id"`
+
+	Address   string        `json:"address"`
+	StartTime time.Time     `json:"start_time"`
+	Duration  sql.NullInt64 `json:"duration"`
+
+	PickerUuid      string         `json:"picker_uuid"`
+	PickerUsername  string         `json:"picker_username"`
+	PickerAvatarUrl sql.NullString `json:"picker_avatar_url"`
 }

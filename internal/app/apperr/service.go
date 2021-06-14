@@ -13,12 +13,13 @@ const (
 	InvalidServiceStatus              = "1100009"
 	FailedToChangeServiceStatus       = "1100010"
 
-	FirestoreFailedToUpdateService = "1100011"
-	FailedToGetQrCodeByServiceUuid = "1100012"
-	NoQRCodeFound                  = "1100013"
-	FailedToGetServiceNames        = "1100014"
-	FailedToGetServiceByUuid       = "1100015"
-	ServiceNotYetEnd               = "1100016"
+	FirestoreFailedToUpdateService  = "1100011"
+	FailedToGetQrCodeByServiceUuid  = "1100012"
+	NoQRCodeFound                   = "1100013"
+	FailedToGetServiceNames         = "1100014"
+	FailedToGetServiceByUuid        = "1100015"
+	ServiceNotYetEnd                = "1100016"
+	FailedToGetPaymentByServiceUuid = "1100017"
 )
 
 var ServiceErrorMessageMap = map[string]string{

@@ -428,11 +428,10 @@ func (dao *ServiceDAO) GetServiceByUuid(srvUuid string, fields ...string) (*mode
 	fieldsStr := strings.TrimSuffix(strings.Join(fields, ","), ",")
 
 	baseQuery := `
-SELECT *
+SELECT %s
 FROM services
 WHERE uuid = $1;
 `
-
 	query := fmt.Sprintf(baseQuery, fieldsStr)
 
 	var m models.Service
