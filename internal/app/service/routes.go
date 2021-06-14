@@ -47,7 +47,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		case "service-list":
 
 			// Get list of services available.
-			GetServicesAvailable(c)
+			GetAvailableServices(c)
 		}
 	})
 
@@ -55,6 +55,13 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		"/:seg/qrcode",
 		func(c *gin.Context) {
 			GetServiceQRCode(c, container)
+		},
+	)
+
+	g.GET(
+		"/:seg/payment-details",
+		func(c *gin.Context) {
+			GetServicePaymentDetails(c, container)
 		},
 	)
 

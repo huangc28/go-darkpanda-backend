@@ -17,10 +17,13 @@ const (
 	FailedToGetQrCodeByServiceUuid = "1100012"
 	NoQRCodeFound                  = "1100013"
 	FailedToGetServiceNames        = "1100014"
+	FailedToGetServiceByUuid       = "1100015"
+	ServiceNotYetEnd               = "1100016"
 )
 
 var ServiceErrorMessageMap = map[string]string{
-	FailedToCreateService:             "Failed to create service.",
-	FailedServiceQrCodeSecretNotMatch: "QR code secret does not match.",
-	NotAServiceParticipant:            "Scanner is not a service participant",
+	FailedToCreateService:             "failed to create service.",
+	FailedServiceQrCodeSecretNotMatch: "qr code secret does not match.",
+	NotAServiceParticipant:            "scanner is not a service participant.",
+	ServiceNotYetEnd:                  "no payment detail since service has not ended yet.",
 }

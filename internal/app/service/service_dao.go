@@ -389,6 +389,7 @@ INNER JOIN services
 
 	return &m, nil
 }
+
 func (dao *ServiceDAO) GetServiceNames() ([]*models.ServiceName, error) {
 	query := `
 SELECT
@@ -417,4 +418,28 @@ FROM service_names;
 	}
 
 	return srvNames, nil
+}
+
+func (dao *ServiceDAO) GetServiceByUuid(srvUuid string, fields ...string) (*models.Service, error) {
+	if len(fields) == 0 {
+		fields = append(fields, "*")
+	}
+
+	fieldsStr := strings.TrimSuffix(strings.Join(fields, ","), ",")
+
+	baseQuery := `
+SELECT *
+FROM services
+WHERE uuid = $1;
+`
+
+	query := fmt.Sprintf(baseQuery, fieldsStr)
+
+	var m models.Service
+
+	if err := dao.DB.QueryRowx(query, srvUuid).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }

@@ -36,3 +36,11 @@ type ActiveInquiry struct {
 	ServiceInquiry
 	PickerUuid sql.NullString `json:"picker_uuid"`
 }
+
+type ServicePaymentDetail struct {
+	User
+	Address   string    `json:"address"`
+	StartTime time.Time `json:"start_time"`
+	Duration  int       `json:"duration"`
+	Price     float64   `json:"price"`
+}

@@ -28,3 +28,17 @@ func (st *ServiceType) ToString() string {
 func (st *ServiceStatus) ToString() string {
 	return string(*st)
 }
+
+func (s *Service) IsOneOfStatus(types ...ServiceStatus) bool {
+	for _, st := range types {
+		if s.ServiceStatus == st {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (s *Service) IsNotOneOfStatus(types ...ServiceStatus) bool {
+	return !s.IsOneOfStatus(types...)
+}

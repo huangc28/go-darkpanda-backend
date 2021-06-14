@@ -307,10 +307,11 @@ UPDATE service_inquiries SET
 	service_type = COALESCE($2, service_type),
 	inquiry_status = COALESCE($3, inquiry_status),
 	price = COALESCE($4, price),
-	duration = COALESCE($5, duration),
-	address = COALESCE($6, address)
+	budget = = COALESCE($5, budget) ,
+	duration = COALESCE($6, duration),
+	address = COALESCE($7, address)
 WHERE
-	uuid = $7
+	uuid = $8
 RETURNING
 	uuid,
 	appointment_time,
@@ -327,6 +328,7 @@ RETURNING
 		params.ServiceType,
 		params.InquiryStatus,
 		params.Price,
+		params.Budget,
 		params.Duration,
 		params.Address,
 		params.Uuid,

@@ -28,6 +28,7 @@ type InquiryInfo struct {
 type PatchInquiryParams struct {
 	Uuid            string                `json:"uuid"`
 	AppointmentTime *time.Time            `json:"appointment_time"`
+	Budget          *float32              `json:"budget"`
 	Price           *float32              `json:"price"`
 	Duration        *int                  `json:"duration"`
 	ServiceType     *string               `json:"service_type"`

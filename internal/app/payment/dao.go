@@ -1,6 +1,8 @@
 package payment
 
 import (
+	"log"
+
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
@@ -100,4 +102,30 @@ INNER JOIN users AS payer ON payer.id = payment.payer_id;
 	}
 
 	return paymentInfos, nil
+}
+
+func GetPaymentByServiceUuid(uuid string) {
+	query := `
+SELECT
+  -- Retrieve payment info
+  payments.id,
+  payments.price,
+  payments.rec_trade_id,
+
+  -- Retrieve service info
+  services.address,
+  services.start_time,
+  services.duration,
+
+  -- Retrieve picker info
+  pickers.uuid AS picker_uuid,
+  pickers.username AS picker_username,
+  pickers.avatar_url AS picker_avatar_url
+FROM payments
+INNER JOIN services
+	ON services.id = payments.service_id
+	AND services.uuid =  $1
+INNER JOIN users AS pickers ON pickers.id = payments.payee_id;
+`
+	log.Printf("DEBUG query %v", query)
 }

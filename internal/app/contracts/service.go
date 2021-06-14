@@ -32,4 +32,5 @@ type ServiceDAOer interface {
 	WithTx(tx db.Conn) ServiceDAOer
 	ScanExpiredServices() ([]*models.Service, error)
 	ScanCompletedServices() ([]*models.Service, error)
+	GetServiceByUuid(srvUuid string, fields ...string) (*models.Service, error)
 }

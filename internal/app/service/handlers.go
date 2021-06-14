@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -475,7 +474,7 @@ func GetServiceQRCode(c *gin.Context, depCon container.Container) {
 	}{qrCode.Url.String})
 }
 
-func GetServicesAvailable(c *gin.Context) {
+func GetAvailableServices(c *gin.Context) {
 	srvDao := NewServiceDAO(db.GetDB())
 
 	srvNames, err := srvDao.GetServiceNames()
@@ -492,7 +491,41 @@ func GetServicesAvailable(c *gin.Context) {
 		return
 	}
 
-	log.Printf("DEBUG srvNames %v", srvNames)
-
 	c.JSON(http.StatusOK, TransformServiceName(srvNames))
+}
+
+func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
+	srvUuid := c.GetString("seg")
+
+	// Retrieve payment detail of the service.
+	var srvDao contracts.ServiceDAOer
+	depCon.Make(&srvDao)
+
+	srv, err := srvDao.GetServiceByUuid(srvUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if srv.IsNotOneOfStatus(
+		models.ServiceStatusExpired,
+		models.ServiceStatusCompleted,
+	) {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.ServiceNotYetEnd),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct{}{})
 }
