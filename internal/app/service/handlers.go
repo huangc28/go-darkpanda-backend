@@ -102,7 +102,7 @@ func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 		channelUuids = append(channelUuids, srv.ChannelUuid.String)
 	}
 
-	log.Printf("DEBUG 1 channel uuid  %v", channelUuids)
+	log.Printf("DEBUG 1 channel uuid  %v %v", channelUuids, len(channelUuids))
 
 	df := darkfirestore.Get()
 	msgs, err := df.GetLatestMessageForEachChatroom(ctx, channelUuids)
