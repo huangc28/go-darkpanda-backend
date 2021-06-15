@@ -256,6 +256,7 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 	dataChan := make(chan []map[string]interface{})
 
 	for _, channelUUID := range channelUUIDs {
+		log.Printf("DEBUG spot 2 %v", channelUUID)
 		select {
 		case <-quitChan:
 			break
