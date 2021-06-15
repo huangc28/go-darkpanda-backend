@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -101,8 +100,6 @@ func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 	for _, srv := range srvs {
 		channelUuids = append(channelUuids, srv.ChannelUuid.String)
 	}
-
-	log.Printf("DEBUG 1 channel uuid  %v %v", channelUuids, len(channelUuids))
 
 	df := darkfirestore.Get()
 	msgs, err := df.GetLatestMessageForEachChatroom(ctx, channelUuids)

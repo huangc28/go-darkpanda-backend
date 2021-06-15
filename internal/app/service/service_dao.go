@@ -111,7 +111,7 @@ INNER JOIN users
 	ON %s
 INNER JOIN service_inquiries
 	ON services.inquiry_id = service_inquiries.id
-LEFT JOIN chatrooms
+INNER JOIN chatrooms
 	ON services.inquiry_id = chatrooms.inquiry_id
 WHERE
 	%s
