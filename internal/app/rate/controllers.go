@@ -1,6 +1,7 @@
 package rate
 
 import (
+	"database/sql"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -42,6 +43,15 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 	)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(apperr.NotInvolveInService),
+			)
+
+			return
+		}
+
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -79,9 +89,10 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 }
 
 type CreateServiceRatingparams struct {
-	ServiceUuid string ``
+	ServiceUuid string `json:"service_uuid" form:"service_uuid" binding:"required,gt=0"`
 }
 
 func CreateServiceRating(c *gin.Context) {
+	var body CreateServiceRatingparams
 
 }

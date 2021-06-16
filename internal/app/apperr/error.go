@@ -47,6 +47,7 @@ func GetErrorMessage(code string) string {
 			ServiceErrorMessageMap,
 			ReferralErrorMessageMap,
 			RegisterErrCodeMsgMap,
+			RatingErrCodeMsgMap,
 		)
 	}
 
