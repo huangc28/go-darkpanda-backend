@@ -36,7 +36,7 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 	partnerInfo, err := rateDao.GetServicePartnerInfo(
 		GetServicePartnerInfoParams{
 			Gender:      user.Gender,
-			PartnerId:   int(user.ID),
+			MyId:        int(user.ID),
 			ServiceUuid: srvUuid,
 		},
 	)
@@ -76,6 +76,10 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 	tResp := NewTransform().TransformRate(partnerInfo, srvRating)
 
 	c.JSON(http.StatusOK, tResp)
+}
+
+type CreateServiceRatingparams struct {
+	ServiceUuid string ``
 }
 
 func CreateServiceRating(c *gin.Context) {

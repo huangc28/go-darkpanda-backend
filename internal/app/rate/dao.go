@@ -37,7 +37,7 @@ func (dao *RateDAO) WithTx(tx db.Conn) contracts.RateDAOer {
 
 type GetServicePartnerInfoParams struct {
 	Gender      models.Gender
-	PartnerId   int
+	MyId        int
 	ServiceUuid string
 }
 
@@ -49,10 +49,16 @@ type GetServicePartnerInfoParams struct {
 //   -  service uuid
 //   -  comments
 func (dao *RateDAO) GetServicePartnerInfo(p GetServicePartnerInfoParams) (*models.User, error) {
-	objCriteria := "service_provider_id"
+	partnerCriteria := "service_provider_id"
 
 	if p.Gender == models.GenderFemale {
-		objCriteria = " customer_id"
+		partnerCriteria = "customer_id"
+	}
+
+	myCrteria := "customer_id"
+
+	if p.Gender == models.GenderFemale {
+		myCrteria = "service_provider_id"
 	}
 
 	query := fmt.Sprintf(
@@ -65,15 +71,15 @@ FROM users
 INNER JOIN services ON services.%s = users.id
 	AND services.%s = $1
 	AND services.uuid = $2;`,
-		objCriteria,
-		objCriteria,
+		partnerCriteria,
+		myCrteria,
 	)
 
 	var m models.User
 
 	if err := dao.db.QueryRowx(
 		query,
-		p.PartnerId,
+		p.MyId,
 		p.ServiceUuid,
 	).StructScan(&m); err != nil {
 		return nil, err
