@@ -1,5 +1,6 @@
 package apperr
 
 var (
-	FailedToGetServiceRating = "1900001"
+	FailedToGetServicePartnerInfo = "1900001"
+	FailedToGetServiceRating      = "1900002"
 )

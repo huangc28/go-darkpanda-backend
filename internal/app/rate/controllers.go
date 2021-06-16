@@ -41,6 +41,18 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 		},
 	)
 
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServicePartnerInfo,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	// Get service rating made by the chat partner.
 	srvRating, err := rateDao.GetServiceRating(
 		GetServiceRatingParams{

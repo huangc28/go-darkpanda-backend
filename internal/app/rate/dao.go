@@ -49,10 +49,10 @@ type GetServicePartnerInfoParams struct {
 //   -  service uuid
 //   -  comments
 func (dao *RateDAO) GetServicePartnerInfo(p GetServicePartnerInfoParams) (*models.User, error) {
-	objCriteria := "customer_id"
+	objCriteria := "service_provider_id"
 
 	if p.Gender == models.GenderFemale {
-		objCriteria = "service_provider_id"
+		objCriteria = " customer_id"
 	}
 
 	query := fmt.Sprintf(
