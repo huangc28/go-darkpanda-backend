@@ -19,11 +19,11 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		}, authDao),
 	)
 
-	g.GET("/:uuid", func(c *gin.Context) {
-		GetUserRating(c, depCon)
+	g.GET("/:service_uuid", func(c *gin.Context) {
+		GetServiceRating(c, depCon)
 	})
 
 	g.POST("", func(c *gin.Context) {
-		CreateUserRating(c)
+		CreateServiceRating(c)
 	})
 }

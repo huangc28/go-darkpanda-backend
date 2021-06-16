@@ -563,3 +563,38 @@ CREATE TABLE service_names (
 );
 
 COMMIT;
+DROP TABLE IF EXISTS user_ratings;
+BEGIN;
+
+CREATE TABLE service_rating (
+	id BIGSERIAL PRIMARY KEY,
+
+	rater_id INT REFERENCES users(id),
+	ratee_id INT REFERENCES users(id),
+	service_id INT REFERENCES services(id) ON DELETE CASCADE,
+	rating INT DEFAULT 0,
+
+	created_at timestamp NOT NULL DEFAULT NOW(),
+	updated_at timestamp NULL DEFAULT current_timestamp,
+	deleted_at timestamp
+);
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE service_rating
+ADD COLUMN comments text;
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE service_rating
+RENAME TO service_ratings;
+
+COMMIT;
+BEGIN;
+
+	ALTER TABLE service_ratings
+	DROP COLUMN ratee_id;
+
+COMMIT;

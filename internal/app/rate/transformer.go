@@ -3,7 +3,7 @@ package rate
 import (
 	"time"
 
-	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
 type RateTransform struct{}
@@ -13,21 +13,23 @@ func NewTransform() *RateTransform {
 }
 
 type TransformedRate struct {
-	ID        int       `json:"id"`
-	Username  string    `json:"username"`
-	AvatarUrl string    `json:"avatar_url"`
-	Rating    int       `json:"rating"`
-	Comments  string    `json:"comments"`
+	RaterUsername  string `json:"rater_username"`
+	RaterUuid      string `json:"rater_uuid"`
+	RaterAvatarUrl string `json:"rater_avatar_url"`
+
+	Comment   string    `json:"comment"`
+	Rating    int32     `json:"rating"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
-func (ba *RateTransform) TransformRate(rate *contracts.GetUserRatingParams) *TransformedRate {
+func (ba *RateTransform) TransformRate(raterInfo *models.User, srvRating *models.ServiceRating) *TransformedRate {
 	return &TransformedRate{
-		ID:        rate.ID,
-		Username:  rate.Username,
-		AvatarUrl: rate.AvatarUrl.String,
-		Rating:    rate.Rating,
-		Comments:  rate.Comments.String,
-		CreatedAt: rate.CreatedAt,
+		RaterUsername:  raterInfo.Username,
+		RaterUuid:      raterInfo.Uuid,
+		RaterAvatarUrl: raterInfo.AvatarUrl.String,
+
+		Comment:   srvRating.Comments.String,
+		Rating:    srvRating.Rating.Int32,
+		CreatedAt: srvRating.CreatedAt,
 	}
 }

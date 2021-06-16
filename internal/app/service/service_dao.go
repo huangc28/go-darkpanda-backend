@@ -340,7 +340,7 @@ WITH found_services AS (
 	WHERE
 		found_services.id = services.id
 )
-SELECT id, uuid from found_services;
+SELECT id, uuid FROM found_services;
 `
 	rows, err := dao.DB.Queryx(
 		query,

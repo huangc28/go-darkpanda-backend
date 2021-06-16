@@ -377,6 +377,17 @@ type ServiceQrcode struct {
 	Url       sql.NullString `json:"url"`
 }
 
+type ServiceRating struct {
+	ID        int64          `json:"id"`
+	RaterID   sql.NullInt32  `json:"rater_id"`
+	ServiceID sql.NullInt32  `json:"service_id"`
+	Rating    sql.NullInt32  `json:"rating"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt sql.NullTime   `json:"updated_at"`
+	DeletedAt sql.NullTime   `json:"deleted_at"`
+	Comments  sql.NullString `json:"comments"`
+}
+
 type User struct {
 	ID                int64          `json:"id"`
 	Username          string         `json:"username"`
@@ -409,17 +420,6 @@ type UserBalance struct {
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt sql.NullTime `json:"updated_at"`
 	DeletedAt sql.NullTime `json:"deleted_at"`
-}
-
-type UserRating struct {
-	ID         int64          `json:"id"`
-	FromUserID sql.NullInt32  `json:"from_user_id"`
-	ToUserID   sql.NullInt32  `json:"to_user_id"`
-	Rating     sql.NullInt32  `json:"rating"`
-	Comments   sql.NullString `json:"comments"`
-	CreatedAt  time.Time      `json:"created_at"`
-	UpdatedAt  sql.NullTime   `json:"updated_at"`
-	DeletedAt  sql.NullTime   `json:"deleted_at"`
 }
 
 type UserRefcode struct {

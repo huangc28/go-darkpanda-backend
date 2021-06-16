@@ -7,20 +7,18 @@ import (
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
-	log "github.com/sirupsen/logrus"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 )
 
-type GetUserRatingBody struct {
-	UUID string `form:"uuid" json:"uuid" binding:"required,gt=0"`
-}
-
-func GetUserRating(c *gin.Context, depCon container.Container) {
+func GetServiceRating(c *gin.Context, depCon container.Container) {
 	var (
-		uuid string = c.Param("uuid")
+		srvUuid  string = c.Param("service_uuid")
+		userUuid string = c.Param("uuid")
+		userDao  contracts.UserDAOer
 	)
 
-	q := NewRateDAO(db.GetDB())
-	bank, err := q.GetUserRating(uuid)
+	depCon.Make(&userDao)
+	user, err := userDao.GetUserByUuid(userUuid)
 
 	if err != nil {
 		c.AbortWithError(
@@ -34,15 +32,40 @@ func GetUserRating(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	tResp := NewTransform().TransformRate(bank)
+	rateDao := NewRateDAO(db.GetDB())
+	partnerInfo, err := rateDao.GetServicePartnerInfo(
+		GetServicePartnerInfoParams{
+			Gender:      user.Gender,
+			PartnerId:   int(user.ID),
+			ServiceUuid: srvUuid,
+		},
+	)
+
+	// Get service rating made by the chat partner.
+	srvRating, err := rateDao.GetServiceRating(
+		GetServiceRatingParams{
+			ServiceUuid: srvUuid,
+			RaterId:     int(partnerInfo.ID),
+		},
+	)
 
 	if err != nil {
-		log.Fatal(err)
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceRating,
+				err.Error(),
+			),
+		)
+
+		return
 	}
+
+	tResp := NewTransform().TransformRate(partnerInfo, srvRating)
 
 	c.JSON(http.StatusOK, tResp)
 }
 
-func CreateUserRating(c *gin.Context) {
+func CreateServiceRating(c *gin.Context) {
 
 }

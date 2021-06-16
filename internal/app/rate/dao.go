@@ -1,9 +1,12 @@
 package rate
 
 import (
+	"fmt"
+
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
 type RateDAO struct {
@@ -32,28 +35,83 @@ func (dao *RateDAO) WithTx(tx db.Conn) contracts.RateDAOer {
 	return dao
 }
 
-func (dao *RateDAO) GetUserRating(uuid string) (*contracts.GetUserRatingParams, error) {
-	query := `
-		SELECT u2.id, u2.username, u2.avatar_url,
-			ur.rating, ur."comments", ur.created_at 
-		FROM user_ratings ur 
-		INNER JOIN users u ON ur.to_user_id =u.id
-		LEFT JOIN users u2 ON ur.from_user_id = u2.id
-		WHERE u.uuid=$1;
-	`
+type GetServicePartnerInfoParams struct {
+	Gender      models.Gender
+	PartnerId   int
+	ServiceUuid string
+}
 
-	rate := contracts.GetUserRatingParams{}
+// GetServicePartnerInfo Retrieve the following info for user rating.
+//   -  ratee username
+//   -  ratee avatar_url
+//   -  ratee uuid
+//   -  rating
+//   -  service uuid
+//   -  comments
+func (dao *RateDAO) GetServicePartnerInfo(p GetServicePartnerInfoParams) (*models.User, error) {
+	objCriteria := "customer_id"
 
-	if err := dao.db.QueryRow(query, uuid).Scan(
-		&rate.ID,
-		&rate.Username,
-		&rate.AvatarUrl,
-		&rate.Rating,
-		&rate.Comments,
-		&rate.CreatedAt,
-	); err != nil {
+	if p.Gender == models.GenderFemale {
+		objCriteria = "service_provider_id"
+	}
+
+	query := fmt.Sprintf(
+		`
+SELECT
+	users.username,
+	users.uuid,
+	users.avatar_url
+FROM users
+INNER JOIN services ON services.%s = users.id
+	AND services.%s = $1
+	AND services.uuid = $2;`,
+		objCriteria,
+		objCriteria,
+	)
+
+	var m models.User
+
+	if err := dao.db.QueryRowx(
+		query,
+		p.PartnerId,
+		p.ServiceUuid,
+	).StructScan(&m); err != nil {
 		return nil, err
 	}
 
-	return &rate, nil
+	return &m, nil
+}
+
+type GetServiceRatingParams struct {
+	ServiceUuid string
+	RaterId     int
+}
+
+func (dao *RateDAO) GetServiceRating(p GetServiceRatingParams) (*models.ServiceRating, error) {
+	query := `
+SELECT
+	rating,
+	comments,
+	created_at
+FROM
+	service_ratings
+INNER JOIN services ON
+	services.id = service_ratings.service_id
+WHERE
+	rater_id = $1 AND
+	services.uuid = $2;
+`
+
+	var m models.ServiceRating
+
+	if err := dao.db.QueryRowx(
+		query,
+		p.RaterId,
+		p.ServiceUuid,
+	).StructScan(&m); err != nil {
+		return nil, err
+
+	}
+
+	return &m, nil
 }
