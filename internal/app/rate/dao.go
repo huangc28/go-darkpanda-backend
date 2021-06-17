@@ -1,6 +1,7 @@
 package rate
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/golobby/container/pkg/container"
@@ -120,4 +121,163 @@ WHERE
 	}
 
 	return &m, nil
+}
+
+func (dao *RateDAO) isServiceParticipant(pId int, srvUuid string) (bool, error) {
+	query := `
+SELECT EXISTS (
+	SELECT
+		1
+	FROM
+		services
+	WHERE
+		uuid = $1 AND (
+			customer_id = $2 OR
+			service_provider_id = $2
+		)
+);
+`
+	var exists bool
+
+	if err := dao.db.QueryRowx(
+		query,
+		srvUuid,
+		pId,
+	).Scan(&exists); err != nil {
+		return false, err
+
+	}
+
+	return exists, nil
+}
+
+func (dao *RateDAO) hasRated(raterId int, serviceUuid string) (bool, error) {
+	query := `
+SELECT EXISTS (
+	SELECT
+		1
+	FROM
+		service_ratings
+	INNER JOIN services ON
+		services.id = service_ratings.service_id AND
+		services.uuid = $2
+	WHERE
+		rater_id = $1;
+);
+`
+	var exists bool
+	if err := dao.db.QueryRowx(
+		query,
+		raterId,
+		serviceUuid,
+	).Scan(&exists); err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
+
+// Check if service status is one of the following:
+//   - completed
+//   - expired
+//   - canceled
+func (dao *RateDAO) isServiceStatusRatable(serviceUuid string) (bool, error) {
+	query := `
+SELECT EXISTS (
+	SELECT
+		1
+	FROM
+		services
+	WHERE
+		uuid = $1 AND
+		(
+			service_status = 'completed' OR
+			service_status = 'expired' OR
+			service_status = 'canceled'
+		)
+);
+	`
+
+	var ratable bool
+
+	if err := dao.db.QueryRowx(query, serviceUuid).Scan(&ratable); err != nil {
+		return false, err
+	}
+
+	return ratable, nil
+}
+
+type IsServiceRatableParams struct {
+	ParticipantId int
+	ServiceUuid   string
+}
+
+func (dao *RateDAO) IsServiceRatable(p IsServiceRatableParams) error {
+	// Checks if the user is service participant
+	isPar, err := dao.isServiceParticipant(
+		p.ParticipantId,
+		p.ServiceUuid,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	if !isPar {
+		return errors.New("user is not a service participant.")
+
+	}
+
+	statusRatable, err := dao.isServiceStatusRatable(p.ServiceUuid)
+
+	if err != nil {
+		return err
+	}
+
+	if !statusRatable {
+		return errors.New("service status is not ratable")
+	}
+
+	// Checks if the participant has rated the service already.
+	hasRated, err := dao.hasRated(p.ParticipantId, p.ServiceUuid)
+
+	if err != nil {
+		return err
+	}
+
+	if hasRated {
+		return errors.New("participant has already reated the service")
+	}
+
+	return nil
+}
+
+type CreateServiceRatingParams struct {
+	Rating      int
+	RaterId     int
+	ServiceUuid string
+	Comment     string
+}
+
+func (dao *RateDAO) CreateServiceRating(p CreateServiceRatingParams) error {
+	query := `
+INSERT INTO service_ratings (rater_id, service_id, rating, comment)
+SELECT
+	$1 AS rater_id,
+	services.id AS service_id,
+	$2 AS rating,
+	$3 AS comment
+FROM services
+WHERE services.uuid = $4
+RETURNING *;
+`
+	_, err := dao.db.Exec(
+		query,
+		p.RaterId,
+		p.Rating,
+		p.Comment,
+		p.ServiceUuid,
+	)
+
+	return err
 }

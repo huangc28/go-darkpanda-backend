@@ -24,6 +24,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	})
 
 	g.POST("", func(c *gin.Context) {
-		CreateServiceRating(c)
+		CreateServiceRating(c, depCon)
 	})
 }
