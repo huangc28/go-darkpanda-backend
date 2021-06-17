@@ -15,7 +15,7 @@ import (
 func GetServiceRating(c *gin.Context, depCon container.Container) {
 	var (
 		srvUuid  string = c.Param("service_uuid")
-		userUuid string = c.Param("uuid")
+		userUuid string = c.GetString("uuid")
 		userDao  contracts.UserDAOer
 	)
 
