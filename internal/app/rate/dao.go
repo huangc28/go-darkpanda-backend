@@ -97,9 +97,9 @@ type GetServiceRatingParams struct {
 func (dao *RateDAO) GetServiceRating(p GetServiceRatingParams) (*models.ServiceRating, error) {
 	query := `
 SELECT
-	rating,
-	comments,
-	created_at
+	service_ratings.rating,
+	service_ratings.comments,
+	service_ratings.created_at
 FROM
 	service_ratings
 INNER JOIN services ON
