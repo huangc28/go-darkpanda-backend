@@ -442,10 +442,10 @@ func GetHistoricalMessages(c *gin.Context) {
 type EmitInquiryUpdateMessage struct {
 	Price           float64   `json:"price" form:"price" binding:"required"`
 	ChannelUUID     string    `json:"channel_uuid" form:"channel_uuid" binding:"required"`
-	InquiryUUID     string    `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
 	AppointmentTime time.Time `json:"appointment_time" form:"appointment_time" binding:"required"`
 	Duration        int       `json:"duration" form:"duration" binding:"required"`
 	ServiceType     string    `json:"service_type" form:"service_type" binding:"required"`
+	Address         string    `json:"address" form:"address" binding:"required,gt=0"`
 }
 
 // EmitInquiryUpdatedMessage emits inquiry updated message to the chatroom.
@@ -472,9 +472,27 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 	// - Send update inquiry message
 	// - Change inquiry status in firestore
 	// - Update inquiry status in DB
-	var iqDao contracts.InquiryDAOer
+	var (
+		iqDao   contracts.InquiryDAOer
+		chatDao contracts.ChatDaoer
+	)
 
 	depCon.Make(&iqDao)
+
+	iq, err := chatDao.GetInquiryByChannelUuid(body.ChannelUUID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByChannelUuid,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
 
 	txResp := db.TransactWithFormatStruct(
 		db.GetDB(),
@@ -483,7 +501,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 			err := iqDao.PatchInquiryStatusByUUID(
 				contracts.PatchInquiryStatusByUUIDParams{
 					InquiryStatus: models.InquiryStatusWaitForInquirerApprove,
-					UUID:          body.InquiryUUID,
+					UUID:          iq.Uuid,
 				},
 			)
 
@@ -498,7 +516,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 			if err := df.UpdateInquiryStatus(
 				ctx,
 				darkfirestore.UpdateInquiryStatusParams{
-					InquiryUuid: body.InquiryUUID,
+					InquiryUuid: iq.Uuid,
 					Status:      models.InquiryStatusWaitForInquirerApprove,
 				},
 			); err != nil {
@@ -523,6 +541,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 						Duration:        body.Duration,
 						AppointmentTime: body.AppointmentTime.UnixNano() / 1000,
 						ServiceType:     body.ServiceType,
+						Address:         body.Address,
 					},
 				},
 			)

@@ -387,6 +387,7 @@ type InquiryDetailMessage struct {
 	InquiryUuid     string  `firestore:"inquiry_uuid" json:"inquiry_uuid"`
 	AppointmentTime int64   `firestore:"appointment_time,omitempty" json:"appointment_time"`
 	ServiceType     string  `firestore:"service_type,omitempty" json:"service_type"`
+	Address         string  `firestore:"address,omitempty" json:"address"`
 }
 
 type UpdateInquiryMessage struct {
