@@ -478,6 +478,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 	)
 
 	depCon.Make(&iqDao)
+	depCon.Make(&chatDao)
 
 	iq, err := chatDao.GetInquiryByChannelUuid(body.ChannelUUID)
 
@@ -491,7 +492,6 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 		)
 
 		return
-
 	}
 
 	txResp := db.TransactWithFormatStruct(
