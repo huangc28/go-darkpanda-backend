@@ -162,7 +162,7 @@ SELECT EXISTS (
 		services.id = service_ratings.service_id AND
 		services.uuid = $2
 	WHERE
-		rater_id = $1;
+		rater_id = $1
 );
 `
 	var exists bool
@@ -194,7 +194,7 @@ SELECT EXISTS (
 			service_status = 'completed' OR
 			service_status = 'expired' OR
 			service_status = 'canceled'
-		)
+		);
 );
 	`
 
