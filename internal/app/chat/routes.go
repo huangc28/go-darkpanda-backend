@@ -59,7 +59,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	)
 
 	// Male user can agree on service detail set by female user. Once agreed, female user would receive
-	// a message saying that the service has been established, the chatroom will be forwarded
+	// a message saying that the service has been established, the chatroom will be forwarded.
 	g.POST(
 		"/emit-service-confirmed-message",
 		middlewares.IsMale(userDao),

@@ -111,6 +111,7 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 	}
 
 	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
 	usr, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
 
 	if err != nil {
