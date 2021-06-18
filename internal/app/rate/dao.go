@@ -194,7 +194,7 @@ SELECT EXISTS (
 			service_status = 'completed' OR
 			service_status = 'expired' OR
 			service_status = 'canceled'
-		);
+		)
 );
 	`
 
@@ -261,12 +261,12 @@ type CreateServiceRatingParams struct {
 
 func (dao *RateDAO) CreateServiceRating(p CreateServiceRatingParams) error {
 	query := `
-INSERT INTO service_ratings (rater_id, service_id, rating, comment)
+INSERT INTO service_ratings (rater_id, service_id, rating, comments)
 SELECT
 	$1 AS rater_id,
 	services.id AS service_id,
 	$2 AS rating,
-	$3 AS comment
+	$3 AS comments
 FROM services
 WHERE services.uuid = $4
 RETURNING *;
