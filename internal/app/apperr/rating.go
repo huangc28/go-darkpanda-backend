@@ -6,6 +6,7 @@ var (
 	NotInvolveInService           = "1900003"
 	ServiceNotRatable             = "1900004"
 	FailedToCreateServiceRating   = "1900005"
+	FailedToGetRatings            = "1900006"
 )
 
 var RatingErrCodeMsgMap = map[string]string{

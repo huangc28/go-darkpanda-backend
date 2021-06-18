@@ -32,6 +32,10 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	g.GET("/:uuid/images", handlers.GetUserImagesHandler)
 
+	g.GET("/:uuid/ratings", func(c *gin.Context) {
+		handlers.GetUserRatings(c, depCon)
+	})
+
 	// issue: https://github.com/gin-gonic/gin/issues/205
 	// issue: https://github.com/julienschmidt/httprouter/issues/12
 	g.GET("/:uuid", func(c *gin.Context) {
@@ -45,4 +49,5 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	})
 
 	g.PUT("/:uuid", handlers.PutUserInfo)
+
 }

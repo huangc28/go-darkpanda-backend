@@ -49,3 +49,10 @@ type ServicePaymentDetail struct {
 	PickerUsername  string         `json:"picker_username"`
 	PickerAvatarUrl sql.NullString `json:"picker_avatar_url"`
 }
+
+type UserRatings struct {
+	ServiceRating
+	RaterUsername  string `json:"rater_username"`
+	RaterUuid      string `json:"rater_uuid"`
+	RaterAvatarUrl string `json:"rater_avatar_url"`
+}

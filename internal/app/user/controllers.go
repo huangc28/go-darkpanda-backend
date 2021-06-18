@@ -425,3 +425,72 @@ func (h *UserHandlers) GetUserServiceHistory(c *gin.Context) {
 
 	c.JSON(http.StatusOK, trfmSrvs)
 }
+
+type GetUserRatingsBody struct {
+	Offset  int `json:"offset,default=0"`
+	PerPage int `json:"per_page,default=5"`
+}
+
+func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container) {
+	body := GetUserRatingsBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	userUuid := c.Param("uuid")
+
+	userDao := NewUserDAO(db.GetDB())
+	targetUser, err := userDao.GetUserByUuid(userUuid, "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve all rating of services that I have participated in.
+	var rateDao contracts.RateDAOer
+	depCon.Make(&rateDao)
+
+	ratings, err := rateDao.GetUserRatings(
+		contracts.GetUserRatingsParams{
+			UserId:  int(targetUser.ID),
+			PerPage: body.PerPage,
+			Offset:  body.Offset,
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetRatings,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Ratings []models.UserRatings `json:"ratings"`
+	}{
+		Ratings: ratings,
+	})
+}

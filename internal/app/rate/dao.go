@@ -281,3 +281,60 @@ RETURNING *;
 
 	return err
 }
+
+func (dao *RateDAO) GetUserRatings(p contracts.GetUserRatingsParams) ([]models.UserRatings, error) {
+	query := `
+WITH participate_services AS (
+	SELECT
+		id,
+		created_at
+	FROM
+		services
+	WHERE
+		customer_id = $1 OR
+		service_provider_id =$1
+	ORDER BY created_at DESC
+	LIMIT $2
+	OFFSET $3
+)
+SELECT
+	service_ratings.*,
+	users.username AS rater_username,
+	users.uuid AS rater_uuid,
+	users.avatar_url AS rater_avatar_url
+FROM
+	service_ratings
+INNER JOIN users ON service_ratings.rater_id = users.id
+WHERE service_id IN (
+	SELECT
+		id
+	FROM
+		participate_services
+)
+AND NOT service_ratings.rater_id = $1
+ORDER BY created_at;
+`
+	rows, err := dao.db.Queryx(
+		query,
+		p.UserId,
+		p.PerPage,
+		p.Offset,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	ms := make([]models.UserRatings, 0)
+	for rows.Next() {
+		var m models.UserRatings
+
+		if err := rows.StructScan(&m); err != nil {
+			return nil, err
+		}
+
+		ms = append(ms, m)
+	}
+
+	return ms, nil
+}
