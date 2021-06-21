@@ -448,7 +448,6 @@ func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container
 	}
 
 	userUuid := c.Param("uuid")
-
 	userDao := NewUserDAO(db.GetDB())
 	targetUser, err := userDao.GetUserByUuid(userUuid, "id")
 
