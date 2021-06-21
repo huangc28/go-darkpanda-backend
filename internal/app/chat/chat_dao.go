@@ -408,3 +408,40 @@ WHERE chatrooms.id = $1;
 
 	return &m, nil
 }
+
+func (dao *ChatDao) GetChatroomByServiceId(srvId int) (*models.Chatroom, error) {
+	query := `
+WITH related_inquiry AS (
+	SELECT
+		service_inquiries.id
+	FROM
+		service_inquiries
+	INNER JOIN
+		services ON services.inquiry_id = service_inquiries.id AND
+		services.id = $1
+)
+
+SELECT
+	*
+FROM
+	chatrooms
+WHERE
+	inquiry_id IN (
+		SELECT
+			id
+		FROM
+			related_inquiry
+	);
+`
+
+	var m models.Chatroom
+
+	if err := dao.DB.QueryRowx(
+		query,
+		srvId,
+	).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}

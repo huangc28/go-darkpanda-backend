@@ -136,7 +136,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 		db.GetDB(),
 		func(tx *sqlx.Tx) db.FormatResp {
 			// Deduct user balance by cost.
-			_, err := userBalanceDao.
+			newBal, err := userBalanceDao.
 				WithTx(tx).
 				DeductUserBalance(
 					int(user.ID),
@@ -185,7 +185,9 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 				}
 			}
 
-			return db.FormatResp{}
+			return db.FormatResp{
+				Response: newBal,
+			}
 		},
 	)
 
@@ -221,5 +223,59 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, struct{}{})
+	var chatDao contracts.ChatDaoer
+	depCon.Make(&chatDao)
+	chatroom, err := chatDao.GetChatroomByServiceId(int(srv.ID))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetChatroomByServiceId,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Emit firestore chatroom message to display completion of payment made by male user.
+	_, _, err = df.SendCompletePaymentMessage(
+		ctx,
+		darkfirestore.CompletePaymentParams{
+			ChannelUuid: chatroom.ChannelUuid.String,
+			Data: darkfirestore.ChatMessage{
+				From: user.Uuid,
+			},
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendCompletePaymentMessage,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	newBal := trxResp.Response.(*models.UserBalance)
+	trfed, err := TrfCreatePayment(newBal, user)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransfromCreatePaymentResponse,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, trfed)
 }

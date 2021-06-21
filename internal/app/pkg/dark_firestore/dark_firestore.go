@@ -30,6 +30,7 @@ const (
 	ConfirmedService    MessageType = "confirmed_service"
 	DisagreeInquiry     MessageType = "disagree_inquiry"
 	QuitChatroom        MessageType = "quit_chatroom"
+	CompletePayment     MessageType = "complete_payment"
 )
 
 const (
@@ -447,6 +448,28 @@ func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params
 	}
 
 	return ref, params.Data, nil
+}
+
+type CompletePaymentParams struct {
+	ChannelUuid string
+	Data        ChatMessage
+}
+
+func (df *DarkFirestore) SendCompletePaymentMessage(ctx context.Context, p CompletePaymentParams) (*firestore.DocumentRef, ChatMessage, error) {
+	p.Data.Type = CompletePayment
+	p.Data.CreatedAt = time.Now()
+
+	ref, _, err := df.Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(p.ChannelUuid).
+		Collection(MessageSubCollectionName).
+		Add(ctx, p.Data)
+
+	if err != nil {
+		return nil, p.Data, err
+	}
+
+	return ref, p.Data, nil
 }
 
 type QuitChatroomMessageParams struct {

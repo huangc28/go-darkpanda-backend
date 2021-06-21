@@ -33,6 +33,9 @@ const (
 	ServiceStartTimeNotValid       = "7000028"
 	FirestoreFailedToCreateService = "7000029"
 	ChatroomNotExists              = "7000030"
+
+	FailedToGetChatroomByServiceId     = "7000031"
+	FailedToSendCompletePaymentMessage = "7000032"
 )
 
 var ChatErrorMessageMap = map[string]string{
