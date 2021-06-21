@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/facebookincubator/ent/examples/o2o2types/ent/user"
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -527,8 +528,31 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	var pDaoer contracts.PaymentDAOer
+	var (
+		pDaoer    contracts.PaymentDAOer
+		rateDaoer contracts.RateDAOer
+	)
+
 	depCon.Make(&pDaoer)
+	depCon.Make(&rateDaoer)
+
+	// Check if service has been commented before.
+	hasCommented, err := rateDaoer.HasCommented(
+		int(srv.ID),
+		user.ID,
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckHasCommented,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	p, err := pDaoer.GetPaymentByServiceUuid(srvUuid)
 
@@ -544,5 +568,5 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, TrfPaymentDetail(p))
+	c.JSON(http.StatusOK, TrfPaymentDetail(p, hasCommented))
 }

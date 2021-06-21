@@ -20,6 +20,7 @@ const (
 	FailedToGetServiceByUuid        = "1100015"
 	ServiceNotYetEnd                = "1100016"
 	FailedToGetPaymentByServiceUuid = "1100017"
+	FailedToCheckHasCommented       = "1100018"
 )
 
 var ServiceErrorMessageMap = map[string]string{

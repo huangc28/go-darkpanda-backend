@@ -147,9 +147,11 @@ type TrfedPaymentDetail struct {
 	PickerUuid      string  `json:"picker_uuid"`
 	PickerUsername  string  `json:"picker_username"`
 	PickerAvatarUrl *string `json:"picker_avatar_url"`
+
+	HasCommented bool `json:"has_commented"`
 }
 
-func TrfPaymentDetail(m *models.ServicePaymentDetail) TrfedPaymentDetail {
+func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool) TrfedPaymentDetail {
 	trf := TrfedPaymentDetail{
 		Price:      m.Price,
 		RecTradeId: m.RecTradeID,
@@ -159,6 +161,8 @@ func TrfPaymentDetail(m *models.ServicePaymentDetail) TrfedPaymentDetail {
 
 		PickerUuid:     m.PickerUuid,
 		PickerUsername: m.PickerUsername,
+
+		HasCommented: hasCommented,
 	}
 
 	if m.Duration.Valid {

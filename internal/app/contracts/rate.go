@@ -14,4 +14,5 @@ type GetUserRatingsParams struct {
 type RateDAOer interface {
 	WithTx(tx db.Conn) RateDAOer
 	GetUserRatings(p GetUserRatingsParams) ([]models.UserRatings, error)
+	HasCommented(serviceId, raterId int) (bool, error)
 }

@@ -347,3 +347,26 @@ ORDER BY created_at;
 
 	return ms, nil
 }
+
+func (dao *RateDAO) HasCommented(serviceId, userId int) (bool, error) {
+	query := `
+SELECT EXISTS (
+	SELECT 1
+	FROM service_ratings
+	WHERE
+		rater_id = $1 AND
+		service_id = $2
+);
+`
+	var exists bool
+
+	if err := dao.db.QueryRowx(
+		query,
+		userId,
+		serviceId,
+	).Scan(&exists); err != nil {
+		return false, err
+	}
+
+	return exists, nil
+}
