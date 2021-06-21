@@ -435,7 +435,6 @@ func (suite *UserAPITestsSuite) TestGetUserPaymentSuccess() {
 	// seed a payment
 	paymentParams, err := util.GenTestPayment(
 		maleUser.ID,
-		femaleUser.ID,
 		service.ID,
 	)
 

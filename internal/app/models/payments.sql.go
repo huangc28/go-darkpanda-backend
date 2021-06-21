@@ -5,44 +5,31 @@ package models
 
 import (
 	"context"
-	"database/sql"
 )
 
 const createPayment = `-- name: CreatePayment :one
 INSERT INTO payments (
 	payer_id,
-	payee_id,
 	service_id,
-	price,
-	rec_trade_id
-) VALUES ($1, $2, $3, $4, $5)
-RETURNING id, payer_id, payee_id, service_id, price, rec_trade_id, created_at, updated_at, deleted_at
+	price
+) VALUES ($1, $2, $3)
+RETURNING id, payer_id, service_id, price, created_at, updated_at, deleted_at
 `
 
 type CreatePaymentParams struct {
-	PayerID    int32          `json:"payer_id"`
-	PayeeID    int32          `json:"payee_id"`
-	ServiceID  int32          `json:"service_id"`
-	Price      string         `json:"price"`
-	RecTradeID sql.NullString `json:"rec_trade_id"`
+	PayerID   int32  `json:"payer_id"`
+	ServiceID int32  `json:"service_id"`
+	Price     string `json:"price"`
 }
 
 func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (Payment, error) {
-	row := q.queryRow(ctx, q.createPaymentStmt, createPayment,
-		arg.PayerID,
-		arg.PayeeID,
-		arg.ServiceID,
-		arg.Price,
-		arg.RecTradeID,
-	)
+	row := q.queryRow(ctx, q.createPaymentStmt, createPayment, arg.PayerID, arg.ServiceID, arg.Price)
 	var i Payment
 	err := row.Scan(
 		&i.ID,
 		&i.PayerID,
-		&i.PayeeID,
 		&i.ServiceID,
 		&i.Price,
-		&i.RecTradeID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,

@@ -190,10 +190,9 @@ type TransformedPaymentInfos struct {
 }
 
 type TransformedPaymentInfo struct {
-	Price      *float32 `json:"price"`
-	RecTradeID string   `json:"rec_trade_id"`
-	Service    TransformedPaymentServiceInfo
-	Payer      TransformedPaymentPayerInfo
+	Price   *float32 `json:"price"`
+	Service TransformedPaymentServiceInfo
+	Payer   TransformedPaymentPayerInfo
 }
 
 type TransformedPaymentServiceInfo struct {
@@ -231,7 +230,6 @@ func (ut *UserTransform) TransformPaymentInfo(infos []models.PaymentInfo) (*Tran
 
 		trfmInfo := TransformedPaymentInfo{
 			paymentPrice,
-			info.RecTradeID.String,
 			trfmSrv,
 			trfmUser,
 		}

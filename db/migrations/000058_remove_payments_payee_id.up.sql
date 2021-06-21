@@ -1,0 +1,5 @@
+BEGIN;
+	ALTER TABLE payments
+	DROP COLUMN IF EXISTS payee_id,
+	DROP COLUMN IF EXISTS rec_trade_id;
+COMMIT;

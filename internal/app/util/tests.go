@@ -209,7 +209,7 @@ func GenTestChat(inquiryID int64, chatUserIDs ...int64) (*models.CreateChatroomP
 	return m, nil
 }
 
-func GenTestPayment(payerID int64, payeeID int64, serviceID int64) (*models.CreatePaymentParams, error) {
+func GenTestPayment(payerID int64, serviceID int64) (*models.CreatePaymentParams, error) {
 	p := &models.CreatePaymentParams{}
 
 	if err := faker.FakeData(p); err != nil {
@@ -217,7 +217,6 @@ func GenTestPayment(payerID int64, payeeID int64, serviceID int64) (*models.Crea
 	}
 
 	p.PayerID = int32(payerID)
-	p.PayeeID = int32(payeeID)
 	p.ServiceID = int32(serviceID)
 
 	p.Price = fmt.Sprintf("%.2f", randomFloats(1.00, 102.99, 1)[0])

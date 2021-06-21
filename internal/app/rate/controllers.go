@@ -111,7 +111,9 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 	}
 
 	var userDao contracts.UserDAOer
+
 	depCon.Make(&userDao)
+
 	usr, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
 
 	if err != nil {
@@ -126,7 +128,7 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Check the request is the participant of the service.
+	// Check if the requester is the participant of the service.
 	rateDao := NewRateDAO(db.GetDB())
 
 	if err := rateDao.IsServiceRatable(IsServiceRatableParams{

@@ -22,3 +22,7 @@ type CoinDAOer interface {
 	WithTx(tx db.Conn) CoinDAOer
 	OrderCoin(params OrderCoinParams) (*models.CoinOrder, error)
 }
+
+type CoinPackageDAOer interface {
+	GetMatchingFee() (*models.CoinPackage, error)
+}

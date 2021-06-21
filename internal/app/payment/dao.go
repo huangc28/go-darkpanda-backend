@@ -81,7 +81,6 @@ INNER JOIN users AS payer ON payer.id = payment.payer_id;
 		err = rows.Scan(
 			&paymentInfo.ID,
 			&paymentInfo.Price,
-			&paymentInfo.RecTradeID,
 
 			&paymentInfo.Service.Uuid,
 			&paymentInfo.Service.ServiceType,

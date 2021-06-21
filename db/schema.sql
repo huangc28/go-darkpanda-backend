@@ -598,3 +598,14 @@ BEGIN;
 	DROP COLUMN ratee_id;
 
 COMMIT;
+BEGIN;
+
+	ALTER TABLE coin_packages
+	ADD COLUMN name varchar(255);
+
+COMMIT;
+BEGIN;
+	ALTER TABLE payments
+	DROP COLUMN IF EXISTS payee_id,
+	DROP COLUMN IF EXISTS rec_trade_id;
+COMMIT;

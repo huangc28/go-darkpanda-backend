@@ -17,6 +17,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	bankAccount "github.com/huangc28/go-darkpanda-backend/internal/app/bank_account"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/chat"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/coin"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/image"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
@@ -138,6 +139,10 @@ func (dep *DepContainer) Run() error {
 		image.ImageDAOServiceProvider(dep.Container),
 		bankAccount.BankAccountDAOServiceProvider(dep.Container),
 		auth.AuthDaoerServiceProvider(dep.Container),
+
+		coin.CoinDAOServiceProvider(dep.Container),
+		coin.CoinPackageDaoServiceProvider(dep.Container),
+		coin.UserBalanceDAOServiceProvider(dep.Container),
 	}
 
 	for _, depRegistrar := range depRegistrars {

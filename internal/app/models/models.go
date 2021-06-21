@@ -283,6 +283,7 @@ type CoinPackage struct {
 	DbCoins  sql.NullInt32  `json:"db_coins"`
 	Cost     sql.NullInt32  `json:"cost"`
 	Currency sql.NullString `json:"currency"`
+	Name     sql.NullString `json:"name"`
 }
 
 type Image struct {
@@ -306,15 +307,13 @@ type LobbyUser struct {
 }
 
 type Payment struct {
-	ID         int64          `json:"id"`
-	PayerID    int32          `json:"payer_id"`
-	PayeeID    int32          `json:"payee_id"`
-	ServiceID  int32          `json:"service_id"`
-	Price      string         `json:"price"`
-	RecTradeID sql.NullString `json:"rec_trade_id"`
-	CreatedAt  time.Time      `json:"created_at"`
-	UpdatedAt  sql.NullTime   `json:"updated_at"`
-	DeletedAt  sql.NullTime   `json:"deleted_at"`
+	ID        int64        `json:"id"`
+	PayerID   int32        `json:"payer_id"`
+	ServiceID int32        `json:"service_id"`
+	Price     string       `json:"price"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
+	DeletedAt sql.NullTime `json:"deleted_at"`
 }
 
 type Service struct {
