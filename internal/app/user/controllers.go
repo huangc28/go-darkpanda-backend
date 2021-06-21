@@ -427,8 +427,8 @@ func (h *UserHandlers) GetUserServiceHistory(c *gin.Context) {
 }
 
 type GetUserRatingsBody struct {
-	Offset  int `json:"offset,default=0"`
-	PerPage int `json:"per_page,default=5"`
+	Offset  int `form:"offset,default=0"`
+	PerPage int `form:"per_page,default=5"`
 }
 
 func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container) {
