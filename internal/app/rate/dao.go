@@ -1,8 +1,10 @@
 package rate
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -321,11 +323,18 @@ ORDER BY created_at;
 		p.UserId,
 	)
 
+	ms := make([]models.UserRatings, 0)
+
 	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("DEBUG spot 1 %v", ms)
+
+			return ms, nil
+		}
+
 		return nil, err
 	}
 
-	ms := make([]models.UserRatings, 0)
 	for rows.Next() {
 		var m models.UserRatings
 

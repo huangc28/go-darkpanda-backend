@@ -452,6 +452,19 @@ func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container
 	targetUser, err := userDao.GetUserByUuid(userUuid, "id")
 
 	if err != nil {
+
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.FailedToGetUserByUuid,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -465,8 +478,6 @@ func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container
 
 	// Retrieve all rating of services that I have participated in.
 	var rateDao contracts.RateDAOer
-	depCon.Make(&rateDao)
-
 	ratings, err := rateDao.GetUserRatings(
 		contracts.GetUserRatingsParams{
 			UserId:  int(targetUser.ID),

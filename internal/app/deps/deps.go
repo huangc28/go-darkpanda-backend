@@ -22,6 +22,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/rate"
 
 	gcsenhancer "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/gcs_enhancer"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
@@ -143,6 +144,8 @@ func (dep *DepContainer) Run() error {
 		coin.CoinDAOServiceProvider(dep.Container),
 		coin.CoinPackageDaoServiceProvider(dep.Container),
 		coin.UserBalanceDAOServiceProvider(dep.Container),
+
+		rate.RateDAOServiceProvider(dep.Container),
 	}
 
 	for _, depRegistrar := range depRegistrars {
