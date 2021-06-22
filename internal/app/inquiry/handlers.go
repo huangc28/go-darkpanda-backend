@@ -702,22 +702,6 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 
 		}
 
-		// Update inquiry status in firestore.
-		df := darkfirestore.Get()
-		if err := df.ChatInquiringUser(
-			ctx,
-			darkfirestore.ChatInquiringUserParams{
-				InquiryUUID: iq.Uuid,
-			},
-		); err != nil {
-
-			return db.FormatResp{
-				HttpStatusCode: http.StatusBadRequest,
-				Err:            err,
-				ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
-			}
-		}
-
 		// Create private chatroom record in DB Join both inquirer and picker into the chatroom.
 		var chat contracts.ChatServicer
 		depCon.Make(&chat)
@@ -733,24 +717,6 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 				HttpStatusCode: http.StatusBadRequest,
 				Err:            err,
 				ErrCode:        apperr.FailedToCreatePrivateChatRoom,
-			}
-		}
-
-		// Create private chatroom in firestore
-		if err := df.CreatePrivateChatRoom(
-			ctx,
-			darkfirestore.CreatePrivateChatRoomParams{
-				ChatRoomName: chatroom.ChannelUuid.String,
-				Data: darkfirestore.ChatMessage{
-					Type: darkfirestore.Text,
-					From: c.GetString("uuid"),
-				},
-			},
-		); err != nil {
-			return db.FormatResp{
-				HttpStatusCode: http.StatusInternalServerError,
-				Err:            err,
-				ErrCode:        apperr.FailedToCreatePrivateChatroomInFirestore,
 			}
 		}
 
@@ -772,6 +738,47 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	chatroom := tranResp.Response.(*models.Chatroom)
+
+	// Update inquiry status in firestore.
+	df := darkfirestore.Get()
+	if err := df.ChatInquiringUser(
+		ctx,
+		darkfirestore.ChatInquiringUserParams{
+			InquiryUUID: iq.Uuid,
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToChangeFirestoreInquiryStatus,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Create private chatroom in firestore
+	if err := df.CreatePrivateChatRoom(
+		ctx,
+		darkfirestore.CreatePrivateChatRoomParams{
+			ChatRoomName: chatroom.ChannelUuid.String,
+			Data: darkfirestore.ChatMessage{
+				Type: darkfirestore.Text,
+				From: c.GetString("uuid"),
+			},
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreatePrivateChatroomInFirestore,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	// Retrieve chatroom relative information.
 	var chatDao contracts.ChatDaoer
