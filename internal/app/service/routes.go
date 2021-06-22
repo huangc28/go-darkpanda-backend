@@ -27,6 +27,9 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		uriSeg := c.Param("seg")
 
 		switch uriSeg {
+		default:
+			GetServiceDetailByUuid(c, container)
+
 		case "incoming":
 
 			// User can retrieve a list of all `unpaid` and `to_be_fulfilled` services.
@@ -71,5 +74,4 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			ScanServiceQrCode(c, container)
 		},
 	)
-
 }

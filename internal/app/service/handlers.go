@@ -585,3 +585,50 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, TrfPaymentDetail(p, hasCommented))
 }
+
+func GetServiceDetailByUuid(c *gin.Context, depCon container.Container) {
+	serviceUuid := c.Param("seg")
+
+	var (
+		srvDao  contracts.ServiceDAOer
+		coinDao contracts.CoinPackageDAOer
+	)
+	depCon.Make(&srvDao)
+	depCon.Make(&coinDao)
+
+	srv, err := srvDao.GetServiceByUuid(serviceUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	matchingFee, err := coinDao.GetMatchingFee()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMatchingFee,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		models.Service
+		MatchingFee int32 `json:"matching_fee"`
+	}{
+		*srv,
+		matchingFee.Cost.Int32,
+	})
+}
