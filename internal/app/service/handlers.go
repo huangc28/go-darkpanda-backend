@@ -624,11 +624,20 @@ func GetServiceDetailByUuid(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, struct {
-		models.Service
-		MatchingFee int32 `json:"matching_fee"`
-	}{
-		*srv,
-		matchingFee.Cost.Int32,
-	})
+	trfed, err := TrfServiceDetail(*srv, int(matchingFee.Cost.Int32))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformResponse,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	c.JSON(http.StatusOK, trfed)
 }

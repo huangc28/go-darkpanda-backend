@@ -6,6 +6,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	"github.com/shopspring/decimal"
 )
 
 type TransformedService struct {
@@ -174,4 +175,52 @@ func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool) TrfedPa
 	}
 
 	return trf
+}
+
+func TrfServiceDetail(srv models.Service, matchingFee int) (interface{}, error) {
+	decPrice, err := decimal.NewFromString(srv.Price.String)
+
+	if err != nil {
+		return nil, err
+	}
+
+	floatPrice, _ := decPrice.Float64()
+
+	var (
+		startTime *time.Time
+		endTime   *time.Time
+	)
+
+	if srv.StartTime.Valid {
+		startTime = &srv.StartTime.Time
+	}
+
+	if srv.EndTime.Valid {
+		endTime = &srv.StartTime.Time
+	}
+
+	return struct {
+		Uuid            string    `json:"uuid"`
+		Price           float64   `json:"price"`
+		Duration        int32     `json:"duration"`
+		AppointmentTime time.Time `json:"appointment_time"`
+
+		ServiceType   string     `json:"service_type"`
+		ServiceStatus string     `json:"service_status"`
+		Address       string     `json:"address"`
+		StartTime     *time.Time `json:"start_time"`
+		EndTime       *time.Time `json:"end_time"`
+		MatchingFee   int        `json:"matching_fee"`
+	}{
+		srv.Uuid.String(),
+		floatPrice,
+		srv.Duration.Int32,
+		srv.AppointmentTime.Time,
+		srv.ServiceType.ToString(),
+		srv.ServiceStatus.ToString(),
+		srv.Address.String,
+		startTime,
+		endTime,
+		matchingFee,
+	}, nil
 }

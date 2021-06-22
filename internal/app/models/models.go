@@ -324,11 +324,7 @@ type Service struct {
 	Price             sql.NullString `json:"price"`
 	Duration          sql.NullInt32  `json:"duration"`
 	AppointmentTime   sql.NullTime   `json:"appointment_time"`
-	Lng               sql.NullString `json:"lng"`
-	Lat               sql.NullString `json:"lat"`
 	ServiceType       ServiceType    `json:"service_type"`
-	GirlReady         sql.NullBool   `json:"girl_ready"`
-	ManReady          sql.NullBool   `json:"man_ready"`
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         sql.NullTime   `json:"updated_at"`
 	DeletedAt         sql.NullTime   `json:"deleted_at"`
