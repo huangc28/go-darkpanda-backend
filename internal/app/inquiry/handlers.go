@@ -3,7 +3,6 @@ package inquiry
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -405,63 +404,45 @@ func CancelInquiryHandler(c *gin.Context) {
 	}
 
 	// ------------------- Update inquiry status to cancel  -------------------
-	transResp := db.TransactWithFormatStruct(
-		db.GetDB(),
-		func(tx *sqlx.Tx) db.FormatResp {
-			ctx := context.Background()
-			q := models.New(tx)
-
-			uiq, err := q.PatchInquiryStatusByUuid(
-				ctx, models.PatchInquiryStatusByUuidParams{
-					InquiryStatus: models.InquiryStatus(fsm.Current()),
-					Uuid:          body.InquiryUuid,
-				},
-			)
-
-			if err != nil {
-				return db.FormatResp{
-					HttpStatusCode: http.StatusInternalServerError,
-					Err:            err,
-					ErrCode:        apperr.FailedToPatchInquiryStatus,
-				}
-			}
-
-			df := darkfirestore.Get()
-			err = df.UpdateInquiryStatus(
-				ctx,
-				darkfirestore.UpdateInquiryStatusParams{
-					InquiryUuid: uiq.Uuid,
-					Status:      models.InquiryStatusCanceled,
-				},
-			)
-
-			if err != nil {
-				return db.FormatResp{
-					HttpStatusCode: http.StatusInternalServerError,
-					Err:            err,
-					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
-				}
-			}
-
-			return db.FormatResp{
-				Response: uiq,
-			}
+	uiq, err := q.PatchInquiryStatusByUuid(
+		ctx, models.PatchInquiryStatusByUuidParams{
+			InquiryStatus: models.InquiryStatus(fsm.Current()),
+			Uuid:          body.InquiryUuid,
 		},
 	)
 
-	if transResp.Err != nil {
+	if err != nil {
 		c.AbortWithError(
-			transResp.HttpStatusCode,
+			http.StatusInternalServerError,
 			apperr.NewErr(
-				transResp.ErrCode,
-				transResp.Err.Error(),
+				apperr.FailedToPatchInquiryStatus,
+				err.Error(),
 			),
 		)
 
 		return
 	}
 
-	uiq := transResp.Response.(models.ServiceInquiry)
+	df := darkfirestore.Get()
+	err = df.UpdateInquiryStatus(
+		ctx,
+		darkfirestore.UpdateInquiryStatusParams{
+			InquiryUuid: uiq.Uuid,
+			Status:      models.InquiryStatusCanceled,
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToChangeFirestoreInquiryStatus,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	trf, err := NewTransform().TransformInquiry(uiq)
 
@@ -555,47 +536,50 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	err, errCode := db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
-		fsm, _ := NewInquiryFSM(iq.InquiryStatus)
+	fsm, _ := NewInquiryFSM(iq.InquiryStatus)
 
-		if err := fsm.Event(Pickup.ToString()); err != nil {
-			return err, apperr.InquiryFSMTransitionFailed
-		}
-
-		// Patch inquiry status in DB to be `asking`.
-		iqDao := NewInquiryDAO(tx)
-		_, err := iqDao.AskingInquiry(
-			pickerID,
-			iq.ID,
-		)
-
-		if err != nil {
-			return err, apperr.FailedToUpdateInquiryContent
-		}
-
-		// Patch inquiry status in firestore to be `asking`
-		df := darkfirestore.Get()
-
-		err = df.AskingInquiringUser(
-			ctx,
-			darkfirestore.AskingInquiringUserParams{
-				InquiryUuid: iq.Uuid,
-				PickerUuid:  c.GetString("uuid"),
-			},
-		)
-
-		if err != nil {
-			return err, apperr.FailedToAskInquiringUser
-		}
-
-		return nil, nil
-	})
-
-	if err != nil {
+	if err := fsm.Event(Pickup.ToString()); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
-				fmt.Sprintf("%v", errCode),
+				apperr.InquiryFSMTransitionFailed,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Patch inquiry status in DB to be `asking`.
+	iqDao := NewInquiryDAO(db.GetDB())
+	if _, err := iqDao.AskingInquiry(
+		pickerID,
+		iq.ID,
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateInquiryContent,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Patch inquiry status in firestore to be `asking`
+	df := darkfirestore.Get()
+	if err = df.AskingInquiringUser(
+		ctx,
+		darkfirestore.AskingInquiringUserParams{
+			InquiryUuid: iq.Uuid,
+			PickerUuid:  c.GetString("uuid"),
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToAskInquiringUser,
 				err.Error(),
 			),
 		)

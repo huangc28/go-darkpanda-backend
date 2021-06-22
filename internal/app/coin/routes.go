@@ -19,7 +19,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		}, authDao),
 	)
 
-	// Get my coin current coin balance.
+	// Get current coin balance.
 	g.GET(
 		"",
 		func(c *gin.Context) {
