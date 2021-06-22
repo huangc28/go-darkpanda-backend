@@ -28,7 +28,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 
 		switch uriSeg {
 		default:
-			GetServiceDetailByUuid(c, container)
+			GetServiceDetailHandler(c, container)
 
 		case "incoming":
 

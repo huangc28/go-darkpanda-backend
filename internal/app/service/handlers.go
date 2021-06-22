@@ -586,7 +586,7 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, TrfPaymentDetail(p, hasCommented))
 }
 
-func GetServiceDetailByUuid(c *gin.Context, depCon container.Container) {
+func GetServiceDetailHandler(c *gin.Context, depCon container.Container) {
 	serviceUuid := c.Param("seg")
 
 	var (
