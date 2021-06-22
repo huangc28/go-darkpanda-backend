@@ -211,6 +211,7 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 type ServiceDetailMessage struct {
 	ChatMessage
 	Price       float64 `firestore:"price,omitempty" json:"price"`
+	MatchingFee int     `firestore:"matching_fee" json:"matching_fee"`
 	Duration    int     `firestore:"duration,omitempty" json:"duration"`
 	ServiceUUID string  `firestore:"service_uuid" json:"service_uuid"`
 	ServiceTime int64   `firestore:"service_time,omitempty" json:"service_time"`

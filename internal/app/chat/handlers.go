@@ -245,6 +245,23 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 	}
 
 	// Emit service setting message to chatroom.
+	var coinPkgDao contracts.CoinPackageDAOer
+	depCon.Make(&coinPkgDao)
+
+	matchingFee, err := coinPkgDao.GetMatchingFee()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMatchingFee,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	df := darkfirestore.Get()
 	message, err := df.SendServiceDetailMessageToChatroom(ctx, darkfirestore.SendServiceDetailMessageParams{
 		ChatroomName: body.ChannelUUID,
@@ -258,6 +275,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 			ServiceTime: service.AppointmentTime.Time.UnixNano() / 1000,
 			ServiceType: body.ServiceType,
 			ServiceUUID: service.Uuid.String(),
+			MatchingFee: int(matchingFee.Cost.Int32),
 		},
 	})
 
