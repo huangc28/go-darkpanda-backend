@@ -889,52 +889,43 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 	// Change inquiry status from `asking` to `inquiring` in DB.
 	// Change inquiry status from `asking` to `inquiring` in firestore. We use
 	// inquiry uuid retrieved from DB to find the document in firestore.
-	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
-		q := models.New(tx)
-		iq, err := q.UpdateInquiryByUuid(
-			ctx,
-			models.UpdateInquiryByUuidParams{
-				Uuid:          iq.Uuid,
-				InquiryStatus: models.InquiryStatus(fsm.Current()),
-			},
-		)
+	q := models.New(db.GetDB())
+	if _, err := q.UpdateInquiryByUuid(
+		ctx,
+		models.UpdateInquiryByUuidParams{
+			Uuid:          iq.Uuid,
+			InquiryStatus: models.InquiryStatus(fsm.Current()),
+		},
+	); err != nil {
 
-		if err != nil {
-			return db.FormatResp{
-				Err:     err,
-				ErrCode: apperr.FailedToUpdateInquiry,
-			}
-		}
-
-		var df darkfirestore.DarkFireStorer
-		container.Make(&df)
-
-		err = df.UpdateInquiryStatus(
-			ctx,
-			darkfirestore.UpdateInquiryStatusParams{
-				InquiryUuid: iq.Uuid,
-				Status:      models.InquiryStatus(fsm.Current()),
-				PickerUuid:  "",
-			},
-		)
-
-		if err != nil {
-			return db.FormatResp{
-				Err:     err,
-				ErrCode: apperr.FailedToChangeFirestoreInquiryStatus,
-			}
-		}
-
-		return db.FormatResp{
-			Response: iq,
-		}
-	})
-
-	if transResp.Err != nil {
 		c.AbortWithError(
-			transResp.HttpStatusCode,
+			http.StatusInternalServerError,
 			apperr.NewErr(
-				transResp.Err.Error(),
+				apperr.FailedToUpdateInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var df darkfirestore.DarkFireStorer
+	container.Make(&df)
+
+	err = df.UpdateInquiryStatus(
+		ctx,
+		darkfirestore.UpdateInquiryStatusParams{
+			InquiryUuid: iq.Uuid,
+			Status:      models.InquiryStatus(fsm.Current()),
+			PickerUuid:  "",
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToChangeFirestoreInquiryStatus,
 				err.Error(),
 			),
 		)
@@ -946,6 +937,7 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 }
 
 func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
+
 	iqUUID := c.Param("uuid")
 
 	var (
