@@ -185,8 +185,6 @@ func (t *InquiryTransform) TransformBookedService(srv models.Service, userProvid
 		Price:           srv.Price.String,
 		Duration:        srv.Duration.Int32,
 		AppointmentTime: srv.AppointmentTime.Time,
-		Lng:             srv.Lng.String,
-		Lat:             srv.Lat.String,
 		ServiceType:     string(srv.ServiceType),
 		CreatedAt:       srv.CreatedAt,
 		ServiceProvider: TransformedServiceProvider{

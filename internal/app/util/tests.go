@@ -179,14 +179,6 @@ func GenTestServiceParams(customerID int64, serviceProviderID int64, inquiryID i
 		Valid:  true,
 	}
 
-	p.Lng = sql.NullString{
-		Valid: false,
-	}
-
-	p.Lat = sql.NullString{
-		Valid: false,
-	}
-
 	p.ServiceStatus = randomSericeStatus()
 
 	p.ServiceType = randomServiceType()
