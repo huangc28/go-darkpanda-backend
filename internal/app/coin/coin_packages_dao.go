@@ -39,10 +39,20 @@ func CoinPackageDaoServiceProvider(c cintrnal.Container) func() error {
 
 func (dao *CoinPackagesDAO) GetPackages() ([]models.CoinPackage, error) {
 	query := `
-SELECT * FROM coin_packages;
+SELECT
+	*
+FROM
+	coin_packages
+WHERE
+	name <> $1;
 	`
 
-	rows, err := dao.db.Queryx(query)
+	rows, err := dao.
+		db.
+		Queryx(
+			query,
+			MatchingFee,
+		)
 
 	pkgs := make([]models.CoinPackage, 0)
 
