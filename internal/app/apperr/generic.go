@@ -9,8 +9,11 @@ const (
 	FailedToBindJwtInHeader             = "0000006"
 	MissingAuthToken                    = "0000007"
 	FailedToBindBodyParams              = "0000008"
+	FailedToParsePaginateParams         = "0000009"
+	AssetNotFound                       = "0000010"
 )
 
 var GeneralErrorMessageMap = map[string]string{
-	MissingAuthToken: "Missing auth token",
+	MissingAuthToken: "missing auth token",
+	AssetNotFound:    "query results no asset found.",
 }

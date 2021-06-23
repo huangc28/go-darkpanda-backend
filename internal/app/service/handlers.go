@@ -515,18 +515,6 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	if srv.IsNotOneOfStatus(
-		models.ServiceStatusExpired,
-		models.ServiceStatusCompleted,
-	) {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(apperr.ServiceNotYetEnd),
-		)
-
-		return
-	}
-
 	var (
 		pDaoer    contracts.PaymentDAOer
 		rateDaoer contracts.RateDAOer
@@ -558,6 +546,18 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 	)
 
 	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusNotFound,
+				apperr.NewErr(
+					apperr.AssetNotFound,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
