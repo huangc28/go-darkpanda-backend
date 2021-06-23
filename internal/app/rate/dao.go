@@ -295,8 +295,8 @@ WITH participate_services AS (
 		customer_id = $1 OR
 		service_provider_id =$1
 	ORDER BY created_at DESC
-	LIMIT $1
-	OFFSET $2
+	LIMIT $2
+	OFFSET $3
 )
 SELECT
 	service_ratings.*,
@@ -312,14 +312,14 @@ WHERE service_id IN (
 	FROM
 		participate_services
 )
-AND NOT service_ratings.rater_id = $3
+AND NOT service_ratings.rater_id = $1
 ORDER BY created_at;
 `
 	rows, err := dao.db.Queryx(
 		query,
+		p.UserId,
 		p.PerPage,
 		p.Offset,
-		p.UserId,
 	)
 
 	ms := make([]models.UserRatings, 0)
