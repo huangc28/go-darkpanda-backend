@@ -191,17 +191,24 @@ WHERE service_inquiries.uuid = $1
 
 func (dao *InquiryDAO) HasMoreInquiries(offset int, perPage int) (bool, error) {
 	sql := `
-SELECT count(full_count) as num_records FROM (
-	SELECT COUNT(si.id) OVER() AS full_count
-	FROM service_inquiries AS si
-	WHERE si.inquiry_status = 'inquiring'
+SELECT
+	count(full_count) AS num_records
+FROM (
+	SELECT
+		COUNT(si.id) OVER() AS full_count
+	FROM
+		service_inquiries AS si
+	WHERE
+		si.inquiry_status = 'inquiring'
 	LIMIT $1
 	OFFSET $2
 ) AS records;
 `
 	var recordNum int
 
-	if err := dao.db.QueryRow(sql, perPage, offset+perPage).Scan(&recordNum); err != nil {
+	if err := dao.
+		db.QueryRow(sql, perPage, offset+perPage).
+		Scan(&recordNum); err != nil {
 		return false, err
 	}
 

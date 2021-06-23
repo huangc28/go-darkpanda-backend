@@ -50,11 +50,10 @@ SELECT
 FROM (
  SELECT
 	payments.id,
-	payments.payee_id,
-	payments.payer_id,
-	payments.service_id,
 	payments.price,
-	payments.rec_trade_id
+	payments.rec_trade_id,
+	payments.service_id,
+	payments.payer_id
  FROM payments
  INNER JOIN users ON users.id = payments.payer_id
  WHERE users.uuid = $1
