@@ -280,3 +280,31 @@ func (ut *UserTransform) TransformHistoricalServices(services []models.Service) 
 		Services: trfmServices,
 	}, nil
 }
+
+type TrfmedUserRating struct {
+	models.ServiceRating
+	RaterUsername  string  `json:"rater_username"`
+	RaterUuid      string  `json:"rater_uuid"`
+	RaterAvatarUrl *string `json:"rater_avatar_url"`
+}
+
+func TrfGetUserRatings(ms []models.UserRatings) []TrfmedUserRating {
+	trfms := make([]TrfmedUserRating, 0)
+
+	for _, m := range ms {
+		trfm := TrfmedUserRating{
+			m.ServiceRating,
+			m.RaterUsername,
+			m.RaterUuid,
+			nil,
+		}
+
+		if m.RaterAvatarUrl.Valid {
+			trfm.RaterAvatarUrl = &m.RaterUuid
+		}
+
+		trfms = append(trfms, trfm)
+	}
+
+	return trfms
+}

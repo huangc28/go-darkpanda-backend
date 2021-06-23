@@ -499,9 +499,11 @@ func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container
 		return
 	}
 
+	trms := TrfGetUserRatings(ratings)
+
 	c.JSON(http.StatusOK, struct {
-		Ratings []models.UserRatings `json:"ratings"`
+		Ratings []TrfmedUserRating `json:"ratings"`
 	}{
-		Ratings: ratings,
+		Ratings: trms,
 	})
 }
