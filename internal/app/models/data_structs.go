@@ -52,7 +52,7 @@ type ServicePaymentDetail struct {
 
 type UserRatings struct {
 	ServiceRating
-	RaterUsername  string `json:"rater_username"`
-	RaterUuid      string `json:"rater_uuid"`
-	RaterAvatarUrl string `json:"rater_avatar_url"`
+	RaterUsername  string         `json:"rater_username"`
+	RaterUuid      string         `json:"rater_uuid"`
+	RaterAvatarUrl sql.NullString `json:"rater_avatar_url"`
 }

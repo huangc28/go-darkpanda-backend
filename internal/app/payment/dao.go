@@ -120,7 +120,7 @@ FROM payments
 INNER JOIN services
 	ON services.id = payments.service_id
 	AND services.uuid =  $1
-INNER JOIN users AS pickers ON pickers.id = payments.payee_id;
+INNER JOIN users AS pickers ON pickers.id = services.service_provider_id;
 `
 
 	var m models.ServicePaymentDetail

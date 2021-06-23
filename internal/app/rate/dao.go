@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -327,8 +326,6 @@ ORDER BY created_at;
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("DEBUG spot 1 %v", ms)
-
 			return ms, nil
 		}
 
