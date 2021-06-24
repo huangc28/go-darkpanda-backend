@@ -220,7 +220,7 @@ func EmitInquiryHandler(c *gin.Context) {
 //   - wrap `GetInquiries` and `HasMore` should be wrapped in a transaction.
 type GetInquiriesBody struct {
 	Offset  int `form:"offset,default=0"`
-	PerPage int `form:"perpage,default=7"`
+	PerPage int `form:"per_page,default=7"`
 }
 
 func GetInquiriesHandler(c *gin.Context) {
@@ -285,7 +285,6 @@ func GetInquiriesHandler(c *gin.Context) {
 	)
 
 	if err != nil {
-
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(

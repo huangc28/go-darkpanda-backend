@@ -641,3 +641,165 @@ func GetServiceDetailHandler(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, trfed)
 }
+
+func GetServiceRating(c *gin.Context, depCon container.Container) {
+	var (
+		srvUuid  string = c.Param("service_uuid")
+		userUuid string = c.GetString("uuid")
+		userDao  contracts.UserDAOer
+	)
+
+	depCon.Make(&userDao)
+	user, err := userDao.GetUserByUuid(userUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var rateDao contracts.RateDAOer
+	depCon.Make(&rateDao)
+
+	partnerInfo, err := rateDao.GetServicePartnerInfo(
+		contracts.GetServicePartnerInfoParams{
+			MyId:        int(user.ID),
+			ServiceUuid: srvUuid,
+		},
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(apperr.NotInvolveInService),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServicePartnerInfo,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Get service rating made by the chat partner.
+	srvRating, err := rateDao.GetServiceRating(
+		contracts.GetServiceRatingParams{
+			ServiceUuid: srvUuid,
+			RaterId:     int(partnerInfo.ID),
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceRating,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(
+		http.StatusOK,
+		TransformRate(partnerInfo, srvRating),
+	)
+}
+
+type CreateServiceRatingparams struct {
+	ServiceUuid string `json:"service_uuid" form:"service_uuid" binding:"required,gt=0"`
+	Rating      int    `json:"rating" form:"rating" binding:"required,gt=0"`
+	Comment     string `json:"comment" form:"comment"`
+}
+
+func CreateServiceRating(c *gin.Context, depCon container.Container) {
+	var body CreateServiceRatingparams
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDao contracts.UserDAOer
+
+	depCon.Make(&userDao)
+
+	usr, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Check if the requester is the participant of the service.
+	var rateDao contracts.RateDAOer
+	depCon.Make(&rateDao)
+
+	if err := rateDao.IsServiceRatable(
+		contracts.IsServiceRatableParams{
+			ParticipantId: int(usr.ID),
+			ServiceUuid:   body.ServiceUuid,
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.ServiceNotRatable,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Create rating record.
+	if err := rateDao.CreateServiceRating(
+		contracts.CreateServiceRatingParams{
+			Rating:      body.Rating,
+			RaterId:     int(usr.ID),
+			ServiceUuid: body.ServiceUuid,
+			Comment:     body.Comment,
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateServiceRating,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct{}{})
+}

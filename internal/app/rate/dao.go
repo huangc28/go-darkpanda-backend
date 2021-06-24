@@ -3,7 +3,6 @@ package rate
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -37,12 +36,6 @@ func (dao *RateDAO) WithTx(tx db.Conn) contracts.RateDAOer {
 	return dao
 }
 
-type GetServicePartnerInfoParams struct {
-	Gender      models.Gender
-	MyId        int
-	ServiceUuid string
-}
-
 // GetServicePartnerInfo Retrieve the following info for user rating.
 //   -  ratee username
 //   -  ratee avatar_url
@@ -50,52 +43,57 @@ type GetServicePartnerInfoParams struct {
 //   -  rating
 //   -  service uuid
 //   -  comments
-func (dao *RateDAO) GetServicePartnerInfo(p GetServicePartnerInfoParams) (*models.User, error) {
-	partnerCriteria := "service_provider_id"
-
-	if p.Gender == models.GenderFemale {
-		partnerCriteria = "customer_id"
-	}
-
-	myCrteria := "customer_id"
-
-	if p.Gender == models.GenderFemale {
-		myCrteria = "service_provider_id"
-	}
-
-	query := fmt.Sprintf(
-		`
+func (dao *RateDAO) GetServicePartnerInfo(p contracts.GetServicePartnerInfoParams) (*models.User, error) {
+	query := `
+WITH chatroom_partner AS (
+	SELECT
+		*
+	FROM
+		services
+	WHERE
+		uuid =  $1 AND
+		(
+			customer_id = $2 OR
+			service_provider_id = $2
+		)
+)
 SELECT
+	users.id,
 	users.username,
 	users.uuid,
 	users.avatar_url
 FROM users
-INNER JOIN services ON services.%s = users.id
-	AND services.%s = $1
-	AND services.uuid = $2;`,
-		partnerCriteria,
-		myCrteria,
+INNER JOIN  chatroom_partner ON
+	users.id = chatroom_partner.customer_id OR
+	users.id = chatroom_partner.service_provider_id;
+	`
+	rows, err := dao.db.Queryx(
+		query,
+		p.ServiceUuid,
+		p.MyId,
 	)
+
+	if err != nil {
+		return nil, err
+	}
 
 	var m models.User
 
-	if err := dao.db.QueryRowx(
-		query,
-		p.MyId,
-		p.ServiceUuid,
-	).StructScan(&m); err != nil {
-		return nil, err
+	for rows.Next() {
+		if err := rows.StructScan(&m); err != nil {
+			return nil, err
+		}
+
+		// We've found the partner
+		if m.ID != int64(p.MyId) {
+			break
+		}
 	}
 
 	return &m, nil
 }
 
-type GetServiceRatingParams struct {
-	ServiceUuid string
-	RaterId     int
-}
-
-func (dao *RateDAO) GetServiceRating(p GetServiceRatingParams) (*models.ServiceRating, error) {
+func (dao *RateDAO) GetServiceRating(p contracts.GetServiceRatingParams) (*models.ServiceRating, error) {
 	query := `
 SELECT
 	service_ratings.rating,
@@ -208,12 +206,7 @@ SELECT EXISTS (
 	return ratable, nil
 }
 
-type IsServiceRatableParams struct {
-	ParticipantId int
-	ServiceUuid   string
-}
-
-func (dao *RateDAO) IsServiceRatable(p IsServiceRatableParams) error {
+func (dao *RateDAO) IsServiceRatable(p contracts.IsServiceRatableParams) error {
 	// Checks if the user is service participant
 	isPar, err := dao.isServiceParticipant(
 		p.ParticipantId,
@@ -253,14 +246,7 @@ func (dao *RateDAO) IsServiceRatable(p IsServiceRatableParams) error {
 	return nil
 }
 
-type CreateServiceRatingParams struct {
-	Rating      int
-	RaterId     int
-	ServiceUuid string
-	Comment     string
-}
-
-func (dao *RateDAO) CreateServiceRating(p CreateServiceRatingParams) error {
+func (dao *RateDAO) CreateServiceRating(p contracts.CreateServiceRatingParams) error {
 	query := `
 INSERT INTO service_ratings (rater_id, service_id, rating, comments)
 SELECT
