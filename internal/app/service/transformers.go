@@ -138,8 +138,7 @@ func TransformServiceName(serviceNames []*models.ServiceName) TrfmedServiceNames
 }
 
 type TrfedPaymentDetail struct {
-	Price      float64 `json:"price"`
-	RecTradeId string  `json:"rec_trade_id"`
+	Price float64 `json:"price"`
 
 	Address   string    `json:"address"`
 	StartTime time.Time `json:"start_time"`
@@ -154,8 +153,7 @@ type TrfedPaymentDetail struct {
 
 func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool) TrfedPaymentDetail {
 	trf := TrfedPaymentDetail{
-		Price:      m.Price,
-		RecTradeId: m.RecTradeID,
+		Price: m.Price,
 
 		Address:   m.Address,
 		StartTime: m.StartTime,
