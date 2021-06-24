@@ -644,7 +644,7 @@ func GetServiceDetailHandler(c *gin.Context, depCon container.Container) {
 
 func GetServiceRating(c *gin.Context, depCon container.Container) {
 	var (
-		srvUuid  string = c.Param("service_uuid")
+		srvUuid  string = c.Param("seg")
 		userUuid string = c.GetString("uuid")
 		userDao  contracts.UserDAOer
 	)
@@ -782,14 +782,16 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 	}
 
 	// Create rating record.
-	if err := rateDao.CreateServiceRating(
+	_, err = rateDao.CreateServiceRating(
 		contracts.CreateServiceRatingParams{
 			Rating:      body.Rating,
 			RaterId:     int(usr.ID),
 			ServiceUuid: body.ServiceUuid,
 			Comment:     body.Comment,
 		},
-	); err != nil {
+	)
+
+	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
