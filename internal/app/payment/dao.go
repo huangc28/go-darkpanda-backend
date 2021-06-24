@@ -105,7 +105,6 @@ func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServiceP
 SELECT
   -- Retrieve payment info
   payments.price,
-  payments.rec_trade_id,
 
   -- Retrieve service info
   services.address,

@@ -38,8 +38,7 @@ type ActiveInquiry struct {
 }
 
 type ServicePaymentDetail struct {
-	Price      float64 `json:"price"`
-	RecTradeID string  `json:"rec_trade_id"`
+	Price float64 `json:"price"`
 
 	Address   string        `json:"address"`
 	StartTime time.Time     `json:"start_time"`

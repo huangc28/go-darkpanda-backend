@@ -666,9 +666,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Wrap service and inquiry update in a transaction.
-	// Change inquiry status from `chatting` to `booked`
-	// Create a new service with status `unpaid`
+	// Change inquiry status from `chatting` to `booked` and create a new service with status `unpaid`
 	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 		serviceDBCli := models.New(tx)
 
