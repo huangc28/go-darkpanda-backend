@@ -246,7 +246,7 @@ func (dao *RateDAO) IsServiceRatable(p contracts.IsServiceRatableParams) error {
 	return nil
 }
 
-func (dao *RateDAO) CreateServiceRating(p contracts.CreateServiceRatingParams) error {
+func (dao *RateDAO) CreateServiceRating(p contracts.CreateServiceRatingParams) (*models.ServiceRating, error) {
 	query := `
 INSERT INTO service_ratings (rater_id, service_id, rating, comments)
 SELECT
@@ -258,15 +258,22 @@ FROM services
 WHERE services.uuid = $4
 RETURNING *;
 `
-	_, err := dao.db.Exec(
+
+	var m models.ServiceRating
+
+	err := dao.db.QueryRowx(
 		query,
 		p.RaterId,
 		p.Rating,
 		p.Comment,
 		p.ServiceUuid,
-	)
+	).StructScan(&m)
 
-	return err
+	if err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }
 
 func (dao *RateDAO) GetUserRatings(p contracts.GetUserRatingsParams) ([]models.UserRatings, error) {

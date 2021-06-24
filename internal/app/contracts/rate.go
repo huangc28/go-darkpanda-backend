@@ -40,5 +40,5 @@ type RateDAOer interface {
 	GetServicePartnerInfo(p GetServicePartnerInfoParams) (*models.User, error)
 	GetServiceRating(p GetServiceRatingParams) (*models.ServiceRating, error)
 	IsServiceRatable(p IsServiceRatableParams) error
-	CreateServiceRating(p CreateServiceRatingParams) error
+	CreateServiceRating(p CreateServiceRatingParams) (*models.ServiceRating, error)
 }

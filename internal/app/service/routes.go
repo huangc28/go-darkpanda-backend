@@ -76,6 +76,13 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	)
 
 	g.POST(
+		"/:seg/rating",
+		func(c *gin.Context) {
+			CreateServiceRating(c, container)
+		},
+	)
+
+	g.POST(
 		"/scan-service-qrcode",
 		func(c *gin.Context) {
 			ScanServiceQrCode(c, container)
