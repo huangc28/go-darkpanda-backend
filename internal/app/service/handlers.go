@@ -704,6 +704,15 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 	)
 
 	if err != nil {
+		if err != sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusNotFound,
+				apperr.NewErr(apperr.AssetNotFound),
+			)
+
+			return
+		}
+
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -728,7 +737,10 @@ type CreateServiceRatingparams struct {
 }
 
 func CreateServiceRating(c *gin.Context, depCon container.Container) {
-	var body CreateServiceRatingparams
+	var (
+		body    CreateServiceRatingparams
+		srvUuid string = c.Param("seg")
+	)
 
 	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
@@ -767,7 +779,7 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 	if err := rateDao.IsServiceRatable(
 		contracts.IsServiceRatableParams{
 			ParticipantId: int(usr.ID),
-			ServiceUuid:   body.ServiceUuid,
+			ServiceUuid:   srvUuid,
 		},
 	); err != nil {
 		c.AbortWithError(
@@ -782,11 +794,11 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 	}
 
 	// Create rating record.
-	_, err = rateDao.CreateServiceRating(
+	srv, err := rateDao.CreateServiceRating(
 		contracts.CreateServiceRatingParams{
 			Rating:      body.Rating,
 			RaterId:     int(usr.ID),
-			ServiceUuid: body.ServiceUuid,
+			ServiceUuid: srvUuid,
 			Comment:     body.Comment,
 		},
 	)
@@ -803,5 +815,13 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, struct{}{})
+	c.JSON(http.StatusOK, struct {
+		ServiceUuid string `json:"service_uuid"`
+		Rating      int32  `json:"rating"`
+		Comments    string `json:"comments"`
+	}{
+		srvUuid,
+		srv.Rating.Int32,
+		srv.Comments.String,
+	})
 }
