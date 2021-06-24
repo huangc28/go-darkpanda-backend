@@ -41,7 +41,7 @@ type ServicePaymentDetail struct {
 	Price float64 `json:"price"`
 
 	Address   string        `json:"address"`
-	StartTime time.Time     `json:"start_time"`
+	StartTime sql.NullTime  `json:"start_time"`
 	Duration  sql.NullInt64 `json:"duration"`
 
 	PickerUuid      string         `json:"picker_uuid"`
