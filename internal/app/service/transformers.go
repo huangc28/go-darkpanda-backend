@@ -105,7 +105,7 @@ func TransformScanServiceQrCode(srv *models.Service) *TransformedScanServiceQrCo
 	tzEt := srv.EndTime.Time.In(loc)
 
 	return &TransformedScanServiceQrCode{
-		Uuid:          srv.Uuid.String(),
+		Uuid:          srv.Uuid.String,
 		ServiceStatus: srv.ServiceStatus.ToString(),
 		StartTime:     tzSt,
 		EndTime:       tzEt,
@@ -216,7 +216,7 @@ func TrfServiceDetail(srv models.Service, matchingFee int) (interface{}, error) 
 		EndTime       *time.Time `json:"end_time"`
 		MatchingFee   int        `json:"matching_fee"`
 	}{
-		srv.Uuid.String(),
+		srv.Uuid.String,
 		floatPrice,
 		srv.Duration.Int32,
 		srv.AppointmentTime.Time,

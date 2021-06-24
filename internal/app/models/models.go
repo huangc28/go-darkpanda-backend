@@ -6,8 +6,6 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type ChatroomType string
@@ -318,7 +316,7 @@ type Payment struct {
 
 type Service struct {
 	ID                int64          `json:"id"`
-	Uuid              uuid.UUID      `json:"uuid"`
+	Uuid              sql.NullString `json:"uuid"`
 	CustomerID        sql.NullInt32  `json:"customer_id"`
 	ServiceProviderID sql.NullInt32  `json:"service_provider_id"`
 	Price             sql.NullString `json:"price"`

@@ -103,7 +103,7 @@ func ScanCompletedServices(srvDao contracts.ServiceDAOer) error {
 		srvUuids := make([]string, 0)
 
 		for _, srv := range cplSrvs {
-			srvUuids = append(srvUuids, srv.Uuid.String())
+			srvUuids = append(srvUuids, srv.Uuid.String)
 		}
 
 		df := darkfirestore.Get()
@@ -138,7 +138,7 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 	if len(expSrvs) > 0 {
 		srvUuids := make([]string, 0)
 		for _, srv := range expSrvs {
-			srvUuids = append(srvUuids, srv.Uuid.String())
+			srvUuids = append(srvUuids, srv.Uuid.String)
 		}
 
 		df := darkfirestore.Get()

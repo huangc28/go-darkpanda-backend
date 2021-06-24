@@ -6,8 +6,6 @@ package models
 import (
 	"context"
 	"database/sql"
-
-	"github.com/google/uuid"
 )
 
 const createService = `-- name: CreateService :one
@@ -28,7 +26,7 @@ RETURNING id, uuid, customer_id, service_provider_id, price, duration, appointme
 `
 
 type CreateServiceParams struct {
-	Uuid              uuid.UUID      `json:"uuid"`
+	Uuid              sql.NullString `json:"uuid"`
 	CustomerID        sql.NullInt32  `json:"customer_id"`
 	ServiceProviderID sql.NullInt32  `json:"service_provider_id"`
 	Price             sql.NullString `json:"price"`

@@ -208,7 +208,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 	if err := df.UpdateService(
 		ctx,
 		darkfirestore.UpdateServiceParams{
-			ServiceUuid:   srv.Uuid.String(),
+			ServiceUuid:   srv.Uuid.String,
 			ServiceStatus: string(models.ServiceStatusToBeFulfilled),
 		},
 	); err != nil {

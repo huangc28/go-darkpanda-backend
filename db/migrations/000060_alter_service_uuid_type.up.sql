@@ -1,0 +1,6 @@
+BEGIN;
+
+    ALTER TABLE services 
+    ALTER COLUMN uuid TYPE VARCHAR;
+
+COMMIT;

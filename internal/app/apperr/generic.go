@@ -11,6 +11,7 @@ const (
 	FailedToBindBodyParams              = "0000008"
 	FailedToParsePaginateParams         = "0000009"
 	AssetNotFound                       = "0000010"
+	FailedToGenerateShortId             = "0000011"
 )
 
 var GeneralErrorMessageMap = map[string]string{

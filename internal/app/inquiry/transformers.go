@@ -83,7 +83,7 @@ type TransformedInquirer struct {
 
 func (t *InquiryTransform) TransformService(m models.Service, iqer models.User) TransformedService {
 	return TransformedService{
-		Uuid:          m.Uuid.String(),
+		Uuid:          m.Uuid.String,
 		ServiceStatus: string(m.ServiceStatus),
 		ServiceType:   string(m.ServiceType),
 		User: TransformedInquirer{
@@ -181,7 +181,7 @@ type TransformedBookedService struct {
 
 func (t *InquiryTransform) TransformBookedService(srv models.Service, userProvider models.User) *TransformedBookedService {
 	tsrv := &TransformedBookedService{
-		Uuid:            srv.Uuid.String(),
+		Uuid:            srv.Uuid.String,
 		Price:           srv.Price.String,
 		Duration:        srv.Duration.Int32,
 		AppointmentTime: srv.AppointmentTime.Time,
@@ -403,7 +403,7 @@ func (t *InquiryTransform) TransformGetServiceByInquiryUUID(srv models.Service) 
 	}
 
 	return &TransformedGetServiceByInquiryUUID{
-		UUID:            srv.Uuid.String(),
+		UUID:            srv.Uuid.String,
 		ServiceType:     srv.ServiceType.ToString(),
 		Price:           price,
 		Duration:        srv.Duration.Int32,

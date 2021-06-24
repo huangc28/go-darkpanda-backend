@@ -277,7 +277,7 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 		df.UpdateService(
 			ctx,
 			darkfirestore.UpdateServiceParams{
-				ServiceUuid:   srv.Uuid.String(),
+				ServiceUuid:   srv.Uuid.String,
 				ServiceStatus: srv.ServiceStatus.ToString(),
 			},
 		)
@@ -387,7 +387,7 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 			}
 
 			err = df.UpdateService(ctx, darkfirestore.UpdateServiceParams{
-				ServiceUuid:   usrv.Uuid.String(),
+				ServiceUuid:   usrv.Uuid.String,
 				ServiceStatus: usrv.ServiceStatus.ToString(),
 			})
 

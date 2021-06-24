@@ -21,7 +21,6 @@ require (
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/go-redis/redis/v8 v8.0.0-beta.7
 	github.com/go-sql-driver/mysql v1.5.1-0.20200311113236-681ffa848bae // indirect
-	github.com/golang-migrate/migrate/v4 v4.12.2
 	github.com/golang/mock v1.4.4
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/golobby/container v1.3.0
@@ -34,6 +33,9 @@ require (
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/lib/pq v1.10.0
 	github.com/looplab/fsm v0.1.0
+	github.com/mattn/go-sqlite3 v1.10.0 // indirect
+	github.com/onsi/ginkgo v1.12.0 // indirect
+	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/prometheus/common v0.4.0
 	github.com/pubnub/go v4.9.1+incompatible
 	github.com/shopspring/decimal v1.2.0

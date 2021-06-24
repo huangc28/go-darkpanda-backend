@@ -274,7 +274,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 			Duration:    int(service.Duration.Int32),
 			ServiceTime: service.AppointmentTime.Time.UnixNano() / 1000,
 			ServiceType: body.ServiceType,
-			ServiceUUID: service.Uuid.String(),
+			ServiceUUID: service.Uuid.String,
 			MatchingFee: int(matchingFee.Cost.Int32),
 		},
 	})
@@ -671,10 +671,23 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		serviceDBCli := models.New(tx)
 
 		statusUnpaid := models.ServiceStatusUnpaid
+		sid, err := shortid.Generate()
+
+		if err != nil {
+			return db.FormatResp{
+				Err:            err,
+				ErrCode:        apperr.FailedToGenerateShortId,
+				HttpStatusCode: http.StatusInternalServerError,
+			}
+		}
 
 		service, err := serviceDBCli.CreateService(
 			ctx,
 			models.CreateServiceParams{
+				Uuid: sql.NullString{
+					Valid:  true,
+					String: sid,
+				},
 				CustomerID:        iqRes.InquirerID,
 				ServiceProviderID: iqRes.PickerID,
 				Price:             iqRes.Price,
@@ -699,7 +712,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		err = df.CreateService(
 			ctx,
 			darkfirestore.CreateServiceParams{
-				ServiceUuid:   service.Uuid.String(),
+				ServiceUuid:   service.Uuid.String,
 				ServiceStatus: service.ServiceStatus.ToString(),
 			},
 		)
@@ -850,7 +863,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 				},
 				Price:       float64(*price),
 				Duration:    int(service.Duration.Int32),
-				ServiceUUID: service.Uuid.String(),
+				ServiceUUID: service.Uuid.String,
 				ServiceType: service.ServiceType.ToString(),
 				// Convert unix nano to unix micro so that the flutter can parse it using DateTime.
 				ServiceTime: service.AppointmentTime.Time.UnixNano() / 1000,
@@ -864,7 +877,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		QrCodeUrl          string      `json:"qrcode_url"`
 	}{
 		Message:            msg,
-		ServiceChannelUuid: service.Uuid.String(),
+		ServiceChannelUuid: service.Uuid.String,
 		ChannelID:          chatroom.ChannelUuid.String,
 		QrCodeUrl:          qrcodeUrl,
 	}
