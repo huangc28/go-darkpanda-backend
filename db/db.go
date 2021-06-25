@@ -54,13 +54,12 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 
 	// we need to recognize the running environment
 	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		conf.Host,
 		conf.Port,
 		conf.User,
 		conf.Password,
 		conf.Dbname,
-		conf.TimeZone,
 	)
 
 	driver, err := sqlx.Open("postgres", dsn)
@@ -79,13 +78,12 @@ func InitDB(conf DBConf, testConf TestDBConf, isTestEnv bool) {
 
 func initTestDB(testConf TestDBConf) {
 	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable TimeZone=%s",
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		testConf.Host,
 		testConf.Port,
 		testConf.User,
 		testConf.Password,
 		testConf.Dbname,
-		testConf.TimeZone,
 	)
 
 	txdb.Register("txdb", "postgres", dsn)
