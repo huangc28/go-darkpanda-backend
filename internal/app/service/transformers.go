@@ -3,7 +3,6 @@ package service
 import (
 	"time"
 
-	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/shopspring/decimal"
@@ -100,15 +99,11 @@ type TransformedScanServiceQrCode struct {
 }
 
 func TransformScanServiceQrCode(srv *models.Service) *TransformedScanServiceQrCode {
-	loc, _ := time.LoadLocation(config.GetAppConf().AppTimeZone)
-	tzSt := srv.StartTime.Time.In(loc)
-	tzEt := srv.EndTime.Time.In(loc)
-
 	return &TransformedScanServiceQrCode{
 		Uuid:          srv.Uuid.String,
 		ServiceStatus: srv.ServiceStatus.ToString(),
-		StartTime:     tzSt,
-		EndTime:       tzEt,
+		StartTime:     srv.StartTime.Time,
+		EndTime:       srv.EndTime.Time,
 	}
 }
 
