@@ -262,10 +262,9 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 	}
 
 	// Check if current time is in between service appointment and the buffer time.
-	// We have service `appointment time ` and `service duration`
 	err = IsTimeInRange(
 		srv.AppointmentTime.Time,
-		srv.AppointmentTime.Time.Add(4*time.Hour),
+		srv.AppointmentTime.Time.Add(30*time.Minute),
 	)
 
 	df := darkfirestore.Get()
