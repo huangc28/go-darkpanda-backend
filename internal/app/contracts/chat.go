@@ -14,7 +14,6 @@ type ChatServicer interface {
 
 type UpdateChatByUuidParams struct {
 	MessageCount *int
-	Enabled      *bool
 	ExpiredAt    *time.Time
 	ChatroomType models.ChatroomType
 	ChannelUuid  string

@@ -53,7 +53,6 @@ func (dao *ChatDao) CreateChat(inquiryID int64) (*models.Chatroom, error) {
 
 	channelUuid := fmt.Sprintf(PrivateChatKey, sid)
 	messageCount := 0
-	enabled := true
 	expiredAt := time.Now().Add(time.Minute * 27)
 
 	var chatroom models.Chatroom
@@ -63,14 +62,13 @@ INSERT INTO chatrooms (
 	inquiry_id,
 	channel_uuid,
 	message_count,
-	enabled,
 	expired_at
-) VALUES ($1, $2, $3, $4, $5)
+) VALUES ($1, $2, $3, $4)
 RETURNING *;
 	`
 
 	if err := dao.
-		DB.QueryRowx(query, inquiryID, channelUuid, messageCount, enabled, expiredAt).StructScan(&chatroom); err != nil {
+		DB.QueryRowx(query, inquiryID, channelUuid, messageCount, expiredAt).StructScan(&chatroom); err != nil {
 		return nil, err
 	}
 
@@ -175,7 +173,6 @@ UPDATE
 	chatrooms
 SET
 	deleted_at = now(),
-	enabled = false
 WHERE id = $1;
 	`
 	if _, err := dao.DB.Exec(sql, ID); err != nil {
@@ -277,7 +274,6 @@ FROM service_inquiries	AS si
 INNER JOIN chatrooms
 	ON chatrooms.inquiry_id = si.id
 	AND chatrooms.deleted_at IS NULL
-	AND chatrooms.enabled=true
 INNER JOIN users AS inquirer
 	ON inquirer.id = si.inquirer_id
 WHERE
@@ -314,7 +310,6 @@ func (dao *ChatDao) UpdateChatByUuid(params contracts.UpdateChatByUuidParams) (*
 	query := `
 UPDATE chatrooms SET
 	message_count = COALESCE($1, message_count),
-	enabled = COALESCE($2, enabled),
 	expired_at = COALESCE($3, expired_at),
 	chatroom_type = COALESCE($4, chatroom_type)
 WHERE channel_uuid = $5
@@ -327,7 +322,6 @@ RETURNING *;
 		QueryRowx(
 			query,
 			params.MessageCount,
-			params.Enabled,
 			params.ExpiredAt,
 			params.ChatroomType,
 			params.ChannelUuid,
