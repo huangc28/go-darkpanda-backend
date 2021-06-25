@@ -30,8 +30,8 @@ import (
 type EmitInquiryBody struct {
 	Budget          float64   `form:"budget" uri:"budget" json:"budget" binding:"required"`
 	ServiceType     string    `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
-	AppointmentTime time.Time `form:"appointment_time" binding:"required"`
-	ServiceDuration int       `form:"service_duration" binding:"required"`
+	AppointmentTime time.Time `form:"appointment_time" json:"appointment_time" binding:"required"`
+	ServiceDuration int       `form:"service_duration" json:"service_duration" binding:"required"`
 }
 
 func EmitInquiryHandler(c *gin.Context) {
