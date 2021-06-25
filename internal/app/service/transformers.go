@@ -149,9 +149,10 @@ type TrfedPaymentDetail struct {
 	PickerAvatarUrl *string `json:"picker_avatar_url"`
 
 	HasCommented bool `json:"has_commented"`
+	MatchingFee  int  `json:"matching_fee"`
 }
 
-func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool) TrfedPaymentDetail {
+func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool, matchingFee int) TrfedPaymentDetail {
 	var startTime *time.Time
 
 	if m.StartTime.Valid {
@@ -168,6 +169,7 @@ func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool) TrfedPa
 		PickerUsername: m.PickerUsername,
 
 		HasCommented: hasCommented,
+		MatchingFee:  matchingFee,
 	}
 
 	if m.Duration.Valid {

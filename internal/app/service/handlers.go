@@ -516,9 +516,10 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 	}
 
 	var (
-		pDaoer    contracts.PaymentDAOer
-		rateDaoer contracts.RateDAOer
-		userDaoer contracts.UserDAOer
+		pDaoer       contracts.PaymentDAOer
+		rateDaoer    contracts.RateDAOer
+		userDaoer    contracts.UserDAOer
+		coinPkgDaoer contracts.CoinPackageDAOer
 	)
 
 	depCon.Make(&pDaoer)
@@ -583,7 +584,24 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, TrfPaymentDetail(p, hasCommented))
+	matchingFee, err := coinPkgDaoer.GetMatchingFee()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMatchingFee,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	c.JSON(http.StatusOK, TrfPaymentDetail(
+		p,
+		hasCommented,
+		int(matchingFee.Cost.Int32),
+	))
 }
 
 func GetServiceDetailHandler(c *gin.Context, depCon container.Container) {
@@ -674,6 +692,8 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 			RaterId:     int(user.ID),
 		},
 	)
+
+	// if errors
 
 	if err != nil {
 		if err != sql.ErrNoRows {
