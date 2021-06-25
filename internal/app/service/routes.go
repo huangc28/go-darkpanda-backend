@@ -81,7 +81,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			seg := c.Param("seg")
 
 			switch seg {
-			case "/scan-service-qrcode":
+			case "scan-service-qrcode":
 				ScanServiceQrCode(c, container)
 			}
 		},
