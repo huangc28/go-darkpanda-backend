@@ -621,4 +621,7 @@ BEGIN;
     ALTER TABLE services 
     ALTER COLUMN uuid TYPE VARCHAR;
 
+COMMIT;BEGIN;
+    ALTER TABLE chatrooms 
+    DROP COLUMN IF EXISTS "enabled";
 COMMIT;

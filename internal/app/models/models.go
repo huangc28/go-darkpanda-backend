@@ -244,7 +244,6 @@ type Chatroom struct {
 	InquiryID    int32          `json:"inquiry_id"`
 	ChannelUuid  sql.NullString `json:"channel_uuid"`
 	MessageCount sql.NullInt32  `json:"message_count"`
-	Enabled      sql.NullBool   `json:"enabled"`
 	CreatedAt    time.Time      `json:"created_at"`
 	ExpiredAt    time.Time      `json:"expired_at"`
 	UpdatedAt    sql.NullTime   `json:"updated_at"`
