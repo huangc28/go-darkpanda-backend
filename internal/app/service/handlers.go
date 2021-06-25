@@ -525,6 +525,7 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 	depCon.Make(&pDaoer)
 	depCon.Make(&rateDaoer)
 	depCon.Make(&userDaoer)
+	depCon.Make(&coinPkgDaoer)
 
 	user, err := userDaoer.GetUserByUuid(c.GetString("uuid"))
 
