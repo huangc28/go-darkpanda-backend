@@ -55,16 +55,16 @@ migrate_create:
 	$(MIGRATE_CMD) $(MIGRATE_CREATE_CMD) -ext sql -dir db/migrations -seq $(filter-out $@, $(MAKECMDGOALS))
 
 migrate_up:
-	$(MIGRATE_CMD) -path=db/migrations/ -database $(PG_DSN) $(MIGRATE_UP_CMD) && make gen_model
+	$(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_DSN) $(MIGRATE_UP_CMD) && make gen_model
 
 migrate_down:
-	$(MIGRATE_CMD) -path=db/migrations/ -database $(PG_DSN) $(MIGRATE_DOWN_CMD)
+	$(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_DSN) $(MIGRATE_DOWN_CMD)
 
 test_migrate_up:
-	ENV=test $(MIGRATE_CMD) -path=db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_UP_CMD) && make gen_model
+	ENV=test $(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_UP_CMD) && make gen_model
 
 test_migrate_down:
-	ENV=test $(MIGRATE_CMD) -path=db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_DOWN_CMD)
+	ENV=test $(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_DOWN_CMD)
 
 
 # Build & Deploy

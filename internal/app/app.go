@@ -1,9 +1,11 @@
 package app
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	bankAccount "github.com/huangc28/go-darkpanda-backend/internal/app/bank_account"
@@ -30,6 +32,34 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	e.Use(apperr.HandleError())
 
 	e.GET("/health", func(c *gin.Context) {
+		dbConn := db.GetDB()
+
+		if err := dbConn.Ping(); err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.DBConnectionError,
+					err.Error(),
+				),
+			)
+			return
+		}
+
+		ctx := context.Background()
+		redisConn := db.GetRedis()
+
+		if err := redisConn.Ping(ctx).Err(); err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.RedisConnectionError,
+					err.Error(),
+				),
+			)
+			return
+
+		}
+
 		c.JSON(http.StatusOK, struct {
 			Health string `json:"health"`
 		}{

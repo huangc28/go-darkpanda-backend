@@ -12,6 +12,8 @@ const (
 	FailedToParsePaginateParams         = "0000009"
 	AssetNotFound                       = "0000010"
 	FailedToGenerateShortId             = "0000011"
+	DBConnectionError                   = "0000012"
+	RedisConnectionError                = "0000013"
 )
 
 var GeneralErrorMessageMap = map[string]string{
