@@ -112,7 +112,7 @@ INNER JOIN service_inquiries
 	ON services.inquiry_id = service_inquiries.id
 INNER JOIN chatrooms
 	ON services.inquiry_id = chatrooms.inquiry_id AND
-			services.deleted_at IS NOT null
+			services.deleted_at IS null
 WHERE
 	%s
 AND %s
