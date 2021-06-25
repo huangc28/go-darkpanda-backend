@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -167,81 +168,97 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 
 	service, err := serviceDao.GetServiceByInquiryUUID(body.InquiryUUID, "services.*")
 
-	ctx := context.Background()
 	if err != nil {
-		if err == sql.ErrNoRows {
-			// Create a service for that inquiry.
-			q := models.New(db.GetDB())
-			*service, err = q.CreateService(ctx, models.CreateServiceParams{
-				CustomerID: sql.NullInt32{
-					Valid: true,
-					Int32: inquiry.InquirerID.Int32,
-				},
-				ServiceProviderID: sql.NullInt32{
-					Int32: int32(user.ID),
-					Valid: true,
-				},
-				Price: sql.NullString{
-					String: fmt.Sprintf("%f", body.Price),
-					Valid:  true,
-				},
-				Duration: sql.NullInt32{
-					Int32: int32(body.ServiceDuration),
-					Valid: true,
-				},
-				AppointmentTime: sql.NullTime{
-					Time:  body.ServiceTime,
-					Valid: true,
-				},
-				InquiryID:     int32(inquiry.ID),
-				ServiceStatus: models.ServiceStatusUnpaid,
-				ServiceType:   models.ServiceType(body.ServiceType),
-			})
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByInquiryUUID,
+				err.Error(),
+			),
+		)
+		return
+	}
 
-			if err != nil {
-				c.AbortWithError(
-					http.StatusInternalServerError,
-					apperr.NewErr(
-						apperr.FailedToCreateService,
-						err.Error(),
-					),
-				)
+	ctx := context.Background()
 
-				return
-			}
-		} else {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(
-					apperr.FailedToGetServiceByInquiryUUID,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-	} else {
-		// Corresponding service exists, update detail of the service.
-		srvType := models.ServiceType(body.ServiceType)
-		service, err = serviceDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
-			ID:          service.ID,
-			Price:       &body.Price,
-			Duration:    &body.ServiceDuration,
-			Appointment: &body.ServiceTime,
-			ServiceType: &srvType,
+	if errors.Is(err, sql.ErrNoRows) {
+		q := models.New(db.GetDB())
+		sid, _ := shortid.Generate()
+		*service, err = q.CreateService(ctx, models.CreateServiceParams{
+			Uuid: sql.NullString{
+				Valid:  true,
+				String: sid,
+			},
+			CustomerID: sql.NullInt32{
+				Valid: true,
+				Int32: inquiry.InquirerID.Int32,
+			},
+			ServiceProviderID: sql.NullInt32{
+				Int32: int32(user.ID),
+				Valid: true,
+			},
+			Price: sql.NullString{
+				String: fmt.Sprintf("%f", body.Price),
+				Valid:  true,
+			},
+			Duration: sql.NullInt32{
+				Int32: int32(body.ServiceDuration),
+				Valid: true,
+			},
+			AppointmentTime: sql.NullTime{
+				Time:  body.ServiceTime,
+				Valid: true,
+			},
+			InquiryID:     int32(inquiry.ID),
+			ServiceStatus: models.ServiceStatusUnpaid,
+			ServiceType:   models.ServiceType(body.ServiceType),
 		})
 
 		if err != nil {
 			c.AbortWithError(
 				http.StatusInternalServerError,
 				apperr.NewErr(
-					apperr.FailedToUpdateService,
+					apperr.FailedToCreateService,
 					err.Error(),
 				),
 			)
 
 			return
 		}
+	}
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByInquiryUUID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Corresponding service exists, update detail of the service.
+	srvType := models.ServiceType(body.ServiceType)
+	service, err = serviceDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
+		ID:          service.ID,
+		Price:       &body.Price,
+		Duration:    &body.ServiceDuration,
+		Appointment: &body.ServiceTime,
+		ServiceType: &srvType,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateService,
+				err.Error(),
+			),
+		)
+
+		return
 	}
 
 	// Emit service setting message to chatroom.
@@ -469,6 +486,7 @@ type EmitInquiryUpdateMessage struct {
 // EmitInquiryUpdatedMessage emits inquiry updated message to the chatroom.
 // This message notifies the male user to confirm the inquiry detail by clicking
 // on the message bubble.
+// @TODO extract firestore message emission away from transaction.
 func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 	body := EmitInquiryUpdateMessage{}
 
@@ -491,12 +509,14 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 	// - Change inquiry status in firestore
 	// - Update inquiry status in DB
 	var (
-		iqDao   contracts.InquiryDAOer
-		chatDao contracts.ChatDaoer
+		iqDao      contracts.InquiryDAOer
+		chatDao    contracts.ChatDaoer
+		coinPkgDao contracts.CoinPackageDAOer
 	)
 
 	depCon.Make(&iqDao)
 	depCon.Make(&chatDao)
+	depCon.Make(&coinPkgDao)
 
 	iq, err := chatDao.GetInquiryByChannelUuid(body.ChannelUUID)
 
@@ -509,6 +529,19 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 			),
 		)
 
+		return
+	}
+
+	matchingFee, err := coinPkgDao.GetMatchingFee()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMatchingFee,
+				err.Error(),
+			),
+		)
 		return
 	}
 
@@ -560,6 +593,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 						AppointmentTime: body.AppointmentTime.UnixNano() / 1000,
 						ServiceType:     body.ServiceType,
 						Address:         body.Address,
+						MatchingFee:     int(matchingFee.Cost.Int32),
 					},
 				},
 			)

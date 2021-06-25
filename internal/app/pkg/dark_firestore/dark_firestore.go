@@ -385,6 +385,7 @@ func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHi
 type InquiryDetailMessage struct {
 	ChatMessage
 	Price           float64 `firestore:"price,omitempty" json:"price"`
+	MatchingFee     int     `firestore:"matching_fee,omitempty" json:"matching_fee"`
 	Duration        int     `firestore:"duration,omitempty" json:"duration"`
 	InquiryUuid     string  `firestore:"inquiry_uuid" json:"inquiry_uuid"`
 	AppointmentTime int64   `firestore:"appointment_time,omitempty" json:"appointment_time"`
