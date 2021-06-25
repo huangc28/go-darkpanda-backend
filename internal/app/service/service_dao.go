@@ -106,8 +106,7 @@ SELECT
 	users.avatar_url,
 	chatrooms.channel_uuid,
 	service_inquiries.uuid as inquiry_uuid
-FROM services
-INNER JOIN users
+FROM services INNER JOIN users 
 	ON %s
 INNER JOIN service_inquiries
 	ON services.inquiry_id = service_inquiries.id
