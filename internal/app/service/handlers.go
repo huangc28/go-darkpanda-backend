@@ -667,39 +667,11 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 	var rateDao contracts.RateDAOer
 	depCon.Make(&rateDao)
 
-	partnerInfo, err := rateDao.GetServicePartnerInfo(
-		contracts.GetServicePartnerInfoParams{
-			MyId:        int(user.ID),
-			ServiceUuid: srvUuid,
-		},
-	)
-
-	if err != nil {
-		if err == sql.ErrNoRows {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(apperr.NotInvolveInService),
-			)
-
-			return
-		}
-
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetServicePartnerInfo,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
 	// Get service rating made by the chat partner.
 	srvRating, err := rateDao.GetServiceRating(
 		contracts.GetServiceRatingParams{
 			ServiceUuid: srvUuid,
-			RaterId:     int(partnerInfo.ID),
+			RaterId:     int(user.ID),
 		},
 	)
 
@@ -726,7 +698,7 @@ func GetServiceRating(c *gin.Context, depCon container.Container) {
 
 	c.JSON(
 		http.StatusOK,
-		TransformRate(partnerInfo, srvRating),
+		TransformRate(srvRating),
 	)
 }
 
