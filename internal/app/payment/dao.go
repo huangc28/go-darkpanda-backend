@@ -102,24 +102,25 @@ INNER JOIN users AS payer ON payer.id = payment.payer_id;
 
 func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServicePaymentDetail, error) {
 	query := `
-SELECT
-  -- Retrieve payment info
-  payments.price,
+	SELECT 
+		-- Retrieve payment info
+	 	payments.price,
 
-  -- Retrieve service info
-  services.address,
-  services.start_time,
-  services.duration,
+	 	-- Retrieve service info
+	 	services.address,
+	 	services.start_time,
+	 	services.duration,
 
-  -- Retrieve picker info
-  pickers.uuid AS picker_uuid,
-  pickers.username AS picker_username,
-  pickers.avatar_url AS picker_avatar_url
-FROM payments
-INNER JOIN services
-	ON services.id = payments.service_id
-	AND services.uuid =  $1
-INNER JOIN users AS pickers ON pickers.id = services.service_provider_id;
+	  	-- Retrieve picker info
+	  	pickers.uuid AS picker_uuid,
+	  	pickers.username AS picker_username,
+	  	pickers.avatar_url AS picker_avatar_url
+	FROM 
+		services 
+	LEFT JOIN payments ON payments.service_id = services.id 
+	INNER JOIN users AS pickers ON pickers.id = services.service_provider_id
+	WHERE 
+		services.uuid = $1
 `
 
 	var m models.ServicePaymentDetail

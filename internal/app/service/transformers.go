@@ -138,7 +138,7 @@ func TransformServiceName(serviceNames []*models.ServiceName) TrfmedServiceNames
 }
 
 type TrfedPaymentDetail struct {
-	Price float64 `json:"price"`
+	Price *float64 `json:"price"`
 
 	Address   string     `json:"address"`
 	StartTime *time.Time `json:"start_time"`
@@ -153,17 +153,8 @@ type TrfedPaymentDetail struct {
 }
 
 func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool, matchingFee int) TrfedPaymentDetail {
-	var startTime *time.Time
-
-	if m.StartTime.Valid {
-		startTime = &m.StartTime.Time
-	}
-
 	trf := TrfedPaymentDetail{
-		Price: m.Price,
-
-		Address:   m.Address,
-		StartTime: startTime,
+		Address: m.Address,
 
 		PickerUuid:     m.PickerUuid,
 		PickerUsername: m.PickerUsername,
@@ -178,6 +169,14 @@ func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool, matchin
 
 	if m.PickerAvatarUrl.Valid {
 		trf.PickerAvatarUrl = &m.PickerAvatarUrl.String
+	}
+
+	if m.StartTime.Valid {
+		trf.StartTime = &m.StartTime.Time
+	}
+
+	if m.Price.Valid {
+		trf.Price = &m.Price.Float64
 	}
 
 	return trf

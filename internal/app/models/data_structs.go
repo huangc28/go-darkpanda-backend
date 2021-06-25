@@ -38,7 +38,7 @@ type ActiveInquiry struct {
 }
 
 type ServicePaymentDetail struct {
-	Price float64 `json:"price"`
+	Price sql.NullFloat64 `json:"price"`
 
 	Address   string        `json:"address"`
 	StartTime sql.NullTime  `json:"start_time"`
