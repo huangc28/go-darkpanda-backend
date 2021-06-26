@@ -34,4 +34,5 @@ type ChatDaoer interface {
 	GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error)
 	GetCompleteChatroomInfoById(id int) (*models.CompleteChatroomInfoModel, error)
 	GetChatroomByServiceId(srvId int) (*models.Chatroom, error)
+	DeleteChatroomByServiceId(srvId int) error
 }

@@ -31,6 +31,7 @@ const (
 	DisagreeInquiry     MessageType = "disagree_inquiry"
 	QuitChatroom        MessageType = "quit_chatroom"
 	CompletePayment     MessageType = "complete_payment"
+	CancelService       MessageType = "cancel_service"
 )
 
 const (
@@ -71,6 +72,7 @@ type DarkFireStorer interface {
 
 	CreateService(ctx context.Context, params CreateServiceParams) error
 	UpdateService(ctx context.Context, params UpdateServiceParams) error
+	CancelService() error
 }
 
 type DarkFirestore struct {
@@ -686,4 +688,50 @@ func (df *DarkFirestore) UpdateMultipleServiceStatus(ctx context.Context, params
 	_, err := batch.Commit(ctx)
 
 	return err
+}
+
+type CancelServiceParams struct {
+	ChannelUuid string
+	ServiceUuid string
+	Data        ChatMessage
+}
+
+// CancelService consist of 2 actions.
+//   - Update service status in `services` collection
+//   - Send cancel service message to chatroom in `private_chats` collection
+func (df *DarkFirestore) CancelService(ctx context.Context, p CancelServiceParams) error {
+	chatroomRef := df.Client.
+		Collection(PrivateChatsCollectionName).Doc(p.ChannelUuid)
+
+	srvRef := df.Client.
+		Collection(ServiceCollectionName).
+		Doc(p.ServiceUuid)
+
+	p.Data.Type = CancelService
+
+	err := df.Client.RunTransaction(
+		ctx,
+		func(ctx context.Context, tx *firestore.Transaction) error {
+			if err := tx.Update(srvRef, []firestore.Update{
+				{
+					Path:  "service_status",
+					Value: models.ServiceStatusCanceled,
+				},
+			}); err != nil {
+				return err
+			}
+
+			if err := tx.Set(chatroomRef, p.Data); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

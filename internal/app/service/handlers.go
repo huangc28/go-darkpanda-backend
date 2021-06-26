@@ -920,11 +920,108 @@ func CancelService(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	db.TransactWithFormatStruct(
+	var srvFsm contracts.ServiceFSMer
+	depCon.Make(&srvFsm)
+
+	srvFsm.SetState(srv.ServiceStatus.ToString())
+
+	// @TODO "cancel" should not be hardcoded here.
+	if err := srvFsm.Event("cancel"); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToChangeServiceStatus,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var chatDao contracts.ChatDaoer
+	depCon.Make(&chatDao)
+
+	trxResp := db.TransactWithFormatStruct(
 		db.GetDB(),
 		func(tx *sqlx.Tx) db.FormatResp {
+			// Change service status to cancel.
+			srvStatus := models.ServiceStatus(srvFsm.Current())
+			usrv, err := srvDao.WithTx(tx).UpdateServiceByID(contracts.UpdateServiceByIDParams{
+				ID:            srv.ID,
+				ServiceStatus: &srvStatus,
+				CancellerId:   &user.ID,
+			})
 
-			return db.FormatResp{}
+			if err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToUpdateService,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			// Delete service chatroom.
+			if err := chatDao.WithTx(tx).DeleteChatroomByServiceId(int(srv.ID)); err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToDeleteChatroomByServiceId,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
+			return db.FormatResp{
+				Response: usrv,
+			}
 		},
 	)
+
+	if trxResp.Err != nil {
+		c.AbortWithError(
+			trxResp.HttpStatusCode,
+			apperr.NewErr(
+				trxResp.ErrCode,
+				trxResp.Err.Error(),
+			),
+		)
+
+		return
+	}
+
+	usrv := trxResp.Response.(*models.Service)
+
+	// Send service cancel message.
+	chatroom, err := chatDao.GetChatroomByServiceId(int(usrv.ID))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetChatroomByServiceId,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	ctx := context.Background()
+	df := darkfirestore.Get()
+	if err := df.CancelService(ctx, darkfirestore.CancelServiceParams{
+		ChannelUuid: chatroom.ChannelUuid.String,
+		ServiceUuid: usrv.Uuid.String,
+		Data: darkfirestore.ChatMessage{
+			From: usrv.Uuid.String,
+		},
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendCancelMessage,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct{}{})
 }

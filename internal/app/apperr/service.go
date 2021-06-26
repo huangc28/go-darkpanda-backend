@@ -23,6 +23,9 @@ const (
 	FailedToCheckHasCommented       = "1100018"
 	ServiceStatusNotValidToCancel   = "1100019"
 	ServiceHasBeenCanceled          = "1100020"
+
+	FailedToDeleteChatroomByServiceId = "1100021"
+	FailedToSendCancelMessage         = "1100022"
 )
 
 var ServiceErrorMessageMap = map[string]string{

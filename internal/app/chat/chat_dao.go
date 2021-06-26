@@ -439,3 +439,31 @@ WHERE
 
 	return &m, nil
 }
+
+func (dao *ChatDao) DeleteChatroomByServiceId(srvId int) error {
+	query := `
+WITH related_inquiry AS (
+	SELECT
+		service_inquiries.id
+	FROM
+		service_inquiries
+	INNER JOIN
+		services ON services.inquiry_id = service_inquiries.id AND
+		services.id = $1
+)
+
+UPDATE 
+	chatrooms 
+SET
+	deleted_at = now()
+WHERE 
+	inquiry_id IN (
+		SELECT id	
+		FROM related_inquiry
+	);
+`
+
+	_, err := dao.DB.Exec(query, srvId)
+
+	return err
+}

@@ -1,6 +1,8 @@
 package service
 
 import (
+	cinternal "github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/looplab/fsm"
 )
@@ -72,4 +74,14 @@ func NewServiceFSM(initial models.ServiceStatus) *fsm.FSM {
 	)
 
 	return f
+}
+
+func ServiceServiceProvider(c cinternal.Container) func() error {
+	return func() error {
+		c.Transient(func() contracts.ServiceFSMer {
+			return NewServiceFSM(models.ServiceStatusUnpaid)
+		})
+
+		return nil
+	}
 }

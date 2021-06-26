@@ -225,8 +225,9 @@ UPDATE services SET
 	service_status = COALESCE($4, service_status),
 	service_type = COALESCE($5, service_type),
 	start_time = COALESCE($6, start_time),
-	end_time = COALESCE($7, end_time)
-WHERE id = $8
+	end_time = COALESCE($7, end_time),
+	canceller_id = COALESCE($8, canceller_id) 
+WHERE id = $9
 RETURNING *;
 	`
 	service := models.Service{}
@@ -240,6 +241,7 @@ RETURNING *;
 		params.ServiceType,
 		params.StartTime,
 		params.EndTime,
+		params.CancellerId,
 		params.ID,
 	).StructScan(&service); err != nil {
 		return (*models.Service)(nil), err

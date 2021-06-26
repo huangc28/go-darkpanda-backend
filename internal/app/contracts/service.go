@@ -8,7 +8,8 @@ import (
 )
 
 type UpdateServiceByIDParams struct {
-	ID            int64
+	ID int64
+
 	Price         *float64
 	Duration      *int
 	Appointment   *time.Time
@@ -16,6 +17,8 @@ type UpdateServiceByIDParams struct {
 	ServiceStatus *models.ServiceStatus
 	StartTime     *time.Time
 	EndTime       *time.Time
+
+	CancellerId *int64
 }
 
 type CreateServiceQRCodeParams struct {
