@@ -72,7 +72,7 @@ type DarkFireStorer interface {
 
 	CreateService(ctx context.Context, params CreateServiceParams) error
 	UpdateService(ctx context.Context, params UpdateServiceParams) error
-	CancelService() error
+	CancelService(ctx context.Context, p CancelServiceParams) error
 }
 
 type DarkFirestore struct {
@@ -706,8 +706,6 @@ func (df *DarkFirestore) CancelService(ctx context.Context, p CancelServiceParam
 	srvRef := df.Client.
 		Collection(ServiceCollectionName).
 		Doc(p.ServiceUuid)
-
-	p.Data.Type = CancelService
 
 	err := df.Client.RunTransaction(
 		ctx,
