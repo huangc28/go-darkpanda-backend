@@ -122,7 +122,7 @@ WHERE
 	return &m, nil
 }
 
-func (dao *RateDAO) isServiceParticipant(pId int, srvUuid string) (bool, error) {
+func (dao *RateDAO) IsServiceParticipant(pId int, srvUuid string) (bool, error) {
 	query := `
 SELECT EXISTS (
 	SELECT
@@ -208,7 +208,7 @@ SELECT EXISTS (
 
 func (dao *RateDAO) IsServiceRatable(p contracts.IsServiceRatableParams) error {
 	// Checks if the user is service participant
-	isPar, err := dao.isServiceParticipant(
+	isPar, err := dao.IsServiceParticipant(
 		p.ParticipantId,
 		p.ServiceUuid,
 	)

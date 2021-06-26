@@ -106,16 +106,6 @@ It reads and collect migration SQL from `db/migrations`. The collected content w
 
 The content in `db/migrations/schema.sql` will be truncated everytime running the above command to ensure the model is always up to date with the latest SQL of migration **up** files.
 
-# TODOs
-
-- [x] docker environment with postgres and redis.
-- [x] dotenv files.
-- [x] Verify referral code.
-- [] Write a test to emit service confirmed message.
-- [] Create Makefile commands to run migrations for both `test` and `development` environments.
-- [] Implement an API to return inquiries, only female user can fetch inquiries.
-- [] Add image relative APIs.
-
 ## Geo Location APIs
 
 - [] Use google map API to retrieve all location suggestion based on inputs

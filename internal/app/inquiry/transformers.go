@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
@@ -34,16 +33,12 @@ func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (Transf
 		return TransformedInquiry{}, err
 	}
 
-	// Convert appointment time to application specific timezone before responding.
-	loc, _ := time.LoadLocation(config.GetAppConf().AppTimeZone)
-	tzAp := m.AppointmentTime.Time.In(loc)
-
 	tiq := TransformedInquiry{
 		Uuid:            m.Uuid,
 		Budget:          budget,
 		ServiceType:     string(m.ServiceType),
 		InquiryStatus:   string(m.InquiryStatus),
-		AppointmentTime: tzAp,
+		AppointmentTime: m.AppointmentTime.Time,
 	}
 
 	return tiq, nil

@@ -624,4 +624,7 @@ BEGIN;
 COMMIT;BEGIN;
     ALTER TABLE chatrooms 
     DROP COLUMN IF EXISTS "enabled";
+COMMIT;BEGIN; 
+    ALTER TABLE services   
+    ADD COLUMN canceller_id INT REFERENCES users(id) NULL;  
 COMMIT;

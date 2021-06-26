@@ -21,6 +21,8 @@ const (
 	ServiceNotYetEnd                = "1100016"
 	FailedToGetPaymentByServiceUuid = "1100017"
 	FailedToCheckHasCommented       = "1100018"
+	ServiceStatusNotValidToCancel   = "1100019"
+	ServiceHasBeenCanceled          = "1100020"
 )
 
 var ServiceErrorMessageMap = map[string]string{
@@ -28,4 +30,6 @@ var ServiceErrorMessageMap = map[string]string{
 	FailedServiceQrCodeSecretNotMatch: "qr code secret does not match.",
 	NotAServiceParticipant:            "scanner is not a service participant.",
 	ServiceNotYetEnd:                  "no payment detail since service has not ended yet.",
+	ServiceStatusNotValidToCancel:     "service status is not valid for canceling",
+	ServiceHasBeenCanceled:            "service has been canceld by partner",
 }

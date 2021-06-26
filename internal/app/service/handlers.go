@@ -817,3 +817,114 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 		srv.Comments.String,
 	})
 }
+
+// CancelService allows either female and male user can cancel the service before
+// service happening. Check the following conditions before
+// canceling.
+//   - Is a service participant.
+//   - Service status is `to_be_fulfilled`.
+//   - Service does not have a canceler.
+// Remember to emit service canceled message to firestore.
+func CancelService(c *gin.Context, depCon container.Container) {
+	var (
+		serviceUuid string = c.Param("seg")
+		userUuid    string = c.GetString("uuid")
+	)
+
+	var (
+		rateDao contracts.RateDAOer
+		userDao contracts.UserDAOer
+	)
+
+	depCon.Make(&rateDao)
+	depCon.Make(&userDao)
+
+	user, err := userDao.GetUserByUuid(userUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+		return
+
+	}
+
+	isParticipant, err := rateDao.IsServiceParticipant(
+		int(user.ID),
+		serviceUuid,
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckIsParticipant,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if !isParticipant {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.UserNotServiceParticipant,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var srvDao contracts.ServiceDAOer
+	depCon.Make(&srvDao)
+
+	srv, err := srvDao.GetServiceByUuid(serviceUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if srv.ServiceStatus != models.ServiceStatusToBeFulfilled {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.ServiceStatusNotValidToCancel),
+		)
+
+		return
+	}
+
+	if srv.CancellerID.Valid {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.ServiceHasBeenCanceled,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	db.TransactWithFormatStruct(
+		db.GetDB(),
+		func(tx *sqlx.Tx) db.FormatResp {
+
+			return db.FormatResp{}
+		},
+	)
+}
