@@ -567,9 +567,8 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 			Status:      models.InquiryStatusWaitForInquirerApprove,
 			Data: darkfirestore.InquiryDetailMessage{
 				ChatMessage: darkfirestore.ChatMessage{
-					Content:   "",
-					From:      c.GetString("uuid"),
-					CreatedAt: time.Now(),
+					Content: "",
+					From:    c.GetString("uuid"),
 				},
 				Price:           body.Price,
 				Duration:        body.Duration,
