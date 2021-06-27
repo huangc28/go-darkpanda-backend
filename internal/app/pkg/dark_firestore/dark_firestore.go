@@ -68,7 +68,7 @@ type DarkFireStorer interface {
 
 	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
 	AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error
-	UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) error
+	UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) (InquiryDetailMessage, error)
 
 	CreateService(ctx context.Context, params CreateServiceParams) error
 	UpdateService(ctx context.Context, params UpdateServiceParams) error
@@ -409,24 +409,6 @@ func (df *DarkFirestore) GetMessageColllectionRef(channelUuid string) *firestore
 	return ref
 }
 
-func (df *DarkFirestore) SendUpdateInquiryMessage(ctx context.Context, params UpdateInquiryMessage) (*firestore.DocumentRef, InquiryDetailMessage, error) {
-	if params.Data.Type == "" {
-		params.Data.Type = UpdateInquiryDetail
-	}
-
-	params.Data.CreatedAt = time.Now()
-
-	msgColRef := df.GetMessageColllectionRef(params.ChannelUuid)
-
-	msgDocRef, _, err := msgColRef.Add(ctx, params.Data)
-
-	if err != nil {
-		return nil, params.Data, err
-	}
-
-	return msgDocRef, params.Data, nil
-}
-
 type SendServiceConfirmedMessageParams struct {
 	ChannelUUID string
 	Data        ServiceDetailMessage
@@ -558,31 +540,56 @@ func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateI
 
 type UpdateInquiryStatusParams struct {
 	InquiryUuid string
+	ChannelUuid string
 	Status      models.InquiryStatus
 	PickerUuid  string
+	Data        InquiryDetailMessage
 }
 
-func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) error {
-	_, err := df.
-		Client.
-		Collection(InquiryCollectionName).
-		Doc(params.InquiryUuid).
-		Update(ctx, []firestore.Update{
-			{
-				Path:  "status",
-				Value: params.Status,
-			},
-			{
-				Path:  "picker_uuid",
-				Value: params.PickerUuid,
-			},
-		})
+func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) (InquiryDetailMessage, error) {
+	iqRef := df.getInquiryRef(params.InquiryUuid)
+	chatRef := df.getNewChatroomMsgRef(params.ChannelUuid)
 
-	if err != nil {
-		return err
-	}
+	params.Data.Type = UpdateInquiryDetail
+	params.Data.CreatedAt = time.Now()
 
-	return err
+	err := df.Client.RunTransaction(
+		ctx,
+		func(ctx context.Context, tx *firestore.Transaction) error {
+			err := tx.Update(iqRef, []firestore.Update{
+				{
+					Path:  "status",
+					Value: params.Status,
+				},
+				{
+					Path:  "picker_uuid",
+					Value: params.PickerUuid,
+				},
+			})
+
+			if err != nil {
+				return errors.New(
+					fmt.Sprintf(
+						"failed to update inquiry status %s",
+						err.Error(),
+					),
+				)
+			}
+
+			if err := tx.Set(chatRef, params.Data); err != nil {
+				return errors.New(
+					fmt.Sprintf(
+						"failed to send inquiry update message %s",
+						err.Error(),
+					),
+				)
+			}
+
+			return nil
+		},
+	)
+
+	return params.Data, err
 }
 
 type AskingInquiringUserParams struct {
@@ -593,7 +600,7 @@ type AskingInquiringUserParams struct {
 // AskingLobbyUser updates the status of lobby user document
 // to be `asking` to notify male user to diplay a popup.
 func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error {
-	return df.UpdateInquiryStatus(
+	_, err := df.UpdateInquiryStatus(
 		ctx,
 		UpdateInquiryStatusParams{
 			InquiryUuid: params.InquiryUuid,
@@ -601,6 +608,8 @@ func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingI
 			PickerUuid:  params.PickerUuid,
 		},
 	)
+
+	return err
 }
 
 type ChatInquiringUserParams struct {
@@ -608,13 +617,15 @@ type ChatInquiringUserParams struct {
 }
 
 func (df *DarkFirestore) ChatInquiringUser(ctx context.Context, params ChatInquiringUserParams) error {
-	return df.UpdateInquiryStatus(
+	_, err := df.UpdateInquiryStatus(
 		ctx,
 		UpdateInquiryStatusParams{
 			InquiryUuid: params.InquiryUUID,
 			Status:      models.InquiryStatusChatting,
 		},
 	)
+
+	return err
 }
 
 type CreateServiceParams struct {
@@ -690,6 +701,28 @@ func (df *DarkFirestore) UpdateMultipleServiceStatus(ctx context.Context, params
 	return err
 }
 
+func (df *DarkFirestore) getNewChatroomMsgRef(channelUuid string) *firestore.DocumentRef {
+	return df.Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(channelUuid).
+		Collection(MessageSubCollectionName).
+		NewDoc()
+}
+
+func (df *DarkFirestore) getInquiryRef(inquiryUuid string) *firestore.DocumentRef {
+	return df.
+		Client.
+		Collection(ServiceCollectionName).
+		Doc(inquiryUuid)
+}
+
+func (df *DarkFirestore) getServiceRef(serviceUuid string) *firestore.DocumentRef {
+	return df.
+		Client.
+		Collection(ServiceCollectionName).
+		Doc(serviceUuid)
+}
+
 type CancelServiceParams struct {
 	ChannelUuid string
 	ServiceUuid string
@@ -700,15 +733,8 @@ type CancelServiceParams struct {
 //   - Update service status in `services` collection
 //   - Send cancel service message to chatroom in `private_chats` collection
 func (df *DarkFirestore) CancelService(ctx context.Context, p CancelServiceParams) error {
-	chatroomRef := df.Client.
-		Collection(PrivateChatsCollectionName).
-		Doc(p.ChannelUuid).
-		Collection(MessageSubCollectionName).
-		NewDoc()
-
-	srvRef := df.Client.
-		Collection(ServiceCollectionName).
-		Doc(p.ServiceUuid)
+	chatroomRef := df.getNewChatroomMsgRef(p.ChannelUuid)
+	srvRef := df.getServiceRef(p.ServiceUuid)
 
 	p.Data.CreatedAt = time.Now()
 	p.Data.Type = CancelService

@@ -94,7 +94,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
-	g.POST(
+	g.PUT(
 		"/:seg/cancel",
 		func(c *gin.Context) {
 			CancelService(c, container)

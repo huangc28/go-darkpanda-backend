@@ -423,7 +423,7 @@ func CancelInquiryHandler(c *gin.Context) {
 	}
 
 	df := darkfirestore.Get()
-	err = df.UpdateInquiryStatus(
+	_, err = df.UpdateInquiryStatus(
 		ctx,
 		darkfirestore.UpdateInquiryStatusParams{
 			InquiryUuid: uiq.Uuid,
@@ -911,7 +911,7 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 	var df darkfirestore.DarkFireStorer
 	container.Make(&df)
 
-	err = df.UpdateInquiryStatus(
+	_, err = df.UpdateInquiryStatus(
 		ctx,
 		darkfirestore.UpdateInquiryStatusParams{
 			InquiryUuid: iq.Uuid,

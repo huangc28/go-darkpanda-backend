@@ -15,8 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/skip2/go-qrcode"
 	"github.com/teris-io/shortid"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -545,94 +543,55 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	txResp := db.TransactWithFormatStruct(
-		db.GetDB(),
-		func(tx *sqlx.Tx) db.FormatResp {
-			iqDao.WithTx(tx)
-			err := iqDao.PatchInquiryStatusByUUID(
-				contracts.PatchInquiryStatusByUUIDParams{
-					InquiryStatus: models.InquiryStatusWaitForInquirerApprove,
-					UUID:          iq.Uuid,
+	if err := iqDao.PatchInquiryStatusByUUID(
+		contracts.PatchInquiryStatusByUUIDParams{
+			InquiryStatus: models.InquiryStatusWaitForInquirerApprove,
+			UUID:          iq.Uuid,
+		},
+	); err != nil {
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToPatchInquiryStatus,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	msg, err := df.UpdateInquiryStatus(
+		ctx,
+		darkfirestore.UpdateInquiryStatusParams{
+			InquiryUuid: iq.Uuid,
+			Status:      models.InquiryStatusWaitForInquirerApprove,
+			Data: darkfirestore.InquiryDetailMessage{
+				ChatMessage: darkfirestore.ChatMessage{
+					Content:   "",
+					From:      c.GetString("uuid"),
+					CreatedAt: time.Now(),
 				},
-			)
-
-			if err != nil {
-				return db.FormatResp{
-					ErrCode:        apperr.FailedToPatchInquiryStatus,
-					Err:            err,
-					HttpStatusCode: http.StatusInternalServerError,
-				}
-			}
-
-			if err := df.UpdateInquiryStatus(
-				ctx,
-				darkfirestore.UpdateInquiryStatusParams{
-					InquiryUuid: iq.Uuid,
-					Status:      models.InquiryStatusWaitForInquirerApprove,
-				},
-			); err != nil {
-				return db.FormatResp{
-					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
-					Err:            err,
-					HttpStatusCode: http.StatusInternalServerError,
-				}
-			}
-
-			_, msg, err := df.SendUpdateInquiryMessage(
-				ctx,
-				darkfirestore.UpdateInquiryMessage{
-					ChannelUuid: body.ChannelUUID,
-					Data: darkfirestore.InquiryDetailMessage{
-						ChatMessage: darkfirestore.ChatMessage{
-							Content:   "",
-							From:      c.GetString("uuid"),
-							CreatedAt: time.Now(),
-						},
-						Price:           body.Price,
-						Duration:        body.Duration,
-						AppointmentTime: body.AppointmentTime.UnixNano() / 1000,
-						ServiceType:     body.ServiceType,
-						Address:         body.Address,
-						MatchingFee:     int(matchingFee.Cost.Int32),
-					},
-				},
-			)
-
-			if err != nil {
-				if grpc.Code(err) == codes.NotFound {
-					return db.FormatResp{
-						ErrCode:        apperr.ChatroomNotExists,
-						Err:            err,
-						HttpStatusCode: http.StatusBadRequest,
-					}
-				}
-
-				return db.FormatResp{
-					ErrCode:        apperr.FailedToSendUpdateInquiryMessage,
-					Err:            err,
-					HttpStatusCode: http.StatusInternalServerError,
-				}
-			}
-
-			return db.FormatResp{
-				Response: &msg,
-			}
+				Price:           body.Price,
+				Duration:        body.Duration,
+				AppointmentTime: body.AppointmentTime.UnixNano() / 1000,
+				ServiceType:     body.ServiceType,
+				Address:         body.Address,
+				MatchingFee:     int(matchingFee.Cost.Int32),
+			},
 		},
 	)
 
-	if txResp.Err != nil {
+	if err != nil {
 		c.AbortWithError(
-			txResp.HttpStatusCode,
+			http.StatusInternalServerError,
 			apperr.NewErr(
-				txResp.ErrCode,
-				txResp.Err.Error(),
+				apperr.FailedToChangeFirestoreInquiryStatus,
+				err.Error(),
 			),
 		)
 
 		return
 	}
-
-	msg := txResp.Response.(*darkfirestore.InquiryDetailMessage)
 
 	c.JSON(http.StatusOK, msg)
 }
@@ -1051,7 +1010,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			}
 
 			df := darkfirestore.Get()
-			if err := df.UpdateInquiryStatus(
+			if _, err := df.UpdateInquiryStatus(
 				ctx,
 				darkfirestore.UpdateInquiryStatusParams{
 					InquiryUuid: iq.Uuid,
@@ -1176,7 +1135,7 @@ func EmitDisagreeInquiryHandler(c *gin.Context, depCon container.Container) {
 
 			df := darkfirestore.Get()
 
-			if err := df.UpdateInquiryStatus(
+			if _, err := df.UpdateInquiryStatus(
 				ctx,
 				darkfirestore.UpdateInquiryStatusParams{
 					InquiryUuid: iq.Uuid,
