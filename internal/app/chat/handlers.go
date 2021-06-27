@@ -12,7 +12,6 @@ import (
 
 	"github.com/golobby/container/pkg/container"
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 	"github.com/skip2/go-qrcode"
 	"github.com/teris-io/shortid"
 
@@ -279,7 +278,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 
 	df := darkfirestore.Get()
 	message, err := df.SendServiceDetailMessageToChatroom(ctx, darkfirestore.SendServiceDetailMessageParams{
-		ChatroomName: body.ChannelUUID,
+		ChannelUuid: body.ChannelUUID,
 		Data: darkfirestore.ServiceDetailMessage{
 			ChatMessage: darkfirestore.ChatMessage{
 				Content: "",
@@ -303,14 +302,14 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 	// Recognize the gender of the requester
 	var (
-		userDao contracts.UserDAOer
-		chatDao contracts.ChatDaoer
+		userDao  contracts.UserDAOer
+		chatDao  contracts.ChatDaoer
+		userUUID string = c.GetString("uuid")
 	)
 
 	depCon.Make(&userDao)
 	depCon.Make(&chatDao)
 
-	userUUID := c.GetString("uuid")
 	user, err := userDao.GetUserByUuid(userUUID, "id", "gender")
 
 	if err != nil {
@@ -326,12 +325,7 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 
 	var chatrooms []models.InquiryChatRoom
 
-	if user.Gender == models.GenderFemale {
-		chatrooms, err = chatDao.GetFemaleInquiryChatRooms(user.ID)
-	} else {
-		// Retrieve inquiry chatrooms for male user.
-		log.Println("DEBUG * 3")
-	}
+	chatrooms, err = chatDao.GetFemaleInquiryChatRooms(user.ID)
 
 	if err != nil {
 		c.AbortWithError(
@@ -981,7 +975,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			}
 
 			// Soft delete chatroom
-			if chatDao.
+			if err := chatDao.
 				WithTx(tx).
 				DeleteChatRoom(chatroom.ID); err != nil {
 				return db.FormatResp{

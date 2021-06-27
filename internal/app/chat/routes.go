@@ -50,7 +50,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
-	// The female user edited service details and saved the service settings, the chatroom would emit a service setting message.
+	// The female user edited service details and hit save the service settings. the chatroom would emit a service setting message.
 	// Male user would be notified with the service message.  Male user sees the popup contains service detail set by the female user.
 	g.POST(
 		"/emit-service-message",

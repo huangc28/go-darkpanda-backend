@@ -221,27 +221,18 @@ type ServiceDetailMessage struct {
 }
 
 type SendServiceDetailMessageParams struct {
-	ChatroomName string
-	Data         ServiceDetailMessage
+	ChannelUuid string
+	Data        ServiceDetailMessage
 }
 
 func (df *DarkFirestore) SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error) {
-	if params.Data.Type == "" {
-		params.Data.Type = ServiceDetail
-	}
-
-	if params.Data.Content == "" {
-		params.Data.Content = ServiceDetailMessageContent
-	}
-
+	params.Data.Type = ServiceDetail
+	params.Data.Content = ServiceDetailMessageContent
 	params.Data.CreatedAt = time.Now()
 
 	// Service detail content has different
-	_, _, err := df.Client.
-		Collection(PrivateChatsCollectionName).
-		Doc(params.ChatroomName).
-		Collection(MessageSubCollectionName).
-		Add(ctx, params.Data)
+	msgRef := df.getNewChatroomMsgRef(params.ChannelUuid)
+	_, err := msgRef.Set(ctx, params.Data)
 
 	if err != nil {
 		return params.Data, err
