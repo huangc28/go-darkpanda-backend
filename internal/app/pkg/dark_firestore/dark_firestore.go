@@ -701,11 +701,17 @@ type CancelServiceParams struct {
 //   - Send cancel service message to chatroom in `private_chats` collection
 func (df *DarkFirestore) CancelService(ctx context.Context, p CancelServiceParams) error {
 	chatroomRef := df.Client.
-		Collection(PrivateChatsCollectionName).Doc(p.ChannelUuid)
+		Collection(PrivateChatsCollectionName).
+		Doc(p.ChannelUuid).
+		Collection(MessageSubCollectionName).
+		NewDoc()
 
 	srvRef := df.Client.
 		Collection(ServiceCollectionName).
 		Doc(p.ServiceUuid)
+
+	p.Data.CreatedAt = time.Now()
+	p.Data.Type = CancelService
 
 	err := df.Client.RunTransaction(
 		ctx,

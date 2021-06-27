@@ -131,6 +131,7 @@ func (dep *DepContainer) Run() error {
 
 		user.UserDaoServiceProvider(dep.Container),
 		service.ServiceDAOServiceProvider(dep.Container),
+		service.ServiceFSMProvider(dep.Container),
 		inquiry.InquiryDaoServiceProvider(dep.Container),
 
 		chat.ChatDaoServiceProvider(dep.Container),

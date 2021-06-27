@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -841,6 +842,8 @@ func CancelService(c *gin.Context, depCon container.Container) {
 
 	user, err := userDao.GetUserByUuid(userUuid)
 
+	log.Printf("spot 1 %v %v", userUuid, err)
+
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
@@ -850,8 +853,9 @@ func CancelService(c *gin.Context, depCon container.Container) {
 			),
 		)
 		return
-
 	}
+
+	log.Println("spot 2")
 
 	isParticipant, err := rateDao.IsServiceParticipant(
 		int(user.ID),
@@ -911,10 +915,7 @@ func CancelService(c *gin.Context, depCon container.Container) {
 	if srv.CancellerID.Valid {
 		c.AbortWithError(
 			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.ServiceHasBeenCanceled,
-				err.Error(),
-			),
+			apperr.NewErr(apperr.ServiceHasBeenCanceled),
 		)
 
 		return
@@ -990,7 +991,9 @@ func CancelService(c *gin.Context, depCon container.Container) {
 	usrv := trxResp.Response.(*models.Service)
 
 	// Send service cancel message.
-	chatroom, err := chatDao.GetChatroomByServiceId(int(usrv.ID))
+	chatroom, err := chatDao.
+		WithConn(db.GetDB()).
+		GetChatroomByServiceId(int(usrv.ID))
 
 	if err != nil {
 		c.AbortWithError(
@@ -1005,13 +1008,15 @@ func CancelService(c *gin.Context, depCon container.Container) {
 
 	ctx := context.Background()
 	df := darkfirestore.Get()
-	if err := df.CancelService(ctx, darkfirestore.CancelServiceParams{
-		ChannelUuid: chatroom.ChannelUuid.String,
-		ServiceUuid: usrv.Uuid.String,
-		Data: darkfirestore.ChatMessage{
-			From: usrv.Uuid.String,
+	if err := df.CancelService(ctx,
+		darkfirestore.CancelServiceParams{
+			ChannelUuid: chatroom.ChannelUuid.String,
+			ServiceUuid: usrv.Uuid.String,
+			Data: darkfirestore.ChatMessage{
+				From: usrv.Uuid.String,
+			},
 		},
-	}); err != nil {
+	); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(

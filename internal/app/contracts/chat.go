@@ -3,6 +3,7 @@ package contracts
 import (
 	"time"
 
+	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
 )
@@ -21,6 +22,7 @@ type UpdateChatByUuidParams struct {
 
 type ChatDaoer interface {
 	WithTx(tx *sqlx.Tx) ChatDaoer
+	WithConn(conn db.Conn) ChatDaoer
 	CreateChat(inquiryID int64) (*models.Chatroom, error)
 	JoinChat(chatID int64, userIDs ...int64) error
 	LeaveChat(chatID int64, userIDs ...int64) error

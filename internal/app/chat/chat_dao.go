@@ -43,6 +43,12 @@ func (dao *ChatDao) WithTx(tx *sqlx.Tx) contracts.ChatDaoer {
 	return dao
 }
 
+func (dao *ChatDao) WithConn(conn db.Conn) contracts.ChatDaoer {
+	dao.DB = conn
+
+	return dao
+}
+
 func (dao *ChatDao) CreateChat(inquiryID int64) (*models.Chatroom, error) {
 	// Create chatroom record.
 	sid, err := shortid.Generate()

@@ -76,7 +76,7 @@ func NewServiceFSM(initial models.ServiceStatus) *fsm.FSM {
 	return f
 }
 
-func ServiceServiceProvider(c cinternal.Container) func() error {
+func ServiceFSMProvider(c cinternal.Container) func() error {
 	return func() error {
 		c.Transient(func() contracts.ServiceFSMer {
 			return NewServiceFSM(models.ServiceStatusUnpaid)
