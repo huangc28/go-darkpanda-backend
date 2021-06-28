@@ -68,8 +68,9 @@ type DarkFireStorer interface {
 
 	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
 	AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error
-	UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) (InquiryDetailMessage, error)
+	UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) (*firestore.WriteResult, error)
 
+	UpdateInquiryDetail(ctx context.Context, params UpdateInquiryDetailParams) (InquiryDetailMessage, error)
 	CreateService(ctx context.Context, params CreateServiceParams) error
 	UpdateService(ctx context.Context, params UpdateServiceParams) error
 	CancelService(ctx context.Context, p CancelServiceParams) error
@@ -531,13 +532,36 @@ func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateI
 
 type UpdateInquiryStatusParams struct {
 	InquiryUuid string
+	Status      models.InquiryStatus
+	PickerUuid  string
+}
+
+func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquiryStatusParams) (*firestore.WriteResult, error) {
+	iqRef := df.getInquiryRef(p.InquiryUuid)
+
+	rw, err := iqRef.Update(ctx, []firestore.Update{
+		{
+			Path:  "status",
+			Value: p.Status,
+		},
+		{
+			Path:  "picker_uuid",
+			Value: p.PickerUuid,
+		},
+	})
+
+	return rw, err
+}
+
+type UpdateInquiryDetailParams struct {
+	InquiryUuid string
 	ChannelUuid string
 	Status      models.InquiryStatus
 	PickerUuid  string
 	Data        InquiryDetailMessage
 }
 
-func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) (InquiryDetailMessage, error) {
+func (df *DarkFirestore) UpdateInquiryDetail(ctx context.Context, params UpdateInquiryDetailParams) (InquiryDetailMessage, error) {
 	iqRef := df.getInquiryRef(params.InquiryUuid)
 	chatRef := df.getNewChatroomMsgRef(params.ChannelUuid)
 

@@ -554,9 +554,9 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	msg, err := df.UpdateInquiryStatus(
+	msg, err := df.UpdateInquiryDetail(
 		ctx,
-		darkfirestore.UpdateInquiryStatusParams{
+		darkfirestore.UpdateInquiryDetailParams{
 			InquiryUuid: iq.Uuid,
 			Status:      models.InquiryStatusWaitForInquirerApprove,
 			Data: darkfirestore.InquiryDetailMessage{
