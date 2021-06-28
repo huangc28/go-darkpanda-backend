@@ -1025,31 +1025,14 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 
 	df := darkfirestore.Get()
 	ctx := context.Background()
-	// @TODO wrap update inquiry status with send quit chatroom message.
-	if _, err := df.UpdateInquiryStatus(
-		ctx,
-		darkfirestore.UpdateInquiryStatusParams{
-			InquiryUuid: iq.Uuid,
-			Status:      models.InquiryStatusInquiring,
-			PickerUuid:  "",
-		},
-	); err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToChangeFirestoreInquiryStatus,
-				err.Error(),
-			),
-		)
-		return
-	}
 
 	// Emit quit chatroom messsage to firestore `inquiring` so that the other
 	// party knows it's time to quit the chatroom.
-	_, _, err = df.SendQuitChatroomMessage(
+	_, err = df.QuitChatroom(
 		ctx,
 		darkfirestore.QuitChatroomMessageParams{
 			ChannelUuid: chatroom.ChannelUuid.String,
+			InquiryUuid: iq.Uuid,
 			Data: darkfirestore.ChatMessage{
 				Content: "",
 				From:    c.GetString("uuid"),
@@ -1078,7 +1061,6 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 }
 
 // Emit disapprove message when male user disagree with the inquiry detail set by the female user
-
 type EmitDisagreeInquiry struct {
 	ChannelUuid string `json:"channel_uuid" form:"channel_uuid" binding:"required,gt=0"`
 }
