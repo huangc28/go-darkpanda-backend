@@ -558,6 +558,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 		ctx,
 		darkfirestore.UpdateInquiryDetailParams{
 			InquiryUuid: iq.Uuid,
+			ChannelUuid: body.ChannelUUID,
 			Status:      models.InquiryStatusWaitForInquirerApprove,
 			Data: darkfirestore.InquiryDetailMessage{
 				ChatMessage: darkfirestore.ChatMessage{
@@ -711,7 +712,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			}
 		}
 
-		err = inquiryDao.PatchInquiryStatusByUUID(contracts.PatchInquiryStatusByUUIDParams{
+		err = inquiryDao.WithTx(tx).PatchInquiryStatusByUUID(contracts.PatchInquiryStatusByUUIDParams{
 			InquiryStatus: models.InquiryStatusBooked,
 			UUID:          body.InquiryUUID,
 		})
@@ -759,12 +760,12 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	qrcodeEncodeContent := map[string]interface{}{
-		"qrcode_secret": config.GetAppConf().ServiceQrCodeSecret,
-		"qrcode_uuid":   srvUuid,
-	}
-
-	qrcodeContentByte, err := json.Marshal(qrcodeEncodeContent)
+	qrcodeContentByte, err := json.Marshal(
+		map[string]interface{}{
+			"qrcode_secret": config.GetAppConf().ServiceQrCodeSecret,
+			"qrcode_uuid":   srvUuid,
+		},
+	)
 
 	qrcodePngByte, err := qrcode.Encode(
 		string(qrcodeContentByte),
@@ -1117,24 +1118,10 @@ func EmitDisagreeInquiryHandler(c *gin.Context, depCon container.Container) {
 			}
 
 			df := darkfirestore.Get()
-
-			if _, err := df.UpdateInquiryStatus(
+			msg, err := df.DisagreeInquiry(
 				ctx,
-				darkfirestore.UpdateInquiryStatusParams{
+				darkfirestore.DisagreeInquiryParams{
 					InquiryUuid: iq.Uuid,
-					Status:      models.InquiryStatusChatting,
-				},
-			); err != nil {
-				return db.FormatResp{
-					Err:            err,
-					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
-					HttpStatusCode: http.StatusInternalServerError,
-				}
-			}
-
-			_, msg, err := df.SendDisagreeInquiryMessage(
-				ctx,
-				darkfirestore.SendDisagreeInquiryMessageParams{
 					ChannelUuid: body.ChannelUuid,
 					Data: darkfirestore.ChatMessage{
 						Content:   "",

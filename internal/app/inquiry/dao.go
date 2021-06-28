@@ -31,8 +31,10 @@ func InquiryDaoServiceProvider(c cintrnal.Container) func() error {
 	}
 }
 
-func (dao *InquiryDAO) WithTx(db db.Conn) {
+func (dao *InquiryDAO) WithTx(db db.Conn) contracts.InquiryDAOer {
 	dao.db = db
+
+	return dao
 }
 
 func (dao *InquiryDAO) CheckHasActiveInquiryByID(id int64) (bool, error) {

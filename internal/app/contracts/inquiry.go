@@ -37,7 +37,7 @@ type PatchInquiryParams struct {
 }
 
 type InquiryDAOer interface {
-	WithTx(tx db.Conn)
+	WithTx(tx db.Conn) InquiryDAOer
 	CheckHasActiveInquiryByID(id int64) (bool, error)
 	GetInquiries(offset int, perpage int, statuses ...models.InquiryStatus) ([]*InquiryInfo, error)
 	GetInquiryByUuid(iqUuid string, fields ...string) (*InquiryResult, error)

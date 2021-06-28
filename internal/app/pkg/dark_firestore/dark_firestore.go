@@ -491,30 +491,44 @@ func (df *DarkFirestore) QuitChatroom(ctx context.Context, p QuitChatroomMessage
 	return p.Data, nil
 }
 
-type SendDisagreeInquiryMessageParams struct {
+type DisagreeInquiryParams struct {
 	ChannelUuid string
+	InquiryUuid string
 	Data        ChatMessage
 }
 
-func (df *DarkFirestore) SendDisagreeInquiryMessage(ctx context.Context, params SendDisagreeInquiryMessageParams) (*firestore.DocumentRef, ChatMessage, error) {
-	if params.Data.Type == "" {
-		params.Data.Type = DisagreeInquiry
-	}
+func (df *DarkFirestore) DisagreeInquiry(ctx context.Context, params DisagreeInquiryParams) (ChatMessage, error) {
 
+	params.Data.Type = DisagreeInquiry
 	params.Data.CreatedAt = time.Now()
 
-	ref, _, err := df.
-		Client.
-		Collection(PrivateChatsCollectionName).
-		Doc(params.ChannelUuid).
-		Collection(MessageSubCollectionName).
-		Add(ctx, params.Data)
+	iqRef := df.getInquiryRef(params.InquiryUuid)
+	chatRef := df.getNewChatroomMsgRef(params.ChannelUuid)
+
+	err := df.Client.RunTransaction(ctx,
+		func(ctx context.Context, tx *firestore.Transaction) error {
+			if err := tx.Update(iqRef, []firestore.Update{
+				{
+					Path:  "status",
+					Value: models.InquiryStatusChatting,
+				},
+			}); err != nil {
+				return err
+			}
+
+			if err := tx.Set(chatRef, params.Data); err != nil {
+				return err
+			}
+
+			return nil
+		},
+	)
 
 	if err != nil {
-		return nil, params.Data, nil
+		return params.Data, err
 	}
 
-	return ref, params.Data, nil
+	return params.Data, nil
 }
 
 type CreateInquiringUserParams struct {
