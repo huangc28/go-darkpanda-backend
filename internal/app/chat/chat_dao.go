@@ -115,10 +115,14 @@ INSERT INTO chatroom_users (
 
 func (dao *ChatDao) LeaveChat(chatID int64, userIDs ...int64) error {
 	baseQuery := `
-UPDATE chatroom_users SET
+UPDATE 
+	chatroom_users 
+SET 
 	deleted_at = now()
-WHERE user_id IN (%s)
-AND chatroom_id = $1;
+WHERE 
+	user_id IN (%s)
+AND 
+	chatroom_id = $1;
 	`
 	idStr := ""
 	for _, id := range userIDs {
@@ -178,7 +182,7 @@ func (dao *ChatDao) DeleteChatRoom(ID int64) error {
 UPDATE
 	chatrooms
 SET
-	deleted_at = now(),
+	deleted_at = now()
 WHERE id = $1;
 	`
 	if _, err := dao.DB.Exec(sql, ID); err != nil {
