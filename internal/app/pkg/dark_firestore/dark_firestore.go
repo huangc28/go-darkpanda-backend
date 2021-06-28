@@ -743,7 +743,7 @@ func (df *DarkFirestore) getNewChatroomMsgRef(channelUuid string) *firestore.Doc
 func (df *DarkFirestore) getInquiryRef(inquiryUuid string) *firestore.DocumentRef {
 	return df.
 		Client.
-		Collection(ServiceCollectionName).
+		Collection(InquiryCollectionName).
 		Doc(inquiryUuid)
 }
 
