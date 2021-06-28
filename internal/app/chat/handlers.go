@@ -1002,43 +1002,6 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 				}
 			}
 
-			df := darkfirestore.Get()
-			if _, err := df.UpdateInquiryStatus(
-				ctx,
-				darkfirestore.UpdateInquiryStatusParams{
-					InquiryUuid: iq.Uuid,
-					Status:      models.InquiryStatusInquiring,
-				},
-			); err != nil {
-				return db.FormatResp{
-					HttpStatusCode: http.StatusBadRequest,
-					Err:            err,
-					ErrCode:        apperr.FailedToChangeFirestoreInquiryStatus,
-				}
-			}
-
-			// Emit quit chatroom messsage to firestore `inquiring` so that the other
-			// party knows it's time to quit the chatroom.
-			_, _, err = df.SendQuitChatroomMessage(
-				ctx,
-				darkfirestore.QuitChatroomMessageParams{
-					ChannelUuid: chatroom.ChannelUuid.String,
-					Data: darkfirestore.ChatMessage{
-						Content: "",
-						From:    c.GetString("uuid"),
-					},
-				},
-			)
-
-			if err != nil {
-				return db.FormatResp{
-					Err:            err,
-					ErrCode:        apperr.FailedToSendQuitChatroomMsg,
-					HttpStatusCode: http.StatusInternalServerError,
-				}
-
-			}
-
 			return db.FormatResp{
 				Response: &TransResult{
 					RemovedUsers: removedUsers,
@@ -1057,6 +1020,51 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			),
 		)
 
+		return
+	}
+
+	df := darkfirestore.Get()
+	ctx := context.Background()
+	// @TODO wrap update inquiry status with send quit chatroom message.
+	if _, err := df.UpdateInquiryStatus(
+		ctx,
+		darkfirestore.UpdateInquiryStatusParams{
+			InquiryUuid: iq.Uuid,
+			Status:      models.InquiryStatusInquiring,
+			PickerUuid:  "",
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToChangeFirestoreInquiryStatus,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	// Emit quit chatroom messsage to firestore `inquiring` so that the other
+	// party knows it's time to quit the chatroom.
+	_, _, err = df.SendQuitChatroomMessage(
+		ctx,
+		darkfirestore.QuitChatroomMessageParams{
+			ChannelUuid: chatroom.ChannelUuid.String,
+			Data: darkfirestore.ChatMessage{
+				Content: "",
+				From:    c.GetString("uuid"),
+			},
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendQuitChatroomMsg,
+				err.Error(),
+			),
+		)
 		return
 	}
 
