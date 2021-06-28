@@ -69,8 +69,9 @@ type DarkFireStorer interface {
 	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
 	AskingInquiringUser(ctx context.Context, params AskingInquiringUserParams) error
 	UpdateInquiryStatus(ctx context.Context, params UpdateInquiryStatusParams) (*firestore.WriteResult, error)
-
+	DisagreeInquiry(ctx context.Context, params DisagreeInquiryParams) (ChatMessage, error)
 	UpdateInquiryDetail(ctx context.Context, params UpdateInquiryDetailParams) (InquiryDetailMessage, error)
+
 	CreateService(ctx context.Context, params CreateServiceParams) error
 	UpdateService(ctx context.Context, params UpdateServiceParams) error
 	CancelService(ctx context.Context, p CancelServiceParams) error

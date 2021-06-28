@@ -15,17 +15,16 @@ import (
 // use config to initialize twilio client
 type TwilioTestSuite struct {
 	suite.Suite
-	twilioConf   config.TwilioConf
 	twilioClient *twilio.TwilioClient
 }
 
 func (suite *TwilioTestSuite) SetupSuite() {
 	manager.NewDefaultManager(context.Background())
 
-	twilioConf := config.GetAppConf().TwilioConf
+	appconf := config.GetAppConf()
 	suite.twilioClient = twilio.New(twilio.TwilioConf{
-		AccountSID:   twilioConf.AccountId,
-		AccountToken: twilioConf.AuthToken,
+		AccountSID:   appconf.TwilioAccountID,
+		AccountToken: appconf.TwilioAuthToken,
 	})
 }
 

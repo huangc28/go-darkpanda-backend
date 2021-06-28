@@ -286,7 +286,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 			},
 			Price:       body.Price,
 			Duration:    int(service.Duration.Int32),
-			ServiceTime: service.AppointmentTime.Time.UnixNano() / 1000,
+			ServiceTime: service.AppointmentTime.Time.UnixNano() / int64(time.Microsecond),
 			ServiceType: body.ServiceType,
 			ServiceUUID: service.Uuid.String,
 			MatchingFee: int(matchingFee.Cost.Int32),
@@ -567,7 +567,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 				},
 				Price:           body.Price,
 				Duration:        body.Duration,
-				AppointmentTime: body.AppointmentTime.UnixNano() / 1000,
+				AppointmentTime: body.AppointmentTime.UnixNano() / int64(time.Microsecond),
 				ServiceType:     body.ServiceType,
 				Address:         body.Address,
 				MatchingFee:     int(matchingFee.Cost.Int32),
@@ -852,8 +852,8 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 				Duration:    int(service.Duration.Int32),
 				ServiceUUID: service.Uuid.String,
 				ServiceType: service.ServiceType.ToString(),
-				// Convert unix nano to unix micro so that the flutter can parse it using DateTime.
-				ServiceTime: service.AppointmentTime.Time.UnixNano() / 1000,
+				// Convert unix nano to unix micro so that the flutter can parse it using flutter DateTime.
+				ServiceTime: service.AppointmentTime.Time.UnixNano() / int64(time.Microsecond),
 			},
 		},
 	)

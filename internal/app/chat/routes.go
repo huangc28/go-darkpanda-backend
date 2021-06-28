@@ -44,7 +44,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	g.POST(
 		"/emit-inquiry-updated-message",
-		middlewares.IsFemale(userDao),
 		func(c *gin.Context) {
 			EmitInquiryUpdatedMessage(c, depCon)
 		},
@@ -54,7 +53,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	// Male user would be notified with the service message.  Male user sees the popup contains service detail set by the female user.
 	g.POST(
 		"/emit-service-message",
-		middlewares.IsMale(userDao),
 		func(c *gin.Context) {
 			EmitServiceSettingMessageHandler(c, depCon)
 		},
