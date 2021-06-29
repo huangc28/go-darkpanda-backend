@@ -108,7 +108,7 @@ func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServiceP
 
 	 	-- Retrieve service info
 	 	services.address,
-	 	services.start_time,
+	 	services.appointment_time,
 	 	services.duration,
 
 	  	-- Retrieve picker info

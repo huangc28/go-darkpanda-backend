@@ -166,8 +166,8 @@ func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool, matchin
 		trf.PickerAvatarUrl = &m.PickerAvatarUrl.String
 	}
 
-	if m.StartTime.Valid {
-		trf.StartTime = &m.StartTime.Time
+	if m.AppointmentTime.Valid {
+		trf.StartTime = &m.AppointmentTime.Time
 	}
 
 	if m.Price.Valid {

@@ -40,9 +40,9 @@ type ActiveInquiry struct {
 type ServicePaymentDetail struct {
 	Price sql.NullFloat64 `json:"price"`
 
-	Address   string        `json:"address"`
-	StartTime sql.NullTime  `json:"start_time"`
-	Duration  sql.NullInt64 `json:"duration"`
+	Address         string        `json:"address"`
+	AppointmentTime sql.NullTime  `json:"appointment_time"`
+	Duration        sql.NullInt64 `json:"duration"`
 
 	PickerUuid      string         `json:"picker_uuid"`
 	PickerUsername  string         `json:"picker_username"`
