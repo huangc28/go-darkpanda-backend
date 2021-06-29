@@ -223,7 +223,7 @@ type GetInquiriesBody struct {
 	PerPage int `form:"per_page,default=7"`
 }
 
-func GetInquiriesHandler(c *gin.Context) {
+func GetInquiriesHandler(c *gin.Context, depCon container.Container) {
 	body := &GetInquiriesBody{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -239,9 +239,26 @@ func GetInquiriesHandler(c *gin.Context) {
 	}
 
 	inquiryDao := NewInquiryDAO(db.GetDB())
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+	user, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
 
-	// offset should be passed from client
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+		return
+
+	}
+
+	// offset should be passed from client. The query should exclude
+	// those ids that is in the block list.
 	inquiries, err := inquiryDao.GetInquiries(
+		int(user.ID),
 		body.Offset,
 		body.PerPage,
 		models.InquiryStatusInquiring,

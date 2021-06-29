@@ -54,7 +54,7 @@ SELECT EXISTS(
 }
 
 // GetInquiries get list of inquiries with 7 records per page.
-func (dao *InquiryDAO) GetInquiries(offset int, perpage int, statuses ...models.InquiryStatus) ([]*contracts.InquiryInfo, error) {
+func (dao *InquiryDAO) GetInquiries(userId, offset, perpage int, statuses ...models.InquiryStatus) ([]*contracts.InquiryInfo, error) {
 	statusQuery := "1=1"
 
 	if len(statuses) > 0 {
@@ -78,6 +78,15 @@ func (dao *InquiryDAO) GetInquiries(offset int, perpage int, statuses ...models.
 
 	query := fmt.Sprintf(
 		`
+WITH blocked_users AS (
+	SELECT 
+		blocked_user_id
+	FROM 
+		block_list
+	WHERE
+		user_id = $1 AND
+		deleted_at IS NULL
+)
 SELECT
 	si.uuid,
 	si.budget,
@@ -87,24 +96,26 @@ SELECT
 	si.appointment_time,
 	si.lng,
 	si.lat,
+
 	si.inquiry_status,
+
 	users.uuid,
 	users.username,
 	users.avatar_url,
 	users.nationality
 FROM service_inquiries AS si
 INNER JOIN users
-	ON si.inquirer_id = users.id
-WHERE (
-	%s
-)
-AND (
-	si.expired_at > now()
-	OR  si.expired_at IS NULL
+	ON si.inquirer_id = users.id 
+WHERE (%s)
+AND si.inquirer_id NOT IN (
+	SELECT 
+		blocked_user_id
+	FROM
+		blocked_users
 )
 ORDER BY si.created_at DESC
-LIMIT $1
-OFFSET $2;
+LIMIT $2
+OFFSET $3;
 `,
 		statusQuery,
 	)
@@ -112,6 +123,7 @@ OFFSET $2;
 	inquiries := make([]*contracts.InquiryInfo, 0)
 	rows, err := dao.db.Query(
 		query,
+		userId,
 		perpage,
 		offset,
 	)
