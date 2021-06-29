@@ -25,13 +25,14 @@ type MessageType string
 
 const (
 	Text                MessageType = "text"
-	UpdateInquiryDetail MessageType = "update_inquiry_detail"
-	ServiceDetail       MessageType = "service_detail"
-	ConfirmedService    MessageType = "confirmed_service"
-	DisagreeInquiry     MessageType = "disagree_inquiry"
-	QuitChatroom        MessageType = "quit_chatroom"
-	CompletePayment     MessageType = "complete_payment"
-	CancelService       MessageType = "cancel_service"
+	UpdateInquiryDetail             = "update_inquiry_detail"
+	ServiceDetail                   = "service_detail"
+	ConfirmedService                = "confirmed_service"
+	DisagreeInquiry                 = "disagree_inquiry"
+	QuitChatroom                    = "quit_chatroom"
+	CompletePayment                 = "complete_payment"
+	CancelService                   = "cancel_service"
+	StartService                    = "start_service"
 )
 
 const (
@@ -810,4 +811,38 @@ func (df *DarkFirestore) CancelService(ctx context.Context, p CancelServiceParam
 	}
 
 	return nil
+}
+
+type StartServiceParams struct {
+	ChannelUuid   string
+	ServiceUuid   string
+	ServiceStatus models.ServiceStatus
+	Data          ChatMessage
+}
+
+func (df *DarkFirestore) StartService(ctx context.Context, p StartServiceParams) error {
+	srvRef := df.getServiceRef(p.ServiceUuid)
+	chatRef := df.getNewChatroomMsgRef(p.ChannelUuid)
+
+	p.Data.Type = StartService
+	p.Data.CreatedAt = time.Now()
+
+	err := df.Client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		if err := tx.Update(srvRef, []firestore.Update{
+			{
+				Path:  "status",
+				Value: p.ServiceStatus,
+			},
+		}); err != nil {
+			return err
+		}
+
+		if err := tx.Set(chatRef, p.Data); err != nil {
+			return nil
+		}
+
+		return nil
+	})
+
+	return err
 }

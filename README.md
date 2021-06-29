@@ -106,6 +106,13 @@ It reads and collect migration SQL from `db/migrations`. The collected content w
 
 The content in `db/migrations/schema.sql` will be truncated everytime running the above command to ensure the model is always up to date with the latest SQL of migration **up** files.
 
+## Supported Languages
+
+The app currently supports: 
+- zh
+- en
+
+You can lookup languages here: www.science.co.il/language/Locale-codes.php
 ## Geo Location APIs
 
 - [] Use google map API to retrieve all location suggestion based on inputs

@@ -387,15 +387,20 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 				}
 			}
 
-			err = df.UpdateService(ctx, darkfirestore.UpdateServiceParams{
+			ctx := context.Background()
+			err = df.StartService(ctx, darkfirestore.StartServiceParams{
 				ServiceUuid:   usrv.Uuid.String,
-				ServiceStatus: usrv.ServiceStatus.ToString(),
+				ServiceStatus: usrv.ServiceStatus,
+				Data: darkfirestore.ChatMessage{
+					From:    c.GetString("uuid"),
+					Content: "",
+				},
 			})
 
 			if err != nil {
 				return db.FormatResp{
 					Err:            err,
-					ErrCode:        apperr.FirestoreFailedToUpdateService,
+					ErrCode:        apperr.FailedToStartService,
 					HttpStatusCode: http.StatusInternalServerError,
 				}
 			}
