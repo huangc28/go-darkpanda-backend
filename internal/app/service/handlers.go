@@ -80,6 +80,7 @@ func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 		body.PerPage,
 		models.ServiceStatusUnpaid,
 		models.ServiceStatusToBeFulfilled,
+		models.ServiceStatusFulfilling,
 	)
 
 	if err != nil {
