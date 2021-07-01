@@ -208,6 +208,7 @@ func (dao *AuthDAO) UpdateLoginRecord(ctx context.Context, userUuid string, reco
 
 func (dao *AuthDAO) CreateLoginVerifyCode(ctx context.Context, loginVerifyCode, userUuid string) (*LoginAuthenticator, error) {
 	pipe := dao.redis.TxPipeline()
+	defer pipe.Close()
 
 	pipe.HSet(
 		ctx,

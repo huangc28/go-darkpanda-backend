@@ -1,9 +1,12 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/go-redis/redis/v8"
 	cintrnal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
@@ -12,10 +15,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/net/context"
 )
-
-type PaymentDAOer interface {
-	GetPaymentsByUuid(uuid string) ([]models.PaymentInfo, error)
-}
 
 type ServiceDAOer interface {
 	GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error)
@@ -321,4 +320,45 @@ func (dao *UserDAO) DeleteUserImages(url string) error {
 	}
 
 	return err
+}
+
+const (
+	ChangeMobileVerifyCodeHashName = "change_mobile_verify_code:%s"
+	ChangeMobileVerifyCodeFieldKey = "verify_code"
+)
+
+type CreateChangeMobileVerifyCodeParams struct {
+	RedisCli   *redis.Client
+	VerifyCode string
+	UserUuid   string
+}
+
+func CreateChangeMobileVerifyCode(ctx context.Context, p CreateChangeMobileVerifyCodeParams) error {
+	if p.RedisCli == nil {
+		return errors.New("redis client is not provided.")
+	}
+
+	log.Printf("redis ping %v", p.RedisCli.Ping(ctx).Err())
+
+	pipe := p.RedisCli.TxPipeline()
+	defer pipe.Close()
+
+	pipe.HSet(
+		ctx,
+		fmt.Sprintf(ChangeMobileVerifyCodeHashName, p.UserUuid),
+		ChangeMobileVerifyCodeFieldKey,
+		p.VerifyCode,
+	)
+
+	pipe.Expire(
+		ctx,
+		fmt.Sprintf(ChangeMobileVerifyCodeHashName, p.UserUuid),
+		5*time.Minute,
+	)
+
+	if _, err := pipe.Exec(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }

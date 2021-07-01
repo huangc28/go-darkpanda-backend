@@ -13,4 +13,6 @@ const (
 	FailedToGetHistoricalServices           = "5000010"
 	FailedToTransformHistoricalServices     = "5000011"
 	FailedToGetUserByID                     = "5000012"
+	FailedToCreateChangeMobileVerifyCode    = "5000013"
+	FailedToSendTwilioMessage               = "5000014"
 )

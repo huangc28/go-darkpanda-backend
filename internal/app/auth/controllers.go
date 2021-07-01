@@ -93,7 +93,6 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 		return
 	}
 
-	// try finding username
 	q := models.New(db.GetDB())
 	user, err := q.GetUserByUsername(ctx, body.Username)
 
@@ -138,70 +137,77 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 	// Check if login record already exists in redis.
 	authenticator, err := authDao.GetLoginRecord(ctx, user.Uuid)
 
-	if err != nil {
-		// If authenticator does not exists, that means this is the first time the user
-		// performs login. We should create an authentication record in redis for this user.
-		if err == redis.Nil {
-			authenticator, err = authDao.CreateLoginVerifyCode(
-				ctx,
-				verifyCode.BuildCode(),
-				user.Uuid,
-			)
+	// If authenticator does not exists, that means this is the first time the user
+	// performs login. We should create an authentication record in redis for this user.
+	if err == redis.Nil {
+		authenticator, err = authDao.CreateLoginVerifyCode(
+			ctx,
+			verifyCode.BuildCode(),
+			user.Uuid,
+		)
 
-			if err != nil {
-				c.AbortWithError(
-					http.StatusInternalServerError,
-					apperr.NewErr(
-						apperr.UnableToCreateSendVerifyCode,
-						err.Error(),
-					),
-				)
-
-				return
-			}
-
-			// send mobile verify code via twilio
-			var tc twilio.TwilioServicer
-			ac.Container.Make(&tc)
-			vc := genverifycode.GenVerifyCode()
-
-			smsResp, err := tc.SendSMS(
-				config.GetAppConf().TwilioFrom,
-				user.Mobile.String,
-				fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
-			)
-
-			if twilio.HandleSendTwilioError(c, err) != nil {
-				return
-			}
-
-			log.
-				WithFields(log.Fields{
-					"user_uuid": user.Uuid,
-					"mobile":    user.Mobile.String,
-				}).
-				Infof("sends twilio SMS success, login verify code created ! %v", smsResp.SID)
-
-			c.JSON(http.StatusOK, NewTransform().TransformSendLoginMobileVerifyCode(
-				user.Uuid,
-				verifyCode.Chars,
-				user.Mobile.String,
-			))
-
-			return
-		} else {
-			// Error occurs when trying to get authentication record from redis, return error.
+		if err != nil {
 			c.AbortWithError(
-				http.StatusBadRequest,
+				http.StatusInternalServerError,
 				apperr.NewErr(
-					apperr.FailedToCreateAuthenticatorRecordInRedis,
+					apperr.UnableToCreateSendVerifyCode,
 					err.Error(),
 				),
 			)
 
 			return
-
 		}
+
+		// send mobile verify code via twilio
+		var tc twilio.TwilioServicer
+		ac.Container.Make(&tc)
+		vc := genverifycode.GenVerifyCode()
+
+		smsResp, err := tc.SendSMS(
+			config.GetAppConf().TwilioFrom,
+			user.Mobile.String,
+			fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
+		)
+
+		if twilio.HandleSendTwilioError(c, err) != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToSendTwilioMessage,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		log.
+			WithFields(log.Fields{
+				"user_uuid": user.Uuid,
+				"mobile":    user.Mobile.String,
+			}).
+			Infof("sends twilio SMS success, login verify code created ! %v", smsResp.SID)
+
+		c.JSON(http.StatusOK, NewTransform().TransformSendLoginMobileVerifyCode(
+			user.Uuid,
+			verifyCode.Chars,
+			user.Mobile.String,
+		))
+
+		return
+	}
+
+	if err != nil {
+		// Error occurs when trying to get authentication record from redis, return error.
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToCreateAuthenticatorRecordInRedis,
+				err.Error(),
+			),
+		)
+
+		return
 	}
 
 	// Authenticator record is found. Check number of retries the user has attempt
@@ -237,7 +243,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 	smsResp, err := tc.SendSMS(
 		config.GetAppConf().TwilioFrom,
 		user.Mobile.String,
-		fmt.Sprintf("your darkpanda verify code: \n\n %s", verifyCode.BuildCode()),
+		fmt.Sprintf("[Darkpanda] login verify code: \n\n %s", verifyCode.BuildCode()),
 	)
 
 	if twilio.HandleSendTwilioError(c, err) != nil {

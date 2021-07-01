@@ -50,4 +50,17 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	g.PUT("/:uuid", handlers.PutUserInfo)
 
+	g.POST(
+		"/send-change-mobile-verify-code",
+		func(c *gin.Context) {
+			ChangeMobileVerifyCodeHandler(c, depCon)
+		},
+	)
+
+	g.POST(
+		"/verify-change-mobile-verify-code",
+		func(c *gin.Context) {
+			// VerifyMobileVerifyCodeHandler(c, depCon)
+		},
+	)
 }

@@ -9,11 +9,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/twilio"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -507,3 +510,92 @@ func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container
 		Ratings: trms,
 	})
 }
+
+type ChangeMobileVerifyCodeParams struct {
+	Mobile string `json:"mobile" form:"mobile" binding:"required,gt=0"`
+}
+
+func ChangeMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
+	body := ChangeMobileVerifyCodeParams{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	ctx := context.Background()
+
+	// Generate verify code.
+	verifyCode := genverifycode.GenVerifyCode()
+
+	// Store verify code in redis.
+	if err := CreateChangeMobileVerifyCode(
+		ctx,
+		CreateChangeMobileVerifyCodeParams{
+			RedisCli:   db.GetRedis(),
+			VerifyCode: verifyCode.BuildCode(),
+			UserUuid:   c.GetString("uuid"),
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateChangeMobileVerifyCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Send verify code via twilio.
+	var tc twilio.TwilioServicer
+	depCon.Make(&tc)
+
+	smsResp, err := tc.SendSMS(
+		config.GetAppConf().TwilioFrom,
+		body.Mobile,
+		fmt.Sprintf("[Darkpanda] Here is your change mobile verify code: \n\n %s", verifyCode.BuildCode()),
+	)
+
+	if twilio.HandleSendTwilioError(c, err) != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendTwilioMessage,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	log.
+		WithFields(log.Fields{
+			"user_uuid": c.GetString("uuid"),
+			"mobile":    body.Mobile,
+		}).
+		Infof("sends twilio SMS success, login verify code created ! %v", smsResp.SID)
+
+	c.JSON(
+		http.StatusOK,
+		struct {
+			VerifyPrefix string `json:"verify_prefix"`
+			Mobile       string `json:"mobile"`
+		}{
+			verifyCode.Chars,
+			body.Mobile,
+		},
+	)
+}
+
+// func VerifyMobileVerifyCodeHandler(c context.Context, depCon  ) {
+
+// }
