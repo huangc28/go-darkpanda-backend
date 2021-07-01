@@ -60,7 +60,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	g.POST(
 		"/verify-change-mobile-verify-code",
 		func(c *gin.Context) {
-			// VerifyMobileVerifyCodeHandler(c, depCon)
+			VerifyMobileVerifyCodeHandler(c, depCon)
 		},
 	)
 }

@@ -15,4 +15,12 @@ const (
 	FailedToGetUserByID                     = "5000012"
 	FailedToCreateChangeMobileVerifyCode    = "5000013"
 	FailedToSendTwilioMessage               = "5000014"
+	FailedToGetChangeMobileVerifyCode       = "5000015"
+	ChangeMobileVerifyCodeNotExists         = "5000016"
+	ChangeMobileVerifyCodeNotMatching       = "5000017"
 )
+
+var userErrorCodeMsgMap = map[string]string{
+	ChangeMobileVerifyCodeNotExists:   "verify code does not exist, please send verify code via mobile again.",
+	ChangeMobileVerifyCodeNotMatching: "verify code does not match.",
+}

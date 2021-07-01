@@ -325,20 +325,20 @@ func (dao *UserDAO) DeleteUserImages(url string) error {
 const (
 	ChangeMobileVerifyCodeHashName = "change_mobile_verify_code:%s"
 	ChangeMobileVerifyCodeFieldKey = "verify_code"
+	ChangeMobileNumberFieldKey     = "mobile"
 )
 
 type CreateChangeMobileVerifyCodeParams struct {
 	RedisCli   *redis.Client
 	VerifyCode string
 	UserUuid   string
+	Mobile     string
 }
 
 func CreateChangeMobileVerifyCode(ctx context.Context, p CreateChangeMobileVerifyCodeParams) error {
 	if p.RedisCli == nil {
 		return errors.New("redis client is not provided.")
 	}
-
-	log.Printf("redis ping %v", p.RedisCli.Ping(ctx).Err())
 
 	pipe := p.RedisCli.TxPipeline()
 	defer pipe.Close()
@@ -348,6 +348,8 @@ func CreateChangeMobileVerifyCode(ctx context.Context, p CreateChangeMobileVerif
 		fmt.Sprintf(ChangeMobileVerifyCodeHashName, p.UserUuid),
 		ChangeMobileVerifyCodeFieldKey,
 		p.VerifyCode,
+		ChangeMobileNumberFieldKey,
+		p.Mobile,
 	)
 
 	pipe.Expire(
@@ -361,4 +363,40 @@ func CreateChangeMobileVerifyCode(ctx context.Context, p CreateChangeMobileVerif
 	}
 
 	return nil
+}
+
+type ChangeMobileVerifyCodeModel struct {
+	Mobile     string
+	VerifyCode string
+}
+
+func parseChangeMobileVerifyCodeResult(res map[string]string) *ChangeMobileVerifyCodeModel {
+	m := &ChangeMobileVerifyCodeModel{}
+
+	if v, ok := res[ChangeMobileVerifyCodeFieldKey]; ok {
+		m.VerifyCode = v
+	}
+
+	if v, ok := res[ChangeMobileNumberFieldKey]; ok {
+		m.Mobile = v
+	}
+
+	return m
+}
+
+type GetChangeMobileVerifyCodeParams struct {
+	RedisCli *redis.Client
+	UserUuid string
+}
+
+func GetChangeMobileVerifyCode(ctx context.Context, p GetChangeMobileVerifyCodeParams) (*ChangeMobileVerifyCodeModel, error) {
+	val, err := p.RedisCli.HGetAll(ctx, fmt.Sprintf(ChangeMobileVerifyCodeHashName, p.UserUuid)).Result()
+
+	if err != nil {
+		return nil, err
+	}
+
+	m := parseChangeMobileVerifyCodeResult(val)
+
+	return m, nil
 }

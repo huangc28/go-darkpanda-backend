@@ -8,6 +8,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-redis/redis/v8"
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -194,7 +195,6 @@ type PutUserInfoBody struct {
 	Description  *string             `form:"description" json:"description"`
 	Images       []CreateImageParams `form:"imageList" json:"imageList"`
 	RemoveImages []CreateImageParams `form:"removeImageList" json:"removeImageList"`
-	// BreastSize  *string  `json:"breast_size"`
 }
 
 func (h *UserHandlers) PutUserInfo(c *gin.Context) {
@@ -542,6 +542,7 @@ func ChangeMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 			RedisCli:   db.GetRedis(),
 			VerifyCode: verifyCode.BuildCode(),
 			UserUuid:   c.GetString("uuid"),
+			Mobile:     body.Mobile,
 		},
 	); err != nil {
 		c.AbortWithError(
@@ -596,6 +597,85 @@ func ChangeMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	)
 }
 
-// func VerifyMobileVerifyCodeHandler(c context.Context, depCon  ) {
+type VerifyMobileVerifyCodeParams struct {
+	VerifyCode string `json:"verify_code" form:"verify_code" binding:"required,gt=0"`
+}
 
-// }
+func VerifyMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
+	body := VerifyMobileVerifyCodeParams{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindApiBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Get change mobile verify record from redis, if it exists.
+	ctx := context.Background()
+	m, err := GetChangeMobileVerifyCode(ctx, GetChangeMobileVerifyCodeParams{
+		RedisCli: db.GetRedis(),
+		UserUuid: c.GetString("uuid"),
+	})
+
+	if err == redis.Nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.ChangeMobileVerifyCodeNotExists),
+		)
+
+		return
+	}
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetChangeMobileVerifyCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if body.VerifyCode != m.VerifyCode {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.ChangeMobileVerifyCodeNotMatching),
+		)
+
+		return
+	}
+
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	pv := true
+	if _, err := userDao.UpdateUserInfoByUuid(contracts.UpdateUserInfoParams{
+		Uuid:          c.GetString("uuid"),
+		Mobile:        m.Mobile,
+		PhoneVerified: &pv,
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Mobile string `json:"mobile"`
+	}{
+		m.Mobile,
+	})
+}
