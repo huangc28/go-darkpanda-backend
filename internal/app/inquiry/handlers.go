@@ -933,9 +933,10 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 	_, err = df.UpdateInquiryStatus(
 		ctx,
 		darkfirestore.UpdateInquiryStatusParams{
-			InquiryUuid: iq.Uuid,
-			Status:      models.InquiryStatus(fsm.Current()),
-			PickerUuid:  "",
+			InquiryUuid:    iq.Uuid,
+			Status:         models.InquiryStatus(fsm.Current()),
+			PickerUuid:     "",
+			PickerUsername: "",
 		},
 	)
 
