@@ -135,7 +135,11 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 	depCon.Make(&inquiryDao)
 	depCon.Make(&serviceDao)
 
-	user, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
+	user, err := userDao.GetUserByUuid(
+		c.GetString("uuid"),
+		"id",
+		"username",
+	)
 
 	if err != nil {
 		c.AbortWithError(
@@ -281,8 +285,9 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 		ChannelUuid: body.ChannelUUID,
 		Data: darkfirestore.ServiceDetailMessage{
 			ChatMessage: darkfirestore.ChatMessage{
-				Content: "",
-				From:    c.GetString("uuid"),
+				Content:  "",
+				From:     c.GetString("uuid"),
+				Username: user.Username,
 			},
 			Price:       body.Price,
 			Duration:    int(service.Duration.Int32),
@@ -554,6 +559,22 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	msg, err := df.UpdateInquiryDetail(
 		ctx,
 		darkfirestore.UpdateInquiryDetailParams{
@@ -562,8 +583,9 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 			Status:      models.InquiryStatusWaitForInquirerApprove,
 			Data: darkfirestore.InquiryDetailMessage{
 				ChatMessage: darkfirestore.ChatMessage{
-					Content: "",
-					From:    c.GetString("uuid"),
+					Content:  "",
+					From:     c.GetString("uuid"),
+					Username: sender.Username,
 				},
 				Price:           body.Price,
 				Duration:        body.Duration,
@@ -838,6 +860,22 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	_, msg, err := darkfirestore.Get().SendServiceConfirmedMessage(
 		ctx,
 		darkfirestore.SendServiceConfirmedMessageParams{
@@ -846,12 +884,14 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 				ChatMessage: darkfirestore.ChatMessage{
 					Content:   "",
 					From:      c.GetString("uuid"),
+					Username:  sender.Username,
 					CreatedAt: time.Now(),
 				},
 				Price:       float64(*price),
 				Duration:    int(service.Duration.Int32),
 				ServiceUUID: service.Uuid.String,
 				ServiceType: service.ServiceType.ToString(),
+
 				// Convert unix nano to unix micro so that the flutter can parse it using flutter DateTime.
 				ServiceTime: service.AppointmentTime.Time.UnixNano() / int64(time.Microsecond),
 			},
@@ -1029,14 +1069,30 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 
 	// Emit quit chatroom messsage to firestore `inquiring` so that the other
 	// party knows it's time to quit the chatroom.
+	var userDao contracts.UserDAOer
+	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	_, err = df.QuitChatroom(
 		ctx,
 		darkfirestore.QuitChatroomMessageParams{
 			ChannelUuid: chatroom.ChannelUuid.String,
 			InquiryUuid: iq.Uuid,
 			Data: darkfirestore.ChatMessage{
-				Content: "",
-				From:    c.GetString("uuid"),
+				Content:  "",
+				From:     c.GetString("uuid"),
+				Username: sender.Username,
 			},
 		},
 	)
@@ -1084,9 +1140,27 @@ func EmitDisagreeInquiryHandler(c *gin.Context, depCon container.Container) {
 	// - Change inquiry status in DB
 	// - Change inquiry status in firestore
 	// - Emit disapprove message
-	var iqDao contracts.InquiryDAOer
+	var (
+		iqDao   contracts.InquiryDAOer
+		userDao contracts.UserDAOer
+	)
+
 	depCon.Make(&iqDao)
-	ctx := context.Background()
+	depCon.Make(&userDao)
+
+	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	iq, err := iqDao.GetInquiryByChannelUuid(body.ChannelUuid)
 
@@ -1102,62 +1176,48 @@ func EmitDisagreeInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	txResp := db.TransactWithFormatStruct(
-		db.GetDB(),
-		func(tx *sqlx.Tx) db.FormatResp {
-			iqDao.WithTx(tx)
-			if err := iqDao.PatchInquiryStatusByUUID(contracts.PatchInquiryStatusByUUIDParams{
-				UUID:          iq.Uuid,
-				InquiryStatus: models.InquiryStatusChatting,
-			}); err != nil {
-				return db.FormatResp{
-					Err:            err,
-					ErrCode:        apperr.FailedToPatchInquiryStatus,
-					HttpStatusCode: http.StatusInternalServerError,
-				}
-			}
-
-			df := darkfirestore.Get()
-			msg, err := df.DisagreeInquiry(
-				ctx,
-				darkfirestore.DisagreeInquiryParams{
-					InquiryUuid: iq.Uuid,
-					ChannelUuid: body.ChannelUuid,
-					Data: darkfirestore.ChatMessage{
-						Content:   "",
-						From:      c.GetString("uuid"),
-						CreatedAt: time.Now(),
-					},
-				},
-			)
-
-			if err != nil {
-				return db.FormatResp{
-					ErrCode:        apperr.FailedToSendTextMessage,
-					Err:            err,
-					HttpStatusCode: http.StatusInternalServerError,
-				}
-			}
-
-			return db.FormatResp{
-				Response: &msg,
-			}
-		},
-	)
-
-	if txResp.Err != nil {
+	if err := iqDao.PatchInquiryStatusByUUID(contracts.PatchInquiryStatusByUUIDParams{
+		UUID:          iq.Uuid,
+		InquiryStatus: models.InquiryStatusChatting,
+	}); err != nil {
 		c.AbortWithError(
-			txResp.HttpStatusCode,
+			http.StatusInternalServerError,
 			apperr.NewErr(
-				txResp.ErrCode,
-				txResp.Err.Error(),
+				apperr.FailedToPatchInquiryStatus,
+				err.Error(),
 			),
 		)
 
 		return
 	}
 
-	msg := txResp.Response.(*darkfirestore.ChatMessage)
+	df := darkfirestore.Get()
+	ctx := context.Background()
+	msg, err := df.DisagreeInquiry(
+		ctx,
+		darkfirestore.DisagreeInquiryParams{
+			InquiryUuid: iq.Uuid,
+			ChannelUuid: body.ChannelUuid,
+			Data: darkfirestore.ChatMessage{
+				Content:   "",
+				From:      c.GetString("uuid"),
+				Username:  sender.Username,
+				CreatedAt: time.Now(),
+			},
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendTextMessage,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	c.JSON(http.StatusOK, msg)
 }

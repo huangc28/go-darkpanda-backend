@@ -121,6 +121,7 @@ type ChatMessage struct {
 	Type      MessageType `firestore:"type,omitempty" json:"type"`
 	Content   interface{} `firestore:"content,omitempty" json:"content"`
 	From      string      `firestore:"from,omitempty" json:"from"`
+	Username  string      `firestore:"username,omitempty" json:"username"`
 	CreatedAt time.Time   `firestore:"created_at,omitempty" json:"created_at"`
 }
 
