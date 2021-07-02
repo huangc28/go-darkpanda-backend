@@ -1161,3 +1161,48 @@ func EmitDisagreeInquiryHandler(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, msg)
 }
+
+type EmitImageMessageBody struct {
+	ImageUrl    string `json:"image_url" form:"image_url" binding:"required,gt=0"`
+	ChannelUuid string `json:"channel_uuid" form:"channel_uuid" binding:"required,gt=0"`
+}
+
+func EmitImageMessage(c *gin.Context, depCon container.Container) {
+	body := EmitImageMessageBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindApiBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	ctx := context.Background()
+	df := darkfirestore.Get()
+	err := df.SendImageMessage(ctx, darkfirestore.SendImageMessageParams{
+		ChannelUuid: body.ChannelUuid,
+		ImageUrls: []string{
+			body.ImageUrl,
+		},
+		From: c.GetString("uuid"),
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendImageMessage,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct{}{})
+}

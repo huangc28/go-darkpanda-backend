@@ -10,6 +10,8 @@ const (
 	FailedToParseMultipartForm          = "4000007"
 	FailedToOpenMultipartFile           = "4000008"
 	FailedToGetImagesByUserID           = "4000009"
+	FailedToUploadImagesToGCS           = "4000010"
+	FailedToSendImageMessage            = "4000011"
 )
 
 var ImageErrCodeMap = map[string]string{}

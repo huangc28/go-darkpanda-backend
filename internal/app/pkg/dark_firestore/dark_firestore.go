@@ -33,6 +33,7 @@ const (
 	CompletePayment                 = "complete_payment"
 	CancelService                   = "cancel_service"
 	StartService                    = "start_service"
+	Images                          = "images"
 )
 
 const (
@@ -121,7 +122,6 @@ type ChatMessage struct {
 	Content   interface{} `firestore:"content,omitempty" json:"content"`
 	From      string      `firestore:"from,omitempty" json:"from"`
 	CreatedAt time.Time   `firestore:"created_at,omitempty" json:"created_at"`
-	Empty     bool        `json:"empty"`
 }
 
 type CreatePrivateChatRoomParams struct {
@@ -845,4 +845,34 @@ func (df *DarkFirestore) StartService(ctx context.Context, p StartServiceParams)
 	})
 
 	return err
+}
+
+type ImageMessage struct {
+	ChatMessage
+	ImageUrls []string `firestore:"image_urls,omitempty" json:"image_urls"`
+}
+type SendImageMessageParams struct {
+	ChannelUuid string
+	ImageUrls   []string
+	From        string
+}
+
+func (df *DarkFirestore) SendImageMessage(ctx context.Context, p SendImageMessageParams) error {
+	chatRef := df.getNewChatroomMsgRef(p.ChannelUuid)
+
+	msg := ImageMessage{
+		ChatMessage{
+			Type:      Images,
+			From:      p.From,
+			Content:   "",
+			CreatedAt: time.Now(),
+		},
+		p.ImageUrls,
+	}
+
+	if _, err := chatRef.Set(ctx, msg); err != nil {
+		return nil
+	}
+
+	return nil
 }

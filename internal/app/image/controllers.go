@@ -97,7 +97,6 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-
 				apperr.FailedToParseMultipartForm,
 				err.Error(),
 			),
@@ -109,7 +108,6 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 	fileHeaders := c.Request.MultipartForm.File["image"]
 
 	appConf := config.GetAppConf()
-
 	ctx := context.Background()
 	client, err := storage.NewClient(
 		ctx,
@@ -138,7 +136,15 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 	linkList, err := enhancer.UploadMultiple(ctx, fileHeaders)
 
 	if err != nil {
-		log.Fatalf("Failed to upload multiple files %s", err.Error())
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUploadImagesToGCS,
+				err.Error(),
+			),
+		)
+
+		return
 	}
 
 	c.JSON(http.StatusOK, NewTransformer().TransformLinks(linkList))

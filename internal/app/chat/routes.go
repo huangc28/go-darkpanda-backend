@@ -43,6 +43,13 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	)
 
 	g.POST(
+		"/emit-image-message",
+		func(c *gin.Context) {
+			EmitImageMessage(c, depCon)
+		},
+	)
+
+	g.POST(
 		"/emit-inquiry-updated-message",
 		func(c *gin.Context) {
 			EmitInquiryUpdatedMessage(c, depCon)
