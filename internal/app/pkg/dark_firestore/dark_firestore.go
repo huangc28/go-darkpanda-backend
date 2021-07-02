@@ -564,9 +564,10 @@ func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateI
 }
 
 type UpdateInquiryStatusParams struct {
-	InquiryUuid string
-	Status      models.InquiryStatus
-	PickerUuid  string
+	InquiryUuid    string
+	Status         models.InquiryStatus
+	PickerUuid     string
+	PickerUsername string
 }
 
 func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquiryStatusParams) (*firestore.WriteResult, error) {
@@ -580,6 +581,10 @@ func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquir
 		{
 			Path:  "picker_uuid",
 			Value: p.PickerUuid,
+		},
+		{
+			Path:  "picker_username",
+			Value: p.PickerUsername,
 		},
 	})
 
@@ -641,8 +646,9 @@ func (df *DarkFirestore) UpdateInquiryDetail(ctx context.Context, params UpdateI
 }
 
 type AskingInquiringUserParams struct {
-	InquiryUuid string
-	PickerUuid  string
+	InquiryUuid    string
+	PickerUuid     string
+	PickerUsername string
 }
 
 // AskingLobbyUser updates the status of lobby user document
@@ -651,9 +657,10 @@ func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingI
 	_, err := df.UpdateInquiryStatus(
 		ctx,
 		UpdateInquiryStatusParams{
-			InquiryUuid: params.InquiryUuid,
-			Status:      models.InquiryStatusAsking,
-			PickerUuid:  params.PickerUuid,
+			InquiryUuid:    params.InquiryUuid,
+			Status:         models.InquiryStatusAsking,
+			PickerUuid:     params.PickerUuid,
+			PickerUsername: params.PickerUsername,
 		},
 	)
 

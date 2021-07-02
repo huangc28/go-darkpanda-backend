@@ -500,13 +500,14 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	q := models.New(db.GetDB())
 
 	// Retrieve inquiry picker's ID which is the ID of the current requester.
-	pickerID, err := q.GetUserIDByUuid(ctx, c.GetString("uuid"))
+	// pickerID, err := q.GetUserIDByUuid(ctx, c.GetString("uuid"))
+	picker, err := q.GetUserByUuid(ctx, c.GetString("uuid"))
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetUserIDByUuid,
+				apperr.FailedToGetUserByUuid,
 				err.Error(),
 			),
 		)
@@ -569,7 +570,7 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	// Patch inquiry status in DB to be `asking`.
 	iqDao := NewInquiryDAO(db.GetDB())
 	if _, err := iqDao.AskingInquiry(
-		pickerID,
+		picker.ID,
 		iq.ID,
 	); err != nil {
 		c.AbortWithError(
@@ -588,8 +589,9 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	if err = df.AskingInquiringUser(
 		ctx,
 		darkfirestore.AskingInquiringUserParams{
-			InquiryUuid: iq.Uuid,
-			PickerUuid:  c.GetString("uuid"),
+			InquiryUuid:    iq.Uuid,
+			PickerUuid:     c.GetString("uuid"),
+			PickerUsername: picker.Username,
 		},
 	); err != nil {
 		c.AbortWithError(
