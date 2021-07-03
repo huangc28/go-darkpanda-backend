@@ -1,12 +1,14 @@
 package apperr
 
 const (
-	FailedToValidateVerifyReferralCodeParams = "1200001"
-	FailedToGetReferralCode                  = "1200002"
-	ReferralCodeNotFound                     = "1200003"
-	ReferralCodeIsOccupied                   = "1200004"
-	FailedToUpdateReferralcode               = "1200005"
-	ReferralCodeExpired                      = "1200006"
+	FailedToValidateVerifyReferralCodeParams = "1700001"
+	FailedToGetReferralCode                  = "1700002"
+	ReferralCodeNotFound                     = "1700003"
+	ReferralCodeIsOccupied                   = "1700004"
+	FailedToUpdateReferralcode               = "1700005"
+	ReferralCodeExpired                      = "1700006"
+	FailedToGetOccupiedRefcode               = "1700007"
+	FailedToCreateReferralCode               = "1700008"
 )
 
 var ReferralErrorMessageMap = map[string]string{

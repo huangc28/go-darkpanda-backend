@@ -16,7 +16,9 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		"/bank_account",
 		jwtactor.JwtValidator(jwtactor.JwtMiddlewareOptions{
 			Secret: config.GetAppConf().JwtSecret,
-		}, authDaoer),
+		},
+			authDaoer,
+		),
 	)
 
 	g.GET("/:uuid", func(c *gin.Context) {

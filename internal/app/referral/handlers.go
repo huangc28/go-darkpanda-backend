@@ -11,6 +11,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
+	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
 )
@@ -107,4 +108,65 @@ func HandleVerifyReferralCode(c *gin.Context, depCon container.Container) {
 	}
 
 	c.JSON(http.StatusOK, struct{}{})
+}
+
+func GetReferralCodeHandler(c *gin.Context, depCon container.Container) {
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+	user, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	rcDao := NewReferralCodeDAO(db.GetDB())
+	refCode, err := rcDao.GetUnoccupiedReferralCode(c.GetString("uuid"))
+
+	if err == sql.ErrNoRows {
+		// Active referral code not found, we will create a fresh one here.
+		refCode, err = rcDao.CreateReferralCode(
+			CreateReferralCodeParams{
+				InvitorID: int(user.ID),
+				RefCode:   genverifycode.GenNum(100000, 999999),
+			},
+		)
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToCreateReferralCode,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+	}
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetOccupiedRefcode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		ReferralCode string `json:"referral_code"`
+	}{
+		ReferralCode: refCode.RefCode,
+	})
 }

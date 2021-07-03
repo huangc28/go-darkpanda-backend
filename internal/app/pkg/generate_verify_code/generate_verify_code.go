@@ -11,7 +11,7 @@ var (
 	seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
-func Gen4DigitNum(low, high int) int {
+func GenNum(low, high int) int {
 	return low + seededRand.Intn(high-low)
 }
 
@@ -36,7 +36,7 @@ func (vs *VerifyCode) BuildCode() string {
 
 func GenVerifyCode() VerifyCode {
 	return VerifyCode{
-		Dig:   Gen4DigitNum(1000, 9999),
+		Dig:   GenNum(1000, 9999),
 		Chars: GenRandStringRune(3),
 	}
 }
