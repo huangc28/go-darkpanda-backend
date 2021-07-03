@@ -88,10 +88,8 @@ func appendUnixTimeStampToFilename(filename string) string {
 
 func (e *GCSEnhancer) UploadMultiple(ctx context.Context, headers []*multipart.FileHeader) ([]string, error) {
 	quit := make(chan struct{}, 1)
-	defer close(quit)
 
 	errChan := make(chan error, 1)
-	boolChan := make(chan bool, 1)
 	linkChan := make(chan string, 1)
 
 	for _, header := range headers {
@@ -104,7 +102,6 @@ func (e *GCSEnhancer) UploadMultiple(ctx context.Context, headers []*multipart.F
 				defer file.Close()
 
 				if err != nil {
-					boolChan <- false
 					errChan <- err
 				}
 
@@ -115,21 +112,20 @@ func (e *GCSEnhancer) UploadMultiple(ctx context.Context, headers []*multipart.F
 				)
 
 				if err != nil {
-					boolChan <- false
 					errChan <- err
 				}
 
-				boolChan <- true
+				errChan <- nil
 				linkChan <- objectLink
 			}(header)
 		}
 	}
 
 	for range headers {
-		if <-boolChan == false {
+		if err := <-errChan; err != nil {
 			close(quit)
 
-			return []string{}, <-errChan
+			return []string{}, err
 		}
 
 		e.linkList = append(e.linkList, <-linkChan)
