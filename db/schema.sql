@@ -627,4 +627,8 @@ COMMIT;BEGIN;
 COMMIT;BEGIN; 
     ALTER TABLE services   
     ADD COLUMN canceller_id INT REFERENCES users(id) NULL;  
+COMMIT;BEGIN;
+    ALTER TABLE users 
+    DROP COLUMN IF EXISTS phone_verify_code;
+
 COMMIT;
