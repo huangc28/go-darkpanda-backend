@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/go-redis/redis/v8"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -324,19 +325,21 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	// Generate phone verify code and update user record.
+	ctx := context.Background()
 	vs := genverifycode.GenVerifyCode()
-	pVs := vs.BuildCode()
 
-	if _, err = userDao.UpdateUserInfoByUuid(
-		contracts.UpdateUserInfoParams{
-			Uuid:            body.Uuid,
-			PhoneVerifyCode: &pVs,
+	if err := CreateRegisterMobileVerifyCode(
+		ctx, CreateRegisterMobileVerifyCodeParams{
+			RedisCli:   db.GetRedis(),
+			UserUuid:   body.Uuid,
+			VerifyCode: vs.BuildCode(),
+			Mobile:     body.Mobile,
 		},
 	); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToUpdateUserPhoneVerifyCode,
+				apperr.FailedToCreateRegisterMobileVerifyCode,
 				err.Error(),
 			),
 		)
@@ -374,7 +377,6 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 }
 
 type VerifyMobileBody struct {
-	Mobile     string `form:"mobile" json:"mobile" bind:"required,gt=0"`
 	UUID       string `form:"uuid" json:"uuid" bind:"required,gt=0"`
 	VerifyCode string `form:"verify_code" json:"verify_code" bind:"required,gt=0"`
 }
@@ -405,19 +407,20 @@ func VerifyMobileHandler(c *gin.Context, depCon container.Container) {
 		"phone_verified",
 	)
 
+	if err == sql.ErrNoRows {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.UserNotFoundByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
 	if err != nil {
-		if err == sql.ErrNoRows {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(
-					apperr.UserNotFoundByUuid,
-					err.Error(),
-				),
-			)
-
-			return
-
-		}
 
 		c.AbortWithError(
 			http.StatusInternalServerError,
@@ -441,7 +444,35 @@ func VerifyMobileHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	if user.PhoneVerifyCode.String != body.VerifyCode {
+	// Retrieve verify code from redis.
+	ctx := context.Background()
+	vc, err := GetRegisterMobileVerifyCode(ctx, GetRegisterMobileVerifyCodeParams{
+		RedisCli: db.GetRedis(),
+		UserUuid: user.Uuid,
+	})
+
+	if err == redis.Nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.FailedToGetRegisterMobileVerifyCode),
+		)
+
+		return
+	}
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetRegisterMobileVerifyCode,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if vc.VerifyCode != body.VerifyCode {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -456,7 +487,7 @@ func VerifyMobileHandler(c *gin.Context, depCon container.Container) {
 	if _, err := userDao.UpdateUserInfoByUuid(contracts.UpdateUserInfoParams{
 		Uuid:          body.UUID,
 		PhoneVerified: &phoneVerified,
-		Mobile:        body.Mobile,
+		Mobile:        vc.Mobile,
 	}); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,

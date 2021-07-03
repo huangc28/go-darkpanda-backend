@@ -1,14 +1,14 @@
 package apperr
 
 const (
-	FailedToValidateVerifyUsernameParams = "1800001"
-	FailedToVerifyReferralCode           = "1800002"
-	FailedToSendMobileVerifyCode         = "1800003"
-	UserNotFoundByUuid                   = "1800004"
-	FailedToUpdateUserPhoneVerifyCode    = "1800005"
-	UserAlreadyMobileVerified            = "1800006"
-	PhoneVerifyCodeNotMatch              = "1800007"
-	FailedToUpdateUserByUuid             = "1800008"
+	FailedToValidateVerifyUsernameParams   = "1800001"
+	FailedToVerifyReferralCode             = "1800002"
+	FailedToSendMobileVerifyCode           = "1800003"
+	UserNotFoundByUuid                     = "1800004"
+	FailedToCreateRegisterMobileVerifyCode = "1800005"
+	UserAlreadyMobileVerified              = "1800006"
+	PhoneVerifyCodeNotMatch                = "1800007"
+	FailedToUpdateUserByUuid               = "1800008"
 )
 
 var RegisterErrCodeMsgMap = map[string]string{

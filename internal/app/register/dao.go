@@ -2,7 +2,11 @@ package register
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
@@ -54,4 +58,86 @@ WHERE ref_code = $1 LIMIT 1
 	}
 
 	return refCodeM, nil
+}
+
+const (
+	RegisterMobileVerifyCodeKey      = "register_mobile_verify_code:%s"
+	RegisterMobileVerifyCodeFieldKey = "verify_code"
+	RegisterMobileNumberFieldKey     = "mobile"
+)
+
+type CreateRegisterMobileVerifyCodeParams struct {
+	RedisCli   *redis.Client
+	UserUuid   string
+	VerifyCode string
+	Mobile     string
+}
+
+func CreateRegisterMobileVerifyCode(ctx context.Context, p CreateRegisterMobileVerifyCodeParams) error {
+	if p.RedisCli == nil {
+		return errors.New("redis client is not provided")
+	}
+
+	pipe := p.RedisCli.TxPipeline()
+	defer pipe.Close()
+
+	p.RedisCli.HSet(
+		ctx,
+		fmt.Sprintf(RegisterMobileVerifyCodeKey, p.UserUuid),
+		RegisterMobileVerifyCodeFieldKey,
+		p.VerifyCode,
+		RegisterMobileNumberFieldKey,
+		p.Mobile,
+	)
+
+	p.RedisCli.Expire(
+		ctx,
+		fmt.Sprintf(RegisterMobileVerifyCodeKey, p.UserUuid),
+		5*time.Minute,
+	)
+
+	if _, err := pipe.Exec(ctx); err != nil {
+		return err
+
+	}
+
+	return nil
+}
+
+type RegisterMobileVerifyCode struct {
+	VerifyCode string
+	Mobile     string
+}
+
+type GetRegisterMobileVerifyCodeParams struct {
+	RedisCli *redis.Client
+	UserUuid string
+}
+
+func GetRegisterMobileVerifyCode(ctx context.Context, p GetRegisterMobileVerifyCodeParams) (*RegisterMobileVerifyCode, error) {
+	val, err := p.RedisCli.HGetAll(
+		ctx,
+		fmt.Sprintf(RegisterMobileVerifyCodeKey, p.UserUuid),
+	).Result()
+
+	if err != nil {
+		return nil, err
+
+	}
+
+	return parseRegisterMobileVerifyCode(val), nil
+}
+
+func parseRegisterMobileVerifyCode(res map[string]string) *RegisterMobileVerifyCode {
+	m := &RegisterMobileVerifyCode{}
+
+	if v, ok := res[RegisterMobileVerifyCodeFieldKey]; ok {
+		m.VerifyCode = v
+	}
+
+	if v, ok := res[RegisterMobileNumberFieldKey]; ok {
+		m.Mobile = v
+	}
+
+	return m
 }

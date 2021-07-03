@@ -18,9 +18,11 @@ const (
 	FailedToGetChangeMobileVerifyCode       = "5000015"
 	ChangeMobileVerifyCodeNotExists         = "5000016"
 	ChangeMobileVerifyCodeNotMatching       = "5000017"
+	FailedToGetRegisterMobileVerifyCode     = "5000018"
 )
 
 var userErrorCodeMsgMap = map[string]string{
-	ChangeMobileVerifyCodeNotExists:   "verify code does not exist, please send verify code via mobile again.",
-	ChangeMobileVerifyCodeNotMatching: "verify code does not match.",
+	ChangeMobileVerifyCodeNotExists:     "verify code does not exist, please send verify code via mobile again.",
+	ChangeMobileVerifyCodeNotMatching:   "verify code does not match.",
+	FailedToGetRegisterMobileVerifyCode: "verify code not found, please resend verify code again.",
 }
