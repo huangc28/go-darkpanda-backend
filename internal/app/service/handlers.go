@@ -367,6 +367,22 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 		time.Duration(srv.Duration.Int32) * time.Minute,
 	)
 
+	// Prepare chat channel ID, since we will be
+	var chatDao contracts.ChatDaoer
+	depCon.Make(&chatDao)
+	chat, err := chatDao.GetChatroomByServiceId(int(srv.ID))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetChatroomByServiceId,
+				err.Error(),
+			),
+		)
+		return
+	}
+
 	// Change service status to be `fulfilling`.
 	transResp := db.TransactWithFormatStruct(
 		db.GetDB(),
@@ -390,6 +406,7 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 			ctx := context.Background()
 			err = df.StartService(ctx, darkfirestore.StartServiceParams{
 				ServiceUuid:   usrv.Uuid.String,
+				ChannelUuid:   chat.ChannelUuid.String,
 				ServiceStatus: usrv.ServiceStatus,
 				Data: darkfirestore.ChatMessage{
 					From:    c.GetString("uuid"),
