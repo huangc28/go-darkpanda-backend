@@ -61,9 +61,6 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	if q.getUserByUuidStmt, err = db.PrepareContext(ctx, getUserByUuid); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserByUuid: %w", err)
 	}
-	if q.getUserByVerifyCodeStmt, err = db.PrepareContext(ctx, getUserByVerifyCode); err != nil {
-		return nil, fmt.Errorf("error preparing query GetUserByVerifyCode: %w", err)
-	}
 	if q.getUserIDByUuidStmt, err = db.PrepareContext(ctx, getUserIDByUuid); err != nil {
 		return nil, fmt.Errorf("error preparing query GetUserIDByUuid: %w", err)
 	}
@@ -81,9 +78,6 @@ func Prepare(ctx context.Context, db DBTX) (*Queries, error) {
 	}
 	if q.updateInviteeIDByRefCodeStmt, err = db.PrepareContext(ctx, updateInviteeIDByRefCode); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateInviteeIDByRefCode: %w", err)
-	}
-	if q.updateVerifyCodeByIdStmt, err = db.PrepareContext(ctx, updateVerifyCodeById); err != nil {
-		return nil, fmt.Errorf("error preparing query UpdateVerifyCodeById: %w", err)
 	}
 	if q.updateVerifyStatusByIdStmt, err = db.PrepareContext(ctx, updateVerifyStatusById); err != nil {
 		return nil, fmt.Errorf("error preparing query UpdateVerifyStatusById: %w", err)
@@ -158,11 +152,6 @@ func (q *Queries) Close() error {
 			err = fmt.Errorf("error closing getUserByUuidStmt: %w", cerr)
 		}
 	}
-	if q.getUserByVerifyCodeStmt != nil {
-		if cerr := q.getUserByVerifyCodeStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing getUserByVerifyCodeStmt: %w", cerr)
-		}
-	}
 	if q.getUserIDByUuidStmt != nil {
 		if cerr := q.getUserIDByUuidStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing getUserIDByUuidStmt: %w", cerr)
@@ -191,11 +180,6 @@ func (q *Queries) Close() error {
 	if q.updateInviteeIDByRefCodeStmt != nil {
 		if cerr := q.updateInviteeIDByRefCodeStmt.Close(); cerr != nil {
 			err = fmt.Errorf("error closing updateInviteeIDByRefCodeStmt: %w", cerr)
-		}
-	}
-	if q.updateVerifyCodeByIdStmt != nil {
-		if cerr := q.updateVerifyCodeByIdStmt.Close(); cerr != nil {
-			err = fmt.Errorf("error closing updateVerifyCodeByIdStmt: %w", cerr)
 		}
 	}
 	if q.updateVerifyStatusByIdStmt != nil {
@@ -255,14 +239,12 @@ type Queries struct {
 	getUserByIDStmt               *sql.Stmt
 	getUserByUsernameStmt         *sql.Stmt
 	getUserByUuidStmt             *sql.Stmt
-	getUserByVerifyCodeStmt       *sql.Stmt
 	getUserIDByUuidStmt           *sql.Stmt
 	patchInquiryStatusStmt        *sql.Stmt
 	patchInquiryStatusByUuidStmt  *sql.Stmt
 	patchUserInfoByUuidStmt       *sql.Stmt
 	updateInquiryByUuidStmt       *sql.Stmt
 	updateInviteeIDByRefCodeStmt  *sql.Stmt
-	updateVerifyCodeByIdStmt      *sql.Stmt
 	updateVerifyStatusByIdStmt    *sql.Stmt
 }
 
@@ -283,14 +265,12 @@ func (q *Queries) WithTx(tx *sql.Tx) *Queries {
 		getUserByIDStmt:               q.getUserByIDStmt,
 		getUserByUsernameStmt:         q.getUserByUsernameStmt,
 		getUserByUuidStmt:             q.getUserByUuidStmt,
-		getUserByVerifyCodeStmt:       q.getUserByVerifyCodeStmt,
 		getUserIDByUuidStmt:           q.getUserIDByUuidStmt,
 		patchInquiryStatusStmt:        q.patchInquiryStatusStmt,
 		patchInquiryStatusByUuidStmt:  q.patchInquiryStatusByUuidStmt,
 		patchUserInfoByUuidStmt:       q.patchUserInfoByUuidStmt,
 		updateInquiryByUuidStmt:       q.updateInquiryByUuidStmt,
 		updateInviteeIDByRefCodeStmt:  q.updateInviteeIDByRefCodeStmt,
-		updateVerifyCodeByIdStmt:      q.updateVerifyCodeByIdStmt,
 		updateVerifyStatusByIdStmt:    q.updateVerifyStatusByIdStmt,
 	}
 }

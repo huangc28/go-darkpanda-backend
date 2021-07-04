@@ -59,10 +59,6 @@ func GenTestUserParams() (*models.CreateUserParams, error) {
 		String: faker.Phonenumber(),
 	}
 	p.PremiumType = models.PremiumTypeNormal
-	p.PhoneVerifyCode = sql.NullString{
-		String: fmt.Sprintf("%s-%d", GenRandStringRune(3), Gen4DigitNum(1000, 9999)),
-		Valid:  true,
-	}
 	p.AvatarUrl = sql.NullString{
 		Valid:  true,
 		String: faker.URL(),

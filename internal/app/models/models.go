@@ -392,7 +392,6 @@ type User struct {
 	UpdatedAt         sql.NullTime   `json:"updated_at"`
 	DeletedAt         sql.NullTime   `json:"deleted_at"`
 	Uuid              string         `json:"uuid"`
-	PhoneVerifyCode   sql.NullString `json:"phone_verify_code"`
 	AvatarUrl         sql.NullString `json:"avatar_url"`
 	Nationality       sql.NullString `json:"nationality"`
 	Region            sql.NullString `json:"region"`

@@ -126,25 +126,25 @@ func BlockUserHandler(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, struct{}{})
 }
 
-func DeleteUserBlock(c *gin.Context, depCon container.Container) {
-	var (
-		blockId string = c.Param("id")
-	)
+func UnBlockHandler(c *gin.Context, depCon container.Container) {
+	// var blockeeUuid string = c.Param("uuid")
 
-	q := NewBlockDAO(db.GetDB())
-	err := q.DeleteUserBlock(blockId)
+	// Check if the requester
 
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
-				err.Error(),
-			),
-		)
+	// q := NewBlockDAO(db.GetDB())
+	// err := q.DeleteUserBlock(blockId)
 
-		return
-	}
+	// if err != nil {
+	// 	c.AbortWithError(
+	// 		http.StatusInternalServerError,
+	// 		apperr.NewErr(
+	// 			apperr.FailedToGetUserByUuid,
+	// 			err.Error(),
+	// 		),
+	// 	)
+
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, struct{}{})
 }

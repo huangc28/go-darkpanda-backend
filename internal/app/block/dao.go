@@ -95,7 +95,9 @@ func (dao *BlockDAO) BlockUser(p BlockUserParams) error {
 	return nil
 }
 
-func (dao *BlockDAO) DeleteUserBlock(blockId string) error {
+// type Un
+
+func (dao *BlockDAO) Unblock(blockId string) error {
 	query := `
 		DELETE FROM block_list 
 		WHERE id=$1

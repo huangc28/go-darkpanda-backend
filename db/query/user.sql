@@ -6,7 +6,6 @@ WHERE username = $1 LIMIT 1;
 INSERT INTO users (
 	username,
 	uuid,
-	phone_verify_code,
 	phone_verified,
 	gender,
 	premium_type,
@@ -14,7 +13,7 @@ INSERT INTO users (
 	avatar_url,
 	mobile,
 	description
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 RETURNING *;
 
 -- name: GetUserByUuid :one
@@ -28,14 +27,6 @@ WHERE id = $1 LIMIT 1;
 -- name: GetUserIDByUuid :one
 SELECT id FROM users
 WHERE uuid = $1 LIMIT 1;
-
--- name: UpdateVerifyCodeById :exec
-UPDATE users SET phone_verify_code = $1
-WHERE id = $2;
-
--- name: GetUserByVerifyCode :one
-SELECT * FROM users
-WHERE phone_verify_code = $1 LIMIT 1;
 
 -- name: UpdateVerifyStatusById :exec
 UPDATE users
