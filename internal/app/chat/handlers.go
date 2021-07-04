@@ -1070,6 +1070,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 	// Emit quit chatroom messsage to firestore `inquiring` so that the other
 	// party knows it's time to quit the chatroom.
 	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
 	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username")
 
 	if err != nil {
