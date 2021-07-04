@@ -13,11 +13,6 @@ type GetUserBlockListParams struct {
 	AvatarUrl sql.NullString `form:"avatar_url" json:"avatar_url"`
 }
 
-type InsertUserBlockListParams struct {
-	UserId        int `form:"user_id" json:"user_id"`
-	BlockedUserId int `form:"blocked_user_id" json:"blocked_user_id"`
-}
-
 type BlockDAOer interface {
 	WithTx(tx db.Conn) BlockDAOer
 }

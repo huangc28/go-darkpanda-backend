@@ -71,7 +71,12 @@ func (dao *BlockDAO) GetUserBlock(uuid string) ([]contracts.GetUserBlockListPara
 	return blocks, nil
 }
 
-func (dao *BlockDAO) InsertUserBlock(params contracts.InsertUserBlockListParams) error {
+type BlockUserParams struct {
+	BlockerId int
+	BlockeeId int
+}
+
+func (dao *BlockDAO) BlockUser(p BlockUserParams) error {
 	query := `
 		INSERT INTO block_list(
 			user_id,
@@ -81,8 +86,8 @@ func (dao *BlockDAO) InsertUserBlock(params contracts.InsertUserBlockListParams)
 
 	if _, err := dao.db.Exec(
 		query,
-		params.UserId,
-		params.BlockedUserId,
+		p.BlockerId,
+		p.BlockeeId,
 	); err != nil {
 		return err
 	}

@@ -52,10 +52,14 @@ func GetUserBlock(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, tResp)
 }
 
-func InsertUserBlock(c *gin.Context, depCon container.Container) {
-	body := contracts.InsertUserBlockListParams{}
+type BlockUserBody struct {
+	BlockeeUuid string `form:"blockee_uuid" json:"blockee_uuid"`
+}
 
-	if err := requestbinder.Bind(c, body); err != nil {
+func BlockUserHandler(c *gin.Context, depCon container.Container) {
+	body := BlockUserBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(
@@ -67,10 +71,47 @@ func InsertUserBlock(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	q := NewBlockDAO(db.GetDB())
-	err := q.InsertUserBlock(body)
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	// @TODO Create a method to retrieve multiple users.
+	// Retrieve blocker ID.
+	blocker, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
 
 	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve blockee ID.
+	blockee, err := userDao.GetUserByUuid(body.BlockeeUuid, "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+		return
+
+	}
+
+	q := NewBlockDAO(db.GetDB())
+	if err := q.BlockUser(
+		BlockUserParams{
+			BlockerId: int(blocker.ID),
+			BlockeeId: int(blockee.ID),
+		},
+	); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(

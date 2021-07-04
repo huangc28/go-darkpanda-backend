@@ -24,7 +24,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	})
 
 	g.POST("", func(c *gin.Context) {
-		InsertUserBlock(c, depCon)
+		BlockUserHandler(c, depCon)
 	})
 
 	g.DELETE("/:id", func(c *gin.Context) {
