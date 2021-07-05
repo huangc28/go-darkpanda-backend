@@ -126,25 +126,67 @@ func BlockUserHandler(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, struct{}{})
 }
 
-func UnBlockHandler(c *gin.Context, depCon container.Container) {
-	// var blockeeUuid string = c.Param("uuid")
+type UnblockBody struct {
+	BlockeeUuid string `form:"blockee_uuid" json:"blockee_uuid"`
+}
 
-	// Check if the requester
+func UnblockHandler(c *gin.Context, depCon container.Container) {
+	body := UnblockBody{}
 
-	// q := NewBlockDAO(db.GetDB())
-	// err := q.DeleteUserBlock(blockId)
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindApiBodyParams,
+				err.Error(),
+			),
+		)
 
-	// if err != nil {
-	// 	c.AbortWithError(
-	// 		http.StatusInternalServerError,
-	// 		apperr.NewErr(
-	// 			apperr.FailedToGetUserByUuid,
-	// 			err.Error(),
-	// 		),
-	// 	)
+		return
+	}
 
-	// 	return
-	// }
+	// Check if the requester has ever blocked the user.
+	q := NewBlockDAO(db.GetDB())
+	hasBlocked, err := q.HasBlockedByUser(HasBlockedByUserParams{
+		BlockerUuid: c.GetString("uuid"),
+		BlockeeUuid: body.BlockeeUuid,
+	})
+
+	if !hasBlocked {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.FailedToUnblockNotBlockedUser),
+		)
+
+		return
+	}
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckHasBlockedUser,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if err := q.Unblock(UnblockParams{
+		BlockerUuid: c.GetString("uuid"),
+		BlockeeUuid: body.BlockeeUuid,
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	c.JSON(http.StatusOK, struct{}{})
 }

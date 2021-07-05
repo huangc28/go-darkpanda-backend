@@ -125,6 +125,8 @@ OFFSET $3;
 		sCondStr,
 	)
 
+	log.Printf("DEBUG spot 1 %v", query)
+
 	rows, err := dao.DB.Queryx(
 		query,
 		providerID,

@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -865,8 +864,6 @@ func CancelService(c *gin.Context, depCon container.Container) {
 
 	user, err := userDao.GetUserByUuid(userUuid)
 
-	log.Printf("spot 1 %v %v", userUuid, err)
-
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
@@ -877,8 +874,6 @@ func CancelService(c *gin.Context, depCon container.Container) {
 		)
 		return
 	}
-
-	log.Println("spot 2")
 
 	isParticipant, err := rateDao.IsServiceParticipant(
 		int(user.ID),
@@ -926,7 +921,8 @@ func CancelService(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	if srv.ServiceStatus != models.ServiceStatusToBeFulfilled {
+	if srv.ServiceStatus != models.ServiceStatusToBeFulfilled &&
+		srv.ServiceStatus != models.ServiceStatusCanceled {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.ServiceStatusNotValidToCancel),

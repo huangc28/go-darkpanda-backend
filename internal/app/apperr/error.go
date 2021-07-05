@@ -50,6 +50,7 @@ func GetErrorMessage(code string) string {
 			RatingErrCodeMsgMap,
 			PaymentErrCodeMsgMap,
 			userErrorCodeMsgMap,
+			blockErrorCodeMsgMap,
 		)
 	}
 

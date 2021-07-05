@@ -27,8 +27,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		BlockUserHandler(c, depCon)
 	})
 
-	g.DELETE("/:uuid", func(c *gin.Context) {
-		// UnblockHandler(c, depCon)
+	g.DELETE("", func(c *gin.Context) {
+		UnblockHandler(c, depCon)
 	})
-
 }

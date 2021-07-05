@@ -78,10 +78,17 @@ type BlockUserParams struct {
 
 func (dao *BlockDAO) BlockUser(p BlockUserParams) error {
 	query := `
-		INSERT INTO block_list(
-			user_id,
-			blocked_user_id
-		) VALUES ($1, $2);
+INSERT INTO block_list(
+	user_id,
+	blocked_user_id,
+	deleted_at
+) 
+VALUES ($1, $2, current_timestamp) 
+ON CONFLICT (user_id, blocked_user_id) DO UPDATE
+SET 
+	user_id = $1,
+	blocked_user_id = $2,
+	deleted_at = current_timestamp;
 	`
 
 	if _, err := dao.db.Exec(
@@ -95,22 +102,94 @@ func (dao *BlockDAO) BlockUser(p BlockUserParams) error {
 	return nil
 }
 
-// type Un
+type UnblockParams struct {
+	BlockerUuid string
+	BlockeeUuid string
+}
 
-func (dao *BlockDAO) Unblock(blockId string) error {
+func (dao *BlockDAO) Unblock(p UnblockParams) error {
 	query := `
-		DELETE FROM block_list 
-		WHERE id=$1
+WITH blocker_info AS (
+	SELECT 
+		id
+	FROM 
+		users 
+	WHERE 
+		uuid = $1  
+), blockee_info AS (
+	SELECT 
+		id
+	FROM 
+		users 
+	WHERE 
+		uuid = $2  
+)  
+UPDATE 
+	block_list
+SET 
+	deleted_at = null
+WHERE
+	user_id IN (
+		SELECT id FROM blocker_info
+	) AND	
+	blocked_user_id IN (
+		SELECT id FROM blockee_info
+	);
 	`
-
 	_, err := dao.db.Exec(
 		query,
-		blockId,
+		p.BlockerUuid,
+		p.BlockeeUuid,
 	)
 
-	if err != nil {
-		return err
+	return err
+}
+
+type HasBlockedByUserParams struct {
+	BlockerUuid string
+	BlockeeUuid string
+}
+
+func (dao *BlockDAO) HasBlockedByUser(p HasBlockedByUserParams) (bool, error) {
+	query := `
+WITH blocker_info AS (
+	SELECT 
+		id
+	FROM 
+		users 
+	WHERE 
+		uuid = $1  
+), blockee_info AS (
+	SELECT 
+		id
+	FROM 
+		users 
+	WHERE 
+		uuid = $2  
+)  
+SELECT EXISTS (
+	SELECT 
+		1 
+	FROM 
+		block_list
+	WHERE
+		user_id IN (
+			SELECT id FROM blocker_info
+		) AND
+		blocked_user_id IN (
+			SELECT id FROM blockee_info			
+		) AND deleted_at IS NOT NULL	
+);
+	`
+	var hasBlocked bool
+
+	if err := dao.db.QueryRowx(
+		query,
+		p.BlockerUuid,
+		p.BlockeeUuid,
+	).Scan(&hasBlocked); err != nil {
+		return false, err
 	}
 
-	return err
+	return hasBlocked, nil
 }
