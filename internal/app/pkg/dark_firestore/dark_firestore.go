@@ -433,24 +433,47 @@ func (df *DarkFirestore) SendServiceConfirmedMessage(ctx context.Context, params
 
 type CompletePaymentParams struct {
 	ChannelUuid string
-	Data        ChatMessage
+	ServiceUuid string
+	Username    string
+	From        string
 }
 
-func (df *DarkFirestore) SendCompletePaymentMessage(ctx context.Context, p CompletePaymentParams) (*firestore.DocumentRef, ChatMessage, error) {
-	p.Data.Type = CompletePayment
-	p.Data.CreatedAt = time.Now()
-
-	ref, _, err := df.Client.
-		Collection(PrivateChatsCollectionName).
-		Doc(p.ChannelUuid).
-		Collection(MessageSubCollectionName).
-		Add(ctx, p.Data)
-
-	if err != nil {
-		return nil, p.Data, err
+func (df *DarkFirestore) CompletePayment(ctx context.Context, p CompletePaymentParams) (ChatMessage, error) {
+	msg := ChatMessage{
+		Type:      CompletePayment,
+		CreatedAt: time.Now(),
+		From:      p.From,
+		Username:  p.Username,
 	}
 
-	return ref, p.Data, nil
+	srvRef := df.getServiceRef(p.ServiceUuid)
+	chatRef := df.getNewChatroomMsgRef(p.ChannelUuid)
+
+	err := df.Client.RunTransaction(
+		ctx,
+		func(ctx context.Context, tx *firestore.Transaction) error {
+			if err := tx.Update(
+				srvRef,
+				[]firestore.Update{
+					{
+						Path:  "status",
+						Value: models.ServiceStatusToBeFulfilled,
+					},
+				},
+			); err != nil {
+				return err
+			}
+
+			if err := tx.Set(chatRef, msg); err != nil {
+				return nil
+
+			}
+
+			return nil
+		},
+	)
+
+	return msg, err
 }
 
 type QuitChatroomMessageParams struct {

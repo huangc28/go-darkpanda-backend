@@ -203,26 +203,6 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Emit firebase event to notify female user that the service status has been updated.
-	df := darkfirestore.Get()
-	if err := df.UpdateService(
-		ctx,
-		darkfirestore.UpdateServiceParams{
-			ServiceUuid:   srv.Uuid.String,
-			ServiceStatus: string(models.ServiceStatusToBeFulfilled),
-		},
-	); err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FirestoreFailedToUpdateService,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
 	var chatDao contracts.ChatDaoer
 	depCon.Make(&chatDao)
 	chatroom, err := chatDao.GetChatroomByServiceId(int(srv.ID))
@@ -240,17 +220,17 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 	}
 
 	// Emit firestore chatroom message to display completion of payment made by male user.
-	_, _, err = df.SendCompletePaymentMessage(
+	// Emit firebase event to notify female user that the service status has been updated.
+	df := darkfirestore.Get()
+	if _, err = df.CompletePayment(
 		ctx,
 		darkfirestore.CompletePaymentParams{
+			ServiceUuid: srv.Uuid.String,
 			ChannelUuid: chatroom.ChannelUuid.String,
-			Data: darkfirestore.ChatMessage{
-				From: user.Uuid,
-			},
+			Username:    user.Username,
+			From:        user.Uuid,
 		},
-	)
-
-	if err != nil {
+	); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
