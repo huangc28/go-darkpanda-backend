@@ -319,13 +319,16 @@ ORDER BY created_at;
 
 	ms := make([]models.UserRatings, 0)
 
+	if err == sql.ErrNoRows {
+		return ms, nil
+	}
+
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return ms, nil
-		}
 
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		var m models.UserRatings

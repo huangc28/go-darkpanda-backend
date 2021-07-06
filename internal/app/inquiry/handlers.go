@@ -1093,19 +1093,19 @@ func GetActiveInquiry(c *gin.Context, depCon container.Container) {
 	iqDao := NewInquiryDAO(db.GetDB())
 	iq, err := iqDao.GetActiveInquiry(int(user.ID))
 
+	if err == sql.ErrNoRows {
+		c.AbortWithError(
+			http.StatusNotFound,
+			apperr.NewErr(
+				apperr.NoActiveInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	if err != nil {
-		if err == sql.ErrNoRows {
-			c.AbortWithError(
-				http.StatusNotFound,
-				apperr.NewErr(
-					apperr.NoActiveInquiry,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
