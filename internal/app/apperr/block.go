@@ -7,5 +7,5 @@ var (
 )
 
 var blockErrorCodeMsgMap = map[string]string{
-	FailedToUnblockNotBlockedUser: "failed to unblock user that has not been blocked by you.",
+	FailedToUnblockNotBlockedUser: "failed to unblock user that has not been blocked by you",
 }

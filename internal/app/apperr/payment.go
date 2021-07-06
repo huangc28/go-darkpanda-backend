@@ -11,6 +11,6 @@ var (
 )
 
 var PaymentErrCodeMsgMap = map[string]string{
-	PayerIsNotTheCustomerOfTheService: "payer is not the customer of the service.",
-	ServiceStatusInvalidForPayment:    "service status invalid to pay.",
+	PayerIsNotTheCustomerOfTheService: "payer is not the customer of the service",
+	ServiceStatusInvalidForPayment:    "service status invalid to pay",
 }

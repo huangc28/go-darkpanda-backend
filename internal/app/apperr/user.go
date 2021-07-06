@@ -22,7 +22,7 @@ const (
 )
 
 var userErrorCodeMsgMap = map[string]string{
-	ChangeMobileVerifyCodeNotExists:     "verify code does not exist, please send verify code via mobile again.",
-	ChangeMobileVerifyCodeNotMatching:   "verify code does not match.",
-	FailedToGetRegisterMobileVerifyCode: "verify code not found, please resend verify code again.",
+	ChangeMobileVerifyCodeNotExists:     "verify code does not exist, please send verify code via mobile again",
+	ChangeMobileVerifyCodeNotMatching:   "verify code does not match",
+	FailedToGetRegisterMobileVerifyCode: "verify code not found, please resend verify code again",
 }

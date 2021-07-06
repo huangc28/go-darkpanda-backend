@@ -18,5 +18,5 @@ const (
 
 var GeneralErrorMessageMap = map[string]string{
 	MissingAuthToken: "missing auth token",
-	AssetNotFound:    "query results no asset found.",
+	AssetNotFound:    "query results no asset found",
 }

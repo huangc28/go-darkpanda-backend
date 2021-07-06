@@ -30,10 +30,10 @@ const (
 )
 
 var ServiceErrorMessageMap = map[string]string{
-	FailedToCreateService:             "failed to create service.",
-	FailedServiceQrCodeSecretNotMatch: "qr code secret does not match.",
-	NotAServiceParticipant:            "scanner is not a service participant.",
-	ServiceNotYetEnd:                  "no payment detail since service has not ended yet.",
+	FailedToCreateService:             "failed to create service",
+	FailedServiceQrCodeSecretNotMatch: "qr code secret does not match",
+	NotAServiceParticipant:            "scanner is not a service participant",
+	ServiceNotYetEnd:                  "no payment detail since service has not ended yet",
 	ServiceStatusNotValidToCancel:     "service status is not valid for canceling",
 	ServiceHasBeenCanceled:            "service has been canceld by partner",
 }

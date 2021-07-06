@@ -78,6 +78,6 @@ var InquiryErrCodeMsgMap = map[string]string{
 	FailedToPickupStatusNotWaiting:         "inquiry not available, status is not waiting",
 	InquiryUUIDNotInParams:                 "inquiry uuid not exists in uri param",
 	FailedToPickupStatusNotInquiring:       "can not pickup inquiry since status is not inquiring",
-	InquiryHasNoPicker:                     "can not start a chat since inquiry has not picker.",
+	InquiryHasNoPicker:                     "can not start a chat since inquiry has not picker",
 	FailedToSendQuitChatroomMsg:            "failed to get send quit chatroom message",
 }

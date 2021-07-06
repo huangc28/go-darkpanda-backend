@@ -17,9 +17,9 @@ func HandleError() gin.HandlerFunc {
 			srcErr := err.Err
 			var parsedErr *Error
 
-			switch srcErr.(type) {
+			switch srcErr := srcErr.(type) {
 			case *Error:
-				parsedErr = srcErr.(*Error)
+				parsedErr = srcErr
 			default:
 				parsedErr = &Error{
 					ErrCode: UnknownErrorToApplication,

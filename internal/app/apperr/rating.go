@@ -12,6 +12,6 @@ var (
 )
 
 var RatingErrCodeMsgMap = map[string]string{
-	NotInvolveInService:       "requester no involved in service.",
-	UserNotServiceParticipant: "user is not a service participant.",
+	NotInvolveInService:       "requester no involved in service",
+	UserNotServiceParticipant: "user is not a service participant",
 }

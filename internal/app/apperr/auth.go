@@ -56,7 +56,7 @@ var AuthErrCodeMsgMap = map[string]string{
 	UserNotFoundByVerifyCode:                "user not found by the given verify code",
 	JWTNotProvided:                          "JWT token not exists",
 	FailedToFindInquiryByInquiererID:        "failed to find inquiry by inquirer ID",
-	FailedToCheckSendLoginVerifyCodeParams:  "failed to find username to send verify code ",
+	FailedToCheckSendLoginVerifyCodeParams:  "failed to find username to send verify code",
 	UnableToSendVerifyCodeToUnverfiedNumber: "can not send login code to an unverified mobile number. Please contact customer service",
 	ExceedingLoginRetryLimit:                "attempt login too many times. Please retry login later",
 	VerifyCodeUnmatched:                     "mobile verify code not matched",

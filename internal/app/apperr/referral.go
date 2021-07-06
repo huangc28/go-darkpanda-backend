@@ -12,7 +12,7 @@ const (
 )
 
 var ReferralErrorMessageMap = map[string]string{
-	ReferralCodeNotFound:   "Referral code given is not found",
-	ReferralCodeIsOccupied: "Referral code is occupied",
-	ReferralCodeExpired:    "Referral code has expired",
+	ReferralCodeNotFound:   "referral code given is not found",
+	ReferralCodeIsOccupied: "referral code is occupied",
+	ReferralCodeExpired:    "referral code has expired",
 }
