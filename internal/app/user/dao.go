@@ -150,7 +150,6 @@ RETURNING
 		p.Weight,
 		p.Description,
 		p.BreastSize,
-		p.PhoneVerifyCode,
 		p.PhoneVerified,
 		p.Mobile,
 		p.Uuid,
@@ -336,7 +335,7 @@ type CreateChangeMobileVerifyCodeParams struct {
 
 func CreateChangeMobileVerifyCode(ctx context.Context, p CreateChangeMobileVerifyCodeParams) error {
 	if p.RedisCli == nil {
-		return errors.New("redis client is not provided.")
+		return errors.New("redis client is not provided")
 	}
 
 	pipe := p.RedisCli.TxPipeline()

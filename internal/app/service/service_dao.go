@@ -164,7 +164,7 @@ ORDER BY created_at DESC
 LIMIT $2
 OFFSET $3;
 	`
-	rows, err := dao.DB.Query(query, uuid, perPage, offset)
+	rows, err := dao.DB.Queryx(query, uuid, perPage, offset)
 
 	if err != nil {
 		return nil, err
@@ -177,13 +177,9 @@ OFFSET $3;
 	for rows.Next() {
 		service := models.Service{}
 
-		rows.Scan(
-			&service.Uuid,
-			&service.Price,
-			&service.ServiceType,
-			&service.ServiceStatus,
-			&service.CreatedAt,
-		)
+		if err := rows.StructScan(&service); err != nil {
+			return nil, err
+		}
 
 		services = append(services, service)
 	}
