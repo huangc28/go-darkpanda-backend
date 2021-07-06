@@ -25,35 +25,13 @@ type UserHandlers struct {
 	Container container.Container
 }
 
-// Get the following information from the user:
-//   - Gender
-//   - Username
-//   - Active inquiry
 func (h *UserHandlers) GetMyProfileHandler(c *gin.Context) {
-	// ------------------- retrieve user model -------------------
 	var (
 		uuid string          = c.GetString("uuid")
 		ctx  context.Context = context.Background()
 	)
 
-	tx, err := db.
-		GetDB().
-		BeginTx(ctx, nil)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToBeginTx,
-				err.Error(),
-			),
-		)
-
-		tx.Rollback()
-		return
-	}
-
-	q := models.New(tx)
+	q := models.New(db.GetDB())
 	usr, err := q.GetUserByUuid(ctx, uuid)
 
 	if err != nil {
@@ -68,81 +46,7 @@ func (h *UserHandlers) GetMyProfileHandler(c *gin.Context) {
 		return
 	}
 
-	// ------------------- get user relative info base on gender -------------------
-	switch usr.Gender {
-	case models.GenderMale:
-		data, err := gatherMaleInfo(
-			ctx,
-			q,
-			&usr,
-		)
-
-		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToFindInquiryByInquiererID,
-					err.Error(),
-				),
-			)
-
-			tx.Rollback()
-			return
-
-		}
-
-		if err := tx.Commit(); err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToFindInquiryByInquiererID,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		c.JSON(http.StatusOK, data)
-
-	case models.GenderFemale:
-		// gather the following female information.
-		//   - username
-		//   - gender
-		//   - uuid
-		//   - avatar url
-
-		log.Printf("DEBUG ctrl 1 %v", usr.AvatarUrl.String)
-		c.JSON(http.StatusOK, NewTransform().TransformUser(&usr))
-	}
-
-}
-
-func gatherMaleInfo(ctx context.Context, q *models.Queries, usr *models.User) (*TransformUserWithInquiryData, error) {
-	// ------------------- check if user has an active service -------------------
-	inquiry, err := q.GetInquiryByInquirerID(ctx, models.GetInquiryByInquirerIDParams{
-		InquirerID: sql.NullInt32{
-			Int32: int32(usr.ID),
-			Valid: true,
-		},
-		InquiryStatus: models.InquiryStatusInquiring,
-	})
-
-	if err != nil {
-		if err != sql.ErrNoRows {
-
-			return nil, err
-		}
-
-	}
-
-	inquiries := make([]*models.ServiceInquiry, 0)
-
-	if err != sql.ErrNoRows {
-		inquiries = append(inquiries, &inquiry)
-	}
-
-	return NewTransform().TransformUserWithInquiry(usr, inquiries), nil
+	c.JSON(http.StatusOK, NewTransform().TransformUser(&usr))
 }
 
 type GetUserProfileBody struct {

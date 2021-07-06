@@ -76,11 +76,12 @@ func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid strin
 	`
 
 	rows, err := dao.db.Query(sql, uuid, inquiryStatus)
-	defer rows.Close()
 
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	user := &User{}
 
