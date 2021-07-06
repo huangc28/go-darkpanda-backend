@@ -127,11 +127,12 @@ OFFSET $3;
 		perpage,
 		offset,
 	)
-	defer rows.Close()
 
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		iq := contracts.InquiryInfo{}

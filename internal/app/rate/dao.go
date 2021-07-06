@@ -77,6 +77,8 @@ INNER JOIN  chatroom_partner ON
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	var m models.User
 
 	for rows.Next() {

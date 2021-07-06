@@ -65,11 +65,12 @@ INNER JOIN users AS payer ON payer.id = payment.payer_id;
 	paymentInfos := make([]models.PaymentInfo, 0)
 
 	rows, err := dao.DB.Query(query, uuid)
-	defer rows.Close()
 
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	for rows.Next() {
 		paymentInfo := models.PaymentInfo{

@@ -427,11 +427,11 @@ func (t *InquiryTransform) TransformGetInquirerInfo(inquirer models.User, images
 		weight *float64
 	)
 
-	if inquirer.Age.Valid != false {
+	if inquirer.Age.Valid {
 		age = &inquirer.Age.Int32
 	}
 
-	if inquirer.Height.Valid != false {
+	if inquirer.Height.Valid {
 		*height, err = strconv.ParseFloat(inquirer.Height.String, 64)
 
 		if err != nil {
@@ -439,7 +439,7 @@ func (t *InquiryTransform) TransformGetInquirerInfo(inquirer models.User, images
 		}
 	}
 
-	if inquirer.Weight.Valid != false {
+	if inquirer.Weight.Valid {
 		*weight, err = strconv.ParseFloat(inquirer.Weight.String, 64)
 
 		if err != nil {
@@ -573,7 +573,7 @@ func (t *InquiryTransform) TransformActiveInquiry(iq *models.ActiveInquiry) (*Tr
 
 	var pickerUuid *string
 
-	if iq.PickerUuid.Valid == true {
+	if iq.PickerUuid.Valid {
 		pickerUuid = &iq.PickerUuid.String
 	}
 

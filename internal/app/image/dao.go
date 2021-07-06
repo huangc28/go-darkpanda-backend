@@ -43,11 +43,12 @@ FROM images
 WHERE user_id = $1
 	`
 	rows, err := dao.DB.Query(sql, ID)
-	defer rows.Close()
 
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	images := make([]models.Image, 0)
 

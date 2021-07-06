@@ -82,6 +82,10 @@ func (t *TapPayer) PayByPrime(params PayByPrimeParams) (*TapPayResponse, string,
 	client := &http.Client{}
 	resp, err := client.Do(req)
 
+	if err != nil {
+		return nil, "", err
+	}
+
 	respByte, err := ioutil.ReadAll(resp.Body)
 	respStr := string(respByte)
 

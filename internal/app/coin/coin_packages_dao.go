@@ -11,10 +11,10 @@ type PackageName string
 
 const (
 	DpCoin200   PackageName = "dp_coin_200"
-	DpCoin500               = "dp_coin_500"
-	DpCoin1000              = "dp_coin_1000"
-	DpCoin2000              = "dp_coin_2000"
-	MatchingFee             = "matching_fee"
+	DpCoin500   PackageName = "dp_coin_500"
+	DpCoin1000  PackageName = "dp_coin_1000"
+	DpCoin2000  PackageName = "dp_coin_2000"
+	MatchingFee PackageName = "matching_fee"
 )
 
 type CoinPackagesDAO struct {
@@ -54,11 +54,13 @@ WHERE
 			MatchingFee,
 		)
 
-	pkgs := make([]models.CoinPackage, 0)
-
 	if err != nil {
-		return pkgs, err
+		return nil, err
 	}
+
+	defer rows.Close()
+
+	pkgs := make([]models.CoinPackage, 0)
 
 	for rows.Next() {
 		pkg := models.CoinPackage{}

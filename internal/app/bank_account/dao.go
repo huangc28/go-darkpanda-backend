@@ -51,7 +51,7 @@ func (dao *BankAccountDAO) GetUserBankAccount(uuid string) (*models.BankAccount,
 
 	bank := &models.BankAccount{}
 
-	if err := dao.db.QueryRow(query, uuid).Scan(&bank.BankName, &bank.AccountNumber, &bank.Branch, &bank.VerifyStatus); err != nil {
+	if err := dao.db.QueryRowx(query, uuid).StructScan(&bank); err != nil {
 		return nil, err
 	}
 

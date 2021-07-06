@@ -9,7 +9,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 
 	cintrnal "github.com/golobby/container/pkg/container"
 )
@@ -125,8 +124,6 @@ OFFSET $3;
 		sCondStr,
 	)
 
-	log.Printf("DEBUG spot 1 %v", query)
-
 	rows, err := dao.DB.Queryx(
 		query,
 		providerID,
@@ -135,8 +132,6 @@ OFFSET $3;
 	)
 
 	if err != nil {
-		log.Errorf("Failed to get service list")
-
 		return nil, err
 	}
 
@@ -170,11 +165,12 @@ LIMIT $2
 OFFSET $3;
 	`
 	rows, err := dao.DB.Query(query, uuid, perPage, offset)
-	defer rows.Close()
 
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	services := make([]models.Service, 0)
 
@@ -352,11 +348,11 @@ SELECT id, uuid FROM found_services;
 		params.UpdateToStatus,
 	)
 
-	defer rows.Close()
-
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	srvs := make([]*models.Service, 0)
 

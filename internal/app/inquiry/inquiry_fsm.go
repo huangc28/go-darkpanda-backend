@@ -27,7 +27,7 @@ func (a *InquiryActions) ToString() string {
 
 func NewInquiryFSM(initial models.InquiryStatus) (*fsm.FSM, error) {
 	if !initial.IsValid() {
-		return nil, fmt.Errorf("The initial inquiry state: %s is invalid", initial.ToString())
+		return nil, fmt.Errorf("the initial inquiry state: %s is invalid", initial.ToString())
 	}
 
 	f := fsm.NewFSM(

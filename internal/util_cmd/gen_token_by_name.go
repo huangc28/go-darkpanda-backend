@@ -18,7 +18,7 @@ var GenJwtTokenByName = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	PreRunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) != 1 {
-			return errors.New("exactly one user uuid must be specified to generate jwt.")
+			return errors.New("exactly one user uuid must be specified to generate jwt")
 		}
 
 		return nil
@@ -41,7 +41,7 @@ func init() {
 		db.TestDBConf{
 			Host:     appConf.TestPGHost,
 			Port:     appConf.TestPGPort,
-			User:     appConf.TestPgUser,
+			User:     appConf.TestPGUser,
 			Password: appConf.TestPGPassword,
 			Dbname:   appConf.TestPGDbname,
 		},

@@ -6,8 +6,8 @@ import (
 )
 
 var (
-	ErrorTooEarly = errors.New("too early to start service.")
-	ErrorExpired  = errors.New("service expired.")
+	ErrorTooEarly = errors.New("too early to start service")
+	ErrorExpired  = errors.New("service expired")
 )
 
 // IsTimeInRange checks if the current time is in between "start" and "end".

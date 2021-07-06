@@ -206,6 +206,8 @@ RETURNING user_id
 		return nil, err
 	}
 
+	defer rows.Close()
+
 	for rows.Next() {
 		var id int
 		if err := rows.Scan(&id); err != nil {
@@ -215,7 +217,6 @@ RETURNING user_id
 		ids = append(ids, id)
 	}
 
-	// log.Printf("DEBUG & 2 %v ", users)
 	return dao.GetUserUUIDsByIDs(ids...)
 }
 
@@ -243,6 +244,8 @@ WHERE
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	var users []models.User
 	for rows.Next() {
@@ -302,6 +305,8 @@ AND picker_id = $3
 	if err != nil {
 		return nil, err
 	}
+
+	defer rows.Close()
 
 	chatrooms := make([]models.InquiryChatRoom, 0)
 	for rows.Next() {

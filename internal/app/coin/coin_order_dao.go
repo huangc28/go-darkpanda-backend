@@ -91,7 +91,7 @@ type UpdateOrderCoinByIdParam struct {
 
 func (dao *CoinDAO) UpdateOrderCoinById(params UpdateOrderCoinByIdParam) (*models.CoinOrder, error) {
 	if params.Id == 0 {
-		return nil, errors.New("Failed to update order coin, Id not provided.")
+		return nil, errors.New("failed to update order coin, Id not provided")
 	}
 
 	query := `

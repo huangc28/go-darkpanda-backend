@@ -257,35 +257,34 @@ func GetCoinBalance(c *gin.Context, depCon container.Container) {
 	userBalDao := NewUserBalanceDAO(db.GetDB())
 	userBal, err := userBalDao.GetCoinBalanceByUserId(int(user.ID))
 
-	if err != nil {
-		if err == sql.ErrNoRows {
-			userBal, err = userBalDao.CreateOrTopUpBalance(CreateOrTopUpBalanceParams{
-				UserId: int(user.ID),
-			})
+	if err == sql.ErrNoRows {
+		userBal, err = userBalDao.CreateOrTopUpBalance(CreateOrTopUpBalanceParams{
+			UserId: int(user.ID),
+		})
 
-			if err != nil {
-				c.AbortWithError(
-					http.StatusInternalServerError,
-					apperr.NewErr(
-						apperr.FailedToCreateUserBalance,
-						err.Error(),
-					),
-				)
-
-				return
-			}
-		} else {
+		if err != nil {
 			c.AbortWithError(
 				http.StatusInternalServerError,
 				apperr.NewErr(
-					apperr.FailedToGetUserBalance,
+					apperr.FailedToCreateUserBalance,
 					err.Error(),
 				),
 			)
 
 			return
 		}
+	}
 
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserBalance,
+				err.Error(),
+			),
+		)
+
+		return
 	}
 
 	respStruct, _ := TransformGetCoinBalance(userBal.Balance)
