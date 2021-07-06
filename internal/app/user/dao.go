@@ -116,10 +116,9 @@ UPDATE users SET
 	weight = COALESCE($6, weight),
 	description = COALESCE($7, description),
 	breast_size = COALESCE($8, breast_size),
-	phone_verify_code = COALESCE($9, phone_verify_code),
-	phone_verified = COALESCE($10, phone_verified),
-	mobile = COALESCE($11, mobile)
-WHERE uuid = $12
+	phone_verified = COALESCE($9, phone_verified),
+	mobile = COALESCE($10, mobile)
+WHERE uuid = $11
 RETURNING
 	id,
 	username,

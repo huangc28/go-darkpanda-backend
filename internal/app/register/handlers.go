@@ -403,7 +403,6 @@ func VerifyMobileHandler(c *gin.Context, depCon container.Container) {
 		body.UUID,
 		"id",
 		"uuid",
-		"phone_verify_code",
 		"phone_verified",
 	)
 
