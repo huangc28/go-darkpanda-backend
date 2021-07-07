@@ -3,6 +3,7 @@ package service
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -105,7 +106,7 @@ SELECT
 	users.avatar_url,
 	chatrooms.channel_uuid,
 	service_inquiries.uuid as inquiry_uuid
-FROM services INNER JOIN users 
+FROM services INNER JOIN users
 	ON %s
 INNER JOIN service_inquiries
 	ON services.inquiry_id = service_inquiries.id
@@ -123,6 +124,9 @@ OFFSET $3;
 		whereClause,
 		sCondStr,
 	)
+
+	log.Printf("DEBUG spot 3 %s", query)
+	log.Printf("DEBUG spot 4 %v, %v, %v", providerID, perPage, offset)
 
 	rows, err := dao.DB.Queryx(
 		query,
@@ -220,7 +224,7 @@ UPDATE services SET
 	service_type = COALESCE($5, service_type),
 	start_time = COALESCE($6, start_time),
 	end_time = COALESCE($7, end_time),
-	canceller_id = COALESCE($8, canceller_id) 
+	canceller_id = COALESCE($8, canceller_id)
 WHERE id = $9
 RETURNING *;
 	`
