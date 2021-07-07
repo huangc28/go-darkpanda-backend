@@ -561,26 +561,26 @@ func (df *DarkFirestore) DisagreeInquiry(ctx context.Context, params DisagreeInq
 }
 
 type CreateInquiringUserParams struct {
-	InquiryUUID string
+	InquiryUuid  string
+	InquirerUuid string
 }
 
 type InquiringUserInfo struct {
-	InquiryUUID string `firestore:"inquiry_uuid,omitempty"`
-	Status      string `firestore:"status,omitempty"`
+	InquiryUuid  string `firestore:"inquiry_uuid,omitempty"`
+	InquirerUuid string `firestore:"inquirer_uuid,omitempty"`
+	Status       string `firestore:"status,omitempty"`
 }
 
 // CreateInquiry creates new record in inquiries collection.
 func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error) {
 	data := InquiringUserInfo{
-		InquiryUUID: params.InquiryUUID,
-		Status:      string(models.InquiryStatusInquiring),
+		InquiryUuid:  params.InquiryUuid,
+		InquirerUuid: params.InquirerUuid,
+		Status:       string(models.InquiryStatusInquiring),
 	}
 
-	wres, err := df.
-		Client.
-		Collection(InquiryCollectionName).
-		Doc(params.InquiryUUID).
-		Set(ctx, data)
+	iqRef := df.getInquiryRef(params.InquirerUuid)
+	wres, err := iqRef.Set(ctx, data)
 
 	if err != nil {
 		return nil, data, err
@@ -590,8 +590,10 @@ func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateI
 }
 
 type UpdateInquiryStatusParams struct {
-	InquiryUuid    string
-	Status         models.InquiryStatus
+	InquiryUuid string
+	Status      models.InquiryStatus
+
+	// Inquiry picker information.
 	PickerUuid     string
 	PickerUsername string
 }
@@ -684,7 +686,8 @@ func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingI
 }
 
 type ChatInquiringUserParams struct {
-	InquiryUUID string
+	InquiryUUID      string
+	InquirerUsername string
 }
 
 func (df *DarkFirestore) ChatInquiringUser(ctx context.Context, params ChatInquiringUserParams) error {

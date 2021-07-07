@@ -180,7 +180,8 @@ func EmitInquiryHandler(c *gin.Context) {
 	df := darkfirestore.Get()
 	df.CreateInquiringUser(
 		ctx, darkfirestore.CreateInquiringUserParams{
-			InquiryUUID: iq.Uuid,
+			InquiryUuid:  iq.Uuid,
+			InquirerUuid: uuid,
 		},
 	)
 
