@@ -3,7 +3,6 @@ package service
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -97,36 +96,36 @@ func (dao *ServiceDAO) GetServicesByStatus(providerID int, gender models.Gender,
 
 	query := fmt.Sprintf(
 		`
-SELECT
-	services.uuid as service_uuid,
-	services.service_status,
-	services.appointment_time,
-	users.username,
-	users.uuid as user_uuid,
-	users.avatar_url,
-	chatrooms.channel_uuid,
-	service_inquiries.uuid as inquiry_uuid
-FROM services INNER JOIN users
-	ON %s
-INNER JOIN service_inquiries
-	ON services.inquiry_id = service_inquiries.id
-INNER JOIN chatrooms
-	ON services.inquiry_id = chatrooms.inquiry_id AND
-			services.deleted_at IS null
-WHERE
-	%s
-AND %s
-ORDER BY services.created_at DESC
-LIMIT $2
-OFFSET $3;
+SELECT * FROM (
+	SELECT distinct ON (services.id)
+		services.uuid as service_uuid,
+		services.service_status,
+		services.appointment_time,
+		services.created_at
+		users.username,
+		users.uuid as user_uuid,
+		users.avatar_url,
+		chatrooms.channel_uuid,
+		service_inquiries.uuid as inquiry_uuid
+	FROM services INNER JOIN users
+		ON %s
+	INNER JOIN service_inquiries
+		ON services.inquiry_id = service_inquiries.id
+	INNER JOIN chatrooms
+		ON services.inquiry_id = chatrooms.inquiry_id AND
+				services.deleted_at IS null
+	WHERE
+		%s
+	AND %s
+	ORDER BY services.created_at DESC
+	LIMIT $2
+	OFFSET $3
+) t ORDER BY created_at DESC;
 	`,
 		joinTargetPersonClause,
 		whereClause,
 		sCondStr,
 	)
-
-	log.Printf("DEBUG spot 3 %s", query)
-	log.Printf("DEBUG spot 4 %v, %v, %v", providerID, perPage, offset)
 
 	rows, err := dao.DB.Queryx(
 		query,
