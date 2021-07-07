@@ -178,7 +178,7 @@ func (df *DarkFirestore) CreatePrivateChatRoom(ctx context.Context, params Creat
 }
 
 type SendTextMessageParams struct {
-	ChatroomName string
+	ChatroomName string `firestore:"channel_uuid,omitempty" json:"channel_uuid"`
 	Data         ChatMessage
 }
 
