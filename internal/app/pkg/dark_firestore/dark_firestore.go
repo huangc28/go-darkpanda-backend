@@ -11,6 +11,7 @@ import (
 	firebase "firebase.google.com/go"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	log "github.com/sirupsen/logrus"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 	"google.golang.org/grpc/codes"
@@ -156,11 +157,9 @@ type CreatePrivateChatRoomParams struct {
 	InquiryUuid string
 	ChannelUuid string
 	From        string
-	// Data         ChatMessage
 }
 
 func (df *DarkFirestore) CreatePrivateChatroom(ctx context.Context, params CreatePrivateChatRoomParams) error {
-
 	// Create private chatroom by adding a dummy field "last_touched".
 	_, err := df.Client.
 		Collection(PrivateChatsCollectionName).
@@ -173,7 +172,6 @@ func (df *DarkFirestore) CreatePrivateChatroom(ctx context.Context, params Creat
 		return err
 	}
 
-	iqRef := df.getInquiryRef(params.InquiryUuid)
 	chatRef := df.getNewChatroomMsgRef(params.ChannelUuid)
 
 	msg := ChatMessage{
@@ -183,39 +181,16 @@ func (df *DarkFirestore) CreatePrivateChatroom(ctx context.Context, params Creat
 		CreatedAt: time.Now(),
 	}
 
-	// We need to provide the following info.
-	//   - channel uuid to dedicdated inquiry
-	//   - message content
-	df.Client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
-		if err := tx.Update(iqRef, []firestore.Update{
-			{
-				Path:  ChannelUuidFieldName,
-				Value: params.ChannelUuid,
-			},
-		}); err != nil {
-			return err
-		}
+	if _, err := chatRef.Set(ctx, msg); err != nil {
+		return err
+	}
 
-		if err := tx.Set(chatRef, msg); err != nil {
-			return err
-		}
+	log.WithFields(log.Fields{
+		"chatroom_name": params.ChannelUuid,
+		"updated_time":  msg.CreatedAt,
+	}).Debug("Inquiry Chatroom created!")
 
-		return nil
-	})
-	// params.Data.Content = CreatePrivateChatBotContent
-
-	// chat, err := df.SendTextMessageToChatroom(ctx, SendTextMessageParams{
-	// 	ChatroomName: params.ChatRoomName,
-	// 	Data:         params.Data,
-	// })
-
-	// log.WithFields(log.Fields{
-	// 	"chatroom_name": params.ChatRoomName,
-	// 	"updated_time":  chat.CreatedAt,
-	// }).Debug("Inquiry Chatroom created!")
-
-	// return err
-	return nil
+	return err
 }
 
 type SendTextMessageParams struct {
@@ -243,7 +218,6 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 		return params.Data, err
 	}
 
-	// Once private chatroom is created, we send a welcome message here.
 	msgDoc := df.
 		Client.
 		Collection(PrivateChatsCollectionName).
@@ -639,9 +613,9 @@ type UpdateInquiryStatusParams struct {
 	InquiryUuid string
 	Status      models.InquiryStatus
 
-	// Inquiry picker information.
 	PickerUuid     string
 	PickerUsername string
+	ChannelUuid    string
 }
 
 func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquiryStatusParams) (*firestore.WriteResult, error) {
@@ -662,7 +636,7 @@ func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquir
 		},
 		{
 			Path:  ChannelUuidFieldName,
-			Value: "",
+			Value: p.ChannelUuid,
 		},
 	})
 
@@ -736,6 +710,7 @@ func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingI
 }
 
 type ChatInquirerParams struct {
+	ChannelUuid      string
 	InquiryUUID      string
 	InquirerUsername string
 }
@@ -745,6 +720,7 @@ func (df *DarkFirestore) ChatInquirer(ctx context.Context, params ChatInquirerPa
 		ctx,
 		UpdateInquiryStatusParams{
 			InquiryUuid: params.InquiryUUID,
+			ChannelUuid: params.ChannelUuid,
 			Status:      models.InquiryStatusChatting,
 		},
 	)

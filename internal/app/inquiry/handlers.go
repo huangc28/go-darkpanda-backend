@@ -762,6 +762,7 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		ctx,
 		darkfirestore.ChatInquirerParams{
 			InquiryUUID: iq.Uuid,
+			ChannelUuid: chatroom.ChannelUuid.String,
 		},
 	); err != nil {
 		c.AbortWithError(
@@ -780,6 +781,7 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		ctx,
 		darkfirestore.CreatePrivateChatRoomParams{
 			ChannelUuid: chatroom.ChannelUuid.String,
+			InquiryUuid: iq.Uuid,
 			From:        c.GetString("uuid"),
 		},
 	); err != nil {
@@ -933,6 +935,7 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 			Status:         models.InquiryStatus(fsm.Current()),
 			PickerUuid:     "",
 			PickerUsername: "",
+			ChannelUuid:    "",
 		},
 	)
 
