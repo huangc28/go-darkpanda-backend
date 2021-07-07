@@ -685,12 +685,12 @@ func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingI
 	return err
 }
 
-type ChatInquiringUserParams struct {
+type ChatInquirerParams struct {
 	InquiryUUID      string
 	InquirerUsername string
 }
 
-func (df *DarkFirestore) ChatInquiringUser(ctx context.Context, params ChatInquiringUserParams) error {
+func (df *DarkFirestore) ChatInquirer(ctx context.Context, params ChatInquirerParams) error {
 	_, err := df.UpdateInquiryStatus(
 		ctx,
 		UpdateInquiryStatusParams{

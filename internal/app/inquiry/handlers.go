@@ -760,9 +760,9 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 
 	// Update inquiry status in firestore.
 	df := darkfirestore.Get()
-	if err := df.ChatInquiringUser(
+	if err := df.ChatInquirer(
 		ctx,
-		darkfirestore.ChatInquiringUserParams{
+		darkfirestore.ChatInquirerParams{
 			InquiryUUID: iq.Uuid,
 		},
 	); err != nil {
