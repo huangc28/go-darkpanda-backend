@@ -175,8 +175,10 @@ func EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
+	log.Printf("DEBUG 1 user uuid %v", c.GetString("uuid"), usr.Uuid)
+
 	df := darkfirestore.Get()
-	df.CreateInquiringUser(
+	_, _, err = df.CreateInquiringUser(
 		ctx, darkfirestore.CreateInquiringUserParams{
 			InquiryUuid:  iq.Uuid,
 			InquirerUuid: usr.Uuid,
