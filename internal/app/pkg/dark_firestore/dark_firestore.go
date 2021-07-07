@@ -15,8 +15,6 @@ import (
 	"google.golang.org/api/option"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	log "github.com/sirupsen/logrus"
 )
 
 var _darkFirestore *DarkFirestore
@@ -46,6 +44,9 @@ const (
 	// Name of the column of `service` document in `services` collection  that indicates the status.
 	ServiceStatusFieldName = "status"
 
+	// Name of the column of inquiry document in `inquiries` collection.
+	ChannelUuidFieldName = "channel_uuid"
+
 	// Key value of the `private_chats` collection in firestore.
 	PrivateChatsCollectionName = "private_chats"
 
@@ -62,7 +63,7 @@ const (
 type DarkFireStorer interface {
 	GetClient() *firestore.Client
 
-	CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error
+	CreatePrivateChatroom(ctx context.Context, params CreatePrivateChatRoomParams) error
 
 	SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error)
 	SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error)
@@ -128,11 +129,6 @@ type ChatMessage struct {
 	CreatedAt time.Time   `firestore:"created_at,omitempty" json:"created_at"`
 }
 
-type CreatePrivateChatRoomParams struct {
-	ChatRoomName string
-	Data         ChatMessage
-}
-
 func StructToMap(data interface{}) (map[string]interface{}, error) {
 	dataBytes, err := json.Marshal(data)
 	if err != nil {
@@ -156,29 +152,75 @@ func MapToStruct(data map[string]interface{}, ts interface{}) error {
 	return json.Unmarshal(dataByte, ts)
 }
 
-func (df *DarkFirestore) CreatePrivateChatRoom(ctx context.Context, params CreatePrivateChatRoomParams) error {
+type CreatePrivateChatRoomParams struct {
+	InquiryUuid string
+	ChannelUuid string
+	From        string
+	// Data         ChatMessage
+}
 
-	params.Data.Content = CreatePrivateChatBotContent
+func (df *DarkFirestore) CreatePrivateChatroom(ctx context.Context, params CreatePrivateChatRoomParams) error {
 
-	if params.Data.Type == "" {
-		params.Data.Type = Text
+	// Create private chatroom by adding a dummy field "last_touched".
+	_, err := df.Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(params.ChannelUuid).
+		Set(ctx, map[string]interface{}{
+			"last_touched": time.Now(),
+		})
+
+	if err != nil {
+		return err
 	}
 
-	chat, err := df.SendTextMessageToChatroom(ctx, SendTextMessageParams{
-		ChatroomName: params.ChatRoomName,
-		Data:         params.Data,
+	iqRef := df.getInquiryRef(params.InquiryUuid)
+	chatRef := df.getNewChatroomMsgRef(params.ChannelUuid)
+
+	msg := ChatMessage{
+		Content:   CreatePrivateChatBotContent,
+		From:      params.From,
+		Type:      Text,
+		CreatedAt: time.Now(),
+	}
+
+	// We need to provide the following info.
+	//   - channel uuid to dedicdated inquiry
+	//   - message content
+	df.Client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		if err := tx.Update(iqRef, []firestore.Update{
+			{
+				Path:  ChannelUuidFieldName,
+				Value: params.ChannelUuid,
+			},
+		}); err != nil {
+			return err
+		}
+
+		if err := tx.Set(chatRef, msg); err != nil {
+			return err
+		}
+
+		return nil
 	})
+	// params.Data.Content = CreatePrivateChatBotContent
 
-	log.WithFields(log.Fields{
-		"chatroom_name": params.ChatRoomName,
-		"updated_time":  chat.CreatedAt,
-	}).Debug("Inquiry Chatroom created!")
+	// chat, err := df.SendTextMessageToChatroom(ctx, SendTextMessageParams{
+	// 	ChatroomName: params.ChatRoomName,
+	// 	Data:         params.Data,
+	// })
 
-	return err
+	// log.WithFields(log.Fields{
+	// 	"chatroom_name": params.ChatRoomName,
+	// 	"updated_time":  chat.CreatedAt,
+	// }).Debug("Inquiry Chatroom created!")
+
+	// return err
+	return nil
 }
 
 type SendTextMessageParams struct {
-	ChatroomName string `firestore:"channel_uuid,omitempty" json:"channel_uuid"`
+	ChatroomName string
+	InquiryUuid  string
 	Data         ChatMessage
 }
 
@@ -199,7 +241,6 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 
 	if err != nil {
 		return params.Data, err
-
 	}
 
 	// Once private chatroom is created, we send a welcome message here.
@@ -469,7 +510,6 @@ func (df *DarkFirestore) CompletePayment(ctx context.Context, p CompletePaymentP
 
 			if err := tx.Set(chatRef, msg); err != nil {
 				return nil
-
 			}
 
 			return nil
@@ -619,6 +659,10 @@ func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquir
 		{
 			Path:  "picker_username",
 			Value: p.PickerUsername,
+		},
+		{
+			Path:  ChannelUuidFieldName,
+			Value: "",
 		},
 	})
 

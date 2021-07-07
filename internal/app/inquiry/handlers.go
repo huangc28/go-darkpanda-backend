@@ -776,14 +776,11 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	// Create private chatroom in firestore
-	if err := df.CreatePrivateChatRoom(
+	if err := df.CreatePrivateChatroom(
 		ctx,
 		darkfirestore.CreatePrivateChatRoomParams{
-			ChatRoomName: chatroom.ChannelUuid.String,
-			Data: darkfirestore.ChatMessage{
-				Type: darkfirestore.Text,
-				From: c.GetString("uuid"),
-			},
+			ChannelUuid: chatroom.ChannelUuid.String,
+			From:        c.GetString("uuid"),
 		},
 	); err != nil {
 		c.AbortWithError(
