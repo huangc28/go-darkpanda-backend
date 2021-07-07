@@ -13,8 +13,8 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -25,15 +25,15 @@ type MessageType string
 
 const (
 	Text                MessageType = "text"
-	UpdateInquiryDetail             = "update_inquiry_detail"
-	ServiceDetail                   = "service_detail"
-	ConfirmedService                = "confirmed_service"
-	DisagreeInquiry                 = "disagree_inquiry"
-	QuitChatroom                    = "quit_chatroom"
-	CompletePayment                 = "complete_payment"
-	CancelService                   = "cancel_service"
-	StartService                    = "start_service"
-	Images                          = "images"
+	UpdateInquiryDetail MessageType = "update_inquiry_detail"
+	ServiceDetail       MessageType = "service_detail"
+	ConfirmedService    MessageType = "confirmed_service"
+	DisagreeInquiry     MessageType = "disagree_inquiry"
+	QuitChatroom        MessageType = "quit_chatroom"
+	CompletePayment     MessageType = "complete_payment"
+	CancelService       MessageType = "cancel_service"
+	StartService        MessageType = "start_service"
+	Images              MessageType = "images"
 )
 
 const (
@@ -42,6 +42,9 @@ const (
 
 	// Key value of the `services` collection in firestore.
 	ServiceCollectionName = "services"
+
+	// Name of the column of `service` document in `services` collection  that indicates the status.
+	ServiceStatusFieldName = "status"
 
 	// Key value of the `private_chats` collection in firestore.
 	PrivateChatsCollectionName = "private_chats"
@@ -263,8 +266,8 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 				// What happens if channelUUID does not exists in firestore?
 				_, err := privateChatCollection.Doc(channelUUID).Get(ctx)
 
-				if grpc.Code(err) == codes.NotFound {
-					errChan <- errors.New(fmt.Sprintf("error chatroom channel: %s not found", channelUUID))
+				if status.Code(err) == codes.NotFound {
+					errChan <- fmt.Errorf("error chatroom channel: %s not found", channelUUID)
 
 					return
 				}
@@ -456,7 +459,7 @@ func (df *DarkFirestore) CompletePayment(ctx context.Context, p CompletePaymentP
 				srvRef,
 				[]firestore.Update{
 					{
-						Path:  "status",
+						Path:  ServiceStatusFieldName,
 						Value: models.ServiceStatusToBeFulfilled,
 					},
 				},
@@ -535,7 +538,7 @@ func (df *DarkFirestore) DisagreeInquiry(ctx context.Context, params DisagreeInq
 		func(ctx context.Context, tx *firestore.Transaction) error {
 			if err := tx.Update(iqRef, []firestore.Update{
 				{
-					Path:  "status",
+					Path:  ServiceStatusFieldName,
 					Value: models.InquiryStatusChatting,
 				},
 			}); err != nil {
@@ -598,7 +601,7 @@ func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquir
 
 	rw, err := iqRef.Update(ctx, []firestore.Update{
 		{
-			Path:  "status",
+			Path:  ServiceStatusFieldName,
 			Value: p.Status,
 		},
 		{
@@ -634,7 +637,7 @@ func (df *DarkFirestore) UpdateInquiryDetail(ctx context.Context, params UpdateI
 		func(ctx context.Context, tx *firestore.Transaction) error {
 			err := tx.Update(iqRef, []firestore.Update{
 				{
-					Path:  "status",
+					Path:  ServiceStatusFieldName,
 					Value: params.Status,
 				},
 				{
@@ -644,21 +647,11 @@ func (df *DarkFirestore) UpdateInquiryDetail(ctx context.Context, params UpdateI
 			})
 
 			if err != nil {
-				return errors.New(
-					fmt.Sprintf(
-						"failed to update inquiry status %s",
-						err.Error(),
-					),
-				)
+				return fmt.Errorf("failed to update inquiry status %s", err.Error())
 			}
 
 			if err := tx.Set(chatRef, params.Data); err != nil {
-				return errors.New(
-					fmt.Sprintf(
-						"failed to send inquiry update message %s",
-						err.Error(),
-					),
-				)
+				return fmt.Errorf("failed to send inquiry update message %s", err.Error())
 			}
 
 			return nil
@@ -708,7 +701,7 @@ func (df *DarkFirestore) ChatInquiringUser(ctx context.Context, params ChatInqui
 
 type CreateServiceParams struct {
 	ServiceUuid   string `firestore:"service_uuid,omitempty" json:"service_uuid"`
-	ServiceStatus string `firestore:"service_status,omitempty" json:"service_status"`
+	ServiceStatus string `firestore:"status,omitempty" json:"status"`
 }
 
 func (df *DarkFirestore) CreateService(ctx context.Context, params CreateServiceParams) error {
@@ -729,7 +722,7 @@ func (df *DarkFirestore) CreateService(ctx context.Context, params CreateService
 
 type UpdateServiceParams struct {
 	ServiceUuid   string `firestore:"service_uuid,omitempty" json:"service_uuid"`
-	ServiceStatus string `firestore:"service_status,omitempty" json:"service_status"`
+	ServiceStatus string `firestore:"status,omitempty" json:"status"`
 }
 
 func (df *DarkFirestore) UpdateService(ctx context.Context, params UpdateServiceParams) error {
@@ -741,7 +734,7 @@ func (df *DarkFirestore) UpdateService(ctx context.Context, params UpdateService
 			ctx,
 			[]firestore.Update{
 				{
-					Path:  "service_status",
+					Path:  ServiceStatusFieldName,
 					Value: params.ServiceStatus,
 				},
 			},
@@ -763,14 +756,11 @@ func (df *DarkFirestore) UpdateMultipleServiceStatus(ctx context.Context, params
 	batch := df.Client.Batch()
 
 	for _, sUuid := range params.ServiceUuids {
-		docRef := df.
-			Client.
-			Collection(ServiceCollectionName).
-			Doc(sUuid)
+		docRef := df.getServiceRef(sUuid)
 
 		batch.Set(docRef, map[string]interface {
 		}{
-			"service_status": params.ServiceStatus,
+			ServiceStatusFieldName: params.ServiceStatus,
 		}, firestore.MergeAll)
 	}
 
@@ -822,7 +812,7 @@ func (df *DarkFirestore) CancelService(ctx context.Context, p CancelServiceParam
 		func(ctx context.Context, tx *firestore.Transaction) error {
 			if err := tx.Update(srvRef, []firestore.Update{
 				{
-					Path:  "service_status",
+					Path:  ServiceStatusFieldName,
 					Value: models.ServiceStatusCanceled,
 				},
 			}); err != nil {
@@ -861,7 +851,7 @@ func (df *DarkFirestore) StartService(ctx context.Context, p StartServiceParams)
 	err := df.Client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		if err := tx.Update(srvRef, []firestore.Update{
 			{
-				Path:  "status",
+				Path:  ServiceStatusFieldName,
 				Value: p.ServiceStatus,
 			},
 		}); err != nil {
