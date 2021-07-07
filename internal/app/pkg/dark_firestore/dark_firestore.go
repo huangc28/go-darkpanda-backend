@@ -579,8 +579,13 @@ func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateI
 		Status:       string(models.InquiryStatusInquiring),
 	}
 
-	iqRef := df.getInquiryRef(params.InquirerUuid)
-	wres, err := iqRef.Set(ctx, data)
+	_, wres, err := df.
+		Client.
+		Collection(InquiryCollectionName).
+		Add(
+			ctx,
+			data,
+		)
 
 	if err != nil {
 		return nil, data, err
