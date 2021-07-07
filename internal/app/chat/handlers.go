@@ -66,7 +66,7 @@ func EmitTextMessage(c *gin.Context, depCon container.Container) {
 	ctx := context.Background()
 	df := darkfirestore.Get()
 	message, err := df.SendTextMessageToChatroom(ctx, darkfirestore.SendTextMessageParams{
-		ChatroomName: body.ChannelUUID,
+		ChannelUuid: body.ChannelUUID,
 		Data: darkfirestore.ChatMessage{
 			Content: body.Content,
 			From:    c.GetString("uuid"),

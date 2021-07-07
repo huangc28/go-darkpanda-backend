@@ -194,9 +194,9 @@ func (df *DarkFirestore) CreatePrivateChatroom(ctx context.Context, params Creat
 }
 
 type SendTextMessageParams struct {
-	ChatroomName string
-	InquiryUuid  string
-	Data         ChatMessage
+	ChannelUuid string
+	InquiryUuid string
+	Data        ChatMessage
 }
 
 func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error) {
@@ -209,7 +209,7 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 	// Create private chatroom by adding a dummy field "last_touched".
 	_, err := df.Client.
 		Collection(PrivateChatsCollectionName).
-		Doc(params.ChatroomName).
+		Doc(params.ChannelUuid).
 		Set(ctx, map[string]interface{}{
 			"last_touched": time.Now(),
 		})
@@ -221,7 +221,7 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 	msgDoc := df.
 		Client.
 		Collection(PrivateChatsCollectionName).
-		Doc(params.ChatroomName).
+		Doc(params.ChannelUuid).
 		Collection(MessageSubCollectionName).
 		NewDoc()
 
