@@ -50,10 +50,8 @@ func EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	uuid := c.GetString("uuid")
-
 	q := models.New(db.GetDB())
-	usr, err := q.GetUserByUuid(ctx, uuid)
+	usr, err := q.GetUserByUuid(ctx, c.GetString("uuid"))
 
 	if err != nil {
 		c.AbortWithError(
@@ -181,7 +179,7 @@ func EmitInquiryHandler(c *gin.Context) {
 	df.CreateInquiringUser(
 		ctx, darkfirestore.CreateInquiringUserParams{
 			InquiryUuid:  iq.Uuid,
-			InquirerUuid: uuid,
+			InquirerUuid: usr.Uuid,
 		},
 	)
 
