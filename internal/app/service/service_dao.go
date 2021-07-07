@@ -48,6 +48,7 @@ type ServiceResult struct {
 	AvatarUrl       sql.NullString `json:"avatar_url"`
 	ChannelUuid     sql.NullString `json:"channel_uuid"`
 	InquiryUuid     sql.NullString `json:"inquiry_uuid"`
+	CreatedAt       sql.NullTime   `json:"created_at"`
 }
 
 // GetServicesByStatus gets services of given status
