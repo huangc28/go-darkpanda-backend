@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -93,6 +94,9 @@ func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 
 		return
 	}
+
+	log.Printf("DEBUG spot 1 num of srvs %v", len(srvs))
+	log.Printf("DEBUG spot 2 num of srvs %v", srvs)
 
 	// Retrieve latest message for each chatroom. Collect slice of chatroom uuids.
 	channelUuids := make([]string, 0)
