@@ -117,7 +117,6 @@ SELECT * FROM (
 	WHERE
 		%s
 	AND %s
-	ORDER BY services.created_at DESC
 	LIMIT $2
 	OFFSET $3
 ) t ORDER BY created_at DESC;
