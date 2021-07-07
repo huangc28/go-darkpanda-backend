@@ -101,7 +101,7 @@ SELECT * FROM (
 		services.uuid as service_uuid,
 		services.service_status,
 		services.appointment_time,
-		services.created_at
+		services.created_at,
 		users.username,
 		users.uuid as user_uuid,
 		users.avatar_url,
