@@ -905,15 +905,11 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 	// Change inquiry status from `asking` to `inquiring` in DB.
 	// Change inquiry status from `asking` to `inquiring` in firestore. We use
 	// inquiry uuid retrieved from DB to find the document in firestore.
-	q := models.New(db.GetDB())
-	if _, err := q.UpdateInquiryByUuid(
-		ctx,
-		models.UpdateInquiryByUuidParams{
-			Uuid:          iq.Uuid,
-			InquiryStatus: models.InquiryStatus(fsm.Current()),
-		},
-	); err != nil {
-
+	newIqStatus := models.InquiryStatus(fsm.Current())
+	if _, err := iqDao.PatchInquiryByInquiryUUID(contracts.PatchInquiryParams{
+		Uuid:          iq.Uuid,
+		InquiryStatus: &newIqStatus,
+	}); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(

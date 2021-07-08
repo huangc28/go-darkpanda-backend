@@ -96,13 +96,10 @@ func BlockUserHandler(c *gin.Context, depCon container.Container) {
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
-				err.Error(),
-			),
+			apperr.NewErr(apperr.UnableToFindBlockee),
 		)
-		return
 
+		return
 	}
 
 	q := NewBlockDAO(db.GetDB())
@@ -115,7 +112,7 @@ func BlockUserHandler(c *gin.Context, depCon container.Container) {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
+				apperr.FailedToBlockUser,
 				err.Error(),
 			),
 		)
