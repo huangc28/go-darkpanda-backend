@@ -10,7 +10,7 @@ import (
 
 type TransformedService struct {
 	ServiceUuid     string    `json:"service_uuid"`
-	ServiceStatus   string    `json:"service_status"`
+	Status          string    `json:"status"`
 	AppointmentTime time.Time `json:"appointment_time"`
 	Username        string    `json:"chat_partner_username"`
 	UserUuid        string    `json:"chat_partner_user_uuid"`
