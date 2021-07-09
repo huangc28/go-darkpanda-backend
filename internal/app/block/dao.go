@@ -48,7 +48,7 @@ func (dao *BlockDAO) GetBlockedUsers(uuid string) ([]models.User, error) {
 		INNER JOIN users u ON bl.user_id = u.id 
 		LEFT JOIN users u2 ON bl.blocked_user_id = u2.id
 		WHERE u.uuid = $1 AND
-			block_list.deleted_at IS NOT NULL;	
+			bl.deleted_at IS NOT NULL;	
 	`
 
 	rows, err := dao.db.Queryx(
