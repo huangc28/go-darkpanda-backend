@@ -298,6 +298,18 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 		},
 	})
 
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendServiceDetailMsg,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	c.JSON(http.StatusOK, message)
 }
 
@@ -789,6 +801,18 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		},
 	)
 
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToMarshQRCodeInfo,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	qrcodePngByte, err := qrcode.Encode(
 		string(qrcodeContentByte),
 		qrcode.Medium,
@@ -897,6 +921,19 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			},
 		},
 	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendServiceConfirmedMsg,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	resp := struct {
 		Message            interface{} `json:"message"`
 		ChannelID          string      `json:"channel_uuid"`
@@ -998,14 +1035,12 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 	// Both inquirer and picker leave the chatroom.
 	type TransResult struct {
 		RemovedUsers []models.User
-		Inquiry      models.ServiceInquiry
+		Inquiry      *models.ServiceInquiry
 	}
 
 	transResp := db.TransactWithFormatStruct(
 		db.GetDB(),
 		func(tx *sqlx.Tx) db.FormatResp {
-			ctx := context.Background()
-
 			removedUsers, err := chatDao.WithTx(tx).LeaveAllMemebers(chatroom.ID)
 
 			if err != nil {
@@ -1027,14 +1062,14 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			}
 
 			// Change inquiry status to `inquiring`
-			q := models.New(tx)
-			iq, err := q.UpdateInquiryByUuid(
-				ctx,
-				models.UpdateInquiryByUuidParams{
-					Uuid:          iq.Uuid,
-					InquiryStatus: models.InquiryStatusInquiring,
-				},
-			)
+			var iqDao contracts.InquiryDAOer
+			depCon.Make(&iqDao)
+
+			newStatus := models.InquiryStatusInquiring
+			iq, err := iqDao.PatchInquiryByInquiryUUID(contracts.PatchInquiryParams{
+				Uuid:          iq.Uuid,
+				InquiryStatus: &newStatus,
+			})
 
 			if err != nil {
 				return db.FormatResp{
@@ -1113,7 +1148,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, TransformRevertChatting(
 		transResult.RemovedUsers,
-		transResult.Inquiry,
+		*transResult.Inquiry,
 		*chatroom,
 	))
 }
