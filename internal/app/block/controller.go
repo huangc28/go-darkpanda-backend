@@ -11,17 +11,11 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 )
 
-type GetUserBankAccountBody struct {
-	UUID string `form:"uuid" json:"uuid" binding:"required,gt=0"`
-}
-
-func GetUserBlock(c *gin.Context, depCon container.Container) {
-	var (
-		uuid string = c.Param("uuid")
-	)
+func GetBlockedUsers(c *gin.Context, depCon container.Container) {
+	userUuid := c.GetString("uuid")
 
 	q := NewBlockDAO(db.GetDB())
-	blocks, err := q.GetUserBlock(uuid)
+	blockedUsers, err := q.GetBlockedUsers(userUuid)
 
 	if err != nil {
 		c.AbortWithError(
@@ -35,21 +29,7 @@ func GetUserBlock(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	tResp, err := NewTransform().TransformBlock(blocks)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToTransformUserPayments,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	c.JSON(http.StatusOK, tResp)
+	c.JSON(http.StatusOK, NewTransform().TransformBlockedUser(blockedUsers))
 }
 
 type BlockUserBody struct {

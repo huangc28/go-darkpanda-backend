@@ -37,16 +37,20 @@ func (dao *BlockDAO) WithTx(tx db.Conn) contracts.BlockDAOer {
 	return dao
 }
 
-func (dao *BlockDAO) GetUserBlock(uuid string) ([]contracts.GetUserBlockListParams, error) {
+func (dao *BlockDAO) GetBlockedUsers(uuid string) ([]models.User, error) {
 	query := `
-		SELECT bl.id, u2.id AS user_id, u2.username, u2.avatar_url
-		FROM block_list bl 
+		SELECT 
+			u2.uuid, 
+			u2.username, 
+			u2.avatar_url
+		FROM 
+			block_list bl 
 		INNER JOIN users u ON bl.user_id = u.id 
 		LEFT JOIN users u2 ON bl.blocked_user_id = u2.id
 		WHERE u.uuid = $1;
 	`
 
-	rows, err := dao.db.Query(
+	rows, err := dao.db.Queryx(
 		query,
 		uuid,
 	)
@@ -57,18 +61,19 @@ func (dao *BlockDAO) GetUserBlock(uuid string) ([]contracts.GetUserBlockListPara
 
 	defer rows.Close()
 
-	blocks := make([]contracts.GetUserBlockListParams, 0)
-	for rows.Next() {
-		var block contracts.GetUserBlockListParams
+	users := make([]models.User, 0)
 
-		if err := rows.Scan(&block.ID, &block.UserId, &block.Username, &block.AvatarUrl); err != nil {
+	for rows.Next() {
+		var m models.User
+
+		if err := rows.StructScan(&m); err != nil {
 			return nil, err
 		}
 
-		blocks = append(blocks, block)
+		users = append(users, m)
 	}
 
-	return blocks, nil
+	return users, nil
 }
 
 type BlockUserParams struct {

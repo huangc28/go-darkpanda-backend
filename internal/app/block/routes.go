@@ -19,8 +19,8 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		}, authDaoer),
 	)
 
-	g.GET("/:uuid", func(c *gin.Context) {
-		GetUserBlock(c, depCon)
+	g.GET("", func(c *gin.Context) {
+		GetBlockedUsers(c, depCon)
 	})
 
 	g.POST("", func(c *gin.Context) {
