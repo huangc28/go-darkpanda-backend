@@ -124,7 +124,7 @@ func UnblockHandler(c *gin.Context, depCon container.Container) {
 
 	// Check if the requester has ever blocked the user.
 	q := NewBlockDAO(db.GetDB())
-	hasBlocked, err := q.HasBlockedByUser(HasBlockedByUserParams{
+	hasBlocked, err := q.HasBlockedByUser(contracts.HasBlockedByUserParams{
 		BlockerUuid: c.GetString("uuid"),
 		BlockeeUuid: body.BlockeeUuid,
 	})

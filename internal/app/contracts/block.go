@@ -12,7 +12,17 @@ type GetUserBlockListParams struct {
 	Username  string         `form:"username" json:"username"`
 	AvatarUrl sql.NullString `form:"avatar_url" json:"avatar_url"`
 }
+type HasBlockedByUserParams struct {
+	BlockerUuid string
+	BlockeeUuid string
+}
 
+type HasBlockedByUserByIdParams struct {
+	BlockerId int
+	BlockeeId int
+}
 type BlockDAOer interface {
 	WithTx(tx db.Conn) BlockDAOer
+	HasBlockedByUser(p HasBlockedByUserParams) (bool, error)
+	HasBlockedByUserById(p HasBlockedByUserByIdParams) (bool, error)
 }

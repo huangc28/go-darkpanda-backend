@@ -42,3 +42,11 @@ func (s *Service) IsOneOfStatus(types ...ServiceStatus) bool {
 func (s *Service) IsNotOneOfStatus(types ...ServiceStatus) bool {
 	return !s.IsOneOfStatus(types...)
 }
+
+func (s *Service) GetPartnerId(myId int64) int32 {
+	if s.CustomerID.Int32 == int32(myId) {
+		return s.ServiceProviderID.Int32
+	}
+
+	return s.ServiceProviderID.Int32
+}

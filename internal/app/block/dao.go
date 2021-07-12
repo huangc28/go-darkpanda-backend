@@ -151,12 +151,7 @@ WHERE
 	return err
 }
 
-type HasBlockedByUserParams struct {
-	BlockerUuid string
-	BlockeeUuid string
-}
-
-func (dao *BlockDAO) HasBlockedByUser(p HasBlockedByUserParams) (bool, error) {
+func (dao *BlockDAO) HasBlockedByUser(p contracts.HasBlockedByUserParams) (bool, error) {
 	query := `
 WITH blocker_info AS (
 	SELECT 
@@ -194,6 +189,31 @@ SELECT EXISTS (
 		p.BlockerUuid,
 		p.BlockeeUuid,
 	).Scan(&hasBlocked); err != nil {
+		return false, err
+	}
+
+	return hasBlocked, nil
+}
+
+func (dao *BlockDAO) HasBlockedByUserById(p contracts.HasBlockedByUserByIdParams) (bool, error) {
+	query := `
+SELECT EXISTS (
+	SELECT 
+		1 
+	FROM 
+		block_list
+	WHERE
+		user_id = $1 AND
+		blocked_user_id  = $2 AND 
+		deleted_at IS NOT NULL
+);
+	`
+	var hasBlocked bool
+
+	if err := dao.
+		db.
+		QueryRow(query).
+		Scan(&hasBlocked); err != nil {
 		return false, err
 	}
 

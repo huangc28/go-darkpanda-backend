@@ -144,34 +144,43 @@ type TrfedPaymentDetail struct {
 	PickerAvatarUrl *string `json:"picker_avatar_url"`
 
 	HasCommented bool `json:"has_commented"`
+	HasBlocked   bool `json:"has_blocked"`
 	MatchingFee  int  `json:"matching_fee"`
 }
 
-func TrfPaymentDetail(m *models.ServicePaymentDetail, hasCommented bool, matchingFee int) TrfedPaymentDetail {
+type TrfPaymentDetailParams struct {
+	PaymentDetail *models.ServicePaymentDetail
+	MatchingFee   int
+	HasCommented  bool
+	HasBlocked    bool
+}
+
+func TrfPaymentDetail(p TrfPaymentDetailParams) TrfedPaymentDetail {
 	trf := TrfedPaymentDetail{
-		Address: m.Address,
+		Address: p.PaymentDetail.Address,
 
-		PickerUuid:     m.PickerUuid,
-		PickerUsername: m.PickerUsername,
+		PickerUuid:     p.PaymentDetail.PickerUuid,
+		PickerUsername: p.PaymentDetail.PickerUsername,
 
-		HasCommented: hasCommented,
-		MatchingFee:  matchingFee,
+		HasCommented: p.HasCommented,
+		HasBlocked:   p.HasBlocked,
+		MatchingFee:  p.MatchingFee,
 	}
 
-	if m.Duration.Valid {
-		trf.Duration = &m.Duration.Int64
+	if p.PaymentDetail.Duration.Valid {
+		trf.Duration = &p.PaymentDetail.Duration.Int64
 	}
 
-	if m.PickerAvatarUrl.Valid {
-		trf.PickerAvatarUrl = &m.PickerAvatarUrl.String
+	if p.PaymentDetail.PickerAvatarUrl.Valid {
+		trf.PickerAvatarUrl = &p.PaymentDetail.PickerAvatarUrl.String
 	}
 
-	if m.AppointmentTime.Valid {
-		trf.StartTime = &m.AppointmentTime.Time
+	if p.PaymentDetail.AppointmentTime.Valid {
+		trf.StartTime = &p.PaymentDetail.AppointmentTime.Time
 	}
 
-	if m.Price.Valid {
-		trf.Price = &m.Price.Float64
+	if p.PaymentDetail.Price.Valid {
+		trf.Price = &p.PaymentDetail.Price.Float64
 	}
 
 	return trf

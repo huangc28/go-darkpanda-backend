@@ -569,19 +569,19 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		int(user.ID),
 	)
 
+	if err == sql.ErrNoRows {
+		c.AbortWithError(
+			http.StatusNotFound,
+			apperr.NewErr(
+				apperr.AssetNotFound,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	if err != nil {
-		if err == sql.ErrNoRows {
-			c.AbortWithError(
-				http.StatusNotFound,
-				apperr.NewErr(
-					apperr.AssetNotFound,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -591,6 +591,30 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		)
 
 		return
+	}
+
+	// Check against service partner id to see if the requester has blocked this guy.
+	var blockDao contracts.BlockDAOer
+	srvPartnerId := srv.GetPartnerId(user.ID)
+
+	hasBlocked, err := blockDao.HasBlockedByUserById(
+		contracts.HasBlockedByUserByIdParams{
+			BlockerId: int(user.ID),
+			BlockeeId: int(srvPartnerId),
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckHasBlockedUser,
+				err.Error(),
+			),
+		)
+
+		return
+
 	}
 
 	p, err := pDaoer.GetPaymentByServiceUuid(srvUuid)
@@ -621,9 +645,12 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 	}
 
 	c.JSON(http.StatusOK, TrfPaymentDetail(
-		p,
-		hasCommented,
-		int(matchingFee.Cost.Int32),
+		TrfPaymentDetailParams{
+			PaymentDetail: p,
+			HasCommented:  hasCommented,
+			HasBlocked:    hasBlocked,
+			MatchingFee:   int(matchingFee.Cost.Int32),
+		},
 	))
 }
 
