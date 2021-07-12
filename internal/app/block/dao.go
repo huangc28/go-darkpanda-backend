@@ -200,11 +200,11 @@ func (dao *BlockDAO) HasBlockedByUserById(p contracts.HasBlockedByUserByIdParams
 SELECT EXISTS (
 	SELECT 
 		1 
-	FROM 
+	FROM
 		block_list
 	WHERE
 		user_id = $1 AND
-		blocked_user_id  = $2 AND 
+		blocked_user_id  = $2 AND
 		deleted_at IS NOT NULL
 );
 	`
@@ -212,7 +212,11 @@ SELECT EXISTS (
 
 	if err := dao.
 		db.
-		QueryRow(query).
+		QueryRow(
+			query,
+			p.BlockerId,
+			p.BlockeeId,
+		).
 		Scan(&hasBlocked); err != nil {
 		return false, err
 	}
