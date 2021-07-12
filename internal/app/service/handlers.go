@@ -922,7 +922,8 @@ func CancelService(c *gin.Context, depCon container.Container) {
 	}
 
 	if srv.ServiceStatus != models.ServiceStatusToBeFulfilled &&
-		srv.ServiceStatus != models.ServiceStatusCanceled {
+		srv.ServiceStatus != models.ServiceStatusCanceled &&
+		srv.ServiceStatus != models.ServiceStatusUnpaid {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.ServiceStatusNotValidToCancel),
