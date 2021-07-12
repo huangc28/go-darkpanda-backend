@@ -11,7 +11,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 )
 
-func GetBlockedUsers(c *gin.Context, depCon container.Container) {
+func GetBlockedUsersHandler(c *gin.Context, depCon container.Container) {
 	userUuid := c.GetString("uuid")
 
 	q := NewBlockDAO(db.GetDB())

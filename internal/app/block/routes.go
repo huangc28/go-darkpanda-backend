@@ -20,7 +20,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	)
 
 	g.GET("", func(c *gin.Context) {
-		GetBlockedUsers(c, depCon)
+		GetBlockedUsersHandler(c, depCon)
 	})
 
 	g.POST("", func(c *gin.Context) {

@@ -85,7 +85,7 @@ WITH blocked_users AS (
 		block_list
 	WHERE
 		user_id = $1 AND
-		deleted_at IS NULL
+		deleted_at IS NOT NULL
 )
 SELECT
 	si.uuid,

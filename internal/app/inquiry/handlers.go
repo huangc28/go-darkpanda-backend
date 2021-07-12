@@ -254,8 +254,6 @@ func GetInquiriesHandler(c *gin.Context, depCon container.Container) {
 
 	}
 
-	// offset should be passed from client. The query should exclude
-	// those ids that is in the block list.
 	inquiries, err := inquiryDao.GetInquiries(
 		int(user.ID),
 		body.Offset,
