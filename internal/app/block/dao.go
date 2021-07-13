@@ -21,7 +21,7 @@ func NewBlockDAO(db db.Conn) *BlockDAO {
 	}
 }
 
-func BankAccountDAOServiceProvider(c container.Container) func() error {
+func BlockDAOServiceProvider(c container.Container) func() error {
 	return func() error {
 		c.Transient(func() contracts.BlockDAOer {
 			return NewBlockDAO(db.GetDB())

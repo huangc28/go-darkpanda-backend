@@ -553,7 +553,7 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 
 	if err != nil {
 		c.AbortWithError(
-			http.StatusInternalServerError,
+			http.StatusNotFound,
 			apperr.NewErr(
 				apperr.FailedToGetUserByUuid,
 				err.Error(),
@@ -595,6 +595,7 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 
 	// Check against service partner id to see if the requester has blocked this guy.
 	var blockDao contracts.BlockDAOer
+	depCon.Make(&blockDao)
 	srvPartnerId := srv.GetPartnerId(user.ID)
 
 	hasBlocked, err := blockDao.HasBlockedByUserById(
@@ -614,7 +615,6 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		)
 
 		return
-
 	}
 
 	p, err := pDaoer.GetPaymentByServiceUuid(srvUuid)
