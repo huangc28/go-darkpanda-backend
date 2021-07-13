@@ -48,5 +48,5 @@ func (s *Service) GetPartnerId(myId int64) int32 {
 		return s.ServiceProviderID.Int32
 	}
 
-	return s.ServiceProviderID.Int32
+	return s.CustomerID.Int32
 }
