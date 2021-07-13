@@ -89,12 +89,12 @@ INSERT INTO block_list(
 	blocked_user_id,
 	deleted_at
 ) 
-VALUES ($1, $2, current_timestamp) 
+VALUES ($1, $2, null) 
 ON CONFLICT (user_id, blocked_user_id) DO UPDATE
 SET 
 	user_id = $1,
 	blocked_user_id = $2,
-	deleted_at = current_timestamp;
+	deleted_at = null;
 	`
 
 	if _, err := dao.db.Exec(
@@ -133,7 +133,7 @@ WITH blocker_info AS (
 UPDATE 
 	block_list
 SET 
-	deleted_at = null
+	deleted_at = current_timestamp
 WHERE
 	user_id IN (
 		SELECT id FROM blocker_info
@@ -179,7 +179,7 @@ SELECT EXISTS (
 		) AND
 		blocked_user_id IN (
 			SELECT id FROM blockee_info			
-		) AND deleted_at IS NOT NULL	
+		) AND deleted_at IS NULL	
 );
 	`
 	var hasBlocked bool
