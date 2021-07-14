@@ -79,14 +79,27 @@ func (dao *InquiryDAO) GetInquiries(userId, offset, perpage int, statuses ...mod
 	query := fmt.Sprintf(
 		`
 WITH blocked_users AS (
-	SELECT 
+	SELECT
 		blocked_user_id
-	FROM 
+	FROM
 		block_list
 	WHERE
 		user_id = $1 AND
 		deleted_at IS NOT NULL
+), ongoing_service AS (
+	SELECT
+		customer_id AS ongoing_customer_id
+	FROM
+		services
+	WHERE
+		service_provider_id = $1 AND
+		service_status NOT IN (
+			'completed',
+			'expired',
+			'canceled'
+		)
 )
+
 SELECT
 	si.uuid,
 	si.budget,
@@ -105,13 +118,19 @@ SELECT
 	users.nationality
 FROM service_inquiries AS si
 INNER JOIN users
-	ON si.inquirer_id = users.id 
+	ON si.inquirer_id = users.id
 WHERE (%s)
 AND si.inquirer_id NOT IN (
-	SELECT 
+	SELECT
 		blocked_user_id
 	FROM
 		blocked_users
+)
+AND si.inquirer_id NOT IN (
+	SELECT
+		ongoing_customer_id
+	FROM
+		ongoing_service
 )
 ORDER BY si.created_at DESC
 LIMIT $2

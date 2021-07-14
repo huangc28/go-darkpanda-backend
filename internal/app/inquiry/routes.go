@@ -25,6 +25,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		}, authDao),
 	)
 
+	// Female user gets list of available inquiries.
 	g.GET(
 		"",
 		middlewares.IsFemale(userDAO),
