@@ -313,10 +313,29 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 	c.JSON(http.StatusOK, message)
 }
 
+type GetChatroomsBody struct {
+	Offset  int `form:"offset,default=0"`
+	PerPage int `form:"per_page,default=7"`
+}
+
 // If the requester is female find all chatrooms that qualify the following conditions:
-//   - Those chatrooms's related inquiry status is chatting
-//   - Those chatrooms's related inquiry picker_id equals requester's id
-func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
+//   - Chatrooms related inquiry status is chatting
+//   - Chatrooms related inquiry picker_id equals requester's id
+func GetChatrooms(c *gin.Context, depCon container.Container) {
+	body := GetChatroomsBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	// Recognize the gender of the requester
 	var (
 		userDao  contracts.UserDAOer
@@ -342,7 +361,11 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 
 	var chatrooms []models.InquiryChatRoom
 
-	chatrooms, err = chatDao.GetFemaleInquiryChatRooms(user.ID)
+	chatrooms, err = chatDao.GetFemaleInquiryChatRooms(
+		user.ID,
+		int64(body.Offset),
+		int64(body.PerPage),
+	)
 
 	if err != nil {
 		c.AbortWithError(
@@ -387,43 +410,6 @@ func GetInquiryChatRooms(c *gin.Context, depCon container.Container) {
 		),
 	)
 
-}
-
-// GetChatrooms gets list of chatrooms based on chatroom type (service / inquiry). If chatroom type
-// is not given in the query params, the default type is inquiry.
-type QueryChatroomType string
-
-const (
-	Service QueryChatroomType = "service"
-	Inquiry QueryChatroomType = "inquiry"
-)
-
-type GetChatroomsBody struct {
-	ChatroomType QueryChatroomType `form:"chatroom_type,default='inquiry'" json:"chatroom_type,default='inquiry'"`
-}
-
-func GetChatrooms(c *gin.Context, depCon container.Container) {
-	body := GetChatroomsBody{}
-
-	if err := requestbinder.Bind(c, &body); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToValidateGetChatroomsParams,
-				err.Error(),
-			),
-		)
-		return
-	}
-
-	switch body.ChatroomType {
-	case Inquiry:
-		GetInquiryChatRooms(c, depCon)
-	case Service:
-		c.JSON(http.StatusOK, struct{}{})
-	default:
-		GetInquiryChatRooms(c, depCon)
-	}
 }
 
 // Add pagination for firestore. We have to get `page` and `limit` from client.

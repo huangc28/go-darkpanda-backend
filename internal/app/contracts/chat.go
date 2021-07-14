@@ -30,7 +30,7 @@ type ChatDaoer interface {
 	GetChatRoomByChannelUUID(chanelUUID string, fields ...string) (*models.Chatroom, error)
 	GetChatRoomByInquiryID(inquiryID int64, fields ...string) (*models.Chatroom, error)
 	DeleteChatRoom(ID int64) error
-	GetFemaleInquiryChatRooms(userID int64) ([]models.InquiryChatRoom, error)
+	GetFemaleInquiryChatRooms(userID int64, offset int64, perPage int64) ([]models.InquiryChatRoom, error)
 	UpdateChatByUuid(params UpdateChatByUuidParams) (*models.Chatroom, error)
 	IsUserInChatroom(userUuid string, chatroomUuid string) (bool, error)
 	GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error)

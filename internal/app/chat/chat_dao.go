@@ -115,13 +115,13 @@ INSERT INTO chatroom_users (
 
 func (dao *ChatDao) LeaveChat(chatID int64, userIDs ...int64) error {
 	baseQuery := `
-UPDATE 
-	chatroom_users 
-SET 
+UPDATE
+	chatroom_users
+SET
 	deleted_at = now()
-WHERE 
+WHERE
 	user_id IN (%s)
-AND 
+AND
 	chatroom_id = $1;
 	`
 	idStr := ""
@@ -270,8 +270,7 @@ WHERE
 // inquirer avatar
 // chatroom channel uuid
 // chatroom created_at
-// @TODOs Add pagination.
-func (dao *ChatDao) GetFemaleInquiryChatRooms(userID int64) ([]models.InquiryChatRoom, error) {
+func (dao *ChatDao) GetFemaleInquiryChatRooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error) {
 	query := `
 SELECT
 	si.service_type,
@@ -293,6 +292,8 @@ WHERE
 	si.inquiry_status = $1 OR
 	si.inquiry_status = $2
 AND picker_id = $3
+LIMIT $4
+OFFSET $5;
 	`
 
 	rows, err := dao.DB.Queryx(
@@ -300,6 +301,8 @@ AND picker_id = $3
 		models.InquiryStatusChatting,
 		models.InquiryStatusWaitForInquirerApprove,
 		userID,
+		offset,
+		perPage,
 	)
 
 	if err != nil {
@@ -467,13 +470,13 @@ WITH related_inquiry AS (
 		services.id = $1
 )
 
-UPDATE 
-	chatrooms 
+UPDATE
+	chatrooms
 SET
 	deleted_at = now()
-WHERE 
+WHERE
 	inquiry_id IN (
-		SELECT id	
+		SELECT id
 		FROM related_inquiry
 	);
 `
