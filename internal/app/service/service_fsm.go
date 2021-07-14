@@ -44,6 +44,13 @@ func NewServiceFSM(initial models.ServiceStatus) *fsm.FSM {
 			{
 				Name: Cancel.ToString(),
 				Src: []string{
+					string(models.ServiceStatusUnpaid),
+				},
+				Dst: string(models.ServiceStatusCanceled),
+			},
+			{
+				Name: Cancel.ToString(),
+				Src: []string{
 					string(models.ServiceStatusToBeFulfilled),
 				},
 				Dst: string(models.ServiceStatusCanceled),
