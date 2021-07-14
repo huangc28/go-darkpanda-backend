@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/facebookincubator/ent/examples/m2mbidi/ent/user"
 	"github.com/golobby/container/pkg/container"
 	"github.com/jmoiron/sqlx"
 	"github.com/skip2/go-qrcode"
@@ -653,6 +654,33 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 				apperr.FailedToGetInquiryByUuid,
 				err.Error(),
 			),
+		)
+
+		return
+	}
+
+	// Are there any existing services has overlapped in time interval for the female user?
+	olSrv, err := serviceDao.GetOverlappedServices(contracts.GetOverlappedServicesParams{
+		UserId:                 user.ID,
+		InquiryAppointmentTime: iqRes.AppointmentTime.Time,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetOverlappedServices,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if len(olSrv) > 0 {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.OverlappingService),
 		)
 
 		return

@@ -30,6 +30,8 @@ const (
 	FailedToMarshQRCodeInfo           = "1100024"
 	FailedToSendServiceConfirmedMsg   = "1100025"
 	FailedToSendServiceDetailMsg      = "1100026"
+	FailedToGetOverlappedServices     = "1100027"
+	OverlappingService                = "1100028"
 )
 
 var ServiceErrorMessageMap = map[string]string{
@@ -39,4 +41,5 @@ var ServiceErrorMessageMap = map[string]string{
 	ServiceNotYetEnd:                  "no payment detail since service has not ended yet",
 	ServiceStatusNotValidToCancel:     "service status is not valid for canceling",
 	ServiceHasBeenCanceled:            "service has been canceld by partner",
+	OverlappingService:                "service can not be booked due to overlapping service, pick another time",
 }

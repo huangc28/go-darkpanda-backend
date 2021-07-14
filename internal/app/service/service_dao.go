@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
@@ -440,4 +441,71 @@ WHERE uuid = $1;
 	}
 
 	return &m, nil
+}
+
+const (
+	DefaultBetweenServiceDuration    = 30
+	DefaultAppointmentBufferDuration = 30
+)
+
+func (dao *ServiceDAO) GetOverlappedServices(p contracts.GetOverlappedServicesParams) ([]models.Service, error) {
+	if p.BetweenServiceBufferDuration == 0 {
+		p.BetweenServiceBufferDuration = DefaultBetweenServiceDuration
+	}
+
+	if p.AppointmentBufferDuration == 0 {
+		p.AppointmentBufferDuration = DefaultAppointmentBufferDuration
+	}
+
+	// Retrieve all ongoing services that the user is currently engaging.
+	query := `
+SELECT
+	*
+FROM
+	services
+WHERE
+	service_status NOT IN (
+		'completed',
+		'canceled',
+		'expired'
+	) AND (
+		customer_id = $1 OR
+		service_provider_id = $1;
+	)
+`
+
+	rows, err := dao.DB.Queryx(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	os := make([]models.Service, 0)
+
+	for rows.Next() {
+		var m models.Service
+
+		if err := rows.Scan(&m); err != nil {
+			return nil, err
+		}
+
+		realEndTime := m.AppointmentTime.Time.Add(time.Duration(p.AppointmentBufferDuration) * time.Minute).Add(time.Duration(m.Duration.Int32))
+
+		// Check inquiry appointment time is within the time inverval of the ongoing service.
+		isAfOrEqAt := p.InquiryAppointmentTime.Equal(m.AppointmentTime.Time) || p.InquiryAppointmentTime.After(m.AppointmentTime.Time)
+		isBfOrEqEt := p.InquiryAppointmentTime.Equal(realEndTime) || p.InquiryAppointmentTime.Before(
+			realEndTime.Add(
+				time.Duration(
+					p.BetweenServiceBufferDuration,
+				)*time.Minute,
+			),
+		)
+
+		if isAfOrEqAt && isBfOrEqEt {
+			os = append(os, m)
+		}
+
+	}
+
+	return os, nil
 }

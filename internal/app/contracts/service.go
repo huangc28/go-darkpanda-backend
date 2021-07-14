@@ -27,6 +27,13 @@ type CreateServiceQRCodeParams struct {
 	ServiceId int
 }
 
+type GetOverlappedServicesParams struct {
+	UserId                       int64
+	InquiryAppointmentTime       time.Time
+	AppointmentBufferDuration    int64
+	BetweenServiceBufferDuration int64
+}
+
 type ServiceDAOer interface {
 	GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error)
 	GetServiceByInquiryUUID(uuid string, fields ...string) (*models.Service, error)
@@ -36,4 +43,6 @@ type ServiceDAOer interface {
 	ScanExpiredServices() ([]*models.Service, error)
 	ScanCompletedServices() ([]*models.Service, error)
 	GetServiceByUuid(srvUuid string, fields ...string) (*models.Service, error)
+
+	GetOverlappedServices(p GetOverlappedServicesParams) ([]models.Service, error)
 }
