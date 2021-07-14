@@ -53,7 +53,6 @@ SELECT EXISTS(
 	return exists, err
 }
 
-// GetInquiries get list of inquiries with 7 records per page.
 func (dao *InquiryDAO) GetInquiries(userId, offset, perpage int, statuses ...models.InquiryStatus) ([]*contracts.InquiryInfo, error) {
 	statusQuery := "1=1"
 

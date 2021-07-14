@@ -292,8 +292,8 @@ WHERE
 	si.inquiry_status = $1 OR
 	si.inquiry_status = $2
 AND picker_id = $3
-LIMIT $4
-OFFSET $5;
+OFFSET $4;
+LIMIT $5
 	`
 
 	rows, err := dao.DB.Queryx(
