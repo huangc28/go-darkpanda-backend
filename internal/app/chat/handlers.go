@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/facebookincubator/ent/examples/m2mbidi/ent/user"
 	"github.com/golobby/container/pkg/container"
 	"github.com/jmoiron/sqlx"
 	"github.com/skip2/go-qrcode"
@@ -633,16 +632,21 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	}
 
 	var (
+		userDao     contracts.UserDAOer
 		serviceDao  contracts.ServiceDAOer
 		inquiryDao  contracts.InquiryDAOer
 		chatDao     contracts.ChatDaoer
 		gcsEnhancer gcsenhancer.GCSEnhancerInterface
 	)
 
+	depCon.Make(&userDao)
 	depCon.Make(&serviceDao)
 	depCon.Make(&inquiryDao)
 	depCon.Make(&chatDao)
 	depCon.Make(&gcsEnhancer)
+
+	// Get user by uuid.
+	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username", "id")
 
 	// Retrieve inquiry by inquiry uuid.
 	iqRes, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID)
@@ -661,7 +665,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 
 	// Are there any existing services has overlapped in time interval for the female user?
 	olSrv, err := serviceDao.GetOverlappedServices(contracts.GetOverlappedServicesParams{
-		UserId:                 user.ID,
+		UserId:                 sender.ID,
 		InquiryAppointmentTime: iqRes.AppointmentTime.Time,
 	})
 
@@ -897,10 +901,6 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 
 		return
 	}
-
-	var userDao contracts.UserDAOer
-	depCon.Make(&userDao)
-	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username")
 
 	if err != nil {
 		c.AbortWithError(
