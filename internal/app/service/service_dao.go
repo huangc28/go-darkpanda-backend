@@ -470,8 +470,8 @@ WHERE
 		'expired'
 	) AND (
 		customer_id = $1 OR
-		service_provider_id = $1;
-	)
+		service_provider_id = $1
+	);
 `
 
 	rows, err := dao.DB.Queryx(query)
