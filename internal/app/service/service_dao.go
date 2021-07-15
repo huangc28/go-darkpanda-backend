@@ -474,7 +474,7 @@ WHERE
 	);
 `
 
-	rows, err := dao.DB.Queryx(query)
+	rows, err := dao.DB.Queryx(query, p.UserId)
 
 	if err != nil {
 		return nil, err
