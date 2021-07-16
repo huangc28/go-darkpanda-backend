@@ -122,9 +122,9 @@ func RegisterHandler(c *gin.Context) {
 		)
 	}
 
-	// @TODO Update refer code alone with invitee ID. Should wrap operations in transactions.
-	err, res := db.Transact(db.GetDB(), func(tx *sqlx.Tx) (error, interface{}) {
+	txResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 		q := models.New(tx)
+
 		newUser, err := q.CreateUser(ctx, models.CreateUserParams{
 			Username:      body.Username,
 			Gender:        models.Gender(body.Gender),
@@ -134,10 +134,14 @@ func RegisterHandler(c *gin.Context) {
 		})
 
 		if err != nil {
-			return err, apperr.FailedToCreateUser
+			return db.FormatResp{
+				Err:            err,
+				ErrCode:        apperr.FailedToCreateUser,
+				HttpStatusCode: http.StatusInternalServerError,
+			}
 		}
 
-		err = q.UpdateInviteeIDByRefCode(
+		if err = q.UpdateInviteeIDByRefCode(
 			ctx,
 			models.UpdateInviteeIDByRefCodeParams{
 				InviteeID: sql.NullInt32{
@@ -145,20 +149,25 @@ func RegisterHandler(c *gin.Context) {
 					Valid: true,
 				},
 			},
-		)
+		); err != nil {
+			return db.FormatResp{
+				Err:            err,
+				ErrCode:        apperr.FailedToUpdateInviteeIdByRefCode,
+				HttpStatusCode: http.StatusInternalServerError,
+			}
 
-		if err != nil {
-			return err, nil
 		}
 
-		return nil, newUser
+		return db.FormatResp{
+			Response: &newUser,
+		}
 	})
 
-	if err != nil {
+	if txResp.Err != nil {
 		c.AbortWithError(
-			http.StatusBadRequest,
+			txResp.HttpStatusCode,
 			apperr.NewErr(
-				res.(string),
+				txResp.ErrCode,
 				err.Error(),
 			),
 		)
@@ -166,9 +175,9 @@ func RegisterHandler(c *gin.Context) {
 		return
 	}
 
-	newUser := res.(models.User)
+	newUser := txResp.Response.(*models.User)
 
-	c.JSON(http.StatusOK, NewTransform().TransformUser(&newUser))
+	c.JSON(http.StatusOK, NewTransform().TransformUser(newUser))
 }
 
 type VerifyUsernameBody struct {
@@ -276,7 +285,7 @@ func VerifyReferralCodeHandler(c *gin.Context, depCon container.Container) {
 
 type SendMobileVerifyCodeHandlerBody struct {
 	Uuid   string `json:"uuid" form:"uuid" binding:"required,gt=0"`
-	Mobile string `json:"mobile" form:"mobile" binding:"required" binding:"required,gt=0"`
+	Mobile string `json:"mobile" form:"mobile" binding:"required,gt=0"`
 }
 
 func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
@@ -486,7 +495,7 @@ func VerifyMobileHandler(c *gin.Context, depCon container.Container) {
 	if _, err := userDao.UpdateUserInfoByUuid(contracts.UpdateUserInfoParams{
 		Uuid:          body.UUID,
 		PhoneVerified: &phoneVerified,
-		Mobile:        vc.Mobile,
+		Mobile:        &vc.Mobile,
 	}); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,

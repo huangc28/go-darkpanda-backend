@@ -8,6 +8,8 @@ import (
 )
 
 type UpdateUserInfoParams struct {
+	Uuid          string
+	Mobile        *string
 	AvatarURL     *string
 	Nationality   *string
 	Region        *string
@@ -17,8 +19,6 @@ type UpdateUserInfoParams struct {
 	Description   *string
 	BreastSize    *string
 	PhoneVerified *bool
-	Uuid          string
-	Mobile        string
 }
 
 type UserDAOer interface {

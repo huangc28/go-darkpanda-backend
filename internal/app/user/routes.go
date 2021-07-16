@@ -48,7 +48,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	})
 
-	g.PUT("/:uuid", handlers.PutUserInfo)
+	g.PUT("/", handlers.PutUserInfo)
 
 	g.POST(
 		"/send-change-mobile-verify-code",

@@ -120,6 +120,7 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 	uuid := c.GetString("uuid")
 	dao := NewUserDAO(db.GetDB())
 	user, err := dao.UpdateUserInfoByUuid(contracts.UpdateUserInfoParams{
+		Uuid:        uuid,
 		AvatarURL:   body.AvatarURL,
 		Nationality: body.Nationality,
 		Region:      body.Region,
@@ -127,8 +128,6 @@ func (h *UserHandlers) PutUserInfo(c *gin.Context) {
 		Height:      &body.Height,
 		Weight:      &body.Weight,
 		Description: body.Description,
-		// BreastSize:  body.BreastSize,
-		Uuid: uuid,
 	})
 
 	if err != nil {
@@ -563,7 +562,7 @@ func VerifyMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	pv := true
 	if _, err := userDao.UpdateUserInfoByUuid(contracts.UpdateUserInfoParams{
 		Uuid:          c.GetString("uuid"),
-		Mobile:        m.Mobile,
+		Mobile:        &m.Mobile,
 		PhoneVerified: &pv,
 	}); err != nil {
 		c.AbortWithError(

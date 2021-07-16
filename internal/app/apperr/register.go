@@ -9,6 +9,7 @@ const (
 	UserAlreadyMobileVerified              = "1800006"
 	PhoneVerifyCodeNotMatch                = "1800007"
 	FailedToUpdateUserByUuid               = "1800008"
+	FailedToUpdateInviteeIdByRefCode       = "1800009"
 )
 
 var RegisterErrCodeMsgMap = map[string]string{
