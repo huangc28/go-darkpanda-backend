@@ -30,7 +30,7 @@ func (suite *TwilioTestSuite) SetupSuite() {
 
 func (suite *TwilioTestSuite) TestSendSMSSuccess() {
 	resp, err := suite.twilioClient.SendSMS(
-		"+15005550006",
+		"+12142964119",
 		"+886988272727",
 		"test from darkpanda",
 	)

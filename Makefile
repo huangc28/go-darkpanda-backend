@@ -51,6 +51,10 @@ PG_TEST_DSN=postgres://$(TEST_PG_USER):$(TEST_PG_PASSWORD)@$(TEST_PG_HOST):$(TES
 # Create a new migration file.
 # Usage:
 #   migrate_create referral_code.
+#
+# Migrate down:
+#    migrate -path=db/migrations/ -database 'postgres://darkpanda:1234@127.0.0.1:5432/darkpanda?sslmode=disable' down 1
+
 migrate_create:
 	$(MIGRATE_CMD) $(MIGRATE_CREATE_CMD) -ext sql -dir db/migrations -seq $(filter-out $@, $(MAKECMDGOALS))
 
@@ -58,7 +62,7 @@ migrate_up:
 	$(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_DSN) $(MIGRATE_UP_CMD) && make gen_model
 
 migrate_down:
-	$(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_DSN) $(MIGRATE_DOWN_CMD)
+	$(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_DSN) $(MIGRATE_DOWN_CMD) $(filter-out $@, $(MAKECMDGOALS))
 
 test_migrate_up:
 	ENV=test $(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_UP_CMD) && make gen_model
