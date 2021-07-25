@@ -3,7 +3,6 @@ package referral
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
@@ -104,8 +103,6 @@ type CreateReferralCodeParams struct {
 }
 
 func (dao *ReferralCodeDAO) CreateReferralCode(p CreateReferralCodeParams) (*models.UserRefcode, error) {
-	log.Printf("DEBUG ref code %v %v", p.InvitorID, p.RefCode)
-
 	query := `
 	INSERT INTO user_refcodes (
 		invitor_id,

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	apperr "github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
 
@@ -158,9 +160,38 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 			return
 		}
 
-		// send mobile verify code via twilio
-		var tc twilio.TwilioServicer
+		var (
+			tc     twilio.TwilioServicer
+			regDao contracts.Registerar
+		)
+
 		ac.Container.Make(&tc)
+		ac.Container.Make(&regDao)
+
+		exists, err := regDao.CheckUserInSMSWhiteList(ctx, contracts.CheckUserInSMSWhiteListParams{
+			RedisClient: db.GetRedis(),
+			UserUuid:    user.Uuid,
+		})
+
+		if err != nil && !errors.Is(err, redis.Nil) {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToCheckUserExistsInSMSWhiteList,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		if exists {
+			tc.SetConfig(twilio.TwilioConf{
+				AccountSID:   config.GetAppConf().TwilioDevAccountID,
+				AccountToken: config.GetAppConf().TwilioDevAuthToken,
+			})
+		}
+
 		vc := genverifycode.GenVerifyCode()
 
 		smsResp, err := tc.SendSMS(

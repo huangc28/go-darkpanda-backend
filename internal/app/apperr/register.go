@@ -10,6 +10,8 @@ const (
 	PhoneVerifyCodeNotMatch                = "1800007"
 	FailedToUpdateUserByUuid               = "1800008"
 	FailedToUpdateInviteeIdByRefCode       = "1800009"
+	FailedToCheckUserExistsInSMSWhiteList  = "1800010"
+	FailedToSendTwilioSMS                  = "1800011"
 )
 
 var RegisterErrCodeMsgMap = map[string]string{

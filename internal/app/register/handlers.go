@@ -3,6 +3,7 @@ package register
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -356,9 +357,37 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Send mobile verify code by twilio
+	// Send mobile verify code by twilio. If uuid is in the white list,
+	// we don't send real SMS message because it's too expensive
+	regDao := NewRegisterDAO(db.GetDB())
+	exists, err := regDao.CheckUserInSMSWhiteList(ctx, contracts.CheckUserInSMSWhiteListParams{
+		RedisClient: db.GetRedis(),
+		UserUuid:    body.Uuid,
+	})
+
+	if err != nil && !errors.Is(err, redis.Nil) {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckUserExistsInSMSWhiteList,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	var tc twilio.TwilioServicer
 	depCon.Make(&tc)
+
+	if exists {
+		// Set twilio config to use DEV.
+		tc.SetConfig(twilio.TwilioConf{
+			AccountSID:   config.GetAppConf().TwilioDevAccountID,
+			AccountToken: config.GetAppConf().TwilioDevAuthToken,
+		})
+	}
+
 	smsResp, err := tc.SendSMS(
 		config.GetAppConf().TwilioFrom,
 		body.Mobile,
@@ -366,6 +395,14 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	)
 
 	if twilio.HandleSendTwilioError(c, err) != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendTwilioSMS,
+				err.Error(),
+			),
+		)
+
 		return
 	}
 

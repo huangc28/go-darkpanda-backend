@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/go-redis/redis/v8"
+	cintrnal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/db"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 )
 
@@ -18,6 +20,16 @@ type RegisterDAO struct {
 func NewRegisterDAO(db db.Conn) *RegisterDAO {
 	return &RegisterDAO{
 		db: db,
+	}
+}
+
+func RegisterDaoServiceProvider(c cintrnal.Container) func() error {
+	return func() error {
+		c.Transient(func() contracts.Registerar {
+			return NewRegisterDAO(db.GetDB())
+		})
+
+		return nil
 	}
 }
 
@@ -65,6 +77,27 @@ const (
 	RegisterMobileVerifyCodeFieldKey = "verify_code"
 	RegisterMobileNumberFieldKey     = "mobile"
 )
+
+const SmsWhiteListKey = "sms_white_list"
+
+// We don't send real sms message to users in this list.
+// We want to save some money. Users in this list are
+// developers.
+func (dao *RegisterDAO) CheckUserInSMSWhiteList(ctx context.Context, p contracts.CheckUserInSMSWhiteListParams) (bool, error) {
+	l, err := p.RedisClient.LRange(ctx, SmsWhiteListKey, 0, -1).Result()
+
+	if err != nil {
+		return false, err
+	}
+
+	for _, uuid := range l {
+		if uuid == p.UserUuid {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
 
 type CreateRegisterMobileVerifyCodeParams struct {
 	RedisCli   *redis.Client

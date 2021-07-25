@@ -15,11 +15,12 @@ import (
 
 type Conn interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
-	Prepare(query string) (*sql.Stmt, error)
 	Query(query string, args ...interface{}) (*sql.Rows, error)
 	Queryx(query string, args ...interface{}) (*sqlx.Rows, error)
 	QueryRow(query string, args ...interface{}) *sql.Row
 	QueryRowx(query string, args ...interface{}) *sqlx.Row
+	Prepare(query string) (*sql.Stmt, error)
+	Preparex(query string) (*sqlx.Stmt, error)
 }
 
 var dbInstance *sqlx.DB

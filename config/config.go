@@ -34,9 +34,11 @@ type AppConf struct {
 	RedisPassword string `mapstructure:"REDIS_PASSWORD"`
 	RedisDb       uint   `mapstructure:"REDIS_DB"`
 
-	TwilioAccountID string `mapstructure:"TWILIO_ACCOUNT_ID"`
-	TwilioAuthToken string `mapstructure:"TWILIO_AUTH_TOKEN"`
-	TwilioFrom      string `mapstructure:"TWILIO_FROM"`
+	TwilioAccountID    string `mapstructure:"TWILIO_ACCOUNT_ID"`
+	TwilioAuthToken    string `mapstructure:"TWILIO_AUTH_TOKEN"`
+	TwilioDevAccountID string `mapstructure:"TWILIO_DEV_ACCOUNT_ID"`
+	TwilioDevAuthToken string `mapstructure:"TWILIO_DEV_AUTH_TOKEN"`
+	TwilioFrom         string `mapstructure:"TWILIO_FROM"`
 
 	GcpProjectID string `mapstructure:"GCP_PROJECT_ID"`
 

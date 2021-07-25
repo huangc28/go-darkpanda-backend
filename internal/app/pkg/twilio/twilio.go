@@ -18,8 +18,8 @@ import (
 // tests for various senarios sending SMS message. Twilio provides different 'from' mobile number that returns different response type when
 // sending SMS message. Use those mobile numbers to implement tests handling various errors.
 
-// To use this client in production, change the twilio credential to `LIVE Credentials` and use the mobile number states at your dashboard page.
-
+// Use TEST credentials to not charge your account for testing purpose. Use LIVE credentials for production.
+// you can check your credentials of different environment: https://console.twilio.com/?frameUrl=/console/project/settings
 const (
 	TwilioBaseAPI = "https://api.twilio.com"
 
@@ -81,6 +81,7 @@ type TwilioClient struct {
 
 type TwilioServicer interface {
 	SendSMS(from string, to string, content string) (*SMSResponse, error)
+	SetConfig(conf TwilioConf)
 }
 
 func New(conf TwilioConf) *TwilioClient {
@@ -94,6 +95,10 @@ func (tc *TwilioClient) getSendSMSUrl() string {
 	u.Path = path.Join(u.Path, CreateMessage)
 
 	return fmt.Sprintf(u.String(), tc.Conf.AccountSID)
+}
+
+func (tc *TwilioClient) SetConfig(conf TwilioConf) {
+	tc.Conf = conf
 }
 
 func (tc *TwilioClient) SendSMS(from string, to string, content string) (*SMSResponse, error) {
