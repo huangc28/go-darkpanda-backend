@@ -308,7 +308,7 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	var userDao contracts.UserDAOer
 	depCon.Make(&userDao)
 
-	user, err := userDao.GetUserByUuid(body.Uuid, "id")
+	user, err := userDao.GetUserByUuid(body.Uuid, "id", "username")
 
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -362,7 +362,7 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	regDao := NewRegisterDAO(db.GetDB())
 	exists, err := regDao.CheckUserInSMSWhiteList(ctx, contracts.CheckUserInSMSWhiteListParams{
 		RedisClient: db.GetRedis(),
-		UserUuid:    body.Uuid,
+		Username:    user.Username,
 	})
 
 	if err != nil && !errors.Is(err, redis.Nil) {
@@ -377,19 +377,26 @@ func SendMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	var tc twilio.TwilioServicer
+	var (
+		tc   twilio.TwilioServicer
+		from string = config.GetAppConf().TwilioFrom
+	)
 	depCon.Make(&tc)
 
 	if exists {
+		log.Info("DEV account, bypassing real sms sending")
+
 		// Set twilio config to use DEV.
 		tc.SetConfig(twilio.TwilioConf{
 			AccountSID:   config.GetAppConf().TwilioDevAccountID,
 			AccountToken: config.GetAppConf().TwilioDevAuthToken,
 		})
+
+		from = config.GetAppConf().TwilioDevFrom
 	}
 
 	smsResp, err := tc.SendSMS(
-		config.GetAppConf().TwilioFrom,
+		from,
 		body.Mobile,
 		fmt.Sprintf("your darkpanda verify code: \n\n %s", vs.BuildCode()),
 	)

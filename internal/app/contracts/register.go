@@ -8,7 +8,7 @@ import (
 
 type CheckUserInSMSWhiteListParams struct {
 	RedisClient *redis.Client
-	UserUuid    string
+	Username    string
 }
 
 type Registerar interface {

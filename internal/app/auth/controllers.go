@@ -142,12 +142,6 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 	// If authenticator does not exists, that means this is the first time the user
 	// performs login. We should create an authentication record in redis for this user.
 	if err == redis.Nil {
-		authenticator, err = authDao.CreateLoginVerifyCode(
-			ctx,
-			verifyCode.BuildCode(),
-			user.Uuid,
-		)
-
 		if err != nil {
 			c.AbortWithError(
 				http.StatusInternalServerError,
@@ -163,6 +157,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 		var (
 			tc     twilio.TwilioServicer
 			regDao contracts.Registerar
+			from   string = config.GetAppConf().TwilioFrom
 		)
 
 		ac.Container.Make(&tc)
@@ -170,7 +165,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 
 		exists, err := regDao.CheckUserInSMSWhiteList(ctx, contracts.CheckUserInSMSWhiteListParams{
 			RedisClient: db.GetRedis(),
-			UserUuid:    user.Uuid,
+			Username:    body.Username,
 		})
 
 		if err != nil && !errors.Is(err, redis.Nil) {
@@ -186,16 +181,20 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 		}
 
 		if exists {
+			log.Info("DEV account, bypassing real sms sending")
+
 			tc.SetConfig(twilio.TwilioConf{
 				AccountSID:   config.GetAppConf().TwilioDevAccountID,
 				AccountToken: config.GetAppConf().TwilioDevAuthToken,
 			})
+
+			from = config.GetAppConf().TwilioDevFrom
 		}
 
 		vc := genverifycode.GenVerifyCode()
 
 		smsResp, err := tc.SendSMS(
-			config.GetAppConf().TwilioFrom,
+			from,
 			user.Mobile.String,
 			fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
 		)

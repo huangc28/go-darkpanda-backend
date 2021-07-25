@@ -36,9 +36,10 @@ type AppConf struct {
 
 	TwilioAccountID    string `mapstructure:"TWILIO_ACCOUNT_ID"`
 	TwilioAuthToken    string `mapstructure:"TWILIO_AUTH_TOKEN"`
+	TwilioFrom         string `mapstructure:"TWILIO_FROM"`
 	TwilioDevAccountID string `mapstructure:"TWILIO_DEV_ACCOUNT_ID"`
 	TwilioDevAuthToken string `mapstructure:"TWILIO_DEV_AUTH_TOKEN"`
-	TwilioFrom         string `mapstructure:"TWILIO_FROM"`
+	TwilioDevFrom      string `mapstructure:"TWILIO_DEV_FROM"`
 
 	GcpProjectID string `mapstructure:"GCP_PROJECT_ID"`
 

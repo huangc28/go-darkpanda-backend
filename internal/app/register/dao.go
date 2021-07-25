@@ -90,8 +90,8 @@ func (dao *RegisterDAO) CheckUserInSMSWhiteList(ctx context.Context, p contracts
 		return false, err
 	}
 
-	for _, uuid := range l {
-		if uuid == p.UserUuid {
+	for _, username := range l {
+		if username == p.Username {
 			return true, nil
 		}
 	}
