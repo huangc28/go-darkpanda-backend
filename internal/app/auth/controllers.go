@@ -136,98 +136,89 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 	verifyCode := genverifycode.GenVerifyCode()
 	authDao := NewAuthDao(db.GetRedis())
 
-	// Check if login record already exists in redis.
-	authenticator, err := authDao.GetLoginRecord(ctx, user.Uuid)
+	var (
+		tc     twilio.TwilioServicer
+		regDao contracts.Registerar
+		from   string = config.GetAppConf().TwilioFrom
+	)
 
-	// If authenticator does not exists, that means this is the first time the user
-	// performs login. We should create an authentication record in redis for this user.
-	if err == redis.Nil {
-		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.UnableToCreateSendVerifyCode,
-					err.Error(),
-				),
-			)
+	ac.Container.Make(&tc)
+	ac.Container.Make(&regDao)
 
-			return
-		}
+	// If login user is in white list, we will send sandbox message instead
+	// of real message to save some money.
+	exists, err := regDao.CheckUserInSMSWhiteList(ctx, contracts.CheckUserInSMSWhiteListParams{
+		RedisClient: db.GetRedis(),
+		Username:    body.Username,
+	})
 
-		var (
-			tc     twilio.TwilioServicer
-			regDao contracts.Registerar
-			from   string = config.GetAppConf().TwilioFrom
+	if err != nil && !errors.Is(err, redis.Nil) {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckUserExistsInSMSWhiteList,
+				err.Error(),
+			),
 		)
-
-		ac.Container.Make(&tc)
-		ac.Container.Make(&regDao)
-
-		exists, err := regDao.CheckUserInSMSWhiteList(ctx, contracts.CheckUserInSMSWhiteListParams{
-			RedisClient: db.GetRedis(),
-			Username:    body.Username,
-		})
-
-		if err != nil && !errors.Is(err, redis.Nil) {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToCheckUserExistsInSMSWhiteList,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		if exists {
-			log.Info("DEV account, bypassing real sms sending")
-
-			tc.SetConfig(twilio.TwilioConf{
-				AccountSID:   config.GetAppConf().TwilioDevAccountID,
-				AccountToken: config.GetAppConf().TwilioDevAuthToken,
-			})
-
-			from = config.GetAppConf().TwilioDevFrom
-		}
-
-		vc := genverifycode.GenVerifyCode()
-
-		smsResp, err := tc.SendSMS(
-			from,
-			user.Mobile.String,
-			fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
-		)
-
-		if twilio.HandleSendTwilioError(c, err) != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToSendTwilioMessage,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
-		log.
-			WithFields(log.Fields{
-				"user_uuid": user.Uuid,
-				"mobile":    user.Mobile.String,
-			}).
-			Infof("sends twilio SMS success, login verify code created ! %v", smsResp.SID)
-
-		c.JSON(http.StatusOK, NewTransform().TransformSendLoginMobileVerifyCode(
-			user.Uuid,
-			verifyCode.Chars,
-			user.Mobile.String,
-		))
 
 		return
 	}
 
+	if exists {
+		log.Info("DEV account, bypassing real sms sending")
+
+		tc.SetConfig(twilio.TwilioConf{
+			AccountSID:   config.GetAppConf().TwilioDevAccountID,
+			AccountToken: config.GetAppConf().TwilioDevAuthToken,
+		})
+
+		from = config.GetAppConf().TwilioDevFrom
+	}
+
+	// Check if login record already exists in redis.
+	authenticator, err := authDao.GetLoginRecord(ctx, user.Uuid)
+
 	if err != nil {
+		// If authenticator does not exists, that means this is the first time the user
+		// performs login. We should create an authentication record in redis for this user.
+		if err == redis.Nil {
+
+			vc := genverifycode.GenVerifyCode()
+
+			smsResp, err := tc.SendSMS(
+				from,
+				user.Mobile.String,
+				fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
+			)
+
+			if twilio.HandleSendTwilioError(c, err) != nil {
+				c.AbortWithError(
+					http.StatusInternalServerError,
+					apperr.NewErr(
+						apperr.FailedToSendTwilioMessage,
+						err.Error(),
+					),
+				)
+
+				return
+			}
+
+			log.
+				WithFields(log.Fields{
+					"user_uuid": user.Uuid,
+					"mobile":    user.Mobile.String,
+				}).
+				Infof("sends twilio SMS success, login verify code created ! %v", smsResp.SID)
+
+			c.JSON(http.StatusOK, NewTransform().TransformSendLoginMobileVerifyCode(
+				user.Uuid,
+				verifyCode.Chars,
+				user.Mobile.String,
+			))
+
+			return
+		}
+
 		// Error occurs when trying to get authentication record from redis, return error.
 		c.AbortWithError(
 			http.StatusBadRequest,
@@ -267,8 +258,8 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 	}
 
 	// send verify code via twilio
-	var tc twilio.TwilioServicer
-	depCon.Make(&tc)
+	// var tc twilio.TwilioServicer
+	// depCon.Make(&tc)
 
 	smsResp, err := tc.SendSMS(
 		config.GetAppConf().TwilioFrom,
