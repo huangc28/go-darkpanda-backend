@@ -182,7 +182,6 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 		// If authenticator does not exists, that means this is the first time the user
 		// performs login. We should create an authentication record in redis for this user.
 		if err == redis.Nil {
-
 			vc := genverifycode.GenVerifyCode()
 
 			smsResp, err := tc.SendSMS(
@@ -191,7 +190,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 				fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
 			)
 
-			if twilio.HandleSendTwilioError(c, err) != nil {
+			if err != nil {
 				c.AbortWithError(
 					http.StatusInternalServerError,
 					apperr.NewErr(
@@ -257,17 +256,21 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 		return
 	}
 
-	// send verify code via twilio
-	// var tc twilio.TwilioServicer
-	// depCon.Make(&tc)
-
 	smsResp, err := tc.SendSMS(
-		config.GetAppConf().TwilioFrom,
+		from,
 		user.Mobile.String,
 		fmt.Sprintf("[Darkpanda] login verify code: \n\n %s", verifyCode.BuildCode()),
 	)
 
-	if twilio.HandleSendTwilioError(c, err) != nil {
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendTwilioMessage,
+				err.Error(),
+			),
+		)
+
 		return
 	}
 
