@@ -184,10 +184,28 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 		if err == redis.Nil {
 			vc := genverifycode.GenVerifyCode()
 
+			ctx := context.Background()
+
+			if _, err := authDao.CreateLoginVerifyCode(
+				ctx,
+				vc.BuildCode(),
+				user.Uuid,
+			); err != nil {
+				c.AbortWithError(
+					http.StatusInternalServerError,
+					apperr.NewErr(
+						apperr.FailedToCreateAuthenticatorRecordInRedis,
+						err.Error(),
+					),
+				)
+
+				return
+			}
+
 			smsResp, err := tc.SendSMS(
 				from,
 				user.Mobile.String,
-				fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
+				fmt.Sprintf("your darkpanda verify code: \n\n %d", vc.Dig),
 			)
 
 			if err != nil {
