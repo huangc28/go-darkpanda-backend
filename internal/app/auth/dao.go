@@ -183,6 +183,7 @@ func (dao *AuthDAO) GetLoginRecord(ctx context.Context, userUuid string) (*Login
 
 func (dao *AuthDAO) UpdateLoginRecord(ctx context.Context, userUuid string, record LoginAuthenticator) error {
 	pipe := dao.redis.TxPipeline()
+	defer pipe.Close()
 
 	pipe.HMSet(
 		ctx,

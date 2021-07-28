@@ -82,7 +82,6 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 		ctx  context.Context = context.Background()
 	)
 
-	// receive username
 	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
 			http.StatusBadRequest,
@@ -205,7 +204,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 			smsResp, err := tc.SendSMS(
 				from,
 				user.Mobile.String,
-				fmt.Sprintf("your darkpanda verify code: \n\n %d", vc.Dig),
+				fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
 			)
 
 			if err != nil {
