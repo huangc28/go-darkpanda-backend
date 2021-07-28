@@ -181,13 +181,13 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 		// If authenticator does not exists, that means this is the first time the user
 		// performs login. We should create an authentication record in redis for this user.
 		if err == redis.Nil {
-			vc := genverifycode.GenVerifyCode()
+			log.Printf("DEBUG verify code 1 %s", verifyCode.BuildCode())
 
 			ctx := context.Background()
 
 			if _, err := authDao.CreateLoginVerifyCode(
 				ctx,
-				vc.BuildCode(),
+				verifyCode.BuildCode(),
 				user.Uuid,
 			); err != nil {
 				c.AbortWithError(
@@ -204,7 +204,7 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 			smsResp, err := tc.SendSMS(
 				from,
 				user.Mobile.String,
-				fmt.Sprintf("your darkpanda verify code: \n\n %s", vc.BuildCode()),
+				fmt.Sprintf("your darkpanda verify code: \n\n %s", verifyCode.BuildCode()),
 			)
 
 			if err != nil {
@@ -232,6 +232,8 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 				user.Mobile.String,
 			))
 
+			log.Println("DEBUG spot 1")
+
 			return
 		}
 
@@ -246,6 +248,8 @@ func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container
 
 		return
 	}
+
+	log.Println("DEBUG spot 2")
 
 	// Authenticator record is found. Check number of retries the user has attempt
 	if authenticator.NumRetried >= LimitOnLoginRetry {
