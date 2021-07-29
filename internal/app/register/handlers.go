@@ -31,7 +31,7 @@ type RegisterBody struct {
 	ReferCode string `form:"refer_code" uri:"refer_code" json:"refer_code" binding:"required"`
 }
 
-func RegisterHandler(c *gin.Context) {
+func RegisterHandler(c *gin.Context, depCon container.Container) {
 	var (
 		body RegisterBody
 		ctx  context.Context = context.Background()
@@ -149,6 +149,7 @@ func RegisterHandler(c *gin.Context) {
 					Int32: int32(newUser.ID),
 					Valid: true,
 				},
+				RefCode: body.ReferCode,
 			},
 		); err != nil {
 			return db.FormatResp{

@@ -8,7 +8,9 @@ import (
 func Routes(r *gin.RouterGroup, depCon container.Container) {
 	g := r.Group("/register")
 
-	g.POST("", RegisterHandler)
+	g.POST("", func(c *gin.Context) {
+		RegisterHandler(c, depCon)
+	})
 
 	// Check username availability.
 	g.POST("/verify-username", func(c *gin.Context) {
