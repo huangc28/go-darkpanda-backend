@@ -74,7 +74,7 @@ func (h *UserHandlers) GetUserProfileHandler(c *gin.Context) {
 		return
 	}
 
-	tResp, err := NewTransform().TransformMaleUser(user)
+	tResp, err := NewTransform().TransformViewableUserProfile(user)
 
 	if err != nil {
 		log.Fatal(err)

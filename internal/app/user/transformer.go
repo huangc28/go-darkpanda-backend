@@ -159,7 +159,7 @@ func formatUserTraits(user models.User) ([]Trait, error) {
 	return traits, nil
 }
 
-type TransformedMaleUser struct {
+type TransformedViewableUserProfile struct {
 	Username    string        `json:"username"`
 	Gender      models.Gender `json:"gender"`
 	Uuid        string        `json:"uuid"`
@@ -170,14 +170,14 @@ type TransformedMaleUser struct {
 	Traits      []Trait       `json:"traits"`
 }
 
-func (ut *UserTransform) TransformMaleUser(user models.User) (*TransformedMaleUser, error) {
+func (ut *UserTransform) TransformViewableUserProfile(user models.User) (*TransformedViewableUserProfile, error) {
 	traits, err := formatUserTraits(user)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &TransformedMaleUser{
+	return &TransformedViewableUserProfile{
 		Uuid:        user.Uuid,
 		Username:    user.Username,
 		Gender:      user.Gender,
