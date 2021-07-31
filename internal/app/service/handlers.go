@@ -366,7 +366,6 @@ func ScanServiceQrCode(c *gin.Context, depCon container.Container) {
 		time.Duration(srv.Duration.Int32) * time.Minute,
 	)
 
-	// Prepare chat channel ID, since we will be
 	var chatDao contracts.ChatDaoer
 	depCon.Make(&chatDao)
 	chat, err := chatDao.GetChatroomByServiceId(int(srv.ID))

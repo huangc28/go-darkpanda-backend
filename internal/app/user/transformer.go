@@ -105,6 +105,60 @@ func (ut *UserTransform) TransformPatchedUser(user *models.User) *TransformedPat
 	return t
 }
 
+// Format user traits to array of traits.
+type TraitType string
+
+const (
+	Age    TraitType = "age"
+	Height TraitType = "height"
+	Weight TraitType = "weight"
+)
+
+type Trait struct {
+	Type  TraitType   `json:"type"`
+	Value interface{} `json:"value"`
+}
+
+func formatUserTraits(user models.User) ([]Trait, error) {
+	traits := make([]Trait, 0)
+
+	if user.Age.Valid {
+		traits = append(traits, Trait{
+			Type:  Age,
+			Value: user.Age.Int32,
+		})
+	}
+
+	if user.Height.Valid {
+		height, err := convertnullsql.ConvertSqlNullStringToFloat32(user.Height)
+
+		if err != nil {
+			return nil, err
+		}
+
+		traits = append(traits, Trait{
+			Type:  Height,
+			Value: height,
+		})
+	}
+
+	if user.Weight.Valid {
+		weight, err := convertnullsql.ConvertSqlNullStringToFloat32(user.Weight)
+
+		if err != nil {
+			return nil, err
+		}
+
+		traits = append(traits, Trait{
+			Type:  Weight,
+			Value: weight,
+		})
+
+	}
+
+	return traits, nil
+}
+
 type TransformedMaleUser struct {
 	Username    string        `json:"username"`
 	Gender      models.Gender `json:"gender"`
@@ -112,39 +166,15 @@ type TransformedMaleUser struct {
 	AvatarUrl   string        `json:"avatar_url"`
 	Nationality string        `json:"nationality"`
 	Region      string        `json:"region"`
-	Age         *int          `json:"age"`
-	Height      *float32      `json:"height"`
-	Weight      *float32      `json:"weight"`
 	Description string        `json:"description"`
+	Traits      []Trait       `json:"traits"`
 }
 
 func (ut *UserTransform) TransformMaleUser(user models.User) (*TransformedMaleUser, error) {
-	var (
-		ageI    *int
-		weightF *float32
-		heightF *float32
-		err     error
-	)
+	traits, err := formatUserTraits(user)
 
-	if user.Age.Valid {
-		ageI = new(int)
-		*ageI = int(user.Age.Int32)
-	}
-
-	if user.Weight.Valid {
-		weightF, err = convertnullsql.ConvertSqlNullStringToFloat32(user.Weight)
-
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	if user.Height.Valid {
-		heightF, err = convertnullsql.ConvertSqlNullStringToFloat32(user.Height)
-
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
 
 	return &TransformedMaleUser{
@@ -154,9 +184,7 @@ func (ut *UserTransform) TransformMaleUser(user models.User) (*TransformedMaleUs
 		AvatarUrl:   user.AvatarUrl.String,
 		Nationality: user.Nationality.String,
 		Region:      user.Region.String,
-		Age:         ageI,
-		Height:      heightF,
-		Weight:      weightF,
+		Traits:      traits,
 		Description: user.Description.String,
 	}, nil
 }
