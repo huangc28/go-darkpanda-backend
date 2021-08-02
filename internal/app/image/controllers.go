@@ -29,7 +29,7 @@ func UploadAvatarHandler(c *gin.Context) {
 	ctx := context.Background()
 	client, err := storage.NewClient(
 		ctx,
-		option.WithServiceAccountFile(
+		option.WithCredentialsFile(
 			fmt.Sprintf("%s/%s", config.GetProjRootPath(),
 				appConf.GcsGoogleServiceAccountName,
 			),
