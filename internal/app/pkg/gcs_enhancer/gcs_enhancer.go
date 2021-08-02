@@ -1,15 +1,20 @@
 package gcsenhancer
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"image/gif"
+	"image/jpeg"
+	"image/png"
 	"io"
-	"mime/multipart"
 	"net/url"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
+
+	"image"
 
 	"cloud.google.com/go/storage"
 	log "github.com/sirupsen/logrus"
@@ -20,14 +25,11 @@ const GCSPublicHost = "storage.googleapis.com"
 type GCSEnhancerInterface interface {
 	ObjectLink(attr *storage.ObjectAttrs) string
 	Upload(ctx context.Context, file io.Reader, uploadFilename string) (string, error)
-	UploadMultiple(ctx context.Context, headers []*multipart.FileHeader) ([]string, error)
 }
 
 type GCSEnhancer struct {
 	client     *storage.Client
 	bucketName string
-	linkList   []string
-	mutex      *sync.Mutex
 }
 
 func NewGCSEnhancer(client *storage.Client, bucketName string) *GCSEnhancer {
@@ -45,6 +47,13 @@ func (e *GCSEnhancer) ObjectLink(attr *storage.ObjectAttrs) string {
 	}
 
 	return u.String()
+}
+
+func (e *GCSEnhancer) NewObjectWriter(ctx context.Context, filename string) *storage.Writer {
+	bucket := e.client.Bucket(e.bucketName)
+	object := bucket.Object(filename)
+
+	return object.NewWriter(ctx)
 }
 
 func (e *GCSEnhancer) Upload(ctx context.Context, file io.Reader, uploadFilename string) (string, error) {
@@ -83,32 +92,164 @@ func appendUnixTimeStampToFilename(filename string) string {
 	secs := strings.Split(filename, ".")
 	timeFactor := time.Now().Format("20060102150405")
 
-	return fmt.Sprintf("%s.%s.%s", secs[0], timeFactor, secs[len(secs)-1])
+	return fmt.Sprintf("%s_%s.%s", secs[0], timeFactor, secs[len(secs)-1])
 }
 
-func (e *GCSEnhancer) UploadMultiple(ctx context.Context, headers []*multipart.FileHeader) ([]string, error) {
+func appendThumbnailStamp(filename string) string {
+	secs := strings.Split(filename, ".")
+
+	return fmt.Sprintf("%s_thumbnail.%s", secs[0], secs[len(secs)-1])
+}
+
+type Images struct {
+	Name      string
+	Mime      string
+	OrigImage image.Image
+	Thumbnail image.Image
+}
+
+// UploadImages uploads original and thumbnail of the image.
+func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLinks, error) {
+	ois := make([]*ObjectInfo, 0)
+	var (
+		err error
+		sl  SortedLinks
+	)
+
+	for _, img := range imgs {
+		// Upload both orginal / thumbnail images.
+		origName := appendUnixTimeStampToFilename(filepath.Base(img.Name))
+		thumbnailName := appendThumbnailStamp(origName)
+
+		origBuf := new(bytes.Buffer)
+		thumbBuf := new(bytes.Buffer)
+
+		var (
+			origObj  *ObjectInfo
+			thumbObj *ObjectInfo
+		)
+
+		switch img.Mime {
+		case "image/png":
+			if err = png.Encode(origBuf, img.OrigImage); err != nil {
+				return sl, err
+			}
+
+			origObj = &ObjectInfo{
+				Size:   Original,
+				Name:   origName,
+				Reader: origBuf,
+			}
+
+			if err = png.Encode(thumbBuf, img.Thumbnail); err != nil {
+				return sl, err
+			}
+
+			thumbObj = &ObjectInfo{
+				Size:   Thumbnail,
+				Name:   thumbnailName,
+				Reader: thumbBuf,
+			}
+		case "image/jpeg":
+			if err := jpeg.Encode(origBuf, img.OrigImage, &jpeg.Options{
+				Quality: jpeg.DefaultQuality,
+			}); err != nil {
+				return sl, err
+			}
+
+			origObj = &ObjectInfo{
+				Size:   Original,
+				Name:   origName,
+				Reader: origBuf,
+			}
+
+			if err := jpeg.Encode(thumbBuf, img.Thumbnail, &jpeg.Options{
+				Quality: jpeg.DefaultQuality,
+			}); err != nil {
+				return sl, err
+			}
+
+			thumbObj = &ObjectInfo{
+				Size:   Thumbnail,
+				Name:   thumbnailName,
+				Reader: thumbBuf,
+			}
+		case "image/gif":
+			if err := gif.Encode(origBuf, img.OrigImage, &gif.Options{}); err != nil {
+				return sl, err
+			}
+
+			origObj = &ObjectInfo{
+				Size:   Original,
+				Name:   origName,
+				Reader: origBuf,
+			}
+
+			if err := gif.Encode(thumbBuf, img.OrigImage, &gif.Options{}); err != nil {
+				return sl, err
+			}
+
+			origObj = &ObjectInfo{
+				Size:   Thumbnail,
+				Name:   origName,
+				Reader: origBuf,
+			}
+		}
+
+		ois = append(ois, origObj)
+		ois = append(ois, thumbObj)
+
+		sl, err = e.uploadMultiple(ctx, ois...)
+
+		if err != nil {
+			return sl, err
+		}
+	}
+
+	return sl, err
+}
+
+type ImageSize string
+
+const (
+	Original  ImageSize = "original"
+	Thumbnail ImageSize = "thumbnail"
+)
+
+type ObjectInfo struct {
+	Size   ImageSize
+	Name   string
+	Reader io.Reader
+}
+
+type SortedLinks struct {
+	Thumbnails []string `json:"thumbnails"`
+	Original   []string `json:"originals"`
+}
+
+func (e *GCSEnhancer) uploadMultiple(ctx context.Context, objs ...*ObjectInfo) (SortedLinks, error) {
 	quit := make(chan struct{}, 1)
-
 	errChan := make(chan error, 1)
-	linkChan := make(chan string, 1)
 
-	for _, header := range headers {
+	type LinkInfo struct {
+		Size ImageSize
+		Link string
+	}
+
+	linkChan := make(chan LinkInfo, 1)
+	sl := SortedLinks{}
+
+L:
+	for _, obj := range objs {
 		select {
 		case <-quit:
-			break
+			break L
 		default:
-			go func(header *multipart.FileHeader) {
-				file, err := header.Open()
-				defer file.Close()
-
-				if err != nil {
-					errChan <- err
-				}
-
+			go func(obj *ObjectInfo) {
 				objectLink, err := e.Upload(
 					ctx,
-					file,
-					appendUnixTimeStampToFilename(filepath.Base(header.Filename)),
+					obj.Reader,
+					appendUnixTimeStampToFilename(filepath.Base(obj.Name)),
 				)
 
 				if err != nil {
@@ -116,22 +257,39 @@ func (e *GCSEnhancer) UploadMultiple(ctx context.Context, headers []*multipart.F
 				}
 
 				errChan <- nil
-				linkChan <- objectLink
-			}(header)
+				linkChan <- LinkInfo{
+					Size: obj.Size,
+					Link: objectLink,
+				}
+			}(obj)
 		}
 	}
 
-	for range headers {
+	for range objs {
 		if err := <-errChan; err != nil {
 			close(quit)
 
-			return []string{}, err
+			return sl, err
 		}
 
-		e.linkList = append(e.linkList, <-linkChan)
+		li := <-linkChan
+
+		if li.Size == Original {
+			sl.Original = append(sl.Original, li.Link)
+		}
+
+		if li.Size == Thumbnail {
+			sl.Thumbnails = append(sl.Thumbnails, li.Link)
+		}
 	}
 
-	log.Infof("All file uploaded success %v", e.linkList)
+	b, err := json.Marshal(sl)
 
-	return e.linkList, nil
+	if err != nil {
+		return sl, err
+	}
+
+	log.Infof("All file uploaded success %s", string(b))
+
+	return sl, nil
 }

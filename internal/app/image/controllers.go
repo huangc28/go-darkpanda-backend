@@ -91,6 +91,9 @@ func UploadAvatarHandler(c *gin.Context) {
 	})
 }
 
+// @TODOs
+//   - Accept only png and jpg.
+//   - We need to determine the appropriate mime type to use proper decoder.
 func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 	// ------------------- Limit upload size to 20 MB -------------------
 	if err := c.Request.ParseMultipartForm(20e6); err != nil {
@@ -105,13 +108,25 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	fileHeaders := c.Request.MultipartForm.File["image"]
+	sis, err := CropThumbnail(c.Request.MultipartForm.File["image"])
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCropImages,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	appConf := config.GetAppConf()
 	ctx := context.Background()
 	client, err := storage.NewClient(
 		ctx,
-		option.WithServiceAccountFile(
+		option.WithCredentialsFile(
 			fmt.Sprintf(
 				"%s/%s",
 				config.GetProjRootPath(),
@@ -132,8 +147,23 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	enhancer := gcsenhancer.NewGCSEnhancer(client, appConf.GcsBucketName)
-	linkList, err := enhancer.UploadMultiple(ctx, fileHeaders)
+	enhancer := gcsenhancer.NewGCSEnhancer(
+		client,
+		appConf.GcsBucketName,
+	)
+
+	imgs := make([]gcsenhancer.Images, 0)
+
+	for _, si := range sis {
+		imgs = append(imgs, gcsenhancer.Images{
+			Name:      si.Name,
+			Mime:      si.Mime,
+			OrigImage: si.OrigImage,
+			Thumbnail: si.Thumbnail,
+		})
+	}
+
+	sl, err := enhancer.UploadImages(ctx, imgs)
 
 	if err != nil {
 		c.AbortWithError(
@@ -147,5 +177,5 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	c.JSON(http.StatusOK, NewTransformer().TransformLinks(linkList))
+	c.JSON(http.StatusOK, sl)
 }

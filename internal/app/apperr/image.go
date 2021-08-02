@@ -12,6 +12,7 @@ const (
 	FailedToGetImagesByUserID           = "4000009"
 	FailedToUploadImagesToGCS           = "4000010"
 	FailedToSendImageMessage            = "4000011"
+	FailedToCropImages                  = "4000012"
 )
 
 var ImageErrCodeMap = map[string]string{}
