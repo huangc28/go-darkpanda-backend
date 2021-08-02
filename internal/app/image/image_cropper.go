@@ -62,7 +62,7 @@ type DecodedImage struct {
 	Image nImage.Image
 }
 
-func getImageMimeDecoder(r io.Reader, mime string) (*DecodedImage, error) {
+func decodeImageByMime(r io.Reader, mime string) (*DecodedImage, error) {
 	var (
 		img nImage.Image
 		err error
@@ -105,6 +105,16 @@ type SizedImage struct {
 	Thumbnail nImage.Image
 }
 
+// imageUnderSize determine whether
+func skipThumbnailCropping(img nImage.Image) bool {
+	rect := img.Bounds()
+
+	l := rect.Max.X - rect.Min.X
+	h := rect.Max.Y - rect.Min.Y
+
+	return l <= 150 && h <= 150
+}
+
 // CropThumbnaie crops the image to size of 150x150 to save client bandwidth.
 func CropThumbnail(ihfs []*multipart.FileHeader) ([]*SizedImage, error) {
 	hfs, err := DetectMimeOfHeaderFiles(ihfs)
@@ -123,13 +133,29 @@ func CropThumbnail(ihfs []*multipart.FileHeader) ([]*SizedImage, error) {
 			return nil, err
 		}
 
-		dImg, err := getImageMimeDecoder(fr, hf.Mime)
+		dImg, err := decodeImageByMime(fr, hf.Mime)
 
 		if err != nil {
 			return nil, err
 		}
 
+		// If image size is below 150x150, we skip cropping.
+		if skipThumbnailCropping(dImg.Image) {
+			sis = append(
+				sis,
+				&SizedImage{
+					Name:      hf.FileHeader.Filename,
+					Mime:      hf.Mime,
+					OrigImage: dImg.Image,
+					Thumbnail: dImg.Image,
+				},
+			)
+
+			continue
+		}
+
 		cx, cy := calcImageCenterCoord(dImg.Image)
+
 		simg := dImg.Image.(SubImager)
 
 		// Crop the original image to thumbnail (150x150).
