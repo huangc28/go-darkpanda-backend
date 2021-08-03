@@ -696,12 +696,14 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	// Wrap the following actions in transaction
 	//   - Update inquiry status in DB
 	//   - Update inquiry status in firestore
-	//   - Create and join inquirer and picker in a chatroom
-	//   - Create a chatroom for inquirer and picker in firestore
+	//   - Create service record with status `negotiating`
 	// @TODO wrap the following actions in to a service
-	tranResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
+	type TransResp struct {
+		Chatroom *models.Chatroom
+		Service  *models.Service
+	}
 
-		// Update inquiry status in DB.
+	tranResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 		inquiryDao := NewInquiryDAO(tx)
 		if err := inquiryDao.PatchInquiryStatusByUUID(
 			contracts.PatchInquiryStatusByUUIDParams{
@@ -714,7 +716,6 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 				Err:            err,
 				ErrCode:        apperr.FailedToPatchInquiryStatus,
 			}
-
 		}
 
 		// Create private chatroom record in DB Join both inquirer and picker into the chatroom.
@@ -735,8 +736,50 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 			}
 		}
 
+		// Create service record.
+		sid, err := shortid.Generate()
+
+		if err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusInternalServerError,
+				Err:            err,
+				ErrCode:        apperr.FailedToGenerateShortId,
+			}
+		}
+
+		q := models.New(tx)
+		service, err := q.CreateService(
+			ctx,
+			models.CreateServiceParams{
+				Uuid: sql.NullString{
+					Valid:  true,
+					String: sid,
+				},
+				CustomerID:        iq.InquirerID,
+				ServiceProviderID: iq.PickerID,
+				Price:             iq.Price,
+				Duration:          iq.Duration,
+				AppointmentTime:   iq.AppointmentTime,
+				InquiryID:         int32(iq.ID),
+				ServiceStatus:     models.ServiceStatusNegotiating,
+				ServiceType:       iq.ServiceType,
+				Address:           iq.Address,
+			},
+		)
+
+		if err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusInternalServerError,
+				Err:            err,
+				ErrCode:        apperr.FailedToCreateService,
+			}
+		}
+
 		return db.FormatResp{
-			Response: chatroom,
+			Response: &TransResp{
+				Chatroom: chatroom,
+				Service:  &service,
+			},
 		}
 	})
 
@@ -752,41 +795,23 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	chatroom := tranResp.Response.(*models.Chatroom)
+	tr := tranResp.Response.(*TransResp)
 
-	// Update inquiry status in firestore.
 	df := darkfirestore.Get()
-	if err := df.ChatInquirer(
+	if err := df.PrepareToStartInquiryChat(
 		ctx,
-		darkfirestore.ChatInquirerParams{
-			InquiryUUID: iq.Uuid,
-			ChannelUuid: chatroom.ChannelUuid.String,
+		darkfirestore.PrepareToStartInquiryChatParams{
+			InquiryUuid:    iq.Uuid,
+			PickerUsername: picker.Username,
+			InquirierUuid:  c.GetString("uuid"),
+			ChannelUuid:    tr.Chatroom.ChannelUuid.String,
+			ServiceUuid:    tr.Service.Uuid.String,
 		},
 	); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToChangeFirestoreInquiryStatus,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	// Create private chatroom in firestore
-	if err := df.CreatePrivateChatroom(
-		ctx,
-		darkfirestore.CreatePrivateChatRoomParams{
-			ChannelUuid: chatroom.ChannelUuid.String,
-			InquiryUuid: iq.Uuid,
-			From:        c.GetString("uuid"),
-		},
-	); err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToCreatePrivateChatroomInFirestore,
+				apperr.FailedToPrepareStartInquiryChat,
 				err.Error(),
 			),
 		)
@@ -798,7 +823,7 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	var chatDao contracts.ChatDaoer
 	depCon.Make(&chatDao)
 
-	chatInfoModel, err := chatDao.GetCompleteChatroomInfoById(int(chatroom.ID))
+	chatInfoModel, err := chatDao.GetCompleteChatroomInfoById(int(tr.Chatroom.ID))
 
 	if err != nil {
 		c.AbortWithError(

@@ -631,4 +631,4 @@ COMMIT;BEGIN;
     ALTER TABLE users 
     DROP COLUMN IF EXISTS phone_verify_code;
 
-COMMIT;CREATE UNIQUE INDEX idx_userid_blocked_userid ON block_list(user_id, blocked_user_id);
+COMMIT;CREATE UNIQUE INDEX idx_userid_blocked_userid ON block_list(user_id, blocked_user_id);ALTER TYPE service_status ADD VALUE 'negotiating';

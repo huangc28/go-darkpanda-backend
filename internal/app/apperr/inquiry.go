@@ -61,6 +61,7 @@ const (
 	InquiryHasNoPicker                       = "3000057"
 	FailedToGetChatroomById                  = "3000058"
 	FailedToSendQuitChatroomMsg              = "3000059"
+	FailedToPrepareStartInquiryChat          = "3000060"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
@@ -78,6 +79,6 @@ var InquiryErrCodeMsgMap = map[string]string{
 	FailedToPickupStatusNotWaiting:         "inquiry not available, status is not waiting",
 	InquiryUUIDNotInParams:                 "inquiry uuid not exists in uri param",
 	FailedToPickupStatusNotInquiring:       "can not pickup inquiry since status is not inquiring",
-	InquiryHasNoPicker:                     "can not start a chat since inquiry has not picker",
+	InquiryHasNoPicker:                     "can not start a chat since inquiry has no picker",
 	FailedToSendQuitChatroomMsg:            "failed to get send quit chatroom message",
 }

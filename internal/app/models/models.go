@@ -161,6 +161,7 @@ const (
 	ServiceStatusExpired       ServiceStatus = "expired"
 	ServiceStatusFulfilling    ServiceStatus = "fulfilling"
 	ServiceStatusCompleted     ServiceStatus = "completed"
+	ServiceStatusNegotiating   ServiceStatus = "negotiating"
 )
 
 func (e *ServiceStatus) Scan(src interface{}) error {

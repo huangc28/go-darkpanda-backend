@@ -248,6 +248,42 @@ RETURNING *;
 	return &service, nil
 }
 
+func (dao *ServiceDAO) UpdateServiceByInquiryId(p contracts.UpdateServiceByInquiryIdParams) (*models.Service, error) {
+	query := `
+UPDATE services SET
+	price = COALESCE($1, price),
+	uuid = uuid,
+	duration = COALESCE($2, duration),
+	appointment_time = COALESCE($3, appointment_time),
+	service_status = COALESCE($4, service_status),
+	service_type = COALESCE($5, service_type),
+	start_time = COALESCE($6, start_time),
+	end_time = COALESCE($7, end_time),
+	canceller_id = COALESCE($8, canceller_id)
+WHERE inquiry_id = $9
+RETURNING *;
+`
+
+	service := models.Service{}
+
+	if err := dao.DB.QueryRowx(
+		query,
+		p.Price,
+		p.Duration,
+		p.Appointment,
+		p.ServiceStatus,
+		p.ServiceType,
+		p.StartTime,
+		p.EndTime,
+		p.CancellerId,
+		p.InquiryId,
+	).StructScan(&service); err != nil {
+		return (*models.Service)(nil), err
+	}
+
+	return &service, nil
+}
+
 func (dao *ServiceDAO) CreateServiceQRCode(params contracts.CreateServiceQRCodeParams) (*models.ServiceQrcode, error) {
 	query := `
 INSERT INTO service_qrcode (

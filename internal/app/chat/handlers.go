@@ -707,10 +707,8 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 
 	// Change inquiry status from `chatting` to `booked` and create a new service with status `unpaid`
 	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
-		serviceDBCli := models.New(tx)
 
 		statusUnpaid := models.ServiceStatusUnpaid
-		sid, err := shortid.Generate()
 
 		if err != nil {
 			return db.FormatResp{
@@ -720,46 +718,30 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			}
 		}
 
-		service, err := serviceDBCli.CreateService(
-			ctx,
-			models.CreateServiceParams{
-				Uuid: sql.NullString{
-					Valid:  true,
-					String: sid,
-				},
-				CustomerID:        iqRes.InquirerID,
-				ServiceProviderID: iqRes.PickerID,
-				Price:             iqRes.Price,
-				Duration:          iqRes.Duration,
-				AppointmentTime:   iqRes.AppointmentTime,
-				InquiryID:         int32(iqRes.ID),
-				ServiceStatus:     statusUnpaid,
-				ServiceType:       iqRes.ServiceType,
-				Address:           iqRes.Address,
+		srvModel, err := serviceDao.UpdateServiceByInquiryId(
+			contracts.UpdateServiceByInquiryIdParams{
+				InquiryId:     int64(iqRes.ID),
+				ServiceStatus: &statusUnpaid,
 			},
 		)
 
 		if err != nil {
 			return db.FormatResp{
-				Err:     err,
-				ErrCode: apperr.FailedToCreateService,
+				HttpStatusCode: http.StatusInternalServerError,
+				Err:            err,
+				ErrCode:        apperr.FailedToUpdateService,
 			}
 		}
 
-		// Create a new service record in firestore
+		// Update service status from `negotiating` to unpaid
 		df := darkfirestore.Get()
-		err = df.CreateService(
-			ctx,
-			darkfirestore.CreateServiceParams{
-				ServiceUuid:   service.Uuid.String,
-				ServiceStatus: service.ServiceStatus.ToString(),
-			},
-		)
-
-		if err != nil {
+		if err := df.UpdateService(ctx, darkfirestore.UpdateServiceParams{
+			ServiceUuid:   srvModel.Uuid.String,
+			ServiceStatus: statusUnpaid.ToString(),
+		}); err != nil {
 			return db.FormatResp{
 				Err:            err,
-				ErrCode:        apperr.FirestoreFailedToCreateService,
+				ErrCode:        apperr.FirestoreFailedToUpdateService,
 				HttpStatusCode: http.StatusInternalServerError,
 			}
 		}
@@ -778,7 +760,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		}
 
 		return db.FormatResp{
-			Response: &service,
+			Response: &srvModel,
 		}
 	})
 

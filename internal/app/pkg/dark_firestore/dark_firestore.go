@@ -64,8 +64,6 @@ const (
 type DarkFireStorer interface {
 	GetClient() *firestore.Client
 
-	CreatePrivateChatroom(ctx context.Context, params CreatePrivateChatRoomParams) error
-
 	SendTextMessageToChatroom(ctx context.Context, params SendTextMessageParams) (ChatMessage, error)
 	SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error)
 	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
@@ -79,7 +77,6 @@ type DarkFireStorer interface {
 	DisagreeInquiry(ctx context.Context, params DisagreeInquiryParams) (ChatMessage, error)
 	UpdateInquiryDetail(ctx context.Context, params UpdateInquiryDetailParams) (InquiryDetailMessage, error)
 
-	CreateService(ctx context.Context, params CreateServiceParams) error
 	UpdateService(ctx context.Context, params UpdateServiceParams) error
 	CancelService(ctx context.Context, p CancelServiceParams) error
 }
@@ -151,46 +148,6 @@ func MapToStruct(data map[string]interface{}, ts interface{}) error {
 	}
 
 	return json.Unmarshal(dataByte, ts)
-}
-
-type CreatePrivateChatRoomParams struct {
-	InquiryUuid string
-	ChannelUuid string
-	From        string
-}
-
-func (df *DarkFirestore) CreatePrivateChatroom(ctx context.Context, params CreatePrivateChatRoomParams) error {
-	// Create private chatroom by adding a dummy field "last_touched".
-	_, err := df.Client.
-		Collection(PrivateChatsCollectionName).
-		Doc(params.ChannelUuid).
-		Set(ctx, map[string]interface{}{
-			"last_touched": time.Now(),
-		})
-
-	if err != nil {
-		return err
-	}
-
-	chatRef := df.getNewChatroomMsgRef(params.ChannelUuid)
-
-	msg := ChatMessage{
-		Content:   CreatePrivateChatBotContent,
-		From:      params.From,
-		Type:      Text,
-		CreatedAt: time.Now(),
-	}
-
-	if _, err := chatRef.Set(ctx, msg); err != nil {
-		return err
-	}
-
-	log.WithFields(log.Fields{
-		"chatroom_name": params.ChannelUuid,
-		"updated_time":  msg.CreatedAt,
-	}).Debug("Inquiry Chatroom created!")
-
-	return err
 }
 
 type SendTextMessageParams struct {
@@ -709,46 +666,6 @@ func (df *DarkFirestore) AskingInquiringUser(ctx context.Context, params AskingI
 	return err
 }
 
-type ChatInquirerParams struct {
-	ChannelUuid      string
-	InquiryUUID      string
-	InquirerUsername string
-}
-
-func (df *DarkFirestore) ChatInquirer(ctx context.Context, params ChatInquirerParams) error {
-	_, err := df.UpdateInquiryStatus(
-		ctx,
-		UpdateInquiryStatusParams{
-			InquiryUuid: params.InquiryUUID,
-			ChannelUuid: params.ChannelUuid,
-			Status:      models.InquiryStatusChatting,
-		},
-	)
-
-	return err
-}
-
-type CreateServiceParams struct {
-	ServiceUuid   string `firestore:"service_uuid,omitempty" json:"service_uuid"`
-	ServiceStatus string `firestore:"status,omitempty" json:"status"`
-}
-
-func (df *DarkFirestore) CreateService(ctx context.Context, params CreateServiceParams) error {
-	// Create a service record.
-	_, err := df.
-		Client.
-		Collection(ServiceCollectionName).
-		Doc(params.ServiceUuid).
-		Set(ctx, params)
-
-	if err != nil {
-		return err
-
-	}
-
-	return nil
-}
-
 type UpdateServiceParams struct {
 	ServiceUuid   string `firestore:"service_uuid,omitempty" json:"service_uuid"`
 	ServiceStatus string `firestore:"status,omitempty" json:"status"`
@@ -769,11 +686,7 @@ func (df *DarkFirestore) UpdateService(ctx context.Context, params UpdateService
 			},
 		)
 
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 type UpdateMultipleServiceStatusParams struct {
@@ -796,6 +709,13 @@ func (df *DarkFirestore) UpdateMultipleServiceStatus(ctx context.Context, params
 	_, err := batch.Commit(ctx)
 
 	return err
+}
+
+func (df *DarkFirestore) getChatroomRef(channelUuid string) *firestore.DocumentRef {
+	return df.
+		Client.
+		Collection(PrivateChatsCollectionName).
+		Doc(channelUuid)
 }
 
 func (df *DarkFirestore) getNewChatroomMsgRef(channelUuid string) *firestore.DocumentRef {
@@ -925,4 +845,79 @@ func (df *DarkFirestore) SendImageMessage(ctx context.Context, p SendImageMessag
 	}
 
 	return nil
+}
+
+type CreateServiceParams struct {
+	ServiceUuid   string `firestore:"service_uuid,omitempty" json:"service_uuid"`
+	ServiceStatus string `firestore:"status,omitempty" json:"status"`
+}
+type PrepareToStartInquiryChatParams struct {
+	InquiryUuid    string
+	PickerUsername string
+	InquirierUuid  string
+	ChannelUuid    string
+	ServiceUuid    string
+}
+
+func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p PrepareToStartInquiryChatParams) error {
+	iqRef := df.getInquiryRef(p.InquiryUuid)
+	chatRef := df.getChatroomRef(p.ChannelUuid)
+	chatMsgRef := df.getNewChatroomMsgRef(p.ChannelUuid)
+	srvRef := df.getServiceRef(p.ServiceUuid)
+
+	err := df.Client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
+		// Update inquiry status.
+		if err := tx.Update(
+			iqRef,
+			[]firestore.Update{
+				{
+					Path:  ChannelUuidFieldName,
+					Value: p.ChannelUuid,
+				},
+				{
+					Path:  ServiceStatusFieldName,
+					Value: models.InquiryStatusChatting,
+				},
+			},
+		); err != nil {
+			return err
+		}
+
+		// Create chatroom & send first message
+		if err := tx.Set(chatRef, map[string]interface{}{
+			"last_touch": time.Now(),
+		}); err != nil {
+			return err
+		}
+
+		msg := ChatMessage{
+			Content:   fmt.Sprintf(CreatePrivateChatBotContent, p.PickerUsername),
+			From:      p.InquirierUuid,
+			Type:      Text,
+			CreatedAt: time.Now(),
+		}
+
+		if err := tx.Set(
+			chatMsgRef, msg,
+		); err != nil {
+			return nil
+		}
+
+		log.WithFields(log.Fields{
+			"chatroom_name": p.ChannelUuid,
+			"updated_time":  msg.CreatedAt,
+		}).Debug("Inquiry Chatroom created!")
+
+		// Create service record
+		if err := tx.Set(srvRef, CreateServiceParams{
+			ServiceUuid:   p.ServiceUuid,
+			ServiceStatus: string(models.ServiceStatusNegotiating),
+		}); err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
