@@ -469,6 +469,221 @@ func GetHistoricalMessages(c *gin.Context) {
 	c.JSON(http.StatusOK, NewTransformer().TransformGetHistoricalMessages(msgs))
 }
 
+type EmitServiceUpdateMessageBody struct {
+	ServiceUuid     string    `json:"service_uuid" form:"service_uuid" binding:"required"`
+	ServiceType     string    `json:"service_type" form:"service_type" binding:"required"`
+	Price           float64   `json:"price" form:"price" binding:"required"`
+	AppointmentTime time.Time `json:"appointment_time" form:"appointment_time" binding:"required"`
+	Duration        int       `json:"duration" form:"duration" binding:"required"`
+	Address         string    `json:"address" form:"address" binding:"required,gt=0"`
+}
+
+func EmitServiceUpdateMessage(c *gin.Context, depCon container.Container) {
+	body := EmitServiceUpdateMessageBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidateRequestBody,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var (
+		iqDao      contracts.InquiryDAOer
+		srvDao     contracts.ServiceDAOer
+		chatDao    contracts.ChatDaoer
+		coinPkgDao contracts.CoinPackageDAOer
+		userDao    contracts.UserDAOer
+	)
+
+	depCon.Make(&iqDao)
+	depCon.Make(&srvDao)
+	depCon.Make(&chatDao)
+	depCon.Make(&coinPkgDao)
+	depCon.Make(&userDao)
+
+	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username", "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	srv, err := srvDao.GetServiceByUuid(body.ServiceUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Check if the editor is the service_provider.
+	if int64(srv.ServiceProviderID.Int32) != sender.ID {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.ServiceEditorIsNotServiceProvider,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	chatroom, err := chatDao.GetChatroomByServiceId(int(srv.ID))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetChatroomByServiceId,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Get inquiry by service uuid
+	iq, err := srvDao.GetInquiryByServiceUuid(body.ServiceUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryByServiceUuid,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	matchingFee, err := coinPkgDao.GetMatchingFee()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMatchingFee,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	// Update service detail by service ID.
+	txResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
+		srvDao.WithTx(tx)
+
+		usrv, err := srvDao.UpdateServiceByID(contracts.UpdateServiceByIDParams{
+			ID:            srv.ID,
+			Price:         &body.Price,
+			ServiceStatus: &srv.ServiceStatus,
+			ServiceType:   (*models.ServiceType)(&body.ServiceType),
+			Appointment:   &body.AppointmentTime,
+			Duration:      &body.Duration,
+			Address:       &body.Address,
+		})
+
+		if err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusInternalServerError,
+				ErrCode:        apperr.FailedToUpdateService,
+				Err:            err,
+			}
+		}
+
+		if err := iqDao.PatchInquiryStatusByUUID(
+			contracts.PatchInquiryStatusByUUIDParams{
+				InquiryStatus: models.InquiryStatusWaitForInquirerApprove,
+				UUID:          iq.Uuid,
+			},
+		); err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusInternalServerError,
+				ErrCode:        apperr.FailedToPatchInquiryStatus,
+				Err:            err,
+			}
+		}
+
+		return db.FormatResp{
+			Response: usrv,
+		}
+	})
+
+	if txResp.Err != nil {
+		c.AbortWithError(
+			txResp.HttpStatusCode,
+			apperr.NewErr(
+				txResp.ErrCode,
+				txResp.Err.Error(),
+			),
+		)
+
+		return
+	}
+
+	df := darkfirestore.Get()
+	ctx := context.Background()
+
+	msg, err := df.UpdateInquiryDetail(
+		ctx,
+		darkfirestore.UpdateInquiryDetailParams{
+			InquiryUuid: iq.Uuid,
+			ChannelUuid: chatroom.ChannelUuid.String,
+			Status:      models.InquiryStatusWaitForInquirerApprove,
+			Data: darkfirestore.InquiryDetailMessage{
+				ChatMessage: darkfirestore.ChatMessage{
+					Content:  "",
+					From:     c.GetString("uuid"),
+					Username: sender.Username,
+				},
+				Price:           body.Price,
+				Duration:        body.Duration,
+				AppointmentTime: body.AppointmentTime.UnixNano() / int64(time.Microsecond),
+				ServiceType:     body.ServiceType,
+				Address:         body.Address,
+				MatchingFee:     int(matchingFee.Cost.Int32),
+				InquiryUuid:     iq.Uuid,
+			},
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToChangeFirestoreInquiryStatus,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, msg)
+}
+
 type EmitInquiryUpdateMessage struct {
 	Price           float64   `json:"price" form:"price" binding:"required"`
 	ChannelUUID     string    `json:"channel_uuid" form:"channel_uuid" binding:"required"`
@@ -546,7 +761,6 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 			UUID:          iq.Uuid,
 		},
 	); err != nil {
-
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(

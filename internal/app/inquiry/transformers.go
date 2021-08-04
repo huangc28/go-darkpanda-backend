@@ -471,6 +471,7 @@ type ChatroomUser struct {
 type TransformedAgreePickupInquiry struct {
 	Picker        ChatroomUser `json:"picker"`
 	Inquirer      ChatroomUser `json:"inquirer"`
+	ServiceUuid   string       `json:"service_uuid"`
 	ChannelUuid   string       `json:"channel_uuid"`
 	ServiceType   string       `json:"service_type"`
 	InquiryStatus string       `json:"inquiry_status"`
@@ -486,7 +487,7 @@ type TransformedAgreePickupInquiry struct {
 //      - description
 //   - inquiry info
 //   - private chat uuid in firestore for inquirer to subscribe
-func (t *InquiryTransform) TransformAgreePickupInquiry(picker models.User, inquirer models.User, m *models.CompleteChatroomInfoModel) TransformedAgreePickupInquiry {
+func (t *InquiryTransform) TransformAgreePickupInquiry(picker models.User, inquirer models.User, service models.Service, m *models.CompleteChatroomInfoModel) TransformedAgreePickupInquiry {
 	trf := TransformedAgreePickupInquiry{
 		Picker: ChatroomUser{
 			Username:    picker.Username,
@@ -500,6 +501,7 @@ func (t *InquiryTransform) TransformAgreePickupInquiry(picker models.User, inqui
 			Uuid:        inquirer.Uuid,
 			Description: inquirer.Description.String,
 		},
+		ServiceUuid:   service.Uuid.String,
 		ChannelUuid:   m.ChannelUuid.String,
 		ServiceType:   m.ServiceType.ToString(),
 		InquiryStatus: m.InquiryStatus.ToString(),

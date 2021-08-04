@@ -224,8 +224,9 @@ UPDATE services SET
 	service_type = COALESCE($5, service_type),
 	start_time = COALESCE($6, start_time),
 	end_time = COALESCE($7, end_time),
-	canceller_id = COALESCE($8, canceller_id)
-WHERE id = $9
+	canceller_id = COALESCE($8, canceller_id),
+	address = COALESCE($9, address)
+WHERE id = $10
 RETURNING *;
 	`
 	service := models.Service{}
@@ -240,6 +241,7 @@ RETURNING *;
 		params.StartTime,
 		params.EndTime,
 		params.CancellerId,
+		params.Address,
 		params.ID,
 	).StructScan(&service); err != nil {
 		return (*models.Service)(nil), err
@@ -544,4 +546,22 @@ WHERE
 	}
 
 	return os, nil
+}
+
+func (dao *ServiceDAO) GetInquiryByServiceUuid(srvUuid string) (*models.ServiceInquiry, error) {
+	query := `
+SELECT service_inquiries.* 
+FROM service_inquiries
+INNER JOIN services ON services.inquiry_id = service_inquiries.id
+WHERE 
+	services.uuid = $1	
+`
+
+	var m models.ServiceInquiry
+
+	if err := dao.DB.QueryRowx(query, srvUuid).StructScan(&m); err != nil {
+		return &m, err
+	}
+
+	return &m, nil
 }

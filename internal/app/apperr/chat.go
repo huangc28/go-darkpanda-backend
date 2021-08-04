@@ -36,6 +36,8 @@ const (
 
 	FailedToGetChatroomByServiceId     = "7000031"
 	FailedToSendCompletePaymentMessage = "7000032"
+	FailedToGetInquiryByServiceUuid    = "7000033"
+	ServiceEditorIsNotServiceProvider  = "7000034"
 )
 
 var ChatErrorMessageMap = map[string]string{

@@ -857,6 +857,7 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	trf := NewTransform().TransformAgreePickupInquiry(
 		*picker,
 		*inquirer,
+		*tr.Service,
 		chatInfoModel,
 	)
 

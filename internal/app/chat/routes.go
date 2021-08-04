@@ -50,6 +50,13 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	)
 
 	g.POST(
+		"/emit-update-service-message",
+		func(c *gin.Context) {
+			EmitServiceUpdateMessage(c, depCon)
+		},
+	)
+
+	g.POST(
 		"/emit-inquiry-updated-message",
 		func(c *gin.Context) {
 			EmitInquiryUpdatedMessage(c, depCon)

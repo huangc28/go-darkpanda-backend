@@ -8,7 +8,6 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
-// TODO: modify the get API format to restful.
 func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	var (
 		userDAO contracts.UserDAOer
@@ -100,5 +99,4 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			CancelService(c, container)
 		},
 	)
-
 }

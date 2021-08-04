@@ -17,6 +17,7 @@ type UpdateServiceByIDParams struct {
 	ServiceStatus *models.ServiceStatus
 	StartTime     *time.Time
 	EndTime       *time.Time
+	Address       *string
 
 	CancellerId *int64
 }
@@ -49,14 +50,15 @@ type UpdateServiceByInquiryIdParams struct {
 }
 
 type ServiceDAOer interface {
-	GetUserHistoricalServicesByUuid(uuid string, perPage int, offset int) ([]models.Service, error)
-	GetServiceByInquiryUUID(uuid string, fields ...string) (*models.Service, error)
+	GetUserHistoricalServicesByUuid(uuid string, perPage, offset int) ([]models.Service, error)
+	GetServiceByInquiryUUID(string, ...string) (*models.Service, error)
 	UpdateServiceByID(UpdateServiceByIDParams) (*models.Service, error)
 	UpdateServiceByInquiryId(UpdateServiceByInquiryIdParams) (*models.Service, error)
-	CreateServiceQRCode(params CreateServiceQRCodeParams) (*models.ServiceQrcode, error)
-	WithTx(tx db.Conn) ServiceDAOer
+	CreateServiceQRCode(CreateServiceQRCodeParams) (*models.ServiceQrcode, error)
+	WithTx(db.Conn) ServiceDAOer
 	ScanExpiredServices() ([]*models.Service, error)
 	ScanCompletedServices() ([]*models.Service, error)
-	GetServiceByUuid(srvUuid string, fields ...string) (*models.Service, error)
-	GetOverlappedServices(p GetOverlappedServicesParams) ([]models.Service, error)
+	GetServiceByUuid(string, ...string) (*models.Service, error)
+	GetOverlappedServices(GetOverlappedServicesParams) ([]models.Service, error)
+	GetInquiryByServiceUuid(srvUuid string) (*models.ServiceInquiry, error)
 }
