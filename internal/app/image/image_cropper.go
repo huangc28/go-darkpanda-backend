@@ -11,6 +11,8 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+
+	"github.com/peterhellberg/lossypng"
 )
 
 type HeaderFile struct {
@@ -113,6 +115,92 @@ func skipThumbnailCropping(img nImage.Image) bool {
 	h := rect.Max.Y - rect.Min.Y
 
 	return l <= 150 && h <= 150
+}
+
+type CompressedImage struct {
+	Name      string
+	Mime      string
+	OrigImage nImage.Image
+
+	// Assign optimized png to this state. We can only apply compression
+	// for other mime types while encoding.
+	CompressedImage nImage.Image
+}
+
+func CompressImages(ihfs []*multipart.FileHeader) ([]*CompressedImage, error) {
+	hfs, err := DetectMimeOfHeaderFiles(ihfs)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cis := make([]*CompressedImage, 0)
+
+	for _, h := range hfs {
+		f, err := h.FileHeader.Open()
+
+		if err != nil {
+			return nil, err
+		}
+
+		defer f.Close()
+
+		var ci *CompressedImage
+
+		switch h.Mime {
+		case "image/png":
+			img, err := png.Decode(f)
+
+			if err != nil {
+				return cis, err
+			}
+
+			// Compress png.
+			optImg := lossypng.Optimize(img, lossypng.RGBAConversion, 8)
+			ci = &CompressedImage{
+				Name:            h.FileHeader.Filename,
+				Mime:            h.Mime,
+				OrigImage:       img,
+				CompressedImage: optImg,
+			}
+
+		case "image/jpeg":
+			img, err := jpeg.Decode(f)
+
+			if err != nil {
+				return cis, err
+			}
+
+			// There isn't any library to compress jpeg image, thus, we will encode the image
+			// during encoding.
+			ci = &CompressedImage{
+				Name:            h.FileHeader.Filename,
+				Mime:            h.Mime,
+				OrigImage:       img,
+				CompressedImage: img,
+			}
+
+		case "image/gif":
+			img, err := gif.Decode(f)
+
+			if err != nil {
+				return cis, err
+			}
+
+			// There isn't any library to compress jpeg image, thus, we will encode the image
+			// during encoding.
+			ci = &CompressedImage{
+				Name:            h.FileHeader.Filename,
+				Mime:            h.Mime,
+				OrigImage:       img,
+				CompressedImage: img,
+			}
+		}
+
+		cis = append(cis, ci)
+	}
+
+	return nil, nil
 }
 
 // CropThumbnaie crops the image to size of 150x150 to save client bandwidth.

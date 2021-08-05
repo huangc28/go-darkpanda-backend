@@ -131,7 +131,11 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 
 		switch img.Mime {
 		case "image/png":
-			if err = png.Encode(origBuf, img.OrigImage); err != nil {
+			enc := png.Encoder{
+				CompressionLevel: png.BestCompression,
+			}
+
+			if err = enc.Encode(origBuf, img.OrigImage); err != nil {
 				return sl, err
 			}
 
@@ -141,7 +145,7 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 				Reader: origBuf,
 			}
 
-			if err = png.Encode(thumbBuf, img.Thumbnail); err != nil {
+			if err = enc.Encode(thumbBuf, img.Thumbnail); err != nil {
 				return sl, err
 			}
 
@@ -164,7 +168,7 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 			}
 
 			if err := jpeg.Encode(thumbBuf, img.Thumbnail, &jpeg.Options{
-				Quality: jpeg.DefaultQuality,
+				Quality: 50,
 			}); err != nil {
 				return sl, err
 			}
@@ -185,7 +189,7 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 				Reader: origBuf,
 			}
 
-			if err := gif.Encode(thumbBuf, img.OrigImage, &gif.Options{}); err != nil {
+			if err := gif.Encode(thumbBuf, img.Thumbnail, &gif.Options{}); err != nil {
 				return sl, err
 			}
 

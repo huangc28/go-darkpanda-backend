@@ -37,6 +37,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
+	github.com/peterhellberg/lossypng v0.0.0-20170130154930-375570b0d75a
 	github.com/prometheus/common v0.4.0
 	github.com/pubnub/go v4.9.1+incompatible
 	github.com/shopspring/decimal v1.2.0

@@ -108,7 +108,8 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	sis, err := CropThumbnail(c.Request.MultipartForm.File["image"])
+	// sis, err := CropThumbnail(c.Request.MultipartForm.File["image"])
+	cis, err := CompressImages(c.Request.MultipartForm.File["image"])
 
 	if err != nil {
 		c.AbortWithError(
@@ -154,12 +155,12 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 
 	imgs := make([]gcsenhancer.Images, 0)
 
-	for _, si := range sis {
+	for _, si := range cis {
 		imgs = append(imgs, gcsenhancer.Images{
 			Name:      si.Name,
 			Mime:      si.Mime,
 			OrigImage: si.OrigImage,
-			Thumbnail: si.Thumbnail,
+			Thumbnail: si.CompressedImage,
 		})
 	}
 
