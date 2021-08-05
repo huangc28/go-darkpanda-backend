@@ -26,6 +26,7 @@ func (t *ChatTransformer) TransformEmitTextMessage(channelUUID string, msg darkf
 }
 
 type TransformedInquiryChat struct {
+	ServiceUuid   string               `json:"service_uuid"`
 	ServiceType   models.InquiryStatus `json:"service_type"`
 	Username      string               `json:"username"`
 	AvatarURL     *string              `json:"avatar_url"`
@@ -56,6 +57,7 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 		}
 
 		trfm := TransformedInquiryChat{
+			ServiceUuid:   m.ServiceUuid,
 			ServiceType:   m.ServiceType,
 			Username:      m.Username,
 			ChannelUUID:   m.ChannelUUID,

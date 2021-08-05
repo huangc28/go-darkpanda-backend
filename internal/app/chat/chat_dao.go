@@ -281,7 +281,8 @@ SELECT
 	inquirer.avatar_url,
 	chatrooms.channel_uuid,
 	chatrooms.expired_at,
-	chatrooms.created_at
+	chatrooms.created_at,
+	services.uuid AS service_uuid
 FROM service_inquiries	AS si
 INNER JOIN chatrooms
 	ON chatrooms.inquiry_id = si.id
