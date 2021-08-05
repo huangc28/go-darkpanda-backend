@@ -283,12 +283,14 @@ SELECT
 	chatrooms.expired_at,
 	chatrooms.created_at,
 	services.uuid AS service_uuid
-FROM service_inquiries	AS si
+FROM service_inquiries AS si
 INNER JOIN chatrooms
 	ON chatrooms.inquiry_id = si.id
 	AND chatrooms.deleted_at IS NULL
 INNER JOIN users AS inquirer
 	ON inquirer.id = si.inquirer_id
+LEFT JOIN services 
+	ON si.id = services.inquiry_id
 WHERE
 	si.inquiry_status = $1 OR
 	si.inquiry_status = $2
