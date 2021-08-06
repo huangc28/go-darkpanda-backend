@@ -1288,6 +1288,26 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 				}
 			}
 
+			// When a female user picked up an inquiry, a service is created
+			// with status `negotiate`. We need to mark this status to `canceled`.
+			var srvDao contracts.ServiceDAOer
+
+			depCon.Make(&srvDao)
+			srvCanceledStatus := models.ServiceStatusCanceled
+
+			if _, err := srvDao.WithTx(tx).UpdateServiceByInquiryId(
+				contracts.UpdateServiceByInquiryIdParams{
+					InquiryId:     iq.ID,
+					ServiceStatus: &srvCanceledStatus,
+				},
+			); err != nil {
+				return db.FormatResp{
+					HttpStatusCode: http.StatusInternalServerError,
+					Err:            err,
+					ErrCode:        apperr.FailedToUpdateService,
+				}
+			}
+
 			return db.FormatResp{
 				Response: &TransResult{
 					RemovedUsers: removedUsers,

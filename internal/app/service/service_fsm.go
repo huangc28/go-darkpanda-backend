@@ -10,6 +10,7 @@ import (
 type ServiceActions string
 
 var (
+	Agree        ServiceActions = "agree"
 	Paid         ServiceActions = "paid"
 	PayFailed    ServiceActions = "pay_failed"
 	Cancel       ServiceActions = "cancel"
@@ -27,6 +28,13 @@ func NewServiceFSM(initial models.ServiceStatus) *fsm.FSM {
 	f := fsm.NewFSM(
 		initial.ToString(),
 		fsm.Events{
+			{
+				Name: Agree.ToString(),
+				Src: []string{
+					string(models.ServiceStatusNegotiating),
+				},
+				Dst: string(models.ServiceStatusUnpaid),
+			},
 			{
 				Name: Paid.ToString(),
 				Src: []string{

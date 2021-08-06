@@ -37,4 +37,5 @@ type ChatDaoer interface {
 	GetCompleteChatroomInfoById(id int) (*models.CompleteChatroomInfoModel, error)
 	GetChatroomByServiceId(srvId int) (*models.Chatroom, error)
 	DeleteChatroomByServiceId(srvId int) error
+	DeleteChatroomByInquiryId(iqId int) error
 }

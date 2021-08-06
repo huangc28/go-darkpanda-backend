@@ -261,8 +261,8 @@ WHERE
 	return users, nil
 }
 
-// GetFemaleInquiryChatRooms retrieve all inquiry chatrooms of a female user.
-//   - Those chatrooms's related inquiry status is chatting
+// GetFemaleInquiryChatRooms retrieve all inquiry chatrooms for a female user.
+//   - Those chatrooms's related inquiry status is chatting, wait_for_inquirer_approve
 //   - Those chatrooms's related inquiry picker_id equals requester's id
 // Inquiry title --- not exists yet
 // Inquiry type
@@ -289,20 +289,18 @@ INNER JOIN chatrooms
 	AND chatrooms.deleted_at IS NULL
 INNER JOIN users AS inquirer
 	ON inquirer.id = si.inquirer_id
-LEFT JOIN services 
+INNER JOIN services 
 	ON si.id = services.inquiry_id
 WHERE
-	si.inquiry_status = $1 OR
-	si.inquiry_status = $2
-AND picker_id = $3
-OFFSET $4
-LIMIT $5;
+	services.service_status = $1
+AND picker_id = $2
+OFFSET $3
+LIMIT $4;
 	`
 
 	rows, err := dao.DB.Queryx(
 		query,
-		models.InquiryStatusChatting,
-		models.InquiryStatusWaitForInquirerApprove,
+		models.ServiceStatusNegotiating,
 		userID,
 		offset,
 		perPage,
@@ -485,6 +483,21 @@ WHERE
 `
 
 	_, err := dao.DB.Exec(query, srvId)
+
+	return err
+}
+
+func (dao *ChatDao) DeleteChatroomByInquiryId(iqId int) error {
+	query := `
+UPDATE
+	chatrooms
+SET
+	deleted_at = now()
+WHERE
+	inquiry_id = $1;
+	`
+
+	_, err := dao.DB.Exec(query, iqId)
 
 	return err
 }

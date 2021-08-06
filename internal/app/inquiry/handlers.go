@@ -417,12 +417,12 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	var (
-		iqDao  contracts.InquiryDAOer
-		srvDao contracts.ServiceDAOer
+		iqDao   contracts.InquiryDAOer
+		chatDao contracts.ChatDaoer
 	)
 
 	depCon.Make(&iqDao)
-	depCon.Make(&srvDao)
+	depCon.Make(&chatDao)
 
 	trxResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 		// ------------------- Update inquiry status to cancel  -------------------
@@ -442,18 +442,12 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 			}
 		}
 
-		// ------------------- Update service status to canceled  -------------------
-		srvCanceledStatus := models.ServiceStatusCanceled
-		if _, err := srvDao.WithTx(tx).UpdateServiceByInquiryId(
-			contracts.UpdateServiceByInquiryIdParams{
-				InquiryId:     iq.ID,
-				ServiceStatus: &srvCanceledStatus,
-			},
-		); err != nil {
+		// -------------------  Soft delete chatroom -------------------
+		if err := chatDao.WithTx(tx).DeleteChatroomByInquiryId(int(iq.ID)); err != nil {
 			return db.FormatResp{
-				HttpStatusCode: http.StatusInternalServerError,
 				Err:            err,
-				ErrCode:        apperr.FailedToUpdateService,
+				ErrCode:        apperr.FailedToDeleteChat,
+				HttpStatusCode: http.StatusInternalServerError,
 			}
 		}
 

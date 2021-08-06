@@ -1007,7 +1007,6 @@ func CancelService(c *gin.Context, depCon container.Container) {
 				}
 			}
 
-			// Delete service chatroom.
 			if err := chatDao.WithTx(tx).DeleteChatroomByServiceId(int(srv.ID)); err != nil {
 				return db.FormatResp{
 					Err:            err,
