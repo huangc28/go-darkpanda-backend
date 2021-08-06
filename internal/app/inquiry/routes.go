@@ -101,7 +101,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		"/cancel",
 		middlewares.IsMale(userDAO),
 		func(c *gin.Context) {
-			CancelInquiryHandler(c)
+			CancelInquiryHandler(c, container)
 		},
 	)
 }

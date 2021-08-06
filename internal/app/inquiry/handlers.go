@@ -353,7 +353,7 @@ type CancelInquiryParam struct {
 	InquiryUuid string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
 }
 
-func CancelInquiryHandler(c *gin.Context) {
+func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 	body := CancelInquiryParam{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -416,25 +416,65 @@ func CancelInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	// ------------------- Update inquiry status to cancel  -------------------
-	uiq, err := q.PatchInquiryStatusByUuid(
-		ctx, models.PatchInquiryStatusByUuidParams{
-			InquiryStatus: models.InquiryStatus(fsm.Current()),
-			Uuid:          body.InquiryUuid,
-		},
+	var (
+		iqDao  contracts.InquiryDAOer
+		srvDao contracts.ServiceDAOer
 	)
 
-	if err != nil {
+	depCon.Make(&iqDao)
+	depCon.Make(&srvDao)
+
+	trxResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
+		// ------------------- Update inquiry status to cancel  -------------------
+		srvCancelStatus := models.InquiryStatus(fsm.Current())
+		uiq, err := iqDao.WithTx(tx).PatchInquiryByInquiryUUID(
+			contracts.PatchInquiryParams{
+				Uuid:          body.InquiryUuid,
+				InquiryStatus: &srvCancelStatus,
+			},
+		)
+
+		if err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusInternalServerError,
+				Err:            err,
+				ErrCode:        apperr.FailedToPatchInquiryStatus,
+			}
+		}
+
+		// ------------------- Update service status to canceled  -------------------
+		srvCanceledStatus := models.ServiceStatusCanceled
+		if _, err := srvDao.WithTx(tx).UpdateServiceByInquiryId(
+			contracts.UpdateServiceByInquiryIdParams{
+				InquiryId:     iq.ID,
+				ServiceStatus: &srvCanceledStatus,
+			},
+		); err != nil {
+			return db.FormatResp{
+				HttpStatusCode: http.StatusInternalServerError,
+				Err:            err,
+				ErrCode:        apperr.FailedToUpdateService,
+			}
+		}
+
+		return db.FormatResp{
+			Response: uiq,
+		}
+	})
+
+	if trxResp.Err != nil {
 		c.AbortWithError(
-			http.StatusInternalServerError,
+			trxResp.HttpStatusCode,
 			apperr.NewErr(
-				apperr.FailedToPatchInquiryStatus,
+				trxResp.ErrCode,
 				err.Error(),
 			),
 		)
 
 		return
 	}
+
+	uiq := trxResp.Response.(*models.ServiceInquiry)
 
 	df := darkfirestore.Get()
 	_, err = df.UpdateInquiryStatus(
@@ -457,7 +497,7 @@ func CancelInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	trf, err := NewTransform().TransformInquiry(uiq)
+	trf, err := NewTransform().TransformInquiry(*uiq)
 
 	if err != nil {
 		c.AbortWithError(
