@@ -523,7 +523,7 @@ WHERE
 	for rows.Next() {
 		var m models.Service
 
-		if err := rows.Scan(&m); err != nil {
+		if err := rows.StructScan(&m); err != nil {
 			return nil, err
 		}
 

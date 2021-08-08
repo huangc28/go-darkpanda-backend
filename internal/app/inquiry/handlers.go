@@ -1060,7 +1060,7 @@ func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
 }
 
 type PatchInquiryBody struct {
-	Uuid            string     `uri:"inquiry_uuid" form:"uuid" json:"uuid"`
+	Uuid            string     `uri:"inquiry_uuid" form:"uuid" json:"uuid" binding:"required"`
 	AppointmentTime *time.Time `form:"appointment_time" json:"appointment_time"`
 	Price           *float32   `form:"price" json:"price"`
 	Budget          *float32   `form:"budget" json:"budget"`
