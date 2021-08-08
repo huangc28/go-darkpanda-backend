@@ -353,6 +353,7 @@ UPDATE service_inquiries SET
 WHERE
 	uuid = $8
 RETURNING
+	id,
 	uuid,
 	appointment_time,
 	service_type,

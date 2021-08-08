@@ -94,7 +94,6 @@ INSERT INTO chatroom_users (
 	for _, userID := range userIDs {
 		sqlStr += " (?, ?),"
 		vals = append(vals, chatID, userID)
-
 	}
 
 	sqlStr = strings.TrimSuffix(sqlStr, ",")

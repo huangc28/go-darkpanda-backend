@@ -1276,15 +1276,16 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			depCon.Make(&iqDao)
 
 			newStatus := models.InquiryStatusInquiring
-			iq, err := iqDao.PatchInquiryByInquiryUUID(contracts.PatchInquiryParams{
+			uiq, err := iqDao.PatchInquiryByInquiryUUID(contracts.PatchInquiryParams{
 				Uuid:          iq.Uuid,
 				InquiryStatus: &newStatus,
 			})
 
 			if err != nil {
 				return db.FormatResp{
-					Err:     err,
-					ErrCode: apperr.FailedToPatchInquiryStatus,
+					HttpStatusCode: http.StatusInternalServerError,
+					Err:            err,
+					ErrCode:        apperr.FailedToPatchInquiryStatus,
 				}
 			}
 
@@ -1297,7 +1298,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 
 			if _, err := srvDao.WithTx(tx).UpdateServiceByInquiryId(
 				contracts.UpdateServiceByInquiryIdParams{
-					InquiryId:     iq.ID,
+					InquiryId:     uiq.ID,
 					ServiceStatus: &srvCanceledStatus,
 				},
 			); err != nil {
@@ -1311,7 +1312,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			return db.FormatResp{
 				Response: &TransResult{
 					RemovedUsers: removedUsers,
-					Inquiry:      iq,
+					Inquiry:      uiq,
 				},
 			}
 		},
