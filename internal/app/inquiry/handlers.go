@@ -791,13 +791,16 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 				},
 				CustomerID:        iq.InquirerID,
 				ServiceProviderID: iq.PickerID,
-				Price:             iq.Price,
-				Duration:          iq.Duration,
-				AppointmentTime:   iq.AppointmentTime,
-				InquiryID:         int32(iq.ID),
-				ServiceStatus:     models.ServiceStatusNegotiating,
-				ServiceType:       iq.ServiceType,
-				Address:           iq.Address,
+				Price: sql.NullString{
+					Valid:  true,
+					String: iq.Budget,
+				},
+				Duration:        iq.Duration,
+				AppointmentTime: iq.AppointmentTime,
+				InquiryID:       int32(iq.ID),
+				ServiceStatus:   models.ServiceStatusNegotiating,
+				ServiceType:     iq.ServiceType,
+				Address:         iq.Address,
 			},
 		)
 
