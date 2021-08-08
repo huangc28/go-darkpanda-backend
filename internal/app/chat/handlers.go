@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -830,6 +831,8 @@ type EmitServiceConfirmedMessageBody struct {
 }
 
 func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
+	log.Println("DEBUG 1")
+
 	ctx := context.Background()
 	body := EmitServiceConfirmedMessageBody{}
 
@@ -862,8 +865,24 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	// Get user by uuid.
 	sender, err := userDao.GetUserByUuid(c.GetString("uuid"), "username", "id")
 
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	log.Println("DEBUG 2")
+
 	// Retrieve inquiry by inquiry uuid.
 	iqRes, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID)
+
+	log.Printf("DEBUG 3 %v", err)
 
 	if err != nil {
 		c.AbortWithError(
@@ -878,10 +897,14 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	}
 
 	// Are there any existing services has overlapped in time interval for the female user?
-	olSrv, err := serviceDao.GetOverlappedServices(contracts.GetOverlappedServicesParams{
-		UserId:                 sender.ID,
-		InquiryAppointmentTime: iqRes.AppointmentTime.Time,
-	})
+	olSrv, err := serviceDao.GetOverlappedServices(
+		contracts.GetOverlappedServicesParams{
+			UserId:                 sender.ID,
+			InquiryAppointmentTime: iqRes.AppointmentTime.Time,
+		},
+	)
+
+	log.Printf("DEBUG spot 8 %v", olSrv)
 
 	if err != nil {
 		c.AbortWithError(
