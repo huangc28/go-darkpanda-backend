@@ -540,7 +540,7 @@ type InquiringUserInfo struct {
 	InquiryUuid  string `firestore:"inquiry_uuid,omitempty"`
 	InquirerUuid string `firestore:"inquirer_uuid,omitempty"`
 	Status       string `firestore:"status,omitempty"`
-	ServiceUuid  string `firestore:"service_uuid,omitempty"`
+	ServiceUuid  string `firestore:"service_uuid"`
 }
 
 // CreateInquiry creates new record in inquiries collection.
