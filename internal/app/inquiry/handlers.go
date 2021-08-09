@@ -428,7 +428,7 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 		// ------------------- Update inquiry status to cancel  -------------------
 		srvCancelStatus := models.InquiryStatus(fsm.Current())
 		uiq, err := iqDao.WithTx(tx).PatchInquiryByInquiryUUID(
-			contracts.PatchInquiryParams{
+			models.PatchInquiryParams{
 				Uuid:          body.InquiryUuid,
 				InquiryStatus: &srvCancelStatus,
 			},
@@ -967,7 +967,7 @@ func SkipPickupHandler(c *gin.Context, container container.Container) {
 	// Change inquiry status from `asking` to `inquiring` in firestore. We use
 	// inquiry uuid retrieved from DB to find the document in firestore.
 	newIqStatus := models.InquiryStatus(fsm.Current())
-	if _, err := iqDao.PatchInquiryByInquiryUUID(contracts.PatchInquiryParams{
+	if _, err := iqDao.PatchInquiryByInquiryUUID(models.PatchInquiryParams{
 		Uuid:          iq.Uuid,
 		InquiryStatus: &newIqStatus,
 	}); err != nil {
@@ -1086,7 +1086,7 @@ func PatchInquiryHandler(c *gin.Context, depCon container.Container) {
 
 	dao := NewInquiryDAO(db.GetDB())
 	inquiry, err := dao.PatchInquiryByInquiryUUID(
-		contracts.PatchInquiryParams{
+		models.PatchInquiryParams{
 			Uuid:            c.Param("inquiry_uuid"),
 			Budget:          body.Budget,
 			AppointmentTime: body.AppointmentTime,

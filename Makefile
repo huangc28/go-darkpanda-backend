@@ -72,6 +72,8 @@ test_migrate_down:
 
 
 # Build & Deploy
+
+# List of systemctl service name to host up worker.
 APP_SERVICE_NAME                    = darkpanda.service
 SERVICE_STATUS_SCANNER_SERVICE_NAME = darkpanda_service_status_scanner.service
 

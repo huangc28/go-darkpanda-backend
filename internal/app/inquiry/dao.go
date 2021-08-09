@@ -1,6 +1,7 @@
 package inquiry
 
 import (
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -53,7 +54,7 @@ SELECT EXISTS(
 	return exists, err
 }
 
-func (dao *InquiryDAO) GetInquiries(userId, offset, perpage int, statuses ...models.InquiryStatus) ([]*contracts.InquiryInfo, error) {
+func (dao *InquiryDAO) GetInquiries(userId, offset, perpage int, statuses ...models.InquiryStatus) ([]*models.InquiryInfo, error) {
 	statusQuery := "1=1"
 
 	if len(statuses) > 0 {
@@ -108,16 +109,19 @@ SELECT
 	si.appointment_time,
 	si.lng,
 	si.lat,
-
 	si.inquiry_status,
 
 	users.uuid,
 	users.username,
 	users.avatar_url,
-	users.nationality
+	users.nationality,
+
+	services.uuid as service_uuid
 FROM service_inquiries AS si
 INNER JOIN users
 	ON si.inquirer_id = users.id
+LEFT JOIN services
+	ON services.inquiry_id = si.id
 WHERE (%s)
 AND si.inquirer_id NOT IN (
 	SELECT
@@ -138,8 +142,8 @@ OFFSET $3;
 		statusQuery,
 	)
 
-	inquiries := make([]*contracts.InquiryInfo, 0)
-	rows, err := dao.db.Query(
+	inquiries := make([]*models.InquiryInfo, 0)
+	rows, err := dao.db.Queryx(
 		query,
 		userId,
 		perpage,
@@ -153,8 +157,9 @@ OFFSET $3;
 	defer rows.Close()
 
 	for rows.Next() {
-		iq := contracts.InquiryInfo{}
+		iq := models.InquiryInfo{}
 		inquirer := models.User{}
+		serviceUuid := sql.NullString{}
 
 		err := rows.Scan(
 			&iq.Uuid,
@@ -170,6 +175,7 @@ OFFSET $3;
 			&inquirer.Username,
 			&inquirer.AvatarUrl,
 			&inquirer.Nationality,
+			&serviceUuid,
 		)
 
 		if err != nil {
@@ -177,6 +183,7 @@ OFFSET $3;
 		}
 
 		iq.Inquirer = inquirer
+		iq.ServiceUuid = serviceUuid
 		inquiries = append(inquiries, &iq)
 	}
 
@@ -340,7 +347,7 @@ WHERE service_inquiries.uuid = $1;
 	return &inquirer, nil
 }
 
-func (dao *InquiryDAO) PatchInquiryByInquiryUUID(params contracts.PatchInquiryParams) (*models.ServiceInquiry, error) {
+func (dao *InquiryDAO) PatchInquiryByInquiryUUID(params models.PatchInquiryParams) (*models.ServiceInquiry, error) {
 	query := `
 UPDATE service_inquiries SET
 	appointment_time = COALESCE($1, appointment_time),

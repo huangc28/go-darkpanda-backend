@@ -2,7 +2,6 @@ package contracts
 
 import (
 	"database/sql"
-	"time"
 
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
@@ -20,32 +19,16 @@ type InquiryResult struct {
 	AvatarUrl sql.NullString `json:"avatar_url"`
 }
 
-type InquiryInfo struct {
-	models.ServiceInquiry
-	Inquirer models.User
-}
-
-type PatchInquiryParams struct {
-	Uuid            string                `json:"uuid"`
-	AppointmentTime *time.Time            `json:"appointment_time"`
-	Budget          *float32              `json:"budget"`
-	Price           *float32              `json:"price"`
-	Duration        *int                  `json:"duration"`
-	ServiceType     *string               `json:"service_type"`
-	InquiryStatus   *models.InquiryStatus `json:"inquiry_status"`
-	Address         *string               `json:"address"`
-}
-
 type InquiryDAOer interface {
 	WithTx(tx db.Conn) InquiryDAOer
 	CheckHasActiveInquiryByID(id int64) (bool, error)
-	GetInquiries(userId, offset, perpage int, statuses ...models.InquiryStatus) ([]*InquiryInfo, error)
+	GetInquiries(userId, offset, perpage int, statuses ...models.InquiryStatus) ([]*models.InquiryInfo, error)
 	GetInquiryByUuid(iqUuid string, fields ...string) (*InquiryResult, error)
 	HasMoreInquiries(offset int, perPage int) (bool, error)
 	AskingInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error)
 	PatchInquiryStatusByUUID(params PatchInquiryStatusByUUIDParams) error
 	GetInquirerByInquiryUUID(uuid string, fields ...string) (*models.User, error)
-	PatchInquiryByInquiryUUID(params PatchInquiryParams) (*models.ServiceInquiry, error)
+	PatchInquiryByInquiryUUID(params models.PatchInquiryParams) (*models.ServiceInquiry, error)
 	GetActiveInquiry(inquirerId int) (*models.ActiveInquiry, error)
 	GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error)
 }

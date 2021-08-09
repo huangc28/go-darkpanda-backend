@@ -937,7 +937,6 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 
 	// Change inquiry status from `chatting` to `booked` and create a new service with status `unpaid`
 	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
-
 		statusUnpaid := models.ServiceStatusUnpaid
 
 		if err != nil {
@@ -1292,7 +1291,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			depCon.Make(&iqDao)
 
 			newStatus := models.InquiryStatusInquiring
-			uiq, err := iqDao.PatchInquiryByInquiryUUID(contracts.PatchInquiryParams{
+			uiq, err := iqDao.PatchInquiryByInquiryUUID(models.PatchInquiryParams{
 				Uuid:          iq.Uuid,
 				InquiryStatus: &newStatus,
 			})

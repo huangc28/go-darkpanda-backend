@@ -56,3 +56,20 @@ type UserRatings struct {
 	RaterUuid      string         `json:"rater_uuid"`
 	RaterAvatarUrl sql.NullString `json:"rater_avatar_url"`
 }
+
+type InquiryInfo struct {
+	ServiceInquiry
+	Inquirer    User
+	ServiceUuid sql.NullString `json:"service_uuid"`
+}
+
+type PatchInquiryParams struct {
+	Uuid            string         `json:"uuid"`
+	AppointmentTime *time.Time     `json:"appointment_time"`
+	Budget          *float32       `json:"budget"`
+	Price           *float32       `json:"price"`
+	Duration        *int           `json:"duration"`
+	ServiceType     *string        `json:"service_type"`
+	InquiryStatus   *InquiryStatus `json:"inquiry_status"`
+	Address         *string        `json:"address"`
+}

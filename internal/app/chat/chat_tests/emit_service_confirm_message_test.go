@@ -54,7 +54,17 @@ func (suite *EmitServiceConfirmMessageTestSuite) TestEmitServiceConfirmedMessage
 		suite.T().Fatal(err)
 	}
 
-	// util.GenTestInquiryParams(maleUser.)
+	iqParams, err := util.GenTestInquiryParams(maleUser.ID)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	iq, err := q.CreateInquiry(ctx, *iqParams)
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
 
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
@@ -126,16 +136,13 @@ func (suite *EmitServiceConfirmMessageTestSuite) TestEmitServiceConfirmedMessage
 		EXPECT().
 		GetInquiryByUuid(gomock.Eq("some_inquiry_uuid")).
 		Return(
-		// contracts.InquiryResult{
-		// 	models.ServiceInquiry{
-		// 		"some_inquiry_uuid",
-
-		// 	},
-		// 	maleUser.Username,
-		// 	maleUser.Uuid,
-		// 	maleUser.AvatarUrl,
-		// },
-		// nil,
+			&contracts.InquiryResult{
+				iq,
+				maleUser.Username,
+				maleUser.Uuid,
+				maleUser.AvatarUrl,
+			},
+			nil,
 		)
 
 	c.Set("uuid", maleUser.Uuid)

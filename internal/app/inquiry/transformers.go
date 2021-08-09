@@ -209,6 +209,7 @@ type TransformedGetInquiryWithInquirer struct {
 	Lng           *float32                      `json:"lng"`
 	Lat           *float32                      `json:"lat"`
 	InquiryStatus string                        `json:"inquiry_status"`
+	ServiceUuid   *string                       `json:"service_uuid"`
 	Inquirer      TransformedGetInquiryInquirer `json:"inquirer"`
 }
 
@@ -217,9 +218,11 @@ type TransformedInquiries struct {
 	HasMore   bool                                `json:"has_more"`
 }
 
-func (t *InquiryTransform) TransformInquiryList(inquiryList []*contracts.InquiryInfo, hasMore bool) (TransformedInquiries, error) {
+func (t *InquiryTransform) TransformInquiryList(inquiryList []*models.InquiryInfo, hasMore bool) (TransformedInquiries, error) {
 	trfedIqs := make([]TransformedGetInquiryWithInquirer, 0)
 	for _, oi := range inquiryList {
+		var serviceUuid *string
+
 		price, err := convertnullsql.ConvertSqlNullStringToFloat64(oi.Price)
 
 		if err != nil {
@@ -244,6 +247,10 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*contracts.Inquiry
 			return TransformedInquiries{}, err
 		}
 
+		if oi.ServiceUuid.Valid {
+			serviceUuid = &oi.ServiceUuid.String
+		}
+
 		trfedIq := TransformedGetInquiryWithInquirer{
 			Uuid:          oi.Uuid,
 			Budget:        budget,
@@ -254,6 +261,7 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*contracts.Inquiry
 			Lng:           lng,
 			Lat:           lat,
 			InquiryStatus: oi.InquiryStatus.ToString(),
+			ServiceUuid:   serviceUuid,
 			Inquirer: TransformedGetInquiryInquirer{
 				Uuid:        oi.Inquirer.Uuid,
 				Username:    oi.Inquirer.Username,
