@@ -9,6 +9,7 @@ import (
 	"image/png"
 	_ "image/png"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 
@@ -134,6 +135,8 @@ func CompressImages(ihfs []*multipart.FileHeader) ([]*CompressedImage, error) {
 		return nil, err
 	}
 
+	log.Printf("DEBUG 1  %v", hfs)
+
 	cis := make([]*CompressedImage, 0)
 
 	for _, h := range hfs {
@@ -200,7 +203,7 @@ func CompressImages(ihfs []*multipart.FileHeader) ([]*CompressedImage, error) {
 		cis = append(cis, ci)
 	}
 
-	return nil, nil
+	return cis, nil
 }
 
 // CropThumbnaie crops the image to size of 150x150 to save client bandwidth.

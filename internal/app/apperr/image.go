@@ -13,6 +13,11 @@ const (
 	FailedToUploadImagesToGCS           = "4000010"
 	FailedToSendImageMessage            = "4000011"
 	FailedToCropImages                  = "4000012"
+	ImageFieldNotFound                  = "4000014"
+	NoImageUploaded                     = "4000015"
 )
 
-var ImageErrCodeMap = map[string]string{}
+var ImageErrCodeMap = map[string]string{
+	NoImageUploaded:    "no imaged found",
+	ImageFieldNotFound: "image field is required",
+}
