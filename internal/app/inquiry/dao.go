@@ -98,46 +98,48 @@ WITH blocked_users AS (
 			'expired',
 			'canceled'
 		)
-)
-
-SELECT
-	si.uuid,
-	si.budget,
-	si.service_type,
-	si.price,
-	si.duration,
-	si.appointment_time,
-	si.lng,
-	si.lat,
-	si.inquiry_status,
-
-	users.uuid,
-	users.username,
-	users.avatar_url,
-	users.nationality,
-
-	services.uuid as service_uuid
-FROM service_inquiries AS si
-INNER JOIN users
-	ON si.inquirer_id = users.id
-LEFT JOIN services
-	ON services.inquiry_id = si.id
-WHERE (%s)
-AND si.inquirer_id NOT IN (
+), inquiry_list AS (
 	SELECT
-		blocked_user_id
-	FROM
-		blocked_users
+		si.uuid AS inquiry_uuid,
+		si.budget,
+		si.service_type,
+		si.price,
+		si.duration,
+		si.appointment_time,
+		si.lng,
+		si.lat,
+		si.inquiry_status,
+
+		users.uuid,
+		users.username,
+		users.avatar_url,
+		users.nationality,
+
+		services.uuid as service_uuid
+	FROM service_inquiries AS si
+	INNER JOIN users
+		ON si.inquirer_id = users.id
+	LEFT JOIN services ON services.inquiry_id = si.id 
+	WHERE (%s)
+	AND si.inquirer_id NOT IN (
+		SELECT
+			blocked_user_id
+		FROM
+			blocked_users
+	)
+	AND si.inquirer_id NOT IN (
+		SELECT
+			ongoing_customer_id
+		FROM
+			ongoing_service
+	)
+	ORDER BY si.created_at DESC
+	LIMIT $2
+	OFFSET $3
+
 )
-AND si.inquirer_id NOT IN (
-	SELECT
-		ongoing_customer_id
-	FROM
-		ongoing_service
-)
-ORDER BY si.created_at DESC
-LIMIT $2
-OFFSET $3;
+
+SELECT DISTINCT ON(inquiry_list.inquiry_uuid) * FROM inquiry_list;
 `,
 		statusQuery,
 	)
