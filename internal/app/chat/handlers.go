@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -827,12 +826,11 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 
 // @TODO the client shouldn't need be needing to provide channel uuid. We should get channel uuid by inquiry uuid.
 type EmitServiceConfirmedMessageBody struct {
-	InquiryUUID string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
+	// InquiryUUID string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
+	ServiceUuid string `json:"service_uuid" form:"service_uuid" binding:"required"`
 }
 
 func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
-	log.Println("DEBUG 1")
-
 	ctx := context.Background()
 	body := EmitServiceConfirmedMessageBody{}
 
@@ -877,18 +875,14 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	log.Println("DEBUG 2")
-
 	// Retrieve inquiry by inquiry uuid.
-	iqRes, err := inquiryDao.GetInquiryByUuid(body.InquiryUUID)
-
-	log.Printf("DEBUG 3 %v", err)
+	iqRes, err := serviceDao.GetInquiryByServiceUuid(body.ServiceUuid)
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetInquiryByUuid,
+				apperr.FailedToGetServiceByInquiryUUID,
 				err.Error(),
 			),
 		)
@@ -900,11 +894,10 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 	olSrv, err := serviceDao.GetOverlappedServices(
 		contracts.GetOverlappedServicesParams{
 			UserId:                 sender.ID,
+			ExcludeServiceUuid:     body.ServiceUuid,
 			InquiryAppointmentTime: iqRes.AppointmentTime.Time,
 		},
 	)
-
-	log.Printf("DEBUG spot 8 %v", olSrv)
 
 	if err != nil {
 		c.AbortWithError(
@@ -985,7 +978,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 
 		err = inquiryDao.WithTx(tx).PatchInquiryStatusByUUID(contracts.PatchInquiryStatusByUUIDParams{
 			InquiryStatus: models.InquiryStatusBooked,
-			UUID:          body.InquiryUUID,
+			UUID:          iqRes.Uuid,
 		})
 
 		if err != nil {
@@ -997,7 +990,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		}
 
 		return db.FormatResp{
-			Response: &srvModel,
+			Response: srvModel,
 		}
 	})
 

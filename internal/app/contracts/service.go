@@ -29,6 +29,7 @@ type CreateServiceQRCodeParams struct {
 }
 
 type GetOverlappedServicesParams struct {
+	ExcludeServiceUuid           string
 	UserId                       int64
 	InquiryAppointmentTime       time.Time
 	AppointmentBufferDuration    int64

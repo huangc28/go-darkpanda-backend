@@ -509,10 +509,9 @@ WHERE
 	) AND (
 		customer_id = $1 OR
 		service_provider_id = $1
-	);
+	) AND uuid != $2 ;
 `
-
-	rows, err := dao.DB.Queryx(query, p.UserId)
+	rows, err := dao.DB.Queryx(query, p.UserId, p.ExcludeServiceUuid)
 
 	if err != nil {
 		return nil, err

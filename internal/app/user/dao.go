@@ -182,8 +182,7 @@ RETURNING
 }
 
 func (dao *UserDAO) checkGender(uuid string, gender models.Gender) (bool, error) {
-
-	sql := `
+	query := `
 		SELECT EXISTS (
 			SELECT 1 FROM users
 			WHERE uuid = $1
@@ -193,7 +192,7 @@ func (dao *UserDAO) checkGender(uuid string, gender models.Gender) (bool, error)
 
 	var exists bool
 
-	if err := dao.db.QueryRow(sql, uuid, string(gender)).Scan(&exists); err != nil {
+	if err := dao.db.QueryRow(query, uuid, string(gender)).Scan(&exists); err != nil {
 		return false, err
 	}
 
