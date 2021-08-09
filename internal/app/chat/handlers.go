@@ -826,7 +826,6 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 
 // @TODO the client shouldn't need be needing to provide channel uuid. We should get channel uuid by inquiry uuid.
 type EmitServiceConfirmedMessageBody struct {
-	// InquiryUUID string `json:"inquiry_uuid" form:"inquiry_uuid" binding:"required"`
 	ServiceUuid string `json:"service_uuid" form:"service_uuid" binding:"required"`
 }
 

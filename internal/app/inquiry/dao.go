@@ -136,7 +136,6 @@ WITH blocked_users AS (
 	ORDER BY si.created_at DESC
 	LIMIT $2
 	OFFSET $3
-
 )
 
 SELECT DISTINCT ON(inquiry_list.inquiry_uuid) * FROM inquiry_list;

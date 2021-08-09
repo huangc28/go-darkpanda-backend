@@ -878,6 +878,10 @@ func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p Prepar
 					Path:  ServiceStatusFieldName,
 					Value: models.InquiryStatusChatting,
 				},
+				{
+					Path:  ChannelUuidFieldName,
+					Value: p.ServiceUuid,
+				},
 			},
 		); err != nil {
 			return err
