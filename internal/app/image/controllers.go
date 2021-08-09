@@ -96,28 +96,6 @@ func UploadAvatarHandler(c *gin.Context) {
 //   - We need to determine the appropriate mime type to use proper decoder.
 func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 
-	imgs, exists := c.Request.MultipartForm.File["image"]
-
-	if !exists {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.ImageFieldNotFound,
-			),
-		)
-
-		return
-	}
-
-	if len(imgs) == 0 {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.NoImageUploaded),
-		)
-
-		return
-	}
-
 	// ------------------- Limit upload size to 20 MB -------------------
 	if err := c.Request.ParseMultipartForm(20e6); err != nil {
 		c.AbortWithError(
@@ -131,7 +109,25 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	cis, err := CompressImages(imgs)
+	if _, exists := c.Request.MultipartForm.File["image"]; !exists {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.ImageFieldNotFound),
+		)
+
+		return
+	}
+
+	if len(c.Request.MultipartForm.File["image"]) == 0 {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.NoImageUploaded),
+		)
+
+		return
+	}
+
+	cis, err := CompressImages(c.Request.MultipartForm.File["image"])
 
 	if err != nil {
 		c.AbortWithError(
