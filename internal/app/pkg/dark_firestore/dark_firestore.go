@@ -42,11 +42,15 @@ const (
 	// Key value of the `services` collection in firestore.
 	ServiceCollectionName = "services"
 
-	// Name of the column of `service` document in `services` collection  that indicates the status.
+	// Name of the column of `service` document in `services` collection that indicates the status.
 	ServiceStatusFieldName = "status"
 
 	// Name of the column of inquiry document in `inquiries` collection.
 	ChannelUuidFieldName = "channel_uuid"
+
+	// Column name of `inquiry` document in `inquiries` collection. We need to notify both chat partners
+	// when male agrees to chat.
+	ServiceUuidFieldName = "service_uuid"
 
 	// Key value of the `private_chats` collection in firestore.
 	PrivateChatsCollectionName = "private_chats"
@@ -881,7 +885,7 @@ func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p Prepar
 					Value: models.InquiryStatusChatting,
 				},
 				{
-					Path:  ChannelUuidFieldName,
+					Path:  ServiceUuidFieldName,
 					Value: p.ServiceUuid,
 				},
 			},
