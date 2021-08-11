@@ -9,7 +9,6 @@ import (
 	"image/png"
 	_ "image/png"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 
@@ -135,8 +134,6 @@ func CompressImages(ihfs []*multipart.FileHeader) ([]*CompressedImage, error) {
 		return nil, err
 	}
 
-	log.Printf("DEBUG 1  %v", hfs)
-
 	cis := make([]*CompressedImage, 0)
 
 	for _, h := range hfs {
@@ -174,8 +171,7 @@ func CompressImages(ihfs []*multipart.FileHeader) ([]*CompressedImage, error) {
 				return cis, err
 			}
 
-			// There isn't any library to compress jpeg image, thus, we will encode the image
-			// during encoding.
+			// There isn't any library to compress jpeg image, thus, we will comporess the image during encoding.
 			ci = &CompressedImage{
 				Name:            h.FileHeader.Filename,
 				Mime:            h.Mime,

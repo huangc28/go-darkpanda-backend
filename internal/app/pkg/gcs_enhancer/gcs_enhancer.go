@@ -119,7 +119,7 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 	for _, img := range imgs {
 		// Upload both orginal / thumbnail images.
 		origName := appendUnixTimeStampToFilename(filepath.Base(img.Name))
-		thumbnailName := appendThumbnailStamp(filepath.Base(img.Name))
+		thumbnailName := appendUnixTimeStampToFilename(appendThumbnailStamp(filepath.Base(img.Name)))
 
 		origBuf := new(bytes.Buffer)
 		thumbBuf := new(bytes.Buffer)
@@ -168,7 +168,7 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 			}
 
 			if err := jpeg.Encode(thumbBuf, img.Thumbnail, &jpeg.Options{
-				Quality: 50,
+				Quality: 40,
 			}); err != nil {
 				return sl, err
 			}
@@ -178,6 +178,7 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 				Name:   thumbnailName,
 				Reader: thumbBuf,
 			}
+
 		case "image/gif":
 			if err := gif.Encode(origBuf, img.OrigImage, &gif.Options{}); err != nil {
 				return sl, err
@@ -203,11 +204,12 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 		ois = append(ois, origObj)
 		ois = append(ois, thumbObj)
 
-		sl, err = e.uploadMultiple(ctx, ois...)
+	}
 
-		if err != nil {
-			return sl, err
-		}
+	sl, err = e.uploadMultiple(ctx, ois...)
+
+	if err != nil {
+		return sl, err
 	}
 
 	return sl, err
@@ -250,14 +252,18 @@ L:
 			break L
 		default:
 			go func(obj *ObjectInfo) {
+				// Test: write to physical file for testing purpose.
 				objectLink, err := e.Upload(
 					ctx,
 					obj.Reader,
-					appendUnixTimeStampToFilename(filepath.Base(obj.Name)),
+					obj.Name,
 				)
 
 				if err != nil {
 					errChan <- err
+					close(quit)
+
+					return
 				}
 
 				errChan <- nil
@@ -265,6 +271,7 @@ L:
 					Size: obj.Size,
 					Link: objectLink,
 				}
+
 			}(obj)
 		}
 	}

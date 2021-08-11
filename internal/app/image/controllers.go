@@ -141,8 +141,6 @@ func UploadImagesHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// log.Printf("DEBUG cis %v", cis[0].OrigImage.Bounds())
-
 	appConf := config.GetAppConf()
 	ctx := context.Background()
 	client, err := storage.NewClient(
