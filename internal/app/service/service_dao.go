@@ -554,6 +554,8 @@ FROM service_inquiries
 INNER JOIN services ON services.inquiry_id = service_inquiries.id
 WHERE 
 	services.uuid = $1	
+ORDER BY service_inquiries.created_at DESC
+LIMIT 1;
 `
 
 	var m models.ServiceInquiry

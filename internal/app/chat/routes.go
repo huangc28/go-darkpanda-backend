@@ -56,6 +56,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
+	// Deprecated
 	g.POST(
 		"/emit-inquiry-updated-message",
 		func(c *gin.Context) {

@@ -431,6 +431,8 @@ WITH related_inquiry AS (
 	INNER JOIN
 		services ON services.inquiry_id = service_inquiries.id AND
 		services.id = $1
+	ORDER BY service_inquiries.created_at DESC
+	LIMIT 1
 )
 
 SELECT
@@ -443,7 +445,9 @@ WHERE
 			id
 		FROM
 			related_inquiry
-	);
+	)
+ORDER BY created_at DESC
+LIMIT 1;
 `
 
 	var m models.Chatroom
