@@ -366,6 +366,7 @@ RETURNING
 	uuid,
 	appointment_time,
 	service_type,
+	budget,
 	price,
 	duration,
 	address
