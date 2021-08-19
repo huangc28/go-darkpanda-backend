@@ -6,8 +6,8 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func convertFloatStringToDecimal(floatStr sql.NullString) (decimal.Decimal, error) {
-	if floatStr.Valid == false {
+func ConvertFloatStringToDecimal(floatStr sql.NullString) (decimal.Decimal, error) {
+	if !floatStr.Valid {
 		return decimal.Decimal{}, nil
 	}
 
@@ -15,7 +15,7 @@ func convertFloatStringToDecimal(floatStr sql.NullString) (decimal.Decimal, erro
 }
 
 func ConvertSqlNullStringToFloat64(floatStr sql.NullString) (*float64, error) {
-	dec, err := convertFloatStringToDecimal(floatStr)
+	dec, err := ConvertFloatStringToDecimal(floatStr)
 
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func ConvertSqlNullStringToFloat64(floatStr sql.NullString) (*float64, error) {
 }
 
 func ConvertSqlNullStringToFloat32(floatStr sql.NullString) (*float32, error) {
-	dec, err := convertFloatStringToDecimal(floatStr)
+	dec, err := ConvertFloatStringToDecimal(floatStr)
 
 	if err != nil {
 		return nil, err

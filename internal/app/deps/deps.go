@@ -8,11 +8,13 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 
+	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 	"github.com/golobby/container"
-	cintrnal "github.com/golobby/container/pkg/container"
+	cinternal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/auth"
 	bankAccount "github.com/huangc28/go-darkpanda-backend/internal/app/bank_account"
@@ -23,6 +25,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/pubsuber"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/rate"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/register"
 
@@ -34,11 +37,11 @@ import (
 )
 
 type DepContainer struct {
-	Container cintrnal.Container
+	Container cinternal.Container
 }
 
 type DepRegistrar func() error
-type ServiceProvider func(cintrnal.Container) DepRegistrar
+type ServiceProvider func(cinternal.Container) DepRegistrar
 
 var (
 	_depContainer *DepContainer
@@ -55,7 +58,7 @@ func Get() *DepContainer {
 	return _depContainer
 }
 
-func (dep *DepContainer) TwilioServiceProvider(c cintrnal.Container) DepRegistrar {
+func (dep *DepContainer) TwilioServiceProvider(c cinternal.Container) DepRegistrar {
 	return func() error {
 		c.Transient(func() twilio.TwilioServicer {
 			appConf := config.GetAppConf()
@@ -70,7 +73,7 @@ func (dep *DepContainer) TwilioServiceProvider(c cintrnal.Container) DepRegistra
 	}
 }
 
-func (dep *DepContainer) DarkFirestoreServiceProvider(c cintrnal.Container) DepRegistrar {
+func (dep *DepContainer) DarkFirestoreServiceProvider(c cinternal.Container) DepRegistrar {
 	return func() error {
 		ctx := context.Background()
 
@@ -93,13 +96,13 @@ func (dep *DepContainer) DarkFirestoreServiceProvider(c cintrnal.Container) DepR
 	}
 }
 
-func (dep *DepContainer) GcsEnhancerServiceProvider(c cintrnal.Container) DepRegistrar {
+func (dep *DepContainer) GcsEnhancerServiceProvider(c cinternal.Container) DepRegistrar {
 	return func() error {
 		ctx := context.Background()
 
 		client, err := storage.NewClient(
 			ctx,
-			option.WithServiceAccountFile(
+			option.WithCredentialsFile(
 				fmt.Sprintf(
 					"%s/%s",
 					config.GetProjRootPath(),
@@ -125,11 +128,36 @@ func (dep *DepContainer) GcsEnhancerServiceProvider(c cintrnal.Container) DepReg
 	}
 }
 
+func (dep *DepContainer) PubsuberServiceProvider(c cinternal.Container) DepRegistrar {
+	return func() error {
+
+		ctx := context.Background()
+
+		log.Printf("DEBUG spot 1")
+
+		// Setup google service account path.
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", fmt.Sprintf("%s/%s", config.GetProjRootPath(), config.GetAppConf().FirestoreCredentialFile))
+		client, err := pubsub.NewClient(ctx, config.GetAppConf().GcpProjectID)
+
+		log.Printf("DEBUG spot 2")
+		if err != nil {
+			log.Fatal("failed to initialise google pubsub client")
+		}
+
+		c.Singleton(func() pubsuber.DPPubsuber {
+			return pubsuber.New(client)
+		})
+
+		return nil
+	}
+}
+
 func (dep *DepContainer) Run() error {
 	depRegistrars := []DepRegistrar{
 		dep.TwilioServiceProvider(dep.Container),
 		dep.DarkFirestoreServiceProvider(dep.Container),
 		dep.GcsEnhancerServiceProvider(dep.Container),
+		dep.PubsuberServiceProvider(dep.Container),
 
 		user.UserDaoServiceProvider(dep.Container),
 		service.ServiceDAOServiceProvider(dep.Container),

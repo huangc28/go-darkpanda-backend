@@ -56,7 +56,9 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	g.POST(
 		"",
 		middlewares.IsMale(userDAO),
-		EmitInquiryHandler,
+		func(c *gin.Context) {
+			EmitInquiryHandler(c, container)
+		},
 	)
 
 	// Patch inquiry detail.

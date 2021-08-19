@@ -149,7 +149,6 @@ func (m *Manager) Initialize() error {
 }
 
 func (m *Manager) Run(f func()) {
-
 	if !m.initComplete {
 		err := m.Initialize()
 		if err != nil {
@@ -179,12 +178,6 @@ func NewDefaultManager(ctx context.Context) *Manager {
 		ExecDBInit().
 		ExecRedisInit().
 		ExecFireStoreInit()
-
-	// In the future, we can use condition build to make
-	// swagger not be compiled in the production environment.
-	//if config.GetAppEnv() == config.STAGING || config.GetAppEnv() == config.DEVELOPMENT {
-	//swagger.GenerateDoc()
-	//}
 
 	return _manager
 }

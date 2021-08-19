@@ -72,4 +72,5 @@ type PatchInquiryParams struct {
 	ServiceType     *string        `json:"service_type"`
 	InquiryStatus   *InquiryStatus `json:"inquiry_status"`
 	Address         *string        `json:"address"`
+	FcmTopic        *string        `json:"fcm_topic"`
 }

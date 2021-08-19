@@ -15,6 +15,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/pubsuber"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
@@ -34,7 +35,7 @@ type EmitInquiryBody struct {
 	ServiceDuration int       `form:"service_duration" json:"service_duration" binding:"required"`
 }
 
-func EmitInquiryHandler(c *gin.Context) {
+func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 	body := &EmitInquiryBody{}
 	ctx := context.Background()
 
@@ -128,8 +129,26 @@ func EmitInquiryHandler(c *gin.Context) {
 		}
 	}
 
-	// ------------------- create a new inquiry -------------------
 	sid, _ := shortid.Generate()
+
+	// Create pubsub topic for the male device to subscribe to FCM message.
+	var ps pubsuber.DPPubsuber
+	depCon.Make(&ps)
+	topic, err := ps.CreateInquiryTopic(ctx, sid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreatePubsubTopic,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// ------------------- create a new inquiry -------------------
 	iq, err := q.CreateInquiry(
 		ctx,
 		models.CreateInquiryParams{
@@ -154,6 +173,10 @@ func EmitInquiryHandler(c *gin.Context) {
 			Duration: sql.NullInt32{
 				Valid: true,
 				Int32: int32(body.ServiceDuration),
+			},
+			FcmTopic: sql.NullString{
+				Valid:  true,
+				String: topic.ID(),
 			},
 		},
 	)
@@ -195,7 +218,24 @@ func EmitInquiryHandler(c *gin.Context) {
 		return
 	}
 
-	trf, err := NewTransform().TransformEmitInquiry(iq)
+	// Update the inquiry FCM topic, so that male app can receive FCM message.
+	// topicId := topic.ID()
+	// if _, err := dao.PatchInquiryByInquiryUUID(models.PatchInquiryParams{
+	// 	Uuid:     iq.Uuid,
+	// 	FcmTopic: &topicId,
+	// }); err != nil {
+	// 	c.AbortWithError(
+	// 		http.StatusInternalServerError,
+	// 		apperr.NewErr(
+	// 			apperr.FailedToPatchInquiry,
+	// 			err.Error(),
+	// 		),
+	// 	)
+
+	// 	return
+	// }
+
+	trf, err := NewTransform().TransformEmitInquiry(iq, topic.ID())
 
 	if err != nil {
 		c.AbortWithError(
@@ -636,13 +676,10 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// @TODO
-	//   should return inquiry uuid for female user to subscribe to firestore document.
 	c.JSON(
 		http.StatusOK,
 		NewTransform().TransformPickupInquiry(iq),
 	)
-
 }
 
 type AgreeToChatParams struct {

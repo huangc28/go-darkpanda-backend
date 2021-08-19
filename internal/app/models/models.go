@@ -354,6 +354,7 @@ type ServiceInquiry struct {
 	ExpiredAt sql.NullTime   `json:"expired_at"`
 	PickerID  sql.NullInt32  `json:"picker_id"`
 	Address   sql.NullString `json:"address"`
+	FcmTopic  sql.NullString `json:"fcm_topic"`
 }
 
 type ServiceName struct {

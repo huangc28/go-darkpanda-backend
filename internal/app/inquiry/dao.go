@@ -357,7 +357,8 @@ UPDATE service_inquiries SET
 	price = COALESCE($4, price),
 	budget = COALESCE($5, budget),
 	duration = COALESCE($6, duration),
-	address = COALESCE($7, address)
+	address = COALESCE($7, address),
+	fcm_topic = COALESCE($8, fcm_topic)
 WHERE
 	uuid = $8
 RETURNING
@@ -367,7 +368,8 @@ RETURNING
 	service_type,
 	price,
 	duration,
-	address;
+	address
+	fcm_topic;
 `
 	inquiry := models.ServiceInquiry{}
 
@@ -381,6 +383,7 @@ RETURNING
 		params.Duration,
 		params.Address,
 		params.Uuid,
+		params.FcmTopic,
 	).StructScan(&inquiry)
 
 	if err != nil {

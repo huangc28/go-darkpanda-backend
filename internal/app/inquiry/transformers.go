@@ -23,10 +23,11 @@ type TransformedInquiry struct {
 	Budget          float64   `json:"budget"`
 	ServiceType     string    `json:"service_type"`
 	InquiryStatus   string    `json:"inquiry_status"`
+	FcmTopic        string    `json:"fcm_topic"`
 	AppointmentTime time.Time `json:"appointment_time"`
 }
 
-func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (TransformedInquiry, error) {
+func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, topicName string) (TransformedInquiry, error) {
 	budget, err := strconv.ParseFloat(m.Budget, 64)
 
 	if err != nil {
@@ -39,6 +40,7 @@ func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (Transf
 		ServiceType:     string(m.ServiceType),
 		InquiryStatus:   string(m.InquiryStatus),
 		AppointmentTime: m.AppointmentTime.Time,
+		FcmTopic:        topicName,
 	}
 
 	return tiq, nil
@@ -524,7 +526,7 @@ type TransformedUpdateInquiry struct {
 	AppointmentTime *time.Time `json:"appointment_time"`
 	ServiceType     *string    `json:"service_type"`
 	InquiryStatus   string     `json:"inquiry_status"`
-	Price           *float32   `json:"price"`
+	Budget          *float32   `json:"budget"`
 	Duration        *int32     `json:"duration"`
 	Address         *string    `json:"address"`
 }
@@ -532,7 +534,6 @@ type TransformedUpdateInquiry struct {
 func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
 	var (
 		appointmentTime *time.Time
-		priceF          *float32
 		duration        *int32
 		address         *string
 		err             error
@@ -542,13 +543,13 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 		appointmentTime = &inquiry.AppointmentTime.Time
 	}
 
-	if inquiry.Price.Valid {
-		priceF, err = convertnullsql.ConvertSqlNullStringToFloat32(inquiry.Price)
+	budgetDec, err := decimal.NewFromString(inquiry.Budget)
 
-		if err != nil {
-			return nil, err
-		}
+	if err != nil {
+		return nil, err
 	}
+
+	budgetFloat, _ := budgetDec.BigFloat().Float32()
 
 	if inquiry.Duration.Valid {
 		duration = &inquiry.Duration.Int32
@@ -563,7 +564,7 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 		AppointmentTime: appointmentTime,
 		InquiryStatus:   inquiry.InquiryStatus.ToString(),
 		ServiceType:     (*string)(&inquiry.ServiceType),
-		Price:           priceF,
+		Budget:          &budgetFloat,
 		Duration:        duration,
 		Address:         address,
 	}, nil
