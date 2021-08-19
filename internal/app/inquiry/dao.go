@@ -360,7 +360,7 @@ UPDATE service_inquiries SET
 	address = COALESCE($7, address),
 	fcm_topic = COALESCE($8, fcm_topic)
 WHERE
-	uuid = $8
+	uuid = $9
 RETURNING
 	id,
 	uuid,
@@ -382,8 +382,8 @@ RETURNING
 		params.Budget,
 		params.Duration,
 		params.Address,
-		params.Uuid,
 		params.FcmTopic,
+		params.Uuid,
 	).StructScan(&inquiry)
 
 	if err != nil {

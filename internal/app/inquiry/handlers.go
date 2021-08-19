@@ -471,6 +471,7 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 			models.PatchInquiryParams{
 				Uuid:          body.InquiryUuid,
 				InquiryStatus: &srvCancelStatus,
+				FcmTopic:      nil,
 			},
 		)
 
