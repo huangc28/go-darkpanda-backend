@@ -63,6 +63,7 @@ const (
 	FailedToSendQuitChatroomMsg              = "3000059"
 	FailedToPrepareStartInquiryChat          = "3000060"
 	FailedToCreatePubsubTopic                = "3000061"
+	FailedToDeletePubsubTopic                = "3000062"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{

@@ -358,7 +358,7 @@ UPDATE service_inquiries SET
 	budget = COALESCE($5, budget),
 	duration = COALESCE($6, duration),
 	address = COALESCE($7, address),
-	fcm_topic = COALESCE($8, fcm_topic)
+	fcm_topic = COALESCE($8, fcm_topic) 
 WHERE
 	uuid = $9
 RETURNING

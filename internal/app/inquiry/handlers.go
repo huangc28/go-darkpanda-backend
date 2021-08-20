@@ -218,23 +218,6 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Update the inquiry FCM topic, so that male app can receive FCM message.
-	// topicId := topic.ID()
-	// if _, err := dao.PatchInquiryByInquiryUUID(models.PatchInquiryParams{
-	// 	Uuid:     iq.Uuid,
-	// 	FcmTopic: &topicId,
-	// }); err != nil {
-	// 	c.AbortWithError(
-	// 		http.StatusInternalServerError,
-	// 		apperr.NewErr(
-	// 			apperr.FailedToPatchInquiry,
-	// 			err.Error(),
-	// 		),
-	// 	)
-
-	// 	return
-	// }
-
 	trf, err := NewTransform().TransformEmitInquiry(iq, topic.ID())
 
 	if err != nil {
@@ -427,7 +410,6 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Emit fsm state transition.
 	iq, err := q.GetInquiryByUuid(ctx, body.InquiryUuid)
 
 	if err != nil {
@@ -471,7 +453,6 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 			models.PatchInquiryParams{
 				Uuid:          body.InquiryUuid,
 				InquiryStatus: &srvCancelStatus,
-				FcmTopic:      nil,
 			},
 		)
 
@@ -532,21 +513,26 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	trf, err := NewTransform().TransformInquiry(*uiq)
+	var pubsuber pubsuber.DPPubsuber
+	depCon.Make(&pubsuber)
 
-	if err != nil {
+	if err := pubsuber.DeleteInquiryTopic(ctx, iq.FcmTopic.String); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToTransformResponse,
+				apperr.FailedToDeletePubsubTopic,
 				err.Error(),
 			),
 		)
-		return
 
+		return
 	}
 
-	c.JSON(http.StatusOK, trf)
+	c.JSON(http.StatusOK, struct {
+		InquiryUuid string `json:"inquiry_uuid"`
+	}{
+		uiq.Uuid,
+	})
 }
 
 type PickupInquiryHandlerParams struct {

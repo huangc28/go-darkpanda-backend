@@ -2,7 +2,7 @@ package utilcmd
 
 import (
 	"errors"
-	"fmt"
+	"log"
 
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
@@ -75,7 +75,7 @@ func GenJwtTokenByNameFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("generated token \n%s", jwtToken)
+	log.Printf("generated token \n%s", jwtToken)
 
 	return nil
 }
