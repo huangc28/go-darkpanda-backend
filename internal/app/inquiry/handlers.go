@@ -663,6 +663,21 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	// Publish FCM to notify male user that a female has picked up the inquiry.
+	var pubsuber pubsuber.DPPubsuber
+	depCon.Make(&pubsuber)
+	if err := pubsuber.PublishPickupInquiryNotification(ctx, iq.FcmTopic.String, picker.Username); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToPublishPickupInquiryFCM,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	c.JSON(
 		http.StatusOK,
 		NewTransform().TransformPickupInquiry(iq),
