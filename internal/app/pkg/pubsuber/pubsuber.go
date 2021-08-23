@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"time"
 
 	"cloud.google.com/go/pubsub"
@@ -81,10 +80,6 @@ func (r *DPPubsub) PublishPickupInquiryNotification(ctx context.Context, topicID
 	})
 
 	<-res.Ready()
-
-	sID, err := res.Get(ctx)
-
-	log.Printf("pickup inquiry FCM send %v", sID)
 
 	return err
 }

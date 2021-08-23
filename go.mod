@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.92.1 // indirect
-	cloud.google.com/go/firestore v1.1.0
+	cloud.google.com/go/firestore v1.5.0
 	cloud.google.com/go/pubsub v1.15.0
 	cloud.google.com/go/storage v1.10.0
 	firebase.google.com/go v3.13.0+incompatible

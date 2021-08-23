@@ -13,6 +13,7 @@ import (
 
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
+	firebase "firebase.google.com/go"
 	"github.com/golobby/container"
 	cinternal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -25,6 +26,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/pubsuber"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/rate"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/register"
@@ -130,16 +132,12 @@ func (dep *DepContainer) GcsEnhancerServiceProvider(c cinternal.Container) DepRe
 
 func (dep *DepContainer) PubsuberServiceProvider(c cinternal.Container) DepRegistrar {
 	return func() error {
-
 		ctx := context.Background()
-
-		log.Printf("DEBUG spot 1")
 
 		// Setup google service account path.
 		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", fmt.Sprintf("%s/%s", config.GetProjRootPath(), config.GetAppConf().FirestoreCredentialFile))
 		client, err := pubsub.NewClient(ctx, config.GetAppConf().GcpProjectID)
 
-		log.Printf("DEBUG spot 2")
 		if err != nil {
 			log.Fatal("failed to initialise google pubsub client")
 		}
@@ -152,12 +150,38 @@ func (dep *DepContainer) PubsuberServiceProvider(c cinternal.Container) DepRegis
 	}
 }
 
+func (dep *DepContainer) FirestoreMessageProvider(c cinternal.Container) DepRegistrar {
+	return func() error {
+		ctx := context.Background()
+		os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", fmt.Sprintf("%s/%s", config.GetProjRootPath(), "dark-panda-gcp-service-account.json"))
+
+		app, err := firebase.NewApp(ctx, nil)
+
+		if err != nil {
+			log.Fatalf("failed to initialise firebase admin app: %v", err)
+		}
+
+		fm, err := app.Messaging(ctx)
+
+		if err != nil {
+			log.Fatalf("failed to initialise firebase messaging app: %v", err)
+		}
+
+		c.Singleton(func() dpfcm.DPFirebaseMessenger {
+			return dpfcm.New(fm)
+		})
+
+		return nil
+	}
+}
+
 func (dep *DepContainer) Run() error {
 	depRegistrars := []DepRegistrar{
 		dep.TwilioServiceProvider(dep.Container),
 		dep.DarkFirestoreServiceProvider(dep.Container),
 		dep.GcsEnhancerServiceProvider(dep.Container),
 		dep.PubsuberServiceProvider(dep.Container),
+		dep.FirestoreMessageProvider(dep.Container),
 
 		user.UserDaoServiceProvider(dep.Container),
 		service.ServiceDAOServiceProvider(dep.Container),

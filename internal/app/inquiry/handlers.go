@@ -15,7 +15,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/inquiry/util"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/pubsuber"
+	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
 	"github.com/shopspring/decimal"
@@ -132,9 +132,9 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 	sid, _ := shortid.Generate()
 
 	// Create pubsub topic for the male device to subscribe to FCM message.
-	var ps pubsuber.DPPubsuber
-	depCon.Make(&ps)
-	topic, err := ps.CreateInquiryTopic(ctx, sid)
+	var fm dpfcm.DPFirebaseMessenger
+	depCon.Make(&fm)
+	topic := dpfcm.MakeTopicName(sid)
 
 	if err != nil {
 		c.AbortWithError(
@@ -176,7 +176,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 			},
 			FcmTopic: sql.NullString{
 				Valid:  true,
-				String: topic.ID(),
+				String: topic,
 			},
 		},
 	)
@@ -218,7 +218,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	trf, err := NewTransform().TransformEmitInquiry(iq, topic.ID())
+	trf, err := NewTransform().TransformEmitInquiry(iq, topic)
 
 	if err != nil {
 		c.AbortWithError(
@@ -513,20 +513,20 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	var pubsuber pubsuber.DPPubsuber
-	depCon.Make(&pubsuber)
+	// var pubsuber pubsuber.DPPubsuber
+	// depCon.Make(&pubsuber)
 
-	if err := pubsuber.DeleteInquiryTopic(ctx, iq.FcmTopic.String); err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToDeletePubsubTopic,
-				err.Error(),
-			),
-		)
+	// if err := pubsuber.DeleteInquiryTopic(ctx, iq.FcmTopic.String); err != nil {
+	// 	c.AbortWithError(
+	// 		http.StatusInternalServerError,
+	// 		apperr.NewErr(
+	// 			apperr.FailedToDeletePubsubTopic,
+	// 			err.Error(),
+	// 		),
+	// 	)
 
-		return
-	}
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, struct {
 		InquiryUuid string `json:"inquiry_uuid"`
@@ -558,7 +558,6 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	q := models.New(db.GetDB())
 
 	// Retrieve inquiry picker's ID which is the ID of the current requester.
-	// pickerID, err := q.GetUserIDByUuid(ctx, c.GetString("uuid"))
 	picker, err := q.GetUserByUuid(ctx, c.GetString("uuid"))
 
 	if err != nil {
@@ -664,9 +663,12 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	// Publish FCM to notify male user that a female has picked up the inquiry.
-	var pubsuber pubsuber.DPPubsuber
-	depCon.Make(&pubsuber)
-	if err := pubsuber.PublishPickupInquiryNotification(ctx, iq.FcmTopic.String, picker.Username); err != nil {
+	var fm dpfcm.DPFirebaseMessenger
+	depCon.Make(&fm)
+	if err := fm.PublishPickupInquiryNotification(ctx, dpfcm.Message{
+		TopicName:  iq.FcmTopic.String,
+		PickerName: picker.Username,
+	}); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(

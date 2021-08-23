@@ -118,6 +118,43 @@ func (suite *PubsuberTestSuite) TestSubscribeToNewTopic() {
 		log.Fatalf("failed to delete topic %s", topic.ID())
 	}
 }
+
+func (suite *PubsuberTestSuite) TestPublish() {
+	ctx := context.Background()
+	t := suite.client.Topic("inquiry_ypi-5Enng_1629525206")
+
+	res := t.Publish(ctx, &pubsub.Message{
+		Data: []byte("hello world 1122"),
+	})
+
+	<-res.Ready()
+
+	log.Println("done")
+
+}
+
+func (suite *PubsuberTestSuite) TestSubscribe() {
+	t := suite.client.Topic("inquiry_d68FHfn7R_1629453664")
+
+	ctx := context.Background()
+
+	sub, err := suite.client.CreateSubscription(ctx, "inquiry_d68FHfn7R_1629453664_sub", pubsub.SubscriptionConfig{
+		Topic: t,
+	})
+
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	if err := sub.Receive(ctx, func(ctx context.Context, msg *pubsub.Message) {
+		log.Printf("data received %s", string(msg.Data))
+
+		msg.Ack()
+	}); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func TestPubsuberTestSuite(t *testing.T) {
 	suite.Run(t, new(PubsuberTestSuite))
 }
