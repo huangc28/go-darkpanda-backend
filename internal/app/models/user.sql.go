@@ -18,9 +18,10 @@ INSERT INTO users (
 	premium_expiry_date,
 	avatar_url,
 	mobile,
+	fcm_topic,
 	description
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-RETURNING id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+RETURNING id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile, fcm_topic
 `
 
 type CreateUserParams struct {
@@ -32,6 +33,7 @@ type CreateUserParams struct {
 	PremiumExpiryDate sql.NullTime   `json:"premium_expiry_date"`
 	AvatarUrl         sql.NullString `json:"avatar_url"`
 	Mobile            sql.NullString `json:"mobile"`
+	FcmTopic          sql.NullString `json:"fcm_topic"`
 	Description       sql.NullString `json:"description"`
 }
 
@@ -45,6 +47,7 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		arg.PremiumExpiryDate,
 		arg.AvatarUrl,
 		arg.Mobile,
+		arg.FcmTopic,
 		arg.Description,
 	)
 	var i User
@@ -69,12 +72,13 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, e
 		&i.Description,
 		&i.BreastSize,
 		&i.Mobile,
+		&i.FcmTopic,
 	)
 	return i, err
 }
 
 const getUserByID = `-- name: GetUserByID :one
-SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
+SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile, fcm_topic FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -102,12 +106,13 @@ func (q *Queries) GetUserByID(ctx context.Context, id int64) (User, error) {
 		&i.Description,
 		&i.BreastSize,
 		&i.Mobile,
+		&i.FcmTopic,
 	)
 	return i, err
 }
 
 const getUserByUsername = `-- name: GetUserByUsername :one
-SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
+SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile, fcm_topic FROM users
 WHERE username = $1 LIMIT 1
 `
 
@@ -135,12 +140,13 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 		&i.Description,
 		&i.BreastSize,
 		&i.Mobile,
+		&i.FcmTopic,
 	)
 	return i, err
 }
 
 const getUserByUuid = `-- name: GetUserByUuid :one
-SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile FROM users
+SELECT id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile, fcm_topic FROM users
 WHERE uuid = $1 LIMIT 1
 `
 
@@ -168,6 +174,7 @@ func (q *Queries) GetUserByUuid(ctx context.Context, uuid string) (User, error) 
 		&i.Description,
 		&i.BreastSize,
 		&i.Mobile,
+		&i.FcmTopic,
 	)
 	return i, err
 }
@@ -188,7 +195,7 @@ const patchUserInfoByUuid = `-- name: PatchUserInfoByUuid :one
 UPDATE users
 SET avatar_url = $1, nationality = $2, region = $3, age = $4, height = $5, weight = $6, description = $7, breast_size = $8
 WHERE uuid = $9
-RETURNING id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile
+RETURNING id, username, phone_verified, gender, premium_type, premium_expiry_date, created_at, updated_at, deleted_at, uuid, avatar_url, nationality, region, age, height, weight, habbits, description, breast_size, mobile, fcm_topic
 `
 
 type PatchUserInfoByUuidParams struct {
@@ -237,6 +244,7 @@ func (q *Queries) PatchUserInfoByUuid(ctx context.Context, arg PatchUserInfoByUu
 		&i.Description,
 		&i.BreastSize,
 		&i.Mobile,
+		&i.FcmTopic,
 	)
 	return i, err
 }

@@ -15,14 +15,13 @@ INSERT INTO service_inquiries(
 	budget,
 	service_type,
 	inquiry_status,
-	price,
 	duration,
 	appointment_time,
 	lng,
 	lat,
 	expired_at,
 	fcm_topic
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING *;
 
 
@@ -49,12 +48,11 @@ SELECT EXISTS (
 -- name: UpdateInquiryByUuid :one
 UPDATE  service_inquiries
 SET
-	price = $1,
-	duration = $2,
-	appointment_time = $3,
-	lng = $4,
-	lat = $5,
-	inquiry_status = $6,
-	picker_id = $7
-WHERE uuid = $8
+	duration = $1,
+	appointment_time = $2,
+	lng = $3,
+	lat = $4,
+	inquiry_status = $5,
+	picker_id = $6
+WHERE uuid = $7
 RETURNING *;

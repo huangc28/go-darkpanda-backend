@@ -663,11 +663,26 @@ func PickupInquiryHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	// Publish FCM to notify male user that a female has picked up the inquiry.
+	inquirer, err := iqDao.GetInquirerByInquiryUUID(iq.Uuid, "fcm_topic")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquirerByInquiryUUID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	var fm dpfcm.DPFirebaseMessenger
 	depCon.Make(&fm)
-	if err := fm.PublishPickupInquiryNotification(ctx, dpfcm.Message{
-		TopicName:  iq.FcmTopic.String,
+	if err := fm.PublishPickupInquiryNotification(ctx, dpfcm.PublishPickupInquiryNotificationMessage{
+		Topic:      inquirer.FcmTopic.String,
 		PickerName: picker.Username,
+		PickerUUID: picker.Uuid,
 	}); err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,

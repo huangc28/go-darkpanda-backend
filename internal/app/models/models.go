@@ -345,7 +345,6 @@ type ServiceInquiry struct {
 	UpdatedAt       sql.NullTime   `json:"updated_at"`
 	DeletedAt       sql.NullTime   `json:"deleted_at"`
 	Uuid            string         `json:"uuid"`
-	Price           sql.NullString `json:"price"`
 	Duration        sql.NullInt32  `json:"duration"`
 	AppointmentTime sql.NullTime   `json:"appointment_time"`
 	Lng             sql.NullString `json:"lng"`
@@ -404,6 +403,7 @@ type User struct {
 	Description       sql.NullString `json:"description"`
 	BreastSize        sql.NullString `json:"breast_size"`
 	Mobile            sql.NullString `json:"mobile"`
+	FcmTopic          sql.NullString `json:"fcm_topic"`
 }
 
 type UserBalance struct {

@@ -29,6 +29,7 @@ type TransformedUser struct {
 	Height      float32       `json:"height"`
 	Weight      float32       `json:"weight"`
 	Description string        `json:"description"`
+	FCMTopic    string        `json:"fcm_topic"`
 }
 
 func (ut *UserTransform) TransformUser(m *models.User) *TransformedUser {
@@ -37,6 +38,7 @@ func (ut *UserTransform) TransformUser(m *models.User) *TransformedUser {
 		Gender:    m.Gender,
 		Uuid:      m.Uuid,
 		AvatarUrl: m.AvatarUrl.String,
+		FCMTopic:  m.FcmTopic.String,
 	}
 }
 

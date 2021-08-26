@@ -245,6 +245,8 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	// Emit FCM message to service provider.
+
 	newBal := trxResp.Response.(*models.UserBalance)
 	trfed, err := TrfCreatePayment(newBal, user)
 

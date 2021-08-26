@@ -636,4 +636,12 @@ COMMIT;CREATE UNIQUE INDEX idx_userid_blocked_userid ON block_list(user_id, bloc
 ALTER TABLE service_inquiries
 ADD COLUMN fcm_topic VARCHAR;
 
+COMMIT;BEGIN;
+	ALTER TABLE service_inquiries
+	DROP COLUMN IF EXISTS price;
+COMMIT;BEGIN; 
+
+ALTER TABLE users 
+ADD COLUMN IF NOT EXISTS fcm_topic VARCHAR(128); 
+
 COMMIT;

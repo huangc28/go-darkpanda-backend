@@ -1,7 +1,6 @@
 package genmodel
 
 import (
-	"bytes"
 	"database/sql"
 	"fmt"
 	"io/ioutil"
@@ -154,18 +153,23 @@ func Gen(cmd *cobra.Command, args []string) error {
 	appendFileContentToDestFile(mFiles, dirPath, filepath.Join(cwd, "db/schema.sql"))
 
 	// ---------- execute sqlc generate command ----------
-	var out bytes.Buffer
 	osCmd := exec.Command("sqlc", "generate")
-	osCmd.Env = append(os.Environ())
-	osCmd.Stdout = &out
 
-	if err := osCmd.Run(); err != nil {
-		log.Fatalf("Failed to run 'sqlc generate' command %s", err.Error())
+	osCmd.Env = os.Environ()
+	osCmd.Stdout = os.Stdout
+	osCmd.Stderr = os.Stderr
+
+	if err := osCmd.Start(); err != nil {
+		log.Fatalf("error executing command: 'sqlc generate' %s", err.Error())
 
 		return err
 	}
 
-	fmt.Printf("go models generated successfully from %s %s\n", dirPath, out.String())
+	if err := osCmd.Wait(); err != nil {
+		log.Fatalf("error waiting for command: 'sqlc generate' %s", err.Error())
+
+		return err
+	}
 
 	return nil
 }

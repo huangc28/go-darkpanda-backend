@@ -12,8 +12,9 @@ INSERT INTO users (
 	premium_expiry_date,
 	avatar_url,
 	mobile,
+	fcm_topic,
 	description
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 RETURNING *;
 
 -- name: GetUserByUuid :one

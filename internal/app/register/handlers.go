@@ -17,6 +17,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	genverifycode "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/generate_verify_code"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
@@ -123,6 +124,8 @@ func RegisterHandler(c *gin.Context, depCon container.Container) {
 		)
 	}
 
+	userFcmTopic := dpfcm.MakeDedicatedFCMTopicForUser(uuid)
+
 	txResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 		q := models.New(tx)
 
@@ -132,6 +135,10 @@ func RegisterHandler(c *gin.Context, depCon container.Container) {
 			Uuid:          uuid,
 			PremiumType:   models.PremiumTypeNormal,
 			PhoneVerified: false,
+			FcmTopic: sql.NullString{
+				Valid:  true,
+				String: userFcmTopic,
+			},
 		})
 
 		if err != nil {

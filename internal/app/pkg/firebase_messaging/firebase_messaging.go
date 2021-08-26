@@ -11,7 +11,8 @@ import (
 )
 
 type DPFirebaseMessenger interface {
-	PublishPickupInquiryNotification(ctx context.Context, m Message) error
+	PublishPickupInquiryNotification(ctx context.Context, m PublishPickupInquiryNotificationMessage) error
+	PublishServicePaidNotification(ctx context.Context, serviceUUID string) error
 }
 
 type DPFirebaseMessage struct {
@@ -22,6 +23,12 @@ func New(c *messaging.Client) *DPFirebaseMessage {
 	return &DPFirebaseMessage{
 		c: c,
 	}
+}
+
+func MakeDedicatedFCMTopicForUser(userUUID string) string {
+	curts := time.Now().UTC().Unix()
+
+	return fmt.Sprintf("user_%s_%d", userUUID, curts)
 }
 
 func MakeTopicName(inquiryUUID string) string {
@@ -35,47 +42,103 @@ type FCMType string
 
 var (
 	PickupInquiry FCMType = "pickup_inquiry"
+	ServicePaid   FCMType = "service_paid"
 )
 
-type Message struct {
-	TopicName  string
-	PickerName string
+type Notification struct {
+	Type     FCMType     `json:"fcm_type"`
+	Content  interface{} `json:"fcm_content"`
+	DeepLink string      `json:"deep_link"`
 }
 
 const FCMImgUrl = "https://storage.googleapis.com/dark-panda-6fe35.appspot.com/fcm_logos/logo3.png"
 
-func (r *DPFirebaseMessage) PublishPickupInquiryNotification(ctx context.Context, m Message) error {
-	type Body struct {
-		Type     FCMType `json:"fcm_type"`
-		Content  string  `json:"fcm_content"`
-		DeepLink string  `json:"deep_link"`
+type PublishPickupInquiryNotificationMessage struct {
+	Topic      string
+	PickerName string
+	PickerUUID string
+}
+
+func (r *DPFirebaseMessage) PublishPickupInquiryNotification(ctx context.Context, m PublishPickupInquiryNotificationMessage) error {
+	type Content struct {
+		PickerName string `json:"picker_name"`
+		PickerUuid string `json:"picker_uuid"`
 	}
 
-	body := Body{
+	c := Content{
+		PickerName: m.PickerName,
+		PickerUuid: m.PickerUUID,
+	}
+
+	n := Notification{
 		Type:    PickupInquiry,
-		Content: fmt.Sprintf("%s has picked up your inquiry.", m.PickerName),
+		Content: c,
 	}
 
-	bb, err := json.Marshal(&body)
+	bb, err := json.Marshal(&n)
 
 	if err != nil {
 		return err
 	}
 
 	res, err := r.c.Send(ctx, &messaging.Message{
-		Topic: m.TopicName,
+		Topic: m.Topic,
 		Notification: &messaging.Notification{
-			Title:    fmt.Sprintf("%s responds to inquiry", m.PickerName),
+			Title:    fmt.Sprintf("%s responded to inquiry", m.PickerName),
 			Body:     string(bb),
 			ImageURL: FCMImgUrl,
 		},
 	})
 
+	if err != nil {
+		return err
+	}
+
 	log.Infof("FCM sent! %s", res)
+
+	return err
+}
+
+type PublishServicePaidNotificationMessage struct {
+	Topic       string
+	ServiceUUID string
+}
+
+func (r *DPFirebaseMessage) PublishServicePaidNotification(ctx context.Context, m PublishServicePaidNotificationMessage) error {
+	type Content struct {
+		ServiceUuid string `json:"service_uuid"`
+	}
+
+	c := Content{
+		ServiceUuid: m.ServiceUUID,
+	}
+
+	n := Notification{
+		Type:     ServicePaid,
+		Content:  c,
+		DeepLink: "",
+	}
+
+	bd, err := json.Marshal(&n)
 
 	if err != nil {
 		return err
 	}
 
-	return err
+	res, err := r.c.Send(ctx, &messaging.Message{
+		Topic: m.Topic,
+		Notification: &messaging.Notification{
+			Title:    "服務預約完成",
+			Body:     string(bd),
+			ImageURL: FCMImgUrl,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Infof("FCM sent! %s", res)
+
+	return nil
 }

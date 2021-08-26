@@ -13,6 +13,7 @@ type TransformedUser struct {
 	PhoneVerified bool   `json:"phone_verified"`
 	Gender        string `json:"gender"`
 	Uuid          string `json:"uuid"`
+	FCMTopioc     string `json:"fcm_topic"`
 }
 
 func (rt *RegisterTransform) TransformUser(m *models.User) *TransformedUser {
@@ -21,6 +22,7 @@ func (rt *RegisterTransform) TransformUser(m *models.User) *TransformedUser {
 		Username:      m.Username,
 		PhoneVerified: m.PhoneVerified,
 		Gender:        string(m.Gender),
+		FCMTopioc:     m.FcmTopic.String,
 	}
 
 	return tu

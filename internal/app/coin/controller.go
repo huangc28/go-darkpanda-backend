@@ -12,6 +12,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
+	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
 )
@@ -225,6 +226,10 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 
 		return
 	}
+
+	// Emit message to female when male done service payment.
+	var dpfcm dpfcm.DPFirebaseMessenger
+	depCon.Make(&dpfcm)
 
 	respStruct, _ := TransformBuyCoin(transResp.Response.(string))
 
