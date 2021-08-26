@@ -12,7 +12,7 @@ import (
 
 type DPFirebaseMessenger interface {
 	PublishPickupInquiryNotification(ctx context.Context, m PublishPickupInquiryNotificationMessage) error
-	PublishServicePaidNotification(ctx context.Context, serviceUUID string) error
+	PublishServicePaidNotification(ctx context.Context, m PublishServicePaidNotificationMessage) error
 }
 
 type DPFirebaseMessage struct {
@@ -84,7 +84,7 @@ func (r *DPFirebaseMessage) PublishPickupInquiryNotification(ctx context.Context
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
-			Title:    fmt.Sprintf("%s responded to inquiry", m.PickerName),
+			Title:    fmt.Sprintf("%s 回覆詢問", m.PickerName),
 			Body:     string(bb),
 			ImageURL: FCMImgUrl,
 		},
