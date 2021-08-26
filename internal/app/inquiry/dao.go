@@ -354,20 +354,18 @@ UPDATE service_inquiries SET
 	appointment_time = COALESCE($1, appointment_time),
 	service_type = COALESCE($2, service_type),
 	inquiry_status = COALESCE($3, inquiry_status),
-	price = COALESCE($4, price),
-	budget = COALESCE($5, budget),
-	duration = COALESCE($6, duration),
-	address = COALESCE($7, address),
-	fcm_topic = COALESCE($8, fcm_topic) 
+	budget = COALESCE($4, budget),
+	duration = COALESCE($5, duration),
+	address = COALESCE($6, address),
+	fcm_topic = COALESCE($7, fcm_topic) 
 WHERE
-	uuid = $9
+	uuid = $8
 RETURNING
 	id,
 	uuid,
 	appointment_time,
 	service_type,
 	budget,
-	price,
 	duration,
 	address
 	fcm_topic;
@@ -379,7 +377,6 @@ RETURNING
 		params.AppointmentTime,
 		params.ServiceType,
 		params.InquiryStatus,
-		params.Price,
 		params.Budget,
 		params.Duration,
 		params.Address,
