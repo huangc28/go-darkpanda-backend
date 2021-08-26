@@ -126,7 +126,7 @@ func (t *InquiryTransform) TransformGirlApproveInquiry(iq models.ServiceInquiry)
 	}
 
 	tPrice, err := strconv.ParseFloat(
-		iq.Price.String,
+		iq.Budget,
 		64,
 	)
 
@@ -225,12 +225,6 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*models.InquiryInf
 	for _, oi := range inquiryList {
 		var serviceUuid *string
 
-		price, err := convertnullsql.ConvertSqlNullStringToFloat64(oi.Price)
-
-		if err != nil {
-			return TransformedInquiries{}, err
-		}
-
 		budget, err := strconv.ParseFloat(oi.Budget, 64)
 
 		if err != nil {
@@ -257,7 +251,6 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*models.InquiryInf
 			Uuid:          oi.Uuid,
 			Budget:        budget,
 			ServiceType:   oi.ServiceType.ToString(),
-			Price:         price,
 			Duration:      oi.Duration.Int32,
 			Appointment:   oi.AppointmentTime.Time,
 			Lng:           lng,
@@ -292,7 +285,6 @@ type TransformedGetInquiry struct {
 	Budget        float64   `json:"budget"`
 	ServiceType   string    `json:"service_type"`
 	InquiryStatus string    `json:"inquiry_status"`
-	Price         *float64  `json:"price"`
 	Duration      int32     `json:"duration"`
 	Appointment   time.Time `json:"appointment_time"`
 	Lng           *float32  `json:"lng"`
@@ -302,22 +294,10 @@ type TransformedGetInquiry struct {
 }
 
 func (t *InquiryTransform) TransformGetInquiry(iq contracts.InquiryResult) (*TransformedGetInquiry, error) {
-	var price *float64
-
 	budget, err := strconv.ParseFloat(iq.Budget, 64)
 
 	if err != nil {
 		return nil, err
-	}
-
-	if iq.Price.Valid {
-		priceF, err := strconv.ParseFloat(iq.Price.String, 64)
-
-		if err != nil {
-			return nil, err
-		}
-
-		price = &priceF
 	}
 
 	lng, err := convertnullsql.ConvertSqlNullStringToFloat32(iq.Lng)
@@ -337,7 +317,6 @@ func (t *InquiryTransform) TransformGetInquiry(iq contracts.InquiryResult) (*Tra
 		budget,
 		iq.ServiceType.ToString(),
 		iq.InquiryStatus.ToString(),
-		price,
 		iq.Duration.Int32,
 		iq.AppointmentTime.Time,
 		lng,

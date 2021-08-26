@@ -127,10 +127,6 @@ func GenTestInquiryParams(inquirerID int64) (*models.CreateInquiryParams, error)
 	p.ServiceType = randomServiceType()
 	p.InquiryStatus = randomInquiryStatus()
 	p.Budget = fmt.Sprintf("%.2f", randomFloats(1.00, 102.99, 1)[0])
-	p.Price = sql.NullString{
-		String: fmt.Sprintf("%.2f", randomFloats(1.00, 102.99, 1)[0]),
-		Valid:  true,
-	}
 	p.Lat = sql.NullString{
 		Valid: false,
 	}

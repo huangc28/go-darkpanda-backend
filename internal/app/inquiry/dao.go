@@ -103,7 +103,7 @@ WITH blocked_users AS (
 		si.uuid AS inquiry_uuid,
 		si.budget,
 		si.service_type,
-		si.price,
+		si.fcm_topic
 		si.duration,
 		si.appointment_time,
 		si.lng,
@@ -166,7 +166,7 @@ SELECT DISTINCT ON(inquiry_list.inquiry_uuid) * FROM inquiry_list;
 			&iq.Uuid,
 			&iq.Budget,
 			&iq.ServiceType,
-			&iq.Price,
+			&iq.FcmTopic,
 			&iq.Duration,
 			&iq.AppointmentTime,
 			&iq.Lng,
