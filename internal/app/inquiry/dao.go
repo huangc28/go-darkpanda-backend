@@ -103,7 +103,7 @@ WITH blocked_users AS (
 		si.uuid AS inquiry_uuid,
 		si.budget,
 		si.service_type,
-		si.fcm_topic
+		si.fcm_topic,
 		si.duration,
 		si.appointment_time,
 		si.lng,
