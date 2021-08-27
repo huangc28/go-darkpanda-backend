@@ -23,11 +23,10 @@ type TransformedInquiry struct {
 	Budget          float64   `json:"budget"`
 	ServiceType     string    `json:"service_type"`
 	InquiryStatus   string    `json:"inquiry_status"`
-	FcmTopic        string    `json:"fcm_topic"`
 	AppointmentTime time.Time `json:"appointment_time"`
 }
 
-func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, topicName string) (TransformedInquiry, error) {
+func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (TransformedInquiry, error) {
 	budget, err := strconv.ParseFloat(m.Budget, 64)
 
 	if err != nil {
@@ -40,7 +39,6 @@ func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry, topicNa
 		ServiceType:     string(m.ServiceType),
 		InquiryStatus:   string(m.InquiryStatus),
 		AppointmentTime: m.AppointmentTime.Time,
-		FcmTopic:        topicName,
 	}
 
 	return tiq, nil
@@ -552,7 +550,6 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 type TrfedActiveInquiry struct {
 	TransformedUpdateInquiry
 	PickerUuid *string `json:"picker_uuid"`
-	FcmTopic   string  `json:"fcm_topic"`
 }
 
 func (t *InquiryTransform) TransformActiveInquiry(iq *models.ActiveInquiry) (*TrfedActiveInquiry, error) {
@@ -571,7 +568,6 @@ func (t *InquiryTransform) TransformActiveInquiry(iq *models.ActiveInquiry) (*Tr
 	return &TrfedActiveInquiry{
 		*ts,
 		pickerUuid,
-		iq.FcmTopic.String,
 	}, nil
 }
 

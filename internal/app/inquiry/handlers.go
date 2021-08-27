@@ -131,23 +131,6 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 
 	sid, _ := shortid.Generate()
 
-	// Create pubsub topic for the male device to subscribe to FCM message.
-	var fm dpfcm.DPFirebaseMessenger
-	depCon.Make(&fm)
-	topic := dpfcm.MakeTopicName(sid)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToCreatePubsubTopic,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
 	// ------------------- create a new inquiry -------------------
 	iq, err := q.CreateInquiry(
 		ctx,
@@ -214,7 +197,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	trf, err := NewTransform().TransformEmitInquiry(iq, topic)
+	trf, err := NewTransform().TransformEmitInquiry(iq)
 
 	if err != nil {
 		c.AbortWithError(
