@@ -354,7 +354,7 @@ UPDATE service_inquiries SET
 	inquiry_status = COALESCE($3, inquiry_status),
 	budget = COALESCE($4, budget),
 	duration = COALESCE($5, duration),
-	address = COALESCE($6, address),
+	address = COALESCE($6, address)
 WHERE
 	uuid = $7
 RETURNING
