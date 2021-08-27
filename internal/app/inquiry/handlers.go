@@ -174,10 +174,6 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 				Valid: true,
 				Int32: int32(body.ServiceDuration),
 			},
-			FcmTopic: sql.NullString{
-				Valid:  true,
-				String: topic,
-			},
 		},
 	)
 

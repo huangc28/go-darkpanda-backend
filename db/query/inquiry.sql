@@ -19,9 +19,8 @@ INSERT INTO service_inquiries(
 	appointment_time,
 	lng,
 	lat,
-	expired_at,
-	fcm_topic
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+	expired_at
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING *;
 
 
