@@ -355,9 +355,8 @@ UPDATE service_inquiries SET
 	budget = COALESCE($4, budget),
 	duration = COALESCE($5, duration),
 	address = COALESCE($6, address),
-	fcm_topic = COALESCE($7, fcm_topic) 
 WHERE
-	uuid = $8
+	uuid = $7
 RETURNING
 	id,
 	uuid,
@@ -378,7 +377,6 @@ RETURNING
 		params.Budget,
 		params.Duration,
 		params.Address,
-		params.FcmTopic,
 		params.Uuid,
 	).StructScan(&inquiry)
 
