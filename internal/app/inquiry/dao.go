@@ -364,8 +364,7 @@ RETURNING
 	service_type,
 	budget,
 	duration,
-	address
-	fcm_topic;
+	address;
 `
 	inquiry := models.ServiceInquiry{}
 
