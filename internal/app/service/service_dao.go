@@ -568,11 +568,17 @@ LIMIT 1;
 }
 
 func (dao *ServiceDAO) GetServiceProviderByServiceUUID(srvUUID string) (*models.User, error) {
-	// 	query := `
-	// SELECT user FROM users
-	// INNER JOIN services ON services.services_provider_id = users.id
-	// WHERE service_uuid =
-	// `
+	query := `
+SELECT users.* FROM users
+INNER JOIN services ON services.service_provider_id = users.id
+WHERE services.uuid = $1;
+	`
 
-	return nil, nil
+	var m models.User
+
+	if err := dao.DB.QueryRowx(query, srvUUID).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }

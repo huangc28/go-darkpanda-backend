@@ -14,10 +14,6 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-type UserDAO interface {
-	GetUserByUuid(uuid string, fields ...string) (*models.User, error)
-}
-
 type UserCheckerDAOer interface {
 	CheckUsernameExists(ctx context.Context, username string) (bool, error)
 	CheckReferCodeExists(ctx context.Context, referCode string) (bool, error)

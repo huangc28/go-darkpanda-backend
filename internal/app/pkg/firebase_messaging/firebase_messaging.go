@@ -128,7 +128,7 @@ func (r *DPFirebaseMessage) PublishServicePaidNotification(ctx context.Context, 
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
-			Title:    "服務預約完成",
+			Title:    "服務付款完成",
 			Body:     string(bd),
 			ImageURL: FCMImgUrl,
 		},

@@ -12,6 +12,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
 )
@@ -246,6 +247,39 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 	}
 
 	// Emit FCM message to service provider.
+	srvProvider, err := srvDao.GetServiceProviderByServiceUUID(srv.Uuid.String)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceProviderByServiceUUID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var fcm dpfcm.DPFirebaseMessenger
+	depCon.Make(&fcm)
+	if err := fcm.PublishServicePaidNotification(
+		ctx,
+		dpfcm.PublishServicePaidNotificationMessage{
+			Topic:       srvProvider.FcmTopic.String,
+			ServiceUUID: srv.Uuid.String,
+		},
+	); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToPublishServicePaidNotification,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	newBal := trxResp.Response.(*models.UserBalance)
 	trfed, err := TrfCreatePayment(newBal, user)
