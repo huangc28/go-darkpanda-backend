@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -36,11 +37,19 @@ func init() {
 	})
 }
 
-const TickInterval = 2 * time.Second
-
 func main() {
+	tickSec := 60
+	tickSecEnv := os.Getenv("TICK_INTERVAL_IN_SECOND")
+
+	if len(tickSecEnv) > 0 {
+		tickSecEnvInt, err := strconv.Atoi(tickSecEnv)
+
+		if err != nil {
+			tickSec = tickSecEnvInt
+		}
+	}
 	// Retrieve all services with status "unpaid"
-	ticker := time.NewTicker(TickInterval)
+	ticker := time.NewTicker(time.Duration(tickSec))
 
 	quitTicker := make(chan struct{})
 

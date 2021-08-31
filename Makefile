@@ -79,6 +79,7 @@ test_migrate_down:
 # List of systemctl service name to host up worker.
 APP_SERVICE_NAME                    = darkpanda.service
 SERVICE_STATUS_SCANNER_SERVICE_NAME = darkpanda_service_status_scanner.service
+SERVICE_PAYMENT_CHECKER             = darkpanda_service_payment_checker.service 
 
 deploy: build
 	ssh -t root@hookie.club 'cd ~/darkpanda/go-darkpanda-backend && \
@@ -87,15 +88,21 @@ deploy: build
 		sudo systemctl stop $(APP_SERVICE_NAME) && \
 		sudo systemctl start $(APP_SERVICE_NAME) && \
 		sudo systemctl stop $(SERVICE_STATUS_SCANNER_SERVICE_NAME) && \
-		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)'
+		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)' && \
+		sudo systemctl stop $(SERVICE_PAYMENT_CHECKER) && \
+		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_PAYMENT_CHECKER)'
 
 build: build_service_status_scanner
 	echo 'building production binary...'
 	cd $(CURRENT_DIR)/cmd/app && GOOS=linux GOARCH=amd64 go build -o ../../bin/darkpanda_backend -v .
 
 build_service_status_scanner:
-	echo 'building worker binary...'
+	echo 'building build_service_status_scanner worker binary...'
 	cd $(CURRENT_DIR)/cmd/workers/service_status_scanner && GOOS=linux GOARCH=amd64 go build -o ../../../bin/service_status_scanner -v .
+
+build_service_payment_checker:
+	echo 'buildign build_expired_unpaid_service_checker'
+	cd $(CURRENT_DIR)/cmd/workers/service_payment_checker && GOOS=linux GOARCH=amd64 go build -o ../../../bin/service_payment_checker -v .
 
 .PHONY: build
 .PHONY: deploy
