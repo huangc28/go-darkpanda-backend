@@ -88,7 +88,7 @@ deploy: build
 		sudo systemctl stop $(APP_SERVICE_NAME) && \
 		sudo systemctl start $(APP_SERVICE_NAME) && \
 		sudo systemctl stop $(SERVICE_STATUS_SCANNER_SERVICE_NAME) && \
-		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)' && \
+		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME) && \
 		sudo systemctl stop $(SERVICE_PAYMENT_CHECKER) && \
 		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_PAYMENT_CHECKER)'
 
