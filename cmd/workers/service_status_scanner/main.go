@@ -19,7 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// We need to have a worker ticks every minute and checks routinely on the value of `service_status` for each service record.
+// We need to have a worker ticks every minute to check routinely on the value of `service_status` for each service record.
 // We have to check for the following senarios and change the `service_status` to proper status.
 //
 // Expired:
@@ -83,6 +83,11 @@ func initInfoLogger() {
 func init() {
 	ctx := context.Background()
 	manager.NewDefaultManager(ctx).Run(func() {
+
+		if err := deps.Get().Run(); err != nil {
+			log.Fatalf("failed to initialise dependency container %s", err.Error())
+		}
+
 		initErrLogger()
 
 		initInfoLogger()
@@ -161,6 +166,8 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 	return nil
 }
 
+const TickInterval = 60
+
 func main() {
 	tickSec := 60
 	tickSecEnv := os.Getenv("TICK_INTERVAL_IN_SECOND")
@@ -174,9 +181,6 @@ func main() {
 	}
 
 	ticker := time.NewTicker(time.Duration(tickSec) * time.Second)
-	if err := deps.Get().Run(); err != nil {
-		log.Fatalf("failed to initialize dependency container %s", err.Error())
-	}
 
 	quitTicker := make(chan struct{})
 
@@ -205,7 +209,7 @@ func main() {
 		}
 	}()
 
-	quitSig := make(chan os.Signal)
+	quitSig := make(chan os.Signal, 1)
 	signal.Notify(quitSig, syscall.SIGINT, syscall.SIGTERM)
 	<-quitSig
 

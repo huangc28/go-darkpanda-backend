@@ -129,3 +129,9 @@ You can lookup languages here: www.science.co.il/language/Locale-codes.php
 ```
 postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable
 ```
+
+**Add TLS instructions**
+
+```
+https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-20-04
+```

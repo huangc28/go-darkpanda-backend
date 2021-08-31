@@ -582,3 +582,59 @@ WHERE services.uuid = $1;
 
 	return &m, nil
 }
+
+func (dao *ServiceDAO) CancelUnpaidServicesIfExceed30Minuties() ([]*models.CancelUnpaidServices, error) {
+	query := `
+WITH found_services AS (
+SELECT
+		services.id,
+		services.uuid,
+		customers.fcm_topic AS customer_fcm_topic,
+		customers.username AS customer_name,
+		service_providers.fcm_topic AS service_provider_fcm_topic,
+		service_providers.username AS service_provider_name
+	FROM
+		services
+	LEFT JOIN users AS customers ON customers.id = services.customer_id
+	LEFT JOIN users AS service_providers ON service_providers.id = services.service_provider_id
+	WHERE
+		service_status = $1 AND
+		CURRENT_TIMESTAMP > services.updated_at + (30 * interval '1 minute')
+), updated AS (
+	UPDATE
+		services
+	SET
+		service_status = $2
+	FROM 	
+		found_services
+	WHERE
+		found_services.id = services.id
+)
+
+SELECT * FROM found_services;
+	`
+
+	ms := make([]*models.CancelUnpaidServices, 0)
+
+	rows, err := dao.DB.Queryx(
+		query,
+		models.ServiceStatusUnpaid,
+		models.ServiceStatusPaymentFailed,
+	)
+
+	if err != nil {
+		return ms, err
+	}
+
+	for rows.Next() {
+		var m models.CancelUnpaidServices
+
+		if err := rows.StructScan(&m); err != nil {
+			return ms, err
+		}
+
+		ms = append(ms, &m)
+	}
+
+	return ms, nil
+}

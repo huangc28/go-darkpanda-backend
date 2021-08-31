@@ -74,3 +74,11 @@ type PatchInquiryParams struct {
 	Address         *string        `json:"address"`
 	FcmTopic        *string        `json:"fcm_topic"`
 }
+
+type CancelUnpaidServices struct {
+	Service
+	CustomerFCMTopic        *string `json:"customer_fcm_topic"`
+	CustomerName            string  `json:"customer_name"`
+	ServiceProviderFCMTopic *string `json:"service_provider_fcm_topic"`
+	ServiceProviderName     string  `json:"service_provider_name"`
+}

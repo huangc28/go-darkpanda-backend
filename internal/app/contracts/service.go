@@ -63,4 +63,5 @@ type ServiceDAOer interface {
 	GetOverlappedServices(GetOverlappedServicesParams) ([]models.Service, error)
 	GetInquiryByServiceUuid(srvUuid string) (*models.ServiceInquiry, error)
 	GetServiceProviderByServiceUUID(srvUUID string) (*models.User, error)
+	CancelUnpaidServicesIfExceed30Minuties() ([]*models.CancelUnpaidServices, error)
 }
