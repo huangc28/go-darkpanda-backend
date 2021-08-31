@@ -57,6 +57,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
+				logger.GetInfoLogger().Info("scanning expired unpaid services...")
 
 				var srvDao contracts.ServiceDAOer
 				deps.Get().Container.Make(&srvDao)
@@ -65,6 +66,7 @@ func main() {
 					logger.GetErrorLogger().Error(err)
 				}
 
+				logger.GetInfoLogger().Info("done scanning expired unpaid services")
 			case <-quitTicker:
 				ticker.Stop()
 
