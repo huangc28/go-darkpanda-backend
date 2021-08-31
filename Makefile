@@ -92,7 +92,7 @@ deploy: build
 		sudo systemctl stop $(SERVICE_PAYMENT_CHECKER) && \
 		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_PAYMENT_CHECKER)'
 
-build: build_service_status_scanner
+build: build_service_status_scanner build_service_payment_checker
 	echo 'building production binary...'
 	cd $(CURRENT_DIR)/cmd/app && GOOS=linux GOARCH=amd64 go build -o ../../bin/darkpanda_backend -v .
 
