@@ -247,7 +247,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 	}
 
 	// Emit FCM message to service provider.
-	srvProvider, err := srvDao.GetServiceProviderByServiceUUID(srv.Uuid.String)
+	srvProvider, err := srvDao.WithTx(db.GetDB()).GetServiceProviderByServiceUUID(srv.Uuid.String)
 
 	if err != nil {
 		c.AbortWithError(
