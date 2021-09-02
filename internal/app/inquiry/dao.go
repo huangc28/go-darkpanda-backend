@@ -96,7 +96,8 @@ WITH blocked_users AS (
 		service_status NOT IN (
 			'completed',
 			'expired',
-			'canceled'
+			'canceled',
+			'payment_failed'
 		)
 ), inquiry_list AS (
 	SELECT
