@@ -220,6 +220,7 @@ func TrfServiceDetail(srv models.Service, matchingFee int) (interface{}, error) 
 		StartTime     *time.Time `json:"start_time"`
 		EndTime       *time.Time `json:"end_time"`
 		MatchingFee   int        `json:"matching_fee"`
+		CreatedAt     time.Time  `json:"created_at"`
 	}{
 		srv.Uuid.String,
 		floatPrice,
@@ -231,6 +232,7 @@ func TrfServiceDetail(srv models.Service, matchingFee int) (interface{}, error) 
 		startTime,
 		endTime,
 		matchingFee,
+		srv.CreatedAt,
 	}, nil
 }
 
