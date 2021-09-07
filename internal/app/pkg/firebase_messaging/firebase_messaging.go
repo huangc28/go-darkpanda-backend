@@ -93,7 +93,7 @@ func (r *DPFirebaseMessage) PublishPickupInquiryNotification(ctx context.Context
 
 type PublishServicePaidNotificationMessage struct {
 	Topic       string `json:"-"`
-	PickerName  string `json:"picker_name"`
+	PayerName   string `json:"payer_name"`
 	ServiceUUID string `json:"service_uuid"`
 }
 
