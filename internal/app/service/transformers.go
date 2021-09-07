@@ -205,7 +205,7 @@ func TrfServiceDetail(srv models.Service, matchingFee int) (interface{}, error) 
 	}
 
 	if srv.EndTime.Valid {
-		endTime = &srv.StartTime.Time
+		endTime = &srv.EndTime.Time
 	}
 
 	return struct {
