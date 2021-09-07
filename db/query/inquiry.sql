@@ -13,6 +13,7 @@ INSERT INTO service_inquiries(
 	inquirer_id,
 	picker_id,
 	budget,
+	address,
 	service_type,
 	inquiry_status,
 	duration,
@@ -20,7 +21,7 @@ INSERT INTO service_inquiries(
 	lng,
 	lat,
 	expired_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING *;
 
 

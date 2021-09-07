@@ -34,6 +34,7 @@ INSERT INTO service_inquiries(
 	inquirer_id,
 	picker_id,
 	budget,
+	address,
 	service_type,
 	inquiry_status,
 	duration,
@@ -41,7 +42,7 @@ INSERT INTO service_inquiries(
 	lng,
 	lat,
 	expired_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 RETURNING id, inquirer_id, budget, service_type, inquiry_status, created_at, updated_at, deleted_at, uuid, duration, appointment_time, lng, lat, expired_at, picker_id, address
 `
 
@@ -50,6 +51,7 @@ type CreateInquiryParams struct {
 	InquirerID      sql.NullInt32  `json:"inquirer_id"`
 	PickerID        sql.NullInt32  `json:"picker_id"`
 	Budget          string         `json:"budget"`
+	Address         sql.NullString `json:"address"`
 	ServiceType     ServiceType    `json:"service_type"`
 	InquiryStatus   InquiryStatus  `json:"inquiry_status"`
 	Duration        sql.NullInt32  `json:"duration"`
@@ -65,6 +67,7 @@ func (q *Queries) CreateInquiry(ctx context.Context, arg CreateInquiryParams) (S
 		arg.InquirerID,
 		arg.PickerID,
 		arg.Budget,
+		arg.Address,
 		arg.ServiceType,
 		arg.InquiryStatus,
 		arg.Duration,

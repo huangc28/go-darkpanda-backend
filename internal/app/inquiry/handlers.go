@@ -33,6 +33,7 @@ type EmitInquiryBody struct {
 	ServiceType     string    `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
 	AppointmentTime time.Time `form:"appointment_time" json:"appointment_time" binding:"required"`
 	ServiceDuration int       `form:"service_duration" json:"service_duration" binding:"required"`
+	Address         string    `form:"address" json:"address" binding:"required"`
 }
 
 func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
@@ -156,6 +157,10 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 			Duration: sql.NullInt32{
 				Valid: true,
 				Int32: int32(body.ServiceDuration),
+			},
+			Address: sql.NullString{
+				Valid:  true,
+				String: body.Address,
 			},
 		},
 	)
