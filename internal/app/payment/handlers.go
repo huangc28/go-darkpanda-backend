@@ -268,6 +268,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 		dpfcm.PublishServicePaidNotificationMessage{
 			Topic:       srvProvider.FcmTopic.String,
 			ServiceUUID: srv.Uuid.String,
+			PickerName:  srvProvider.Username,
 		},
 	); err != nil {
 		c.AbortWithError(
