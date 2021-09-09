@@ -53,7 +53,7 @@ type GetUserProfileBody struct {
 	UUID string `form:"uuid" json:"uuid" binding:"required,gt=0"`
 }
 
-func (h *UserHandlers) GetUserProfileHandler(c *gin.Context) {
+func (h *UserHandlers) GetUserProfileHandler(c *gin.Context, depCon container.Container) {
 	var (
 		uuid string          = c.Param("uuid")
 		ctx  context.Context = context.Background()
@@ -74,7 +74,25 @@ func (h *UserHandlers) GetUserProfileHandler(c *gin.Context) {
 		return
 	}
 
-	tResp, err := NewTransform().TransformViewableUserProfile(user)
+	// Get user ratings.
+	var srvDao contracts.UserDAOer
+	depCon.Make(&srvDao)
+
+	userRating, err := srvDao.GetRating(int(user.ID))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserRating,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	tResp, err := NewTransform().TransformViewableUserProfile(user, *userRating)
 
 	if err != nil {
 		log.Fatal(err)

@@ -162,17 +162,18 @@ func formatUserTraits(user models.User) ([]Trait, error) {
 }
 
 type TransformedViewableUserProfile struct {
-	Username    string        `json:"username"`
-	Gender      models.Gender `json:"gender"`
-	Uuid        string        `json:"uuid"`
-	AvatarUrl   string        `json:"avatar_url"`
-	Nationality string        `json:"nationality"`
-	Region      string        `json:"region"`
-	Description string        `json:"description"`
-	Traits      []Trait       `json:"traits"`
+	Username    string            `json:"username"`
+	Gender      models.Gender     `json:"gender"`
+	Uuid        string            `json:"uuid"`
+	AvatarUrl   string            `json:"avatar_url"`
+	Nationality string            `json:"nationality"`
+	Region      string            `json:"region"`
+	Description string            `json:"description"`
+	Traits      []Trait           `json:"traits"`
+	Rating      models.UserRating `json:"rating"`
 }
 
-func (ut *UserTransform) TransformViewableUserProfile(user models.User) (*TransformedViewableUserProfile, error) {
+func (ut *UserTransform) TransformViewableUserProfile(user models.User, rating models.UserRating) (*TransformedViewableUserProfile, error) {
 	traits, err := formatUserTraits(user)
 
 	if err != nil {
@@ -188,6 +189,7 @@ func (ut *UserTransform) TransformViewableUserProfile(user models.User) (*Transf
 		Region:      user.Region.String,
 		Traits:      traits,
 		Description: user.Description.String,
+		Rating:      rating,
 	}, nil
 }
 

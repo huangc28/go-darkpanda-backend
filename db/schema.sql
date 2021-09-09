@@ -649,4 +649,9 @@ COMMIT;BEGIN;
 ALTER TABLE service_inquiries 
 DROP COLUMN IF EXISTS fcm_topic;
 
+COMMIT;BEGIN;
+
+ALTER TABLE service_ratings 
+ADD COLUMN ratee_id INT REFERENCES users(id);
+
 COMMIT;

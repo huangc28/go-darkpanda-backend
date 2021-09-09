@@ -29,6 +29,7 @@ type IsServiceRatableParams struct {
 type CreateServiceRatingParams struct {
 	Rating      int
 	RaterId     int
+	RateeId     int
 	ServiceUuid string
 	Comment     string
 }

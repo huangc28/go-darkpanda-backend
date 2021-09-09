@@ -814,8 +814,13 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 	}
 
 	// Check if the requester is the participant of the service.
-	var rateDao contracts.RateDAOer
+	var (
+		rateDao contracts.RateDAOer
+		srvDao  contracts.ServiceDAOer
+	)
+
 	depCon.Make(&rateDao)
+	depCon.Make(&srvDao)
 
 	if err := rateDao.IsServiceRatable(
 		contracts.IsServiceRatableParams{
@@ -834,11 +839,27 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	srv, err := srvDao.GetServiceByUuid(body.ServiceUuid)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
 	// Create rating record.
-	srv, err := rateDao.CreateServiceRating(
+	srvRating, err := rateDao.CreateServiceRating(
 		contracts.CreateServiceRatingParams{
 			Rating:      body.Rating,
 			RaterId:     int(usr.ID),
+			RateeId:     int(srv.GetPartnerId(usr.ID)),
 			ServiceUuid: srvUuid,
 			Comment:     body.Comment,
 		},
@@ -862,8 +883,8 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 		Comments    string `json:"comments"`
 	}{
 		srvUuid,
-		srv.Rating.Int32,
-		srv.Comments.String,
+		srvRating.Rating.Int32,
+		srvRating.Comments.String,
 	})
 }
 

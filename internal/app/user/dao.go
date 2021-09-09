@@ -320,6 +320,25 @@ func (dao *UserDAO) DeleteUserImages(url string) error {
 	return err
 }
 
+// GetRating calculates the average rating that the user has participated in.
+func (dao *UserDAO) GetRating(userID int) (*models.UserRating, error) {
+	query := `
+SELECT 	
+	AVG(rating)::numeric(10,2) AS rating,
+	service_num 
+FROM service_ratings
+WHERE ratee_id = $1;
+	`
+
+	var rating models.UserRating
+
+	if err := dao.db.QueryRowx(query, userID).StructScan(&rating); err != nil {
+		return &rating, err
+	}
+
+	return &rating, nil
+}
+
 const (
 	ChangeMobileVerifyCodeHashName = "change_mobile_verify_code:%s"
 	ChangeMobileVerifyCodeFieldKey = "verify_code"

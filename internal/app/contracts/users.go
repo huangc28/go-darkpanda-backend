@@ -27,6 +27,7 @@ type UserDAOer interface {
 	UpdateUserInfoByUuid(p UpdateUserInfoParams) (*models.User, error)
 	GetUserByUuid(uuid string, fields ...string) (*models.User, error)
 	GetUserByID(ID int64, fields ...string) (*models.User, error)
+	GetRating(userID int) (*models.UserRating, error)
 	CheckIsMaleByUuid(uuid string) (bool, error)
 	CheckIsFemaleByUuid(uuid string) (bool, error)
 	GetUserImagesByUuid(uuid string, offset int, perPage int) ([]models.Image, error)

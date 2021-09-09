@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE service_ratings 
+DROP COLUMN IF EXISTS ratee_id INT REFERENCES users(id);
+
+COMMIT;

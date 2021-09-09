@@ -19,6 +19,7 @@ const (
 	ChangeMobileVerifyCodeNotExists         = "5000016"
 	ChangeMobileVerifyCodeNotMatching       = "5000017"
 	FailedToGetRegisterMobileVerifyCode     = "5000018"
+	FailedToGetUserRating                   = "5000019"
 )
 
 var userErrorCodeMsgMap = map[string]string{

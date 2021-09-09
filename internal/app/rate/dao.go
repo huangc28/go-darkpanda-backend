@@ -250,14 +250,15 @@ func (dao *RateDAO) IsServiceRatable(p contracts.IsServiceRatableParams) error {
 
 func (dao *RateDAO) CreateServiceRating(p contracts.CreateServiceRatingParams) (*models.ServiceRating, error) {
 	query := `
-INSERT INTO service_ratings (rater_id, service_id, rating, comments)
+INSERT INTO service_ratings (rater_id, ratee_id, service_id, rating, comments)
 SELECT
 	$1 AS rater_id,
+	$2 AS ratee_id,
 	services.id AS service_id,
-	$2 AS rating,
-	$3 AS comments
+	$3 AS rating,
+	$4 AS comments
 FROM services
-WHERE services.uuid = $4
+WHERE services.uuid = $5
 RETURNING *;
 `
 
@@ -266,6 +267,7 @@ RETURNING *;
 	err := dao.db.QueryRowx(
 		query,
 		p.RaterId,
+		p.RateeId,
 		p.Rating,
 		p.Comment,
 		p.ServiceUuid,

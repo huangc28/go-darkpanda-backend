@@ -379,6 +379,7 @@ type ServiceRating struct {
 	UpdatedAt sql.NullTime   `json:"updated_at"`
 	DeletedAt sql.NullTime   `json:"deleted_at"`
 	Comments  sql.NullString `json:"comments"`
+	RateeID   sql.NullInt32  `json:"ratee_id"`
 }
 
 type User struct {

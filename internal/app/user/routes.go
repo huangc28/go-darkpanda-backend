@@ -43,7 +43,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		case "me":
 			handlers.GetMyProfileHandler(c)
 		default:
-			handlers.GetUserProfileHandler(c)
+			handlers.GetUserProfileHandler(c, depCon)
 		}
 
 	})
