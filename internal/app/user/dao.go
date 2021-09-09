@@ -324,8 +324,8 @@ func (dao *UserDAO) DeleteUserImages(url string) error {
 func (dao *UserDAO) GetRating(userID int) (*models.UserRating, error) {
 	query := `
 SELECT 	
-	AVG(rating)::numeric(10,2) AS rating,
-	service_num 
+	AVG(rating)::numeric(10,2) AS score,
+	count(DISTINCT service_id) AS number_of_services 
 FROM service_ratings
 WHERE ratee_id = $1;
 	`
