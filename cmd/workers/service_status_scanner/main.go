@@ -17,6 +17,8 @@ import (
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	log "github.com/sirupsen/logrus"
+
+	logger "github.com/huangc28/go-darkpanda-backend/cmd/workers/loggers"
 )
 
 // We need to have a worker ticks every minute to check routinely on the value of `service_status` for each service record.
@@ -34,52 +36,6 @@ var (
 	infoLogger = log.New()
 )
 
-func initErrLogger() {
-	errLogPath := config.GetAppConf().ErrorLogPath
-
-	if err := os.MkdirAll(errLogPath, os.ModePerm); err != nil {
-		log.Fatalf("failed to create file: %v", err)
-	}
-
-	errLogger.SetFormatter(&log.JSONFormatter{})
-
-	file, err := os.OpenFile(
-		fmt.Sprintf("%s/%s_service_status_scanner_error.log", errLogPath, time.Now().Format("01-02-2006")),
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
-		0755,
-	)
-
-	if err != nil {
-		log.Fatalf("failed to open log file: %v", err)
-	}
-
-	errLogger.Out = file
-	errLogger.SetLevel(log.ErrorLevel)
-}
-
-func initInfoLogger() {
-	infoLogPath := config.GetAppConf().InfoLogPath
-
-	if err := os.MkdirAll(infoLogPath, os.ModePerm); err != nil {
-		log.Fatalf("failed to create file: %v", err)
-	}
-
-	errLogger.SetFormatter(&log.JSONFormatter{})
-
-	file, err := os.OpenFile(
-		fmt.Sprintf("%s/%s_service_status_scanner_info.log", infoLogPath, time.Now().Format("01-02-2006")),
-		os.O_CREATE|os.O_WRONLY|os.O_APPEND,
-		0755,
-	)
-
-	if err != nil {
-		log.Fatalf("failed to open log file: %v", err)
-	}
-
-	infoLogger.Out = file
-	infoLogger.SetLevel(log.InfoLevel)
-}
-
 func init() {
 	ctx := context.Background()
 	manager.NewDefaultManager(ctx).Run(func() {
@@ -88,9 +44,11 @@ func init() {
 			log.Fatalf("failed to initialise dependency container %s", err.Error())
 		}
 
-		initErrLogger()
+		errLogPath := config.GetAppConf().ErrorLogPath
+		infoLogPath := config.GetAppConf().InfoLogPath
 
-		initInfoLogger()
+		logger.InitErrLogger(errLogPath, "service_status_scanner")
+		logger.InitInfoLogger(infoLogPath, "service_status_scanner")
 	})
 }
 
@@ -98,9 +56,7 @@ func ScanCompletedServices(srvDao contracts.ServiceDAOer) error {
 	cplSrvs, err := srvDao.ScanCompletedServices()
 
 	if err != nil {
-		return errors.New(
-			fmt.Sprintf("Failed to scan completed services %s", err.Error()),
-		)
+		return fmt.Errorf("Failed to scan completed services %s", err.Error())
 	}
 
 	if len(cplSrvs) > 0 {
