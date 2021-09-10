@@ -56,7 +56,7 @@ func ScanCompletedServices(srvDao contracts.ServiceDAOer) error {
 	cplSrvs, err := srvDao.ScanCompletedServices()
 
 	if err != nil {
-		return fmt.Errorf("Failed to scan completed services %s", err.Error())
+		return fmt.Errorf("failed to scan completed services %s", err.Error())
 	}
 
 	if len(cplSrvs) > 0 {
