@@ -403,13 +403,12 @@ func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container
 	// Retrieve all rating of services that I have participated in.
 	var rateDao contracts.RateDAOer
 	depCon.Make(&rateDao)
-	ratings, err := rateDao.GetUserRatings(
-		contracts.GetUserRatingsParams{
-			UserId:  int(targetUser.ID),
-			PerPage: body.PerPage,
-			Offset:  body.Offset,
-		},
-	)
+
+	rs, err := rateDao.GetUserRatings(contracts.GetUserRatingsParams{
+		UserId:  int(targetUser.ID),
+		PerPage: body.PerPage,
+		Offset:  body.Offset,
+	})
 
 	if err != nil {
 		c.AbortWithError(
@@ -423,12 +422,10 @@ func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container
 		return
 	}
 
-	trms := TrfGetUserRatings(ratings)
-
 	c.JSON(http.StatusOK, struct {
 		Ratings []TrfmedUserRating `json:"ratings"`
 	}{
-		Ratings: trms,
+		Ratings: TrfGetUserRatings(rs),
 	})
 }
 

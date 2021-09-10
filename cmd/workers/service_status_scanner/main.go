@@ -77,7 +77,7 @@ func ScanCompletedServices(srvDao contracts.ServiceDAOer) error {
 		)
 
 		if err != nil {
-			return errors.New(fmt.Sprintf("Failed to scan completed services %s", err.Error()))
+			return fmt.Errorf("failed to scan completed services %s", err.Error())
 		}
 	}
 
@@ -91,7 +91,7 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 
 	// If error occurs, we write error logs into system log.
 	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to scan expired services %s", err.Error()))
+		return fmt.Errorf("failed to scan expired services %s", err.Error())
 	}
 
 	// Notify those chatroom that the service status has changed, perform batch write.
