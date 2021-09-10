@@ -338,7 +338,7 @@ func TrfGetUserRatings(ms []models.UserRatings) []TrfmedUserRating {
 		}
 
 		if m.RaterAvatarUrl.Valid {
-			trfm.RaterAvatarUrl = &m.RaterUuid
+			trfm.RaterAvatarUrl = &m.RaterAvatarUrl.String
 		}
 
 		trfms = append(trfms, trfm)
