@@ -85,7 +85,7 @@ type CancelUnpaidServices struct {
 
 type UserRating struct {
 	// Average score of the services that the user has participated in.
-	Score float32 `json:"score"`
+	Score *float32 `json:"score"`
 
 	// Number of services the score is calculated upon.
 	NumberOfServices int `json:"number_of_services"`
