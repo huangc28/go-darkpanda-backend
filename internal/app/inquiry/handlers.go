@@ -1100,7 +1100,7 @@ func GetServiceByInquiryUUID(c *gin.Context, depCon container.Container) {
 }
 
 type PatchInquiryBody struct {
-	Uuid            string     `uri:"inquiry_uuid" form:"uuid" json:"uuid" binding:"required"`
+	Uuid            string     `uri:"inquiry_uuid" binding:"required,gt=0"`
 	AppointmentTime *time.Time `form:"appointment_time" json:"appointment_time"`
 	Price           *float32   `form:"price" json:"price"`
 	Budget          *float32   `form:"budget" json:"budget"`
@@ -1111,6 +1111,18 @@ type PatchInquiryBody struct {
 
 func PatchInquiryHandler(c *gin.Context, depCon container.Container) {
 	body := PatchInquiryBody{}
+
+	if err := c.ShouldBindUri(&body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToValidatePatchInquiryParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
 		c.AbortWithError(
@@ -1124,10 +1136,14 @@ func PatchInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	log.Printf("DEBUG 1 %v", body.Uuid)
+
+	log.Printf("DEBUG 2 %v", c.Param("inquiry_uuid"))
+
 	dao := NewInquiryDAO(db.GetDB())
 	inquiry, err := dao.PatchInquiryByInquiryUUID(
 		models.PatchInquiryParams{
-			Uuid:            c.Param("inquiry_uuid"),
+			Uuid:            body.Uuid,
 			Budget:          body.Budget,
 			AppointmentTime: body.AppointmentTime,
 			Price:           body.Price,

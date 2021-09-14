@@ -41,7 +41,7 @@ gen_model:
 	go run cmd/genmodel/main.go gen
 
 gen_jwt:
-	go run cmd/util_cmd/main.go tname $(filter-out $@, $(MAKECMDGOALS))
+	go run cmd/util_cmd/main.go tuuid $(filter-out $@, $(MAKECMDGOALS))
 
 MIGRATE_CMD=migrate
 MIGRATE_CREATE_CMD=create
