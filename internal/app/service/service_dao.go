@@ -505,7 +505,8 @@ WHERE
 	service_status NOT IN (
 		'completed',
 		'canceled',
-		'expired'
+		'expired',
+		'payment_failed'
 	) AND (
 		customer_id = $1 OR
 		service_provider_id = $1
