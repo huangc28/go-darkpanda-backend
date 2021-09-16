@@ -187,6 +187,7 @@ func GetOverduedServicesHandlers(c *gin.Context, depCon container.Container) {
 		models.ServiceStatusCanceled,
 		models.ServiceStatusCompleted,
 		models.ServiceStatusExpired,
+		models.ServiceStatusPaymentFailed,
 	)
 
 	if err != nil {
