@@ -934,6 +934,21 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	// Retrieve service by service UUID.
+	srv, err := serviceDao.GetServiceByUuid(body.ServiceUuid, "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	// Change inquiry status from `chatting` to `booked` and create a new service with status `unpaid`
 	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
 		statusUnpaid := models.ServiceStatusUnpaid
@@ -946,9 +961,9 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			}
 		}
 
-		srvModel, err := serviceDao.UpdateServiceByInquiryId(
-			contracts.UpdateServiceByInquiryIdParams{
-				InquiryId:     int64(iqRes.ID),
+		srvModel, err := serviceDao.UpdateServiceByID(
+			contracts.UpdateServiceByIDParams{
+				ID:            srv.ID,
 				ServiceStatus: &statusUnpaid,
 			},
 		)
