@@ -286,6 +286,7 @@ func (dao *RateDAO) GetUserRatings(p contracts.GetUserRatingsParams) ([]models.U
 SELECT
 	comments,
 	rating,
+	service_ratings.created_at,
 	raters.username AS rater_username,
 	raters.uuid AS rater_uuid,
 	raters.avatar_url AS rater_avatar_url
