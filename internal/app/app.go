@@ -19,6 +19,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/payment"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/referral"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/register"
+	"github.com/huangc28/go-darkpanda-backend/internal/app/release"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/service"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/user"
 )
@@ -129,6 +130,10 @@ func StartApp(e *gin.Engine) *gin.Engine {
 	payment.Routes(
 		rv1,
 		deps.Get().Container,
+	)
+
+	release.Routes(
+		rv1,
 	)
 
 	return e

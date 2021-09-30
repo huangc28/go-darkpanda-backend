@@ -58,6 +58,9 @@ type AppConf struct {
 
 	ErrorLogPath string `mapstructure:"ERROR_LOG_PATH"`
 	InfoLogPath  string `mapstructure:"INFO_LOG_PATH"`
+
+	AppcenterAppSecret                 string `mapstructure:"APPCENTER_APP_SECRET"`
+	AppcenterPublicDistributionGroupId string `mapstructure:"APPCENTER_PUBLIC_DISTRIBUTION_GROUP_ID"`
 }
 
 var appConf AppConf
