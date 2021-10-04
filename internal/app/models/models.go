@@ -70,6 +70,25 @@ func (e *InquiryStatus) Scan(src interface{}) error {
 	return nil
 }
 
+type InquiryType string
+
+const (
+	InquiryTypeDirect InquiryType = "direct"
+	InquiryTypeRandom InquiryType = "random"
+)
+
+func (e *InquiryType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = InquiryType(s)
+	case string:
+		*e = InquiryType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for InquiryType: %T", src)
+	}
+	return nil
+}
+
 type LobbyStatus string
 
 const (
@@ -350,9 +369,10 @@ type ServiceInquiry struct {
 	Lng             sql.NullString `json:"lng"`
 	Lat             sql.NullString `json:"lat"`
 	// Time that this inquiry will be invalid.
-	ExpiredAt sql.NullTime   `json:"expired_at"`
-	PickerID  sql.NullInt32  `json:"picker_id"`
-	Address   sql.NullString `json:"address"`
+	ExpiredAt   sql.NullTime   `json:"expired_at"`
+	PickerID    sql.NullInt32  `json:"picker_id"`
+	Address     sql.NullString `json:"address"`
+	InquiryType InquiryType    `json:"inquiry_type"`
 }
 
 type ServiceName struct {

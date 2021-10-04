@@ -162,6 +162,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 				Valid:  true,
 				String: body.Address,
 			},
+			InquiryType: models.InquiryTypeRandom,
 		},
 	)
 
