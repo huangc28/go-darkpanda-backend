@@ -11,6 +11,7 @@ import (
 )
 
 type DPFirebaseMessenger interface {
+	PublishMaleAgreeToChat(ctx context.Context, m PublishMaleAgreeToChatMessage) error
 	PublishPickupInquiryNotification(ctx context.Context, m PublishPickupInquiryNotificationMessage) error
 	PublishServicePaidNotification(ctx context.Context, m PublishServicePaidNotificationMessage) error
 	PublishUnpaidServiceExpiredNotification(ctx context.Context, m PublishUnpaidServiceExpiredMessage) error
@@ -45,6 +46,7 @@ var (
 	PickupInquiry        FCMType = "pickup_inquiry"
 	ServicePaid          FCMType = "service_paid"
 	UnpaidServiceExpired FCMType = "unpaid_service_expired"
+	AgreeToChat          FCMType = "agree_to_chat"
 )
 
 type Notification struct {
@@ -164,4 +166,47 @@ func (r *DPFirebaseMessage) PublishUnpaidServiceExpiredNotification(ctx context.
 	log.Infof("unpaid service expired FCM sent! %s", res)
 
 	return nil
+}
+
+type PublishMaleAgreeToChatMessage struct {
+	Topic string `json:"-"`
+
+	InquiryUuid string `json:"inquiry_uuid"`
+
+	// Name of the male user that agrees to chat with the female.
+	MaleUsername string `json:"male_username"`
+
+	// Female that wants to chat with male user.
+	FemaleUsername string `json:"female_username"`
+}
+
+func (r *DPFirebaseMessage) PublishMaleAgreeToChat(ctx context.Context, m PublishMaleAgreeToChatMessage) error {
+	n := Notification{
+		Type:     AgreeToChat,
+		Content:  m,
+		DeepLink: "",
+	}
+
+	bd, err := json.Marshal(&n)
+
+	if err != nil {
+		return err
+	}
+
+	res, err := r.c.Send(ctx, &messaging.Message{
+		Topic: m.Topic,
+		Notification: &messaging.Notification{
+			Title:    fmt.Sprintf("%s 接受聊天", m.MaleUsername),
+			Body:     string(bd),
+			ImageURL: "https://storage.googleapis.com/dark-panda-6fe35.appspot.com/fcm_logos/logo3.png",
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Infof("FCM sent! %s", res)
+
+	return err
 }

@@ -497,21 +497,6 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// var pubsuber pubsuber.DPPubsuber
-	// depCon.Make(&pubsuber)
-
-	// if err := pubsuber.DeleteInquiryTopic(ctx, iq.FcmTopic.String); err != nil {
-	// 	c.AbortWithError(
-	// 		http.StatusInternalServerError,
-	// 		apperr.NewErr(
-	// 			apperr.FailedToDeletePubsubTopic,
-	// 			err.Error(),
-	// 		),
-	// 	)
-
-	// 	return
-	// }
-
 	c.JSON(http.StatusOK, struct {
 		InquiryUuid string `json:"inquiry_uuid"`
 	}{
@@ -921,6 +906,26 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 			http.StatusInternalServerError,
 			apperr.NewErr(
 				apperr.FailedToGetUserByID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Send FCM message to female user that the male user has picked up the inquiry.
+	var fm dpfcm.DPFirebaseMessenger
+	depCon.Make(&fm)
+	if err := fm.PublishMaleAgreeToChat(ctx, dpfcm.PublishMaleAgreeToChatMessage{
+		Topic:          picker.FcmTopic.String,
+		InquiryUuid:    iq.Uuid,
+		MaleUsername:   inquirer.Username,
+		FemaleUsername: picker.Username,
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToPublishMaleAgreeToChatFCM,
 				err.Error(),
 			),
 		)
