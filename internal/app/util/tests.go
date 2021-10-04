@@ -52,6 +52,7 @@ func GenTestUserParams() (*models.CreateUserParams, error) {
 		String: faker.Sentence(),
 	}
 	p.Uuid = sid
+
 	p.Gender = randomGender()
 	p.PhoneVerified = randomBool()
 	p.Mobile = sql.NullString{
@@ -62,6 +63,10 @@ func GenTestUserParams() (*models.CreateUserParams, error) {
 	p.AvatarUrl = sql.NullString{
 		Valid:  true,
 		String: faker.URL(),
+	}
+	p.FcmTopic = sql.NullString{
+		Valid:  true,
+		String: "sampleFcmTopic",
 	}
 
 	return p, nil

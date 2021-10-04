@@ -20,8 +20,10 @@ INSERT INTO services(
 	service_status,
 	budget,
 	service_type,
-	address
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	address,
+	start_time,
+	end_time
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 RETURNING id, uuid, customer_id, service_provider_id, price, duration, appointment_time, service_type, created_at, updated_at, deleted_at, budget, inquiry_id, service_status, address, start_time, end_time, canceller_id
 `
 
@@ -37,6 +39,8 @@ type CreateServiceParams struct {
 	Budget            sql.NullString `json:"budget"`
 	ServiceType       ServiceType    `json:"service_type"`
 	Address           sql.NullString `json:"address"`
+	StartTime         sql.NullTime   `json:"start_time"`
+	EndTime           sql.NullTime   `json:"end_time"`
 }
 
 func (q *Queries) CreateService(ctx context.Context, arg CreateServiceParams) (Service, error) {
@@ -52,6 +56,8 @@ func (q *Queries) CreateService(ctx context.Context, arg CreateServiceParams) (S
 		arg.Budget,
 		arg.ServiceType,
 		arg.Address,
+		arg.StartTime,
+		arg.EndTime,
 	)
 	var i Service
 	err := row.Scan(

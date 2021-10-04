@@ -71,7 +71,7 @@ test_migrate_up:
 	ENV=test $(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_UP_CMD) && make gen_model
 
 test_migrate_down:
-	ENV=test $(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_DOWN_CMD)
+	ENV=test $(MIGRATE_CMD) -path=${CURRENT_DIR}/db/migrations/ -database $(PG_TEST_DSN) $(MIGRATE_DOWN_CMD) $(filter-out $@, $(MAKECMDGOALS))
 
 
 # Build & Deploy

@@ -10,6 +10,8 @@ INSERT INTO services(
 	service_status,
 	budget,
 	service_type,
-	address
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	address,
+	start_time,
+	end_time
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 RETURNING *;
