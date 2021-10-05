@@ -601,7 +601,7 @@ func VerifyMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 // Those girls that enables public appearance.
 // Each query of girl profiles should be randomized and paginated. There should be no repeating in the next page.
 type GetGirlsBody struct {
-	PerPage int `form:"perpage,default=5"`
+	PerPage int `form:"per_page,default=5"`
 	Page    int `form:"page,default=0"`
 }
 
