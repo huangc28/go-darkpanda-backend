@@ -42,6 +42,9 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		switch c.Param("uuid") {
 		case "me":
 			handlers.GetMyProfileHandler(c)
+		case "girls":
+			// Get list of girls profile. These girls are available for male user to pick.
+			GetGirls(c, depCon)
 		default:
 			handlers.GetUserProfileHandler(c, depCon)
 		}
@@ -63,4 +66,5 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 			VerifyMobileVerifyCodeHandler(c, depCon)
 		},
 	)
+
 }

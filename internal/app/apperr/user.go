@@ -20,6 +20,8 @@ const (
 	ChangeMobileVerifyCodeNotMatching       = "5000017"
 	FailedToGetRegisterMobileVerifyCode     = "5000018"
 	FailedToGetUserRating                   = "5000019"
+	FailedToGetUserProfiles                 = "5000020"
+	FailedToTransformGirlProfile            = "5000021"
 )
 
 var userErrorCodeMsgMap = map[string]string{

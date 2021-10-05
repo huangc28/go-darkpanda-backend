@@ -597,3 +597,61 @@ func VerifyMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 		m.Mobile,
 	})
 }
+
+// Those girls that enables public appearance.
+// Each query of girl profiles should be randomized and paginated. There should be no repeating in the next page.
+type GetGirlsBody struct {
+	PerPage int `form:"perpage,default=5"`
+	Page    int `form:"page,default=0"`
+}
+
+func GetGirls(c *gin.Context, depCon container.Container) {
+	body := GetGirlsBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(
+				apperr.FailedToBindApiBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	girls, err := userDao.GetGirls(contracts.GetGirlsParams{
+		Limit:  body.PerPage,
+		Offset: body.Page,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserProfiles,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+	trf, err := TrfRandomGirls(girls)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformGirlProfile,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, trf)
+}

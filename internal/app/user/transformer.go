@@ -348,3 +348,49 @@ func TrfGetUserRatings(ms []models.UserRatings) []TrfmedUserRating {
 
 	return trfms
 }
+
+type TrfedRandomGirl struct {
+	Uuid       string   `json:"uuid"`
+	Username   string   `json:"username"`
+	AvatarURL  string   `json:"avatar_url"`
+	Age        *int32   `json:"age"`
+	Height     *float32 `json:"height"`
+	Weight     *float32 `json:"weight"`
+	BreastSize string   `json:"breast_size"`
+}
+
+type TrfedRandomGirls struct {
+	Girls []*TrfedRandomGirl
+}
+
+func TrfRandomGirls(rgs []*models.RandomGirl) ([]*TrfedRandomGirl, error) {
+	trfgs := make([]*TrfedRandomGirl, 0)
+
+	for _, rg := range rgs {
+		height, err := convertnullsql.ConvertSqlNullStringToFloat32(rg.Height)
+
+		if err != nil {
+			return nil, err
+		}
+
+		weight, err := convertnullsql.ConvertSqlNullStringToFloat32(rg.Weight)
+
+		if err != nil {
+			return nil, err
+		}
+
+		trfg := &TrfedRandomGirl{
+			Uuid:       rg.Uuid,
+			Username:   rg.Username,
+			AvatarURL:  rg.AvatarUrl.String,
+			Age:        &rg.Age.Int32,
+			Height:     height,
+			Weight:     weight,
+			BreastSize: rg.BreastSize.String,
+		}
+
+		trfgs = append(trfgs, trfg)
+	}
+
+	return trfgs, nil
+}

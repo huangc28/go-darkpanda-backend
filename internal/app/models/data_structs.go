@@ -90,3 +90,8 @@ type UserRating struct {
 	// Number of services the score is calculated upon.
 	NumberOfServices int `json:"number_of_services"`
 }
+
+type RandomGirl struct {
+	Setseed *string `json:"setseed"`
+	User
+}

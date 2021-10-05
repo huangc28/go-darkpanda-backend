@@ -339,6 +339,50 @@ WHERE ratee_id = $1;
 	return &rating, nil
 }
 
+// GetGirls retrieve list of girl profile who wants their profile to be viewed publically.
+
+func (dao *UserDAO) GetGirls(p contracts.GetGirlsParams) ([]*models.RandomGirl, error) {
+	ranSeed := 0.1
+
+	query := fmt.Sprintf(` 
+SELECT 
+	setseed(%f),
+	uuid,
+	username,
+	avatar_url,
+	age,
+	height,
+	weight,
+	breast_size
+FROM users 
+WHERE 
+	gender = 'female'
+ORDER BY random()
+LIMIT %d 
+OFFSET %d;
+	`, ranSeed, p.Limit, p.Offset)
+
+	gs := make([]*models.RandomGirl, 0)
+
+	rows, err := dao.db.Queryx(query)
+
+	if err != nil {
+		return gs, err
+	}
+
+	for rows.Next() {
+		var g models.RandomGirl
+
+		if err := rows.StructScan(&g); err != nil {
+			return gs, err
+		}
+
+		gs = append(gs, &g)
+	}
+
+	return gs, nil
+}
+
 const (
 	ChangeMobileVerifyCodeHashName = "change_mobile_verify_code:%s"
 	ChangeMobileVerifyCodeFieldKey = "verify_code"

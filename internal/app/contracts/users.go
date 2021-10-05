@@ -21,6 +21,10 @@ type UpdateUserInfoParams struct {
 	PhoneVerified *bool
 }
 
+type GetGirlsParams struct {
+	Limit  int
+	Offset int
+}
 type UserDAOer interface {
 	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*models.UserWithInquiries, error)
 	GetUserByUsername(username string, fields ...string) (*models.User, error)
@@ -32,5 +36,6 @@ type UserDAOer interface {
 	CheckIsFemaleByUuid(uuid string) (bool, error)
 	GetUserImagesByUuid(uuid string, offset int, perPage int) ([]models.Image, error)
 	DeleteUserImages(url string) error
+	GetGirls(p GetGirlsParams) ([]*models.RandomGirl, error)
 	WithTx(tx *sqlx.Tx) UserDAOer
 }
