@@ -66,6 +66,7 @@ const (
 	FailedToDeletePubsubTopic                = "3000062"
 	FailedToPublishPickupInquiryFCM          = "3000063"
 	FailedToPublishMaleAgreeToChatFCM        = "3000064"
+	FailedToCreateDirectInquiry              = "3000065"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{

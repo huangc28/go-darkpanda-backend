@@ -19,12 +19,13 @@ func NewTransform() *InquiryTransform {
 }
 
 type TransformedInquiry struct {
-	Uuid            string    `json:"inquiry_uuid"`
-	Budget          float64   `json:"budget"`
-	ServiceType     string    `json:"service_type"`
-	InquiryStatus   string    `json:"inquiry_status"`
-	AppointmentTime time.Time `json:"appointment_time"`
-	Address         string    `json:"address"`
+	Uuid            string             `json:"inquiry_uuid"`
+	Budget          float64            `json:"budget"`
+	ServiceType     string             `json:"service_type"`
+	InquiryStatus   string             `json:"inquiry_status"`
+	AppointmentTime time.Time          `json:"appointment_time"`
+	Address         string             `json:"address"`
+	InquiryType     models.InquiryType `json:"inquiry_type"`
 }
 
 func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (TransformedInquiry, error) {

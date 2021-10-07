@@ -18,7 +18,6 @@ import (
 	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
-	"github.com/shopspring/decimal"
 	log "github.com/sirupsen/logrus"
 	"github.com/teris-io/shortid"
 )
@@ -29,6 +28,8 @@ import (
 //   - Body should include "appointment time"
 //   - Body should include "Service duration"
 type EmitInquiryBody struct {
+	InquiryType     string    `form:"inquiry_type,default=random" uri:"inquiry_type,default=random" json:"inquiry_type"`
+	FemaleUUID      string    `form:"female_uuid" uri:"female_uuid" json:"female_uuid"`
 	Budget          float64   `form:"budget" uri:"budget" json:"budget" binding:"required"`
 	ServiceType     string    `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
 	AppointmentTime time.Time `form:"appointment_time" json:"appointment_time" binding:"required"`
@@ -70,7 +71,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 	// Check if the user already has an active inquiry
 	// If active inquiry exists but expired, change the
 	// inquiry status to `expired`. If exists but has not
-	// expired, respond with error.
+	// expired, return error.
 	dao := NewInquiryDAO(db.GetDB())
 	activeIqExists, err := dao.CheckHasActiveInquiryByID(usr.ID)
 
@@ -130,48 +131,76 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		}
 	}
 
-	sid, _ := shortid.Generate()
+	iqSrv := NewService(dao, q, darkfirestore.Get())
 
-	// ------------------- create a new inquiry -------------------
-	iq, err := q.CreateInquiry(
-		ctx,
-		models.CreateInquiryParams{
-			Uuid: sid,
-			InquirerID: sql.NullInt32{
-				Int32: int32(usr.ID),
-				Valid: true,
-			},
-			Budget:        decimal.NewFromFloat(body.Budget).String(),
-			ServiceType:   models.ServiceType(body.ServiceType),
-			InquiryStatus: models.InquiryStatusInquiring,
-			ExpiredAt: sql.NullTime{
-				Time:  time.Now().Add(InquiryDuration),
-				Valid: true,
-			},
-			AppointmentTime: sql.NullTime{
-				Valid: true,
+	if models.InquiryType(body.InquiryType) == models.InquiryTypeDirect {
+		picker, err := q.GetUserByUuid(ctx, body.FemaleUUID)
 
-				// Convert appointment time to UTC to be consistent.
-				Time: body.AppointmentTime.UTC(),
-			},
-			Duration: sql.NullInt32{
-				Valid: true,
-				Int32: int32(body.ServiceDuration),
-			},
-			Address: sql.NullString{
-				Valid:  true,
-				String: body.Address,
-			},
-			InquiryType: models.InquiryTypeRandom,
-		},
-	)
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToGetGirlIDOfDirectInquiry,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		iq, err := iqSrv.CreateDirectInquiry(ctx, CreateDirectInquiryParams{
+			InquirerUUID:    usr.Uuid,
+			InquirerID:      int32(usr.ID),
+			PickerID:        int32(picker.ID),
+			Budget:          body.Budget,
+			ServiceType:     body.ServiceType,
+			AppointmentTime: body.AppointmentTime,
+			ServiceDuration: body.ServiceDuration,
+			Address:         body.Address,
+		})
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToCreateDirectInquiry,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		trfed, err := NewTransform().TransformInquiry(*iq)
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToTransformResponse,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		c.JSON(http.StatusOK, trfed)
+
+		return
+	}
+
+	riq, err := iqSrv.CreateRandomInquiry(ctx, CreateRandomInquiryParams{
+		InquirerUUID:    usr.Uuid,
+		InquirerID:      int32(usr.ID),
+		Budget:          body.Budget,
+		ServiceType:     body.ServiceType,
+		AppointmentTime: body.AppointmentTime,
+		ServiceDuration: body.ServiceDuration,
+		Address:         body.Address,
+	})
 
 	if err != nil {
-		log.WithFields(log.Fields{
-			"uuid":  usr.Uuid,
-			"error": err.Error(),
-		}).Debug("User has active inquiry.")
-
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -183,27 +212,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	df := darkfirestore.Get()
-	_, _, err = df.CreateInquiringUser(
-		ctx, darkfirestore.CreateInquiringUserParams{
-			InquiryUuid:  iq.Uuid,
-			InquirerUuid: usr.Uuid,
-		},
-	)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToJoinLobby,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	trf, err := NewTransform().TransformEmitInquiry(iq)
+	trf, err := NewTransform().TransformEmitInquiry(*riq)
 
 	if err != nil {
 		c.AbortWithError(

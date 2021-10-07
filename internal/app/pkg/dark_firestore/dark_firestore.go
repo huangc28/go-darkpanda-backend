@@ -538,11 +538,13 @@ func (df *DarkFirestore) DisagreeInquiry(ctx context.Context, params DisagreeInq
 type CreateInquiringUserParams struct {
 	InquiryUuid  string
 	InquirerUuid string
+	InquiryType  string
 }
 
 type InquiringUserInfo struct {
 	InquiryUuid  string `firestore:"inquiry_uuid,omitempty"`
 	InquirerUuid string `firestore:"inquirer_uuid,omitempty"`
+	InquiryType  string `firestore:"inquiry_type,omitempty"`
 	Status       string `firestore:"status,omitempty"`
 	ServiceUuid  string `firestore:"service_uuid"`
 }
