@@ -301,7 +301,7 @@ OFFSET $3;
 `
 	rows, err := dao.db.Queryx(
 		query,
-		p.UserId,
+		p.UserID,
 		p.PerPage,
 		p.Offset,
 	)

@@ -6,7 +6,7 @@ import (
 )
 
 type GetUserRatingsParams struct {
-	UserId  int
+	UserID  int
 	PerPage int
 	Offset  int
 }

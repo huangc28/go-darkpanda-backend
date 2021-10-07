@@ -350,20 +350,21 @@ func TrfGetUserRatings(ms []models.UserRatings) []TrfmedUserRating {
 }
 
 type TrfedRandomGirl struct {
-	Uuid       string   `json:"uuid"`
-	Username   string   `json:"username"`
-	AvatarURL  string   `json:"avatar_url"`
-	Age        *int32   `json:"age"`
-	Height     *float32 `json:"height"`
-	Weight     *float32 `json:"weight"`
-	BreastSize string   `json:"breast_size"`
+	Uuid       string             `json:"uuid"`
+	Username   string             `json:"username"`
+	AvatarURL  string             `json:"avatar_url"`
+	Age        *int32             `json:"age"`
+	Height     *float32           `json:"height"`
+	Weight     *float32           `json:"weight"`
+	BreastSize string             `json:"breast_size"`
+	Rating     *models.UserRating `json:"user_rating"`
 }
 
 type TrfedRandomGirls struct {
-	Girls []*TrfedRandomGirl
+	Girls []*TrfedRandomGirl `json:"girls"`
 }
 
-func TrfRandomGirls(rgs []*models.RandomGirl) ([]*TrfedRandomGirl, error) {
+func TrfRandomGirls(rgs []*models.RandomGirl) (*TrfedRandomGirls, error) {
 	trfgs := make([]*TrfedRandomGirl, 0)
 
 	for _, rg := range rgs {
@@ -387,10 +388,13 @@ func TrfRandomGirls(rgs []*models.RandomGirl) ([]*TrfedRandomGirl, error) {
 			Height:     height,
 			Weight:     weight,
 			BreastSize: rg.BreastSize.String,
+			Rating:     rg.Rating,
 		}
 
 		trfgs = append(trfgs, trfg)
 	}
 
-	return trfgs, nil
+	return &TrfedRandomGirls{
+		Girls: trfgs,
+	}, nil
 }

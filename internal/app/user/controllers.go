@@ -405,7 +405,7 @@ func (h *UserHandlers) GetUserRatings(c *gin.Context, depCon container.Container
 	depCon.Make(&rateDao)
 
 	rs, err := rateDao.GetUserRatings(contracts.GetUserRatingsParams{
-		UserId:  int(targetUser.ID),
+		UserID:  int(targetUser.ID),
 		PerPage: body.PerPage,
 		Offset:  body.Offset,
 	})
@@ -639,6 +639,7 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 
 		return
 	}
+
 	trf, err := TrfRandomGirls(girls)
 
 	if err != nil {

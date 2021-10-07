@@ -84,6 +84,8 @@ type CancelUnpaidServices struct {
 }
 
 type UserRating struct {
+	RateeID int64 `json:"ratee_id"`
+
 	// Average score of the services that the user has participated in.
 	Score *float32 `json:"score"`
 
@@ -94,4 +96,5 @@ type UserRating struct {
 type RandomGirl struct {
 	Setseed *string `json:"setseed"`
 	User
+	Rating *UserRating
 }

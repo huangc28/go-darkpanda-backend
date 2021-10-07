@@ -347,13 +347,15 @@ func (dao *UserDAO) GetGirls(p contracts.GetGirlsParams) ([]*models.RandomGirl, 
 	query := fmt.Sprintf(` 
 SELECT 
 	setseed(%f),
+	id,
 	uuid,
 	username,
 	avatar_url,
 	age,
 	height,
 	weight,
-	breast_size
+	breast_size,
+	description	
 FROM users 
 WHERE 
 	gender = 'female'
@@ -370,6 +372,8 @@ OFFSET %d;
 		return gs, err
 	}
 
+	girlIDs := make([]int64, 0)
+
 	for rows.Next() {
 		var g models.RandomGirl
 
@@ -378,6 +382,55 @@ OFFSET %d;
 		}
 
 		gs = append(gs, &g)
+		girlIDs = append(girlIDs, g.ID)
+	}
+
+	// Compose a query to retrieve girls rating.
+	girlIDsStr := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(girlIDs)), ","), "[]")
+
+	ratingQuery := fmt.Sprintf(`
+SELECT 
+	ratee_id, 
+	ROUND(AVG(rating), 2) AS score, 
+	COUNT(1) AS number_of_services
+INNER JOIN users ON ratee_id = users.id
+FROM 
+	service_ratings
+WHERE
+	ratee_id IN (%s)
+GROUP BY ratee_id;
+	`, girlIDsStr)
+
+	ratingRows, err := dao.db.Queryx(ratingQuery)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Map to record ratee ID with rating info, we will be
+	// using this data structure to find appropriate female
+	// rating and assign it to "gs (slice of girls)".
+	// ex:
+	// 	[1] => UserRating for girl ID 1
+	//  [2] => UserRating for girl ID 2
+	//  [3] => UserRating for girl ID 3
+	//  ...
+	ratingGirlIDMap := make(map[int64]*models.UserRating)
+
+	for ratingRows.Next() {
+		var ur models.UserRating
+
+		if err := ratingRows.StructScan(&ur); err != nil {
+			return nil, err
+		}
+
+		ratingGirlIDMap[ur.RateeID] = &ur
+	}
+
+	for _, g := range gs {
+		if r, ok := ratingGirlIDMap[g.ID]; ok {
+			g.Rating = r
+		}
 	}
 
 	return gs, nil
