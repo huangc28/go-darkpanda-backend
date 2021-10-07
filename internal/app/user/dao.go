@@ -393,9 +393,9 @@ SELECT
 	ratee_id, 
 	ROUND(AVG(rating), 2) AS score, 
 	COUNT(1) AS number_of_services
-INNER JOIN users ON ratee_id = users.id
 FROM 
 	service_ratings
+INNER JOIN users ON ratee_id = users.id
 WHERE
 	ratee_id IN (%s)
 GROUP BY ratee_id;
@@ -418,7 +418,7 @@ GROUP BY ratee_id;
 	ratingGirlIDMap := make(map[int64]*models.UserRating)
 
 	for ratingRows.Next() {
-		var ur models.UserRating
+		ur := models.UserRating{}
 
 		if err := ratingRows.StructScan(&ur); err != nil {
 			return nil, err
@@ -429,7 +429,7 @@ GROUP BY ratee_id;
 
 	for _, g := range gs {
 		if r, ok := ratingGirlIDMap[g.ID]; ok {
-			g.Rating = r
+			g.Rating = *r
 		}
 	}
 

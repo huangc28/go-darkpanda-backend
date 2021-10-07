@@ -96,5 +96,5 @@ type UserRating struct {
 type RandomGirl struct {
 	Setseed *string `json:"setseed"`
 	User
-	Rating *UserRating
+	Rating UserRating
 }
