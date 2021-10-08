@@ -34,13 +34,13 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
-	g.GET(
-		"/direct-inquiry-requests",
-		middlewares.IsFemale(userDAO),
-		func(ctx *gin.Context) {
+	// g.GET(
+	// 	"/direct-inquiry-requests",
+	// 	middlewares.IsFemale(userDAO),
+	// 	func(ctx *gin.Context) {
 
-		},
-	)
+	// 	},
+	// )
 
 	g.GET("/:uuid", func(c *gin.Context) {
 		seg := c.Param("uuid")
