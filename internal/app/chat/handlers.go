@@ -409,6 +409,14 @@ func GetChatrooms(c *gin.Context, depCon container.Container) {
 			channelUUIDMessageMap,
 		),
 	)
+}
+
+type GetDirectInquiryChatroomBody struct {
+	Offset  int `form:"offset,default=0"`
+	PerPage int `form:"per_page,default=7"`
+}
+
+func GetDirectInquiryChatroom(c *gin.Context, depCon container.Container) {
 
 }
 

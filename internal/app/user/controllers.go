@@ -601,8 +601,8 @@ func VerifyMobileVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 // Those girls that enables public appearance.
 // Each query of girl profiles should be randomized and paginated. There should be no repeating in the next page.
 type GetGirlsBody struct {
-	PerPage int `form:"per_page,default=5"`
-	Page    int `form:"page,default=0"`
+	PerPage int `form:"per_page,default=6"`
+	Offset  int `form:"offset,default=0"`
 }
 
 func GetGirls(c *gin.Context, depCon container.Container) {
@@ -625,7 +625,7 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 
 	girls, err := userDao.GetGirls(contracts.GetGirlsParams{
 		Limit:  body.PerPage,
-		Offset: body.Page,
+		Offset: body.Offset,
 	})
 
 	if err != nil {
