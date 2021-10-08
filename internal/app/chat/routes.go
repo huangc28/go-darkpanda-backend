@@ -35,13 +35,14 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		GetChatrooms(c, depCon)
 	})
 
-	g.GET(
-		"/direct-inquiry",
-		middlewares.IsMale(userDao),
-		func(c *gin.Context) {
-			GetDirectInquiryChatroom(c, depCon)
-		},
-	)
+	// Retrieve direct inquiry chatrooms approved by females.
+	// g.GET(
+	// 	"/direct-inquiry-chatrooms",
+	// 	middlewares.IsMale(userDao),
+	// 	func(c *gin.Context) {
+	// 		GetDirectInquiryChatroom(c, depCon)
+	// 	},
+	// )
 
 	g.POST(
 		"/emit-text-message",
