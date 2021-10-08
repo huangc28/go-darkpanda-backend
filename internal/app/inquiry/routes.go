@@ -79,9 +79,10 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		},
 	)
 
+	// Both female and male user can accept chatting request via
+	// this API to agree to chat with the counter party on request.
 	g.POST(
 		"/agree-to-chat",
-		middlewares.IsMale(userDAO),
 		func(c *gin.Context) {
 			AgreeToChatInquiryHandler(c, container)
 		},

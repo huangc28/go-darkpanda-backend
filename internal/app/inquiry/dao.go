@@ -38,13 +38,14 @@ func (dao *InquiryDAO) WithTx(db db.Conn) contracts.InquiryDAOer {
 	return dao
 }
 
-func (dao *InquiryDAO) CheckHasActiveInquiryByID(id int64) (bool, error) {
+func (dao *InquiryDAO) CheckHasActiveRandomInquiryByID(id int64) (bool, error) {
 	sql := `
 SELECT EXISTS(
 	SELECT 1 FROM users
 	LEFT JOIN service_inquiries as si ON si.inquirer_id = users.id
 	WHERE users.id = $1
 	AND inquiry_status='inquiring'
+	AND inquiry_type='random'
 ) as exists;
 `
 	var exists bool
@@ -54,13 +55,17 @@ SELECT EXISTS(
 	return exists, err
 }
 
-func (dao *InquiryDAO) GetInquiries(userId, offset, perpage int, statuses ...models.InquiryStatus) ([]*models.InquiryInfo, error) {
+func (dao *InquiryDAO) GetInquiries(p contracts.GetInquiriesParams) ([]*models.InquiryInfo, error) {
+	if p.InquiryType == "" {
+		p.InquiryType = models.InquiryTypeRandom
+	}
+
 	statusQuery := "1=1"
 
-	if len(statuses) > 0 {
-		statusStrsArr := make([]string, len(statuses))
+	if len(p.Statuses) > 0 {
+		statusStrsArr := make([]string, len(p.Statuses))
 
-		for _, status := range statuses {
+		for _, status := range p.Statuses {
 			statusStrsArr = append(
 				statusStrsArr,
 				fmt.Sprintf("si.inquiry_status = '%s' OR", string(status)),
@@ -121,6 +126,7 @@ WITH blocked_users AS (
 		ON si.inquirer_id = users.id
 	LEFT JOIN services ON services.inquiry_id = si.id 
 	WHERE (%s)
+	AND inquiry_type=%s 
 	AND si.inquirer_id NOT IN (
 		SELECT
 			blocked_user_id
@@ -141,14 +147,15 @@ WITH blocked_users AS (
 SELECT DISTINCT ON(inquiry_list.inquiry_uuid) * FROM inquiry_list;
 `,
 		statusQuery,
+		string(models.InquiryTypeRandom),
 	)
 
 	inquiries := make([]*models.InquiryInfo, 0)
 	rows, err := dao.db.Queryx(
 		query,
-		userId,
-		perpage,
-		offset,
+		p.UserID,
+		p.PerPage,
+		p.Offset,
 	)
 
 	if err != nil {

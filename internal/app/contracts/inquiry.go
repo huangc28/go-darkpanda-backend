@@ -19,10 +19,18 @@ type InquiryResult struct {
 	AvatarUrl sql.NullString `json:"avatar_url"`
 }
 
+type GetInquiriesParams struct {
+	UserID      int
+	Offset      int
+	PerPage     int
+	InquiryType models.InquiryType
+	Statuses    []models.InquiryStatus
+}
+
 type InquiryDAOer interface {
 	WithTx(tx db.Conn) InquiryDAOer
-	CheckHasActiveInquiryByID(id int64) (bool, error)
-	GetInquiries(userId, offset, perpage int, statuses ...models.InquiryStatus) ([]*models.InquiryInfo, error)
+	CheckHasActiveRandomInquiryByID(id int64) (bool, error)
+	GetInquiries(p GetInquiriesParams) ([]*models.InquiryInfo, error)
 	GetInquiryByUuid(iqUuid string, fields ...string) (*InquiryResult, error)
 	HasMoreInquiries(offset int, perPage int) (bool, error)
 	AskingInquiry(pickerID, inquiryID int64) (*models.ServiceInquiry, error)

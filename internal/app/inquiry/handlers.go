@@ -18,7 +18,6 @@ import (
 	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
-	log "github.com/sirupsen/logrus"
 	"github.com/teris-io/shortid"
 )
 
@@ -68,69 +67,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Check if the user already has an active inquiry
-	// If active inquiry exists but expired, change the
-	// inquiry status to `expired`. If exists but has not
-	// expired, return error.
 	dao := NewInquiryDAO(db.GetDB())
-	activeIqExists, err := dao.CheckHasActiveInquiryByID(usr.ID)
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToCheckActiveInquiry,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	if activeIqExists {
-		resIq, err := q.GetInquiryByInquirerID(ctx, models.GetInquiryByInquirerIDParams{
-			InquirerID: sql.NullInt32{
-				Int32: int32(usr.ID),
-				Valid: true,
-			},
-			InquiryStatus: models.InquiryStatusInquiring,
-		})
-
-		if err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(apperr.FailedToGetInquiryByInquirerID),
-			)
-
-			return
-		}
-
-		if !util.IsExpired(resIq.CreatedAt) {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(apperr.UserAlreadyHasActiveInquiry),
-			)
-
-			return
-		}
-
-		// @TODO also makesure records in the firestore is marked expired.
-		if err := q.PatchInquiryStatus(ctx, models.PatchInquiryStatusParams{
-			ID:            resIq.ID,
-			InquiryStatus: models.InquiryStatusExpired,
-		}); err != nil {
-			c.AbortWithError(
-				http.StatusInternalServerError,
-				apperr.NewErr(
-					apperr.FailedToPatchInquiryStatus,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-	}
-
 	iqSrv := NewService(dao, q, darkfirestore.Get())
 
 	if models.InquiryType(body.InquiryType) == models.InquiryTypeDirect {
@@ -188,6 +125,68 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		c.JSON(http.StatusOK, trfed)
 
 		return
+	}
+
+	// Check if the user already has an active random inquiry
+	// If active inquiry exists but expired, change the
+	// inquiry status to `expired`. If it exists but has not
+	// expired, return error.
+	activeRandomIqExists, err := dao.CheckHasActiveRandomInquiryByID(usr.ID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckActiveInquiry,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if activeRandomIqExists {
+		resIq, err := q.GetInquiryByInquirerID(ctx, models.GetInquiryByInquirerIDParams{
+			InquirerID: sql.NullInt32{
+				Int32: int32(usr.ID),
+				Valid: true,
+			},
+			InquiryStatus: models.InquiryStatusInquiring,
+		})
+
+		if err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(apperr.FailedToGetInquiryByInquirerID),
+			)
+
+			return
+		}
+
+		if !util.IsExpired(resIq.CreatedAt) {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(apperr.UserAlreadyHasActiveInquiry),
+			)
+
+			return
+		}
+
+		// @TODO also makesure records in the firestore is marked expired.
+		if err := q.PatchInquiryStatus(ctx, models.PatchInquiryStatusParams{
+			ID:            resIq.ID,
+			InquiryStatus: models.InquiryStatusExpired,
+		}); err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToPatchInquiryStatus,
+					err.Error(),
+				),
+			)
+
+			return
+		}
 	}
 
 	riq, err := iqSrv.CreateRandomInquiry(ctx, CreateRandomInquiryParams{
@@ -272,11 +271,16 @@ func GetInquiriesHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	inquiries, err := inquiryDao.GetInquiries(
-		int(user.ID),
-		body.Offset,
-		body.PerPage,
-		models.InquiryStatusInquiring,
-		models.InquiryStatusAsking,
+		contracts.GetInquiriesParams{
+			Offset:      body.Offset,
+			PerPage:     body.PerPage,
+			UserID:      int(user.ID),
+			InquiryType: models.InquiryTypeRandom,
+			Statuses: []models.InquiryStatus{
+				models.InquiryStatusInquiring,
+				models.InquiryStatusAsking,
+			},
+		},
 	)
 
 	if err != nil {
@@ -1150,10 +1154,6 @@ func PatchInquiryHandler(c *gin.Context, depCon container.Container) {
 
 		return
 	}
-
-	log.Printf("DEBUG 1 %v", body.Uuid)
-
-	log.Printf("DEBUG 2 %v", c.Param("inquiry_uuid"))
 
 	dao := NewInquiryDAO(db.GetDB())
 	inquiry, err := dao.PatchInquiryByInquiryUUID(
