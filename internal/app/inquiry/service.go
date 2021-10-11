@@ -58,7 +58,7 @@ func (s *InquiryService) CreateDirectInquiry(ctx context.Context, p CreateDirect
 
 		Budget:        decimal.NewFromFloat(p.Budget).String(),
 		ServiceType:   models.ServiceType(p.ServiceType),
-		InquiryStatus: models.InquiryStatusInquiring,
+		InquiryStatus: models.InquiryStatusAsking,
 		ExpiredAt: sql.NullTime{
 			Time:  time.Now().Add(InquiryDuration),
 			Valid: true,
