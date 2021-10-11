@@ -3,6 +3,7 @@ package inquiry
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"time"
 
@@ -1260,4 +1261,67 @@ func GetActiveInquiry(c *gin.Context, depCon container.Container) {
 	}
 
 	c.JSON(http.StatusOK, trf)
+}
+
+type GetDirectInquiryRequestsBody struct {
+	PerPage int `form:"per_page,default=6"`
+	Offset  int `form:"offset,default=0"`
+}
+
+func GetDirectInquiryRequests(c *gin.Context, depCon container.Container) {
+	log.Println("DEBUG 1")
+
+	body := GetDirectInquiryRequestsBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindApiBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	user, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var iqDao contracts.InquiryDAOer
+	depCon.Make(&iqDao)
+
+	iqrs, err := iqDao.GetInquiryRequests(contracts.GetInquiryRequestsParams{
+		UserID:  int(user.ID),
+		Offset:  body.Offset,
+		PerPage: body.PerPage,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetInquiryRequest,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, TrfInquiryRequests(iqrs))
 }

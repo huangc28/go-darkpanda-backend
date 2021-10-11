@@ -40,6 +40,11 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		switch seg {
 		case "active-inquiry":
 			GetActiveInquiry(c, container)
+		case "requests":
+			// Retrieve list of direct inquiry requests send from male users. The status
+			// of these inquiries are `asking`.
+			middlewares.IsFemale(userDAO)(c)
+			GetDirectInquiryRequests(c, container)
 		default:
 			GetInquiryHandler(c)
 		}

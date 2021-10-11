@@ -577,3 +577,13 @@ func (t *InquiryTransform) TransformActiveInquiry(iq *models.ActiveInquiry) (*Tr
 func (t *InquiryTransform) TransformRevertedInquiry(iq *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
 	return t.TransformUpdateInquiry(iq)
 }
+
+type TrfedInquiryRequests struct {
+	InquiryRequests []models.InquiryRequest `json:"inquiry_requests"`
+}
+
+func TrfInquiryRequests(iqrs []models.InquiryRequest) TrfedInquiryRequests {
+	return TrfedInquiryRequests{
+		InquiryRequests: iqrs,
+	}
+}

@@ -5,7 +5,6 @@ import (
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
-	"github.com/huangc28/go-darkpanda-backend/internal/app/middlewares"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/jwtactor"
 )
 
@@ -40,12 +39,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 
 	g.GET("/:uuid/ratings", func(c *gin.Context) {
 		handlers.GetUserRatings(c, depCon)
-	})
-
-	// Retrieve list of direct inquiry requests send from male users. The status
-	// of these inquiries are `asking`.
-	g.GET(":uuid/inquiry-requests", middlewares.IsFemale(userDao), func(c *gin.Context) {
-		GetDirectInquiryRequests(c, depCon)
 	})
 
 	// issue: https://github.com/gin-gonic/gin/issues/205

@@ -400,13 +400,3 @@ func TrfRandomGirls(rgs []*models.RandomGirl) (*TrfedRandomGirls, error) {
 		Girls: trfgs,
 	}, nil
 }
-
-type TrfedInquiryRequests struct {
-	InquiryRequests []models.InquiryRequest `json:"inquiry_requests"`
-}
-
-func TrfInquiryRequests(iqrs []models.InquiryRequest) TrfedInquiryRequests {
-	return TrfedInquiryRequests{
-		InquiryRequests: iqrs,
-	}
-}
