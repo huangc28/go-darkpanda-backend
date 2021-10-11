@@ -35,6 +35,7 @@ type TransformedInquiryChat struct {
 	CreatedAt     time.Time            `json:"created_at"`
 	InquiryUUID   string               `json:"inquiry_uuid"`
 	InquirerUUID  string               `json:"inquirer_uuid"`
+	PickerUUID    string               `json:"picker_uuid"`
 	InquiryStatus string               `json:"inquiry_status"`
 
 	// Messages only contains the latest message of the chatroom. It's an empty array
@@ -66,6 +67,7 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 			Messages:      chatMsgs,
 			InquiryUUID:   m.InquiryUUID,
 			InquirerUUID:  m.InquirerUUID,
+			PickerUUID:    m.PickerUUID,
 			InquiryStatus: m.InquiryStatus,
 		}
 

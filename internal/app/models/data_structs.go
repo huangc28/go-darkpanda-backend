@@ -17,6 +17,7 @@ type InquiryChatRoom struct {
 	InquiryStatus string         `json:"inquiry_status"`
 	InquiryUUID   string         `json:"inquiry_uuid"`
 	InquirerUUID  string         `json:"inquirer_uuid"`
+	PickerUUID    string         `json:"picker_uuid"`
 	Username      string         `json:"username"`
 	ChannelUUID   string         `json:"channel_uuid"`
 	AvatarURL     sql.NullString `json:"avatar_url"`
@@ -97,13 +98,4 @@ type RandomGirl struct {
 	Setseed *string `json:"setseed"`
 	User
 	Rating UserRating
-}
-
-type DirectInquiryChatroom struct {
-	Username    string `json:"username"`
-	PickerUUID  string `json:"picker_uuid"`
-	AvatarURL   string `json:"avatar_url"`
-	ServiceType string `json:"service_type"`
-	InquiryUUID string `json:"inquiry_uuid"`
-	ChannelUUID string `json:"channel_uuid"`
 }

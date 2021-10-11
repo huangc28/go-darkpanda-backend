@@ -44,5 +44,5 @@ type ChatDaoer interface {
 	GetChatroomByServiceId(srvId int) (*models.Chatroom, error)
 	DeleteChatroomByServiceId(srvId int) error
 	DeleteChatroomByInquiryId(iqId int) error
-	GetDirectInquiryChatrooms(p GetDirectInquiryChatroomsParams) ([]*models.DirectInquiryChatroom, error)
+	GetDirectInquiryChatrooms(p GetDirectInquiryChatroomsParams) ([]models.InquiryChatRoom, error)
 }

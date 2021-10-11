@@ -86,7 +86,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	)
 
 	g.GET("/:channel_uuid", func(c *gin.Context) {
-		seg := c.Param(":channel_uuid")
+		seg := c.Param("channel_uuid")
 
 		switch seg {
 		// Retrieve direct inquiry chatrooms approved by females.

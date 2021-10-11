@@ -67,6 +67,7 @@ const (
 	FailedToPublishPickupInquiryFCM          = "3000063"
 	FailedToPublishMaleAgreeToChatFCM        = "3000064"
 	FailedToCreateDirectInquiry              = "3000065"
+	FailedToGetDirectInquiryChatrooms        = "3000066"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{

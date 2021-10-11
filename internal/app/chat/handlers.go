@@ -435,8 +435,62 @@ func GetDirectInquiryChatroom(c *gin.Context, depCon container.Container) {
 	var userDao contracts.UserDAOer
 	depCon.Make(&userDao)
 
+	inquirer, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	chatDao := NewChatDao(db.GetDB())
-	chatDao.GetDirectInquiryChatrooms(contracts.GetDirectInquiryChatroomsParams{})
+	chatrooms, err := chatDao.GetDirectInquiryChatrooms(contracts.GetDirectInquiryChatroomsParams{
+		InquirerID: int(inquirer.ID),
+		Offset:     body.Offset,
+		PerPage:    body.PerPage,
+	})
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetDirectInquiryChatrooms,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve latest message of each chatroom.
+	ctx := context.Background()
+	channelUUIDs := make([]string, 0)
+	for _, chatroom := range chatrooms {
+		channelUUIDs = append(channelUUIDs, chatroom.ChannelUUID)
+	}
+
+	df := darkfirestore.Get()
+	msgs, err := df.GetLatestMessageForEachChatroom(ctx, channelUUIDs)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMessageFromFireStore,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, NewTransformer().TransformInquiryChats(chatrooms, msgs))
 }
 
 // Add pagination for firestore. We have to get `page` and `limit` from client.
