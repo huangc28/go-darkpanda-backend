@@ -436,3 +436,52 @@ INNER JOIN
 
 	return &m, nil
 }
+
+func (dao *InquiryDAO) GetInquiryRequests(p contracts.GetInquiryRequestsParams) ([]models.InquiryRequest, error) {
+	query := `
+SELECT	
+	si.uuid AS inquiry_uuid,
+	si.created_at,
+	users.username,
+	users.avatar_url
+FROM
+	service_inquiries AS si
+INNER JOIN users ON users.id = si.inquirer_id
+WHERE 
+	inquiry_type=$1
+AND 
+	inquiry_status=$2
+AND
+	picker_id=$3
+ORDER BY si.created_at
+OFFSET $4
+LIMIT $5;
+	`
+
+	rows, err := dao.db.Queryx(
+		query,
+		models.InquiryTypeDirect,
+		models.InquiryStatusAsking,
+		p.UserID,
+		p.Offset,
+		p.PerPage,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	irs := make([]models.InquiryRequest, 0)
+
+	for rows.Next() {
+		ir := models.InquiryRequest{}
+
+		if err := rows.StructScan(&ir); err != nil {
+			return irs, nil
+		}
+
+		irs = append(irs, ir)
+	}
+
+	return irs, nil
+}

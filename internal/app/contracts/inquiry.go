@@ -27,6 +27,12 @@ type GetInquiriesParams struct {
 	Statuses    []models.InquiryStatus
 }
 
+type GetInquiryRequestsParams struct {
+	UserID  int
+	Offset  int
+	PerPage int
+}
+
 type InquiryDAOer interface {
 	WithTx(tx db.Conn) InquiryDAOer
 	CheckHasActiveRandomInquiryByID(id int64) (bool, error)
@@ -39,4 +45,5 @@ type InquiryDAOer interface {
 	PatchInquiryByInquiryUUID(params models.PatchInquiryParams) (*models.ServiceInquiry, error)
 	GetActiveInquiry(inquirerId int) (*models.ActiveInquiry, error)
 	GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error)
+	GetInquiryRequests(p GetInquiryRequestsParams) ([]models.InquiryRequest, error)
 }
