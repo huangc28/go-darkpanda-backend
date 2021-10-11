@@ -98,3 +98,12 @@ type RandomGirl struct {
 	User
 	Rating UserRating
 }
+
+type DirectInquiryChatroom struct {
+	Username    string `json:"username"`
+	PickerUUID  string `json:"picker_uuid"`
+	AvatarURL   string `json:"avatar_url"`
+	ServiceType string `json:"service_type"`
+	InquiryUUID string `json:"inquiry_uuid"`
+	ChannelUUID string `json:"channel_uuid"`
+}

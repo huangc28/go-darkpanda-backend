@@ -504,3 +504,53 @@ WHERE
 
 	return err
 }
+
+func (dao *ChatDao) GetDirectInquiryChatrooms(p contracts.GetDirectInquiryChatroomsParams) ([]*models.DirectInquiryChatroom, error) {
+	query := `
+SELECT
+	picker.username, 
+	picker.uuid AS picker_uuid,
+	picker.avatar_url,
+	si.service_type,
+	si.inquiry_status,
+	si.uuid AS inquiry_uuid,
+	chatrooms.channel_uuid
+FROM service_inquiries AS si
+INNER JOIN chatrooms
+	ON chatrooms.inquiry_id = si.id
+	AND chatrooms.deleted_at IS NULL
+	AND inquiry_type='direct'
+INNER JOIN users AS pickers
+	ON pickers.id = si.picker_id
+WHERE
+	si.inquirer_id = $1
+AND si.inquiry_status = $2
+OFFSET $3
+LIMIT $4
+ORDER BY si.created_at DESC;
+	`
+
+	rows, err := dao.DB.Queryx(
+		query,
+		p.InquirerID,
+		models.InquiryStatusChatting,
+		p.Offset,
+		p.PerPage,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	dics := make([]*models.DirectInquiryChatroom, 0)
+
+	for rows.Next() {
+		dic := models.DirectInquiryChatroom{}
+
+		if err := rows.StructScan(&dic); err != nil {
+			return nil, err
+		}
+	}
+
+	return dics, nil
+}

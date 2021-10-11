@@ -411,13 +411,32 @@ func GetChatrooms(c *gin.Context, depCon container.Container) {
 	)
 }
 
+// Retrieve list of direct chatrooms for the male users.
 type GetDirectInquiryChatroomBody struct {
 	Offset  int `form:"offset,default=0"`
-	PerPage int `form:"per_page,default=7"`
+	PerPage int `form:"per_page,default=6"`
 }
 
 func GetDirectInquiryChatroom(c *gin.Context, depCon container.Container) {
+	body := GetDirectInquiryChatroomBody{}
 
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDao contracts.UserDAOer
+	depCon.Make(&userDao)
+
+	chatDao := NewChatDao(db.GetDB())
+	chatDao.GetDirectInquiryChatrooms(contracts.GetDirectInquiryChatroomsParams{})
 }
 
 // Add pagination for firestore. We have to get `page` and `limit` from client.

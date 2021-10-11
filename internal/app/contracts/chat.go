@@ -20,6 +20,12 @@ type UpdateChatByUuidParams struct {
 	ChannelUuid  string
 }
 
+type GetDirectInquiryChatroomsParams struct {
+	InquirerID int
+	Offset     int
+	PerPage    int
+}
+
 type ChatDaoer interface {
 	WithTx(tx *sqlx.Tx) ChatDaoer
 	WithConn(conn db.Conn) ChatDaoer
@@ -38,4 +44,5 @@ type ChatDaoer interface {
 	GetChatroomByServiceId(srvId int) (*models.Chatroom, error)
 	DeleteChatroomByServiceId(srvId int) error
 	DeleteChatroomByInquiryId(iqId int) error
+	GetDirectInquiryChatrooms(p GetDirectInquiryChatroomsParams) ([]*models.DirectInquiryChatroom, error)
 }

@@ -126,7 +126,7 @@ WITH blocked_users AS (
 		ON si.inquirer_id = users.id
 	LEFT JOIN services ON services.inquiry_id = si.id 
 	WHERE (%s)
-	AND inquiry_type=%s 
+	AND inquiry_type=$2 
 	AND si.inquirer_id NOT IN (
 		SELECT
 			blocked_user_id
@@ -140,20 +140,20 @@ WITH blocked_users AS (
 			ongoing_service
 	)
 	ORDER BY si.created_at DESC
-	LIMIT $2
-	OFFSET $3
+	LIMIT $3
+	OFFSET $4
 )
 
 SELECT DISTINCT ON(inquiry_list.inquiry_uuid) * FROM inquiry_list;
 `,
 		statusQuery,
-		string(models.InquiryTypeRandom),
 	)
 
 	inquiries := make([]*models.InquiryInfo, 0)
 	rows, err := dao.db.Queryx(
 		query,
 		p.UserID,
+		models.InquiryTypeRandom,
 		p.PerPage,
 		p.Offset,
 	)

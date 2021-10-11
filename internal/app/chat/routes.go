@@ -1,6 +1,8 @@
 package chat
 
 import (
+	"net/http"
+
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -34,15 +36,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 	g.GET("", func(c *gin.Context) {
 		GetChatrooms(c, depCon)
 	})
-
-	// Retrieve direct inquiry chatrooms approved by females.
-	// g.GET(
-	// 	"/direct-inquiry-chatrooms",
-	// 	middlewares.IsMale(userDao),
-	// 	func(c *gin.Context) {
-	// 		GetDirectInquiryChatroom(c, depCon)
-	// 	},
-	// )
 
 	g.POST(
 		"/emit-text-message",
@@ -91,6 +84,19 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 			EmitServiceConfirmedMessage(c, depCon)
 		},
 	)
+
+	g.GET("/:channel_uuid", func(c *gin.Context) {
+		seg := c.Param(":channel_uuid")
+
+		switch seg {
+		// Retrieve direct inquiry chatrooms approved by females.
+		case "direct-inquiry-chatrooms":
+			middlewares.IsMale(userDao)(c)
+			GetDirectInquiryChatroom(c, depCon)
+		default:
+			c.JSON(http.StatusOK, struct{}{})
+		}
+	})
 
 	// Get historical messages of a specific chatroom.
 	g.GET(
