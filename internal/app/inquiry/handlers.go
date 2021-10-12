@@ -3,7 +3,6 @@ package inquiry
 import (
 	"context"
 	"database/sql"
-	"log"
 	"net/http"
 	"time"
 
@@ -1269,8 +1268,6 @@ type GetDirectInquiryRequestsBody struct {
 }
 
 func GetDirectInquiryRequests(c *gin.Context, depCon container.Container) {
-	log.Println("DEBUG 1")
-
 	body := GetDirectInquiryRequestsBody{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {

@@ -101,8 +101,9 @@ type RandomGirl struct {
 }
 
 type InquiryRequest struct {
-	InquiryUUID string    `json:"inquiry_uuid"`
-	CreatedAt   time.Time `json:"created_at"`
-	Username    string    `json:"username"`
-	AvatarURL   string    `json:"avatar_url"`
+	InquiryUUID   string    `json:"inquiry_uuid"`
+	CreatedAt     time.Time `json:"created_at"`
+	Username      string    `json:"username"`
+	AvatarURL     string    `json:"avatar_url"`
+	InquiryStatus string    `json:"inquiry_status"`
 }

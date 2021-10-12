@@ -442,6 +442,7 @@ func (dao *InquiryDAO) GetInquiryRequests(p contracts.GetInquiryRequestsParams) 
 SELECT	
 	si.uuid AS inquiry_uuid,
 	si.created_at,
+	si.inquiry_status,
 	users.username,
 	users.avatar_url
 FROM
