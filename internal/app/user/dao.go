@@ -358,7 +358,7 @@ SELECT
 	description	
 FROM users 
 WHERE 
-	gender = 'female'
+	gender='female'
 ORDER BY random()
 LIMIT %d 
 OFFSET %d;
@@ -383,6 +383,11 @@ OFFSET %d;
 
 		gs = append(gs, &g)
 		girlIDs = append(girlIDs, g.ID)
+	}
+
+	// If no girls are loaded, we don't have to fetch rating for the girls.
+	if len(gs) == 0 {
+		return gs, nil
 	}
 
 	// Compose a query to retrieve girls rating.
