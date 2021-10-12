@@ -98,7 +98,6 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	// and proceed to the next girl.
 	g.POST(
 		"/skip",
-		middlewares.IsMale(userDAO),
 		func(c *gin.Context) {
 			SkipPickupHandler(c, container)
 		},

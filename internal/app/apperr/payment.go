@@ -9,6 +9,7 @@ var (
 	FailedToCreatePayment                  = "2000006"
 	FailedToTransfromCreatePaymentResponse = "2000007"
 	FailedToPublishServicePaidNotification = "2000008"
+	FailedToInitStringToDeci               = "2000009"
 )
 
 var PaymentErrCodeMsgMap = map[string]string{

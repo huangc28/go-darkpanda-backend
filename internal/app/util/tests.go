@@ -2,6 +2,7 @@ package util
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -70,6 +71,100 @@ func GenTestUserParams() (*models.CreateUserParams, error) {
 	}
 
 	return p, nil
+}
+
+type TestServiceInfo struct {
+	Male    *models.User
+	Female  *models.User
+	Inquiry *models.ServiceInquiry
+	Service *models.Service
+}
+
+type MalePreCreateHook func(*models.CreateUserParams)
+type FemalePreCreateHook func(*models.CreateUserParams)
+type InquiryPreCreateHook func(*models.CreateInquiryParams, *models.User)
+type ServicePreCreateHook func(*models.CreateServiceParams)
+type CreateTestServiceHooks struct {
+	MalePreCreateHook    MalePreCreateHook
+	FemalePreCreateHook  FemalePreCreateHook
+	InquiryPreCreateHook InquiryPreCreateHook
+	ServicePreCreateHook ServicePreCreateHook
+}
+
+// GenTestService generates test service with related inquiry with it's customer and service provider.
+func CreateTestService(ctx context.Context, q *models.Queries, hooks CreateTestServiceHooks) (*TestServiceInfo, error) {
+	maleParams, err := GenTestUserParams()
+
+	if err != nil {
+		return nil, err
+	}
+
+	maleParams.Gender = models.GenderMale
+
+	if hooks.MalePreCreateHook != nil {
+		hooks.MalePreCreateHook(maleParams)
+	}
+
+	male, err := q.CreateUser(ctx, *maleParams)
+
+	if err != nil {
+		return nil, err
+	}
+
+	femaleParams, err := GenTestUserParams()
+
+	if err != nil {
+		return nil, err
+	}
+
+	if hooks.FemalePreCreateHook != nil {
+		hooks.FemalePreCreateHook(femaleParams)
+	}
+
+	female, err := q.CreateUser(ctx, *femaleParams)
+
+	if err != nil {
+		return nil, err
+	}
+
+	iqParams, err := GenTestInquiryParams(male.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if hooks.InquiryPreCreateHook != nil {
+		hooks.InquiryPreCreateHook(iqParams, &female)
+	}
+
+	iq, err := q.CreateInquiry(ctx, *iqParams)
+
+	if err != nil {
+		return nil, err
+	}
+
+	serviceParams, err := GenTestServiceParams(male.ID, female.ID, iq.ID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if hooks.ServicePreCreateHook != nil {
+		hooks.ServicePreCreateHook(serviceParams)
+	}
+
+	srv, err := q.CreateService(ctx, *serviceParams)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &TestServiceInfo{
+		Male:    &male,
+		Female:  &female,
+		Inquiry: &iq,
+		Service: &srv,
+	}, nil
 }
 
 func randomServiceType() models.ServiceType {
@@ -152,6 +247,13 @@ func GenTestServiceParams(customerID int64, serviceProviderID int64, inquiryID i
 
 	if err := faker.FakeData(p); err != nil {
 		return nil, err
+	}
+
+	sid, _ := shortid.Generate()
+
+	p.Uuid = sql.NullString{
+		Valid:  true,
+		String: sid,
 	}
 
 	p.CustomerID = sql.NullInt32{

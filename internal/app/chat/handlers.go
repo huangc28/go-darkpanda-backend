@@ -1057,7 +1057,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			}
 		}
 
-		// Update service status from `negotiating` to unpaid
+		// Update service status from `negotiating` to `unpaid`
 		df := darkfirestore.Get()
 		if err := df.UpdateService(ctx, darkfirestore.UpdateServiceParams{
 			ServiceUuid:   srvModel.Uuid.String,

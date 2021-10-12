@@ -195,8 +195,8 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 
 		userBalDao := NewUserBalanceDAO(tx)
 		userBal, err := userBalDao.CreateOrTopUpBalance(
-			CreateOrTopUpBalanceParams{
-				UserId:      int(user.ID),
+			contracts.CreateOrTopUpBalanceParams{
+				UserID:      int(user.ID),
 				TopupAmount: float64(pkg.Cost.Int32),
 			},
 		)
@@ -263,8 +263,8 @@ func GetCoinBalance(c *gin.Context, depCon container.Container) {
 	userBal, err := userBalDao.GetCoinBalanceByUserId(int(user.ID))
 
 	if err == sql.ErrNoRows {
-		userBal, err = userBalDao.CreateOrTopUpBalance(CreateOrTopUpBalanceParams{
-			UserId: int(user.ID),
+		userBal, err = userBalDao.CreateOrTopUpBalance(contracts.CreateOrTopUpBalanceParams{
+			UserID: int(user.ID),
 		})
 
 		if err != nil {

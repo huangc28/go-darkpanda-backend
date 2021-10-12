@@ -3,7 +3,6 @@ package payment
 import (
 	"context"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
@@ -15,7 +14,10 @@ import (
 	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 )
+
+const MatchingFeeRate = 0.2
 
 type CreatePaymentBody struct {
 	ServiceUuid string `json:"service_uuid" form:"service_uuid" binding:"required,gt=0"`
@@ -92,6 +94,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 	// retry payment again
 	if srv.ServiceStatus != models.ServiceStatusUnpaid &&
 		srv.ServiceStatus != models.ServiceStatusPaymentFailed {
+
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.ServiceStatusInvalidForPayment),
@@ -101,23 +104,22 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 	}
 
 	// We only charge matching fee now.
-	var coinPackageDaoer contracts.CoinPackageDAOer
-	depCon.Make(&coinPackageDaoer)
-
-	matchingFee, err := coinPackageDaoer.GetMatchingFee()
+	priceDeci, err := decimal.NewFromString(srv.Price.String)
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetMatchingFee,
+				apperr.FailedToInitStringToDeci,
 				err.Error(),
 			),
 		)
 
 		return
-
 	}
+
+	// @TODO 0.2 should be extracted to DB instead of hardcoded here.
+	matchingFee := priceDeci.Mul(decimal.NewFromFloat(MatchingFeeRate))
 
 	// Check if the payer has enough balance.
 	err = userBalanceDao.HasEnoughBalanceToCharge(int(user.ID), matchingFee)
@@ -142,7 +144,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 			// Deduct user balance by cost.
 			newBal, err := userBalanceDao.
 				WithTx(tx).
-				DeductUserBalance(
+				DeductMachingFee(
 					int(user.ID),
 					matchingFee,
 				)
@@ -172,12 +174,13 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 
 			// Create a new payment record.
 			q := models.New(tx)
+
 			_, err = q.CreatePayment(
 				ctx,
 				models.CreatePaymentParams{
 					PayerID:   int32(user.ID),
 					ServiceID: int32(srv.ID),
-					Price:     strconv.Itoa(int(matchingFee.Cost.Int32)),
+					Price:     matchingFee.String(),
 				},
 			)
 
