@@ -44,6 +44,9 @@ func NewInquiryFSM(initial models.InquiryStatus) (*fsm.FSM, error) {
 				Name: Cancel.ToString(),
 				Src: []string{
 					string(models.InquiryStatusInquiring),
+
+					// Only girl can cancel a direct inquiry
+					string(models.InquiryStatusAsking),
 				},
 				Dst: string(models.InquiryStatusCanceled),
 			},

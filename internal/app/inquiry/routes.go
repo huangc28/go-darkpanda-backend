@@ -98,6 +98,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	// and proceed to the next girl.
 	g.POST(
 		"/skip",
+		middlewares.IsMale(userDAO),
 		func(c *gin.Context) {
 			SkipPickupHandler(c, container)
 		},
@@ -106,7 +107,6 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 	// Inquiry can cancel an inquiry via this API. Only workable when inquiry status is `inquiring`.
 	g.POST(
 		"/cancel",
-		middlewares.IsMale(userDAO),
 		func(c *gin.Context) {
 			CancelInquiryHandler(c, container)
 		},
