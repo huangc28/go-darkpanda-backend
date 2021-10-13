@@ -509,6 +509,7 @@ type TransformedUpdateInquiry struct {
 	Budget          *float32   `json:"budget"`
 	Duration        *int32     `json:"duration"`
 	Address         *string    `json:"address"`
+	InquiryType     string     `json:"inquiry_type"`
 }
 
 func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
@@ -547,6 +548,7 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 		Budget:          &budgetFloat,
 		Duration:        duration,
 		Address:         address,
+		InquiryType:     string(inquiry.InquiryType),
 	}, nil
 }
 

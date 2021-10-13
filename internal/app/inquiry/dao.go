@@ -408,11 +408,13 @@ AND
 		inquiry_status='inquiring' OR
 		inquiry_status='asking'
 	)
+AND
+	inquiry_type=$2
 ORDER BY created_at DESC
 LIMIT 1;
 	`
 	var m models.ActiveInquiry
-	if err := dao.db.QueryRowx(query, inquirerId).StructScan(&m); err != nil {
+	if err := dao.db.QueryRowx(query, inquirerId, models.InquiryTypeRandom).StructScan(&m); err != nil {
 		return nil, err
 	}
 
