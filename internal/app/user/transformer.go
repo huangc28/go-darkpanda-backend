@@ -350,15 +350,18 @@ func TrfGetUserRatings(ms []models.UserRatings) []TrfmedUserRating {
 }
 
 type TrfedRandomGirl struct {
-	Uuid        string            `json:"uuid"`
-	Username    string            `json:"username"`
-	AvatarURL   string            `json:"avatar_url"`
-	Age         *int32            `json:"age"`
-	Height      *float32          `json:"height"`
-	Weight      *float32          `json:"weight"`
-	BreastSize  string            `json:"breast_size"`
-	Rating      models.UserRating `json:"user_rating"`
-	Description string            `json:"description"`
+	Uuid          string            `json:"uuid"`
+	Username      string            `json:"username"`
+	AvatarURL     string            `json:"avatar_url"`
+	Age           *int32            `json:"age"`
+	Height        *float32          `json:"height"`
+	Weight        *float32          `json:"weight"`
+	BreastSize    string            `json:"breast_size"`
+	Rating        models.UserRating `json:"user_rating"`
+	Description   string            `json:"description"`
+	HasInquiry    bool              `json:"has_inquiry"`
+	InquiryUUID   *string           `json:"inquiry_uuid"`
+	InquiryStatus *string           `json:"inquiry_status"`
 }
 
 type TrfedRandomGirls struct {
@@ -382,15 +385,18 @@ func TrfRandomGirls(rgs []*models.RandomGirl) (*TrfedRandomGirls, error) {
 		}
 
 		trfg := &TrfedRandomGirl{
-			Uuid:        rg.Uuid,
-			Username:    rg.Username,
-			AvatarURL:   rg.AvatarUrl.String,
-			Age:         &rg.Age.Int32,
-			Height:      height,
-			Weight:      weight,
-			BreastSize:  rg.BreastSize.String,
-			Rating:      rg.Rating,
-			Description: rg.Description.String,
+			Uuid:          rg.Uuid,
+			Username:      rg.Username,
+			AvatarURL:     rg.AvatarUrl.String,
+			Age:           &rg.Age.Int32,
+			Height:        height,
+			Weight:        weight,
+			BreastSize:    rg.BreastSize.String,
+			Rating:        rg.Rating,
+			Description:   rg.Description.String,
+			HasInquiry:    rg.HasInquiry,
+			InquiryUUID:   rg.InquiryUUID,
+			InquiryStatus: rg.InquiryStatus,
 		}
 
 		trfgs = append(trfgs, trfg)

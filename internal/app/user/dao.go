@@ -340,33 +340,49 @@ WHERE ratee_id = $1;
 }
 
 // GetGirls retrieve list of girl profile who wants their profile to be viewed publically.
-
+// It also retrieve latest inquiry made between each girl with the male user. If no inquiry
+// has ever existed,
 func (dao *UserDAO) GetGirls(p contracts.GetGirlsParams) ([]*models.RandomGirl, error) {
 	ranSeed := 0.1
 
 	query := fmt.Sprintf(` 
 SELECT 
 	setseed(%f),
-	id,
-	uuid,
 	username,
+	users.uuid,
 	avatar_url,
 	age,
 	height,
 	weight,
 	breast_size,
-	description	
-FROM users 
-WHERE 
+	description,
+	
+	CASE WHEN si.id IS NOT NULL
+    	THEN true
+    	ELSE false
+    	END has_inquiry,
+	si.uuid AS inquiry_uuid,
+	si.inquiry_status
+FROM users
+LEFT JOIN service_inquiries si ON users.id = si.picker_id
+	AND si.inquirer_id=$1 
+	AND si.created_at=(
+	 	SELECT max(created_at)
+        FROM service_inquiries 
+        WHERE inquirer_id=$1
+        AND picker_id = users.id
+	)
+WHERE
 	gender='female'
 ORDER BY random()
-LIMIT %d 
-OFFSET %d;
-	`, ranSeed, p.Limit, p.Offset)
+LIMIT $2
+OFFSET $3;
+	
+	`, ranSeed)
 
 	gs := make([]*models.RandomGirl, 0)
 
-	rows, err := dao.db.Queryx(query)
+	rows, err := dao.db.Queryx(query, p.InquirerID, p.Limit, p.Offset)
 
 	if err != nil {
 		return gs, err

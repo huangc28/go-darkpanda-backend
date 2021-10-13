@@ -22,8 +22,10 @@ type UpdateUserInfoParams struct {
 }
 
 type GetGirlsParams struct {
-	Limit  int
-	Offset int
+	// InquirerID is used to retrieve any latest inquiry with the girl.
+	InquirerID int
+	Limit      int
+	Offset     int
 }
 type UserDAOer interface {
 	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*models.UserWithInquiries, error)

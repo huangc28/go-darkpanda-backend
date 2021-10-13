@@ -628,6 +628,8 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 		Offset: body.Offset,
 	})
 
+	// Retrieve any relation track record via inquiry of current male user with list of girls.
+
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,

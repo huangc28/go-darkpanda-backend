@@ -97,7 +97,16 @@ type UserRating struct {
 type RandomGirl struct {
 	Setseed *string `json:"setseed"`
 	User
-	Rating UserRating
+
+	// HasInquiry indicates whether male has had any inquiry with the girl.
+	HasInquiry bool `json:"has_inquiry"`
+
+	// InquiryUUID is the latest inquiry uuid that the male has with the girl.
+	InquiryUUID *string `json:"inquiry_uuid"`
+
+	// InquiryStatus is the latest inquiry status that the male
+	InquiryStatus *string `json:"inquiry_status"`
+	Rating        UserRating
 }
 
 type InquiryRequest struct {
