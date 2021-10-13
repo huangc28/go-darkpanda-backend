@@ -637,8 +637,6 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	log.Printf("DEBUG me %v", me.ID)
-
 	girls, err := userDao.GetGirls(contracts.GetGirlsParams{
 		InquirerID: int(me.ID),
 		Limit:      body.PerPage,
