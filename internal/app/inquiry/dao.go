@@ -446,7 +446,8 @@ SELECT
 	si.created_at,
 	si.inquiry_status,
 	users.username,
-	users.avatar_url
+	users.avatar_url,
+	users.uuid AS inquirer_uuid
 FROM
 	service_inquiries AS si
 INNER JOIN users ON users.id = si.inquirer_id
