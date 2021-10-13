@@ -623,13 +623,29 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 	var userDao contracts.UserDAOer
 	depCon.Make(&userDao)
 
+	me, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	log.Printf("DEBUG me %v", me.ID)
+
 	girls, err := userDao.GetGirls(contracts.GetGirlsParams{
-		Limit:  body.PerPage,
-		Offset: body.Offset,
+		InquirerID: int(me.ID),
+		Limit:      body.PerPage,
+		Offset:     body.Offset,
 	})
 
 	// Retrieve any relation track record via inquiry of current male user with list of girls.
-
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
