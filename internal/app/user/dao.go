@@ -348,6 +348,7 @@ func (dao *UserDAO) GetGirls(p contracts.GetGirlsParams) ([]*models.RandomGirl, 
 	query := fmt.Sprintf(` 
 SELECT 
 	setseed(%f),
+	users.id,
 	username,
 	users.uuid,
 	avatar_url,
