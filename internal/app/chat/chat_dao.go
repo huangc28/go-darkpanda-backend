@@ -516,8 +516,10 @@ SELECT
 	si.uuid AS inquiry_uuid,
 	si.inquiry_status,
 	si.created_at,
-	chatrooms.channel_uuid
+	chatrooms.channel_uuid,
+	services.uuid AS service_uuid
 FROM service_inquiries AS si
+INNER JOIN services ON si.id = services.inquiry_id
 INNER JOIN chatrooms
 	ON chatrooms.inquiry_id = si.id
 	AND chatrooms.deleted_at IS NULL
