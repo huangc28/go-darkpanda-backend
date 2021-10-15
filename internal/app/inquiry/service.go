@@ -90,6 +90,7 @@ func (s *InquiryService) CreateDirectInquiry(ctx context.Context, p CreateDirect
 			InquiryUuid:  iq.Uuid,
 			InquirerUuid: p.InquirerUUID,
 			InquiryType:  string(models.InquiryTypeDirect),
+			Status:       string(models.InquiryStatusAsking),
 		},
 	)
 

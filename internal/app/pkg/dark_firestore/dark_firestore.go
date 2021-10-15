@@ -539,6 +539,7 @@ type CreateInquiringUserParams struct {
 	InquiryUuid  string
 	InquirerUuid string
 	InquiryType  string
+	Status       string
 }
 
 type InquiringUserInfo struct {
@@ -549,12 +550,16 @@ type InquiringUserInfo struct {
 	ServiceUuid  string `firestore:"service_uuid"`
 }
 
-// CreateInquiry creates new record in inquiries collection.
+// CreateInquiry creates new record in inquiries collection. Inquiry can
 func (df *DarkFirestore) CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error) {
+	if params.Status == "" {
+		params.Status = string(models.InquiryStatusInquiring)
+	}
+
 	data := InquiringUserInfo{
 		InquiryUuid:  params.InquiryUuid,
 		InquirerUuid: params.InquirerUuid,
-		Status:       string(models.InquiryStatusInquiring),
+		Status:       params.Status,
 		ServiceUuid:  "",
 	}
 
