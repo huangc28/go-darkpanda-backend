@@ -64,23 +64,33 @@ func TransformGetIncomingServices(results []ServiceResult, latestMessageMap map[
 	}
 }
 
+type TrfedOverDueService struct {
+	TransformedService
+	CancelCause string `json:"cancel_cause"`
+	Refunded    bool   `json:"refunded"`
+}
+
 type TransformedGetOverdueServices struct {
-	Services []TransformedService `json:"services"`
+	Services []TrfedOverDueService `json:"services"`
 }
 
 func TransformOverDueServices(results []ServiceResult) TransformedGetOverdueServices {
-	trfRes := make([]TransformedService, 0)
+	trfRes := make([]TrfedOverDueService, 0)
 
 	for _, res := range results {
-		c := TransformedService{
-			res.ServiceUuid.String,
-			res.ServiceStatus.String,
-			res.AppointmentTime.Time,
-			res.Username.String,
-			res.UserUuid.String,
-			res.AvatarUrl.String,
-			res.ChannelUuid.String,
-			res.InquiryUuid.String,
+		c := TrfedOverDueService{
+			TransformedService{
+				res.ServiceUuid.String,
+				res.ServiceStatus.String,
+				res.AppointmentTime.Time,
+				res.Username.String,
+				res.UserUuid.String,
+				res.AvatarUrl.String,
+				res.ChannelUuid.String,
+				res.InquiryUuid.String,
+			},
+			string(res.CancelCause),
+			res.Refunded,
 		}
 
 		trfRes = append(trfRes, c)

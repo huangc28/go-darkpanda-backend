@@ -44,12 +44,14 @@ type ServiceResult struct {
 	ServiceUuid     sql.NullString `json:"service_uuid"`
 	ServiceStatus   sql.NullString `json:"service_status"`
 	AppointmentTime sql.NullTime   `json:"appointment_time"`
+	CancelCause     string         `json:"cancel_cause"`
 	Username        sql.NullString `json:"username"`
 	UserUuid        sql.NullString `json:"user_uuid"`
 	AvatarUrl       sql.NullString `json:"avatar_url"`
 	ChannelUuid     sql.NullString `json:"channel_uuid"`
 	InquiryUuid     sql.NullString `json:"inquiry_uuid"`
 	CreatedAt       sql.NullTime   `json:"created_at"`
+	Refunded        bool           `json:"refunded"`
 }
 
 // GetServicesByStatus gets services of given status
@@ -105,11 +107,20 @@ SELECT * FROM (
 			services.service_status,
 			services.appointment_time,
 			services.created_at,
+			services.cancel_cause,
 			users.username,
 			users.uuid as user_uuid,
 			users.avatar_url,
 			chatrooms.channel_uuid,
-			service_inquiries.uuid as inquiry_uuid
+			service_inquiries.uuid as inquiry_uuid,
+			(
+				CASE WHEN payments.refunded IS NULL 
+				THEN
+					false
+				ELSE
+					payments.refunded::BOOLEAN
+				END
+			) AS refunded
 		FROM services INNER JOIN users
 			ON %s
 		INNER JOIN service_inquiries
@@ -117,10 +128,13 @@ SELECT * FROM (
 		INNER JOIN chatrooms
 			ON services.inquiry_id = chatrooms.inquiry_id AND
 					services.deleted_at IS null
+		LEFT JOIN payments ON payments.service_id = services.id
 		WHERE %s
 		AND %s
 	) a ORDER BY created_at DESC
-) b LIMIT $2 OFFSET $3;
+) b 
+	LIMIT $2 
+	OFFSET $3;
 	`,
 		joinTargetPersonClause,
 		whereClause,
