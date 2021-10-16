@@ -45,6 +45,9 @@ const (
 	// Name of the column of `service` document in `services` collection that indicates the status.
 	ServiceStatusFieldName = "status"
 
+	// States the cause of service cancellation.
+	ServiceCancelledCauseFieldName = "cancel_cause"
+
 	// Name of the column of inquiry document in `inquiries` collection.
 	ChannelUuidFieldName = "channel_uuid"
 
@@ -756,6 +759,7 @@ func (df *DarkFirestore) getServiceRef(serviceUuid string) *firestore.DocumentRe
 type CancelServiceParams struct {
 	ChannelUuid string
 	ServiceUuid string
+	Cause       string
 	Data        ChatMessage
 }
 
@@ -776,6 +780,10 @@ func (df *DarkFirestore) CancelService(ctx context.Context, p CancelServiceParam
 				{
 					Path:  ServiceStatusFieldName,
 					Value: models.ServiceStatusCanceled,
+				},
+				{
+					Path:  ServiceCancelledCauseFieldName,
+					Value: p.Cause,
 				},
 			}); err != nil {
 				return err

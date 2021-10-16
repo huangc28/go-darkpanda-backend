@@ -8,6 +8,28 @@ import (
 	"time"
 )
 
+type Cause string
+
+const (
+	CauseNone                            Cause = "none"
+	CauseGirlCancelBeforeAppointmentTime Cause = "girl_cancel_before_appointment_time"
+	CauseGirlCancelAfterAppointmentTime  Cause = "girl_cancel_after_appointment_time"
+	CauseGuyCancelBeforeAppointmentTime  Cause = "guy_cancel_before_appointment_time"
+	CauseGuyCancelAfterAppointmentTime   Cause = "guy_cancel_after_appointment_time"
+)
+
+func (e *Cause) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = Cause(s)
+	case string:
+		*e = Cause(s)
+	default:
+		return fmt.Errorf("unsupported scan type for Cause: %T", src)
+	}
+	return nil
+}
+
 type ChatroomType string
 
 const (
@@ -331,6 +353,8 @@ type Payment struct {
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt sql.NullTime `json:"updated_at"`
 	DeletedAt sql.NullTime `json:"deleted_at"`
+	// cause states the intention of cancelling a payment.
+	Cause Cause `json:"cause"`
 }
 
 type Service struct {

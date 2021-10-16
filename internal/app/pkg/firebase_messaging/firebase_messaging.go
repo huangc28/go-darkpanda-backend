@@ -15,6 +15,8 @@ type DPFirebaseMessenger interface {
 	PublishPickupInquiryNotification(ctx context.Context, m PublishPickupInquiryNotificationMessage) error
 	PublishServicePaidNotification(ctx context.Context, m PublishServicePaidNotificationMessage) error
 	PublishUnpaidServiceExpiredNotification(ctx context.Context, m PublishUnpaidServiceExpiredMessage) error
+	PublishServiceCancelled(ctx context.Context, m PublishServiceCancelledMessage) error
+	PublishServiceRefunded(ctx context.Context, m PublishServiceRefundedMessage) error
 }
 
 type DPFirebaseMessage struct {
@@ -47,6 +49,8 @@ var (
 	ServicePaid          FCMType = "service_paid"
 	UnpaidServiceExpired FCMType = "unpaid_service_expired"
 	AgreeToChat          FCMType = "agree_to_chat"
+	ServiceCancelled     FCMType = "service_cancelled"
+	Refunded             FCMType = "refunded"
 )
 
 type Notification struct {
@@ -198,7 +202,7 @@ func (r *DPFirebaseMessage) PublishMaleAgreeToChat(ctx context.Context, m Publis
 		Notification: &messaging.Notification{
 			Title:    fmt.Sprintf("%s 接受聊天", m.MaleUsername),
 			Body:     string(bd),
-			ImageURL: "https://storage.googleapis.com/dark-panda-6fe35.appspot.com/fcm_logos/logo3.png",
+			ImageURL: FCMImgUrl,
 		},
 	})
 
@@ -209,4 +213,84 @@ func (r *DPFirebaseMessage) PublishMaleAgreeToChat(ctx context.Context, m Publis
 	log.Infof("FCM sent! %s", res)
 
 	return err
+}
+
+// Service with 'xxx' has been cancelled by ...
+type PublishServiceCancelledMessage struct {
+	Topics []string `json:"-"`
+
+	ServiceUUID string `json:"service_uuid"`
+
+	CancellerUUID string `json:"canceller_uuid"`
+
+	CancellerUsername string `json:"canceller_username"`
+}
+
+// PublishServiceCancelled emits service cancelled message to both parties of the service.
+func (r *DPFirebaseMessage) PublishServiceCancelled(ctx context.Context, m PublishServiceCancelledMessage) error {
+	// Publish a message to customer
+	n := Notification{
+		Type:    ServiceCancelled,
+		Content: m,
+	}
+
+	bb, err := json.Marshal(&n)
+
+	if err != nil {
+		return err
+	}
+
+	for _, topic := range m.Topics {
+		res, err := r.c.Send(ctx, &messaging.Message{
+			Topic: topic,
+			Notification: &messaging.Notification{
+				Title:    fmt.Sprintf("%s 取消服務", m.CancellerUsername),
+				Body:     string(bb),
+				ImageURL: FCMImgUrl,
+			},
+		})
+
+		if err != nil {
+			return err
+		}
+
+		log.Infof("cancel service FCM sent! %s", res)
+	}
+
+	return err
+}
+
+type PublishServiceRefundedMessage struct {
+	Topic       string `json:"-"`
+	ServiceUUID string `json:"service_uuid"`
+}
+
+func (r *DPFirebaseMessage) PublishServiceRefunded(ctx context.Context, m PublishServiceRefundedMessage) error {
+	n := Notification{
+		Type:    Refunded,
+		Content: m,
+	}
+
+	bb, err := json.Marshal(&n)
+
+	if err != nil {
+		return err
+	}
+
+	res, err := r.c.Send(ctx, &messaging.Message{
+		Topic: m.Topic,
+		Notification: &messaging.Notification{
+			Title:    "服務退款通知",
+			Body:     string(bb),
+			ImageURL: FCMImgUrl,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Infof("cancel service FCM sent! %s", res)
+
+	return nil
 }

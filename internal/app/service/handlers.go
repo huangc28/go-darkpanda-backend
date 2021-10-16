@@ -16,6 +16,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
 )
@@ -896,6 +897,13 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 //   - Service status is `to_be_fulfilled`.
 //   - Service does not have a canceler.
 // Remember to emit service canceled message to firestore.
+//
+// Refund mechanism:
+//	 Before appointment time, both male and female can cancel the service. Male user we get full refund of matching fee.
+// 	 If male cancels the service within the buffer time, darkpanda will not refund male user matching fee.
+//   If female cancels the service within the buffer time, darkpanda will refund male user matching fee.
+//
+//   Any refund performed due to cancellation of the service, darkpanda will send out FCM message to notify the user.
 func CancelService(c *gin.Context, depCon container.Container) {
 	var (
 		serviceUuid string = c.Param("seg")
@@ -1010,6 +1018,11 @@ func CancelService(c *gin.Context, depCon container.Container) {
 	var chatDao contracts.ChatDaoer
 	depCon.Make(&chatDao)
 
+	type TxResp struct {
+		*models.Service
+		Cause string
+	}
+
 	trxResp := db.TransactWithFormatStruct(
 		db.GetDB(),
 		func(tx *sqlx.Tx) db.FormatResp {
@@ -1037,8 +1050,33 @@ func CancelService(c *gin.Context, depCon container.Container) {
 				}
 			}
 
+			var (
+				userBalDao contracts.UserBalancer
+				paymentDao contracts.PaymentDAOer
+			)
+
+			depCon.Make(&userBalDao)
+			depCon.Make(&paymentDao)
+
+			userBalDao.WithTx(tx)
+			paymentDao.WithTx(tx)
+
+			rs := NewRefundService(paymentDao, userBalDao)
+			cause, err := rs.RefundCustomerIfRefundable(srv, user)
+
+			if err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToPerformRefundCustomerIfRefundable,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
 			return db.FormatResp{
-				Response: usrv,
+				Response: &TxResp{
+					usrv,
+					string(cause),
+				},
 			}
 		},
 	)
@@ -1055,12 +1093,13 @@ func CancelService(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	usrv := trxResp.Response.(*models.Service)
+	// usrv := trxResp.Response.(*models.Service)
+	txResp := trxResp.Response.(*TxResp)
 
 	// Send service cancel message.
 	chatroom, err := chatDao.
 		WithConn(db.GetDB()).
-		GetChatroomByServiceId(int(usrv.ID))
+		GetChatroomByServiceId(int(txResp.ID))
 
 	if err != nil {
 		c.AbortWithError(
@@ -1078,9 +1117,9 @@ func CancelService(c *gin.Context, depCon container.Container) {
 	if err := df.CancelService(ctx,
 		darkfirestore.CancelServiceParams{
 			ChannelUuid: chatroom.ChannelUuid.String,
-			ServiceUuid: usrv.Uuid.String,
+			ServiceUuid: txResp.Uuid.String,
 			Data: darkfirestore.ChatMessage{
-				From: usrv.Uuid.String,
+				From: txResp.Uuid.String,
 			},
 		},
 	); err != nil {
@@ -1093,6 +1132,71 @@ func CancelService(c *gin.Context, depCon container.Container) {
 		)
 
 		return
+	}
+
+	// Emit FCM to notify service cancelled to both party.
+	var dpfcmer dpfcm.DPFirebaseMessenger
+	depCon.Make(&dpfcmer)
+
+	partnerID := txResp.GetPartnerId(user.ID)
+	partner, err := userDao.GetUserByID(int64(partnerID), "fcm_topic")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByID,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if err := dpfcmer.PublishServiceCancelled(ctx, dpfcm.PublishServiceCancelledMessage{
+		Topics: []string{
+			user.FcmTopic.String,
+			partner.FcmTopic.String,
+		},
+		ServiceUUID:       txResp.Uuid.String,
+		CancellerUUID:     user.Uuid,
+		CancellerUsername: user.Username,
+	}); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToSendServiceCancelledFCM,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// If service cancellation is caused by CauseGirlCancelAfterAppointmentTime, we will send refunded FCM to male user.
+	if models.Cause(txResp.Cause) == models.CauseGirlCancelAfterAppointmentTime {
+		var maleParty *models.User
+
+		if user.Gender == models.GenderMale {
+			maleParty = user
+		} else {
+			maleParty = partner
+		}
+
+		if err := dpfcmer.PublishServiceRefunded(ctx, dpfcm.PublishServiceRefundedMessage{
+			Topic:       maleParty.FcmTopic.String,
+			ServiceUUID: txResp.Uuid.String,
+		}); err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToSendRefundedFCM,
+					err.Error(),
+				),
+			)
+
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, struct{}{})

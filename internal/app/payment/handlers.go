@@ -91,7 +91,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 
 	// Makesure the service status is `unpaid` or `payment_failed`.
 	// If service status is `payment_failed`, customer intends to
-	// retry payment again
+	// retry payment again.
 	if srv.ServiceStatus != models.ServiceStatusUnpaid &&
 		srv.ServiceStatus != models.ServiceStatusPaymentFailed {
 

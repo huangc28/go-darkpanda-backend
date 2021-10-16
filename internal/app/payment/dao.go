@@ -5,14 +5,13 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
-	"github.com/jmoiron/sqlx"
 )
 
 type PaymentDAO struct {
-	DB *sqlx.DB
+	DB db.Conn
 }
 
-func NewPaymentDAO(DB *sqlx.DB) *PaymentDAO {
+func NewPaymentDAO(DB db.Conn) *PaymentDAO {
 	return &PaymentDAO{
 		DB: DB,
 	}
@@ -26,6 +25,12 @@ func PaymentDAOServiceProvider(c container.Container) func() error {
 
 		return nil
 	}
+}
+
+func (dao *PaymentDAO) WithTx(tx db.Conn) contracts.PaymentDAOer {
+	dao.DB = tx
+
+	return dao
 }
 
 func (dao *PaymentDAO) GetPaymentsByUuid(uuid string) ([]models.PaymentInfo, error) {
@@ -105,6 +110,7 @@ func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServiceP
 	query := `
 	SELECT 
 		-- Retrieve payment info
+		payments.id AS payment_id,
 	 	payments.price,
 
 	 	-- Retrieve service info
@@ -134,4 +140,32 @@ func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServiceP
 	}
 
 	return &m, nil
+}
+
+func (dao *PaymentDAO) SetRefunded(paymentID int) error {
+	query := `
+UPDATE payments
+SET refunded = true
+WHERE id = $2
+RETURNING *;
+	`
+	if _, err := dao.DB.Exec(query, paymentID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (dao *PaymentDAO) SetRefundCause(paymentID int, cause models.Cause) error {
+	query := `
+UPDATE payments
+SET cause = $1
+WHERE id = $2
+RETURNING *;
+	`
+	if _, err := dao.DB.Exec(query, cause, paymentID); err != nil {
+		return err
+	}
+
+	return nil
 }

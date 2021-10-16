@@ -18,4 +18,5 @@ type UserBalancer interface {
 	HasEnoughBalanceToChargePackage(userId int, pkg *models.CoinPackage) error
 	HasEnoughBalanceToCharge(userID int, cost decimal.Decimal) error
 	CreateOrTopUpBalance(params CreateOrTopUpBalanceParams) (*models.UserBalance, error)
+	AddBalance(userID int, amount decimal.Decimal) error
 }

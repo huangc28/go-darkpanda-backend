@@ -24,15 +24,18 @@ const (
 	ServiceStatusNotValidToCancel   = "1100019"
 	ServiceHasBeenCanceled          = "1100020"
 
-	FailedToDeleteChatroomByServiceId       = "1100021"
-	FailedToSendCancelMessage               = "1100022"
-	FailedToStartService                    = "1100023"
-	FailedToMarshQRCodeInfo                 = "1100024"
-	FailedToSendServiceConfirmedMsg         = "1100025"
-	FailedToSendServiceDetailMsg            = "1100026"
-	FailedToGetOverlappedServices           = "1100027"
-	OverlappingService                      = "1100028"
-	FailedToGetServiceProviderByServiceUUID = "1100029"
+	FailedToDeleteChatroomByServiceId         = "1100021"
+	FailedToSendCancelMessage                 = "1100022"
+	FailedToStartService                      = "1100023"
+	FailedToMarshQRCodeInfo                   = "1100024"
+	FailedToSendServiceConfirmedMsg           = "1100025"
+	FailedToSendServiceDetailMsg              = "1100026"
+	FailedToGetOverlappedServices             = "1100027"
+	OverlappingService                        = "1100028"
+	FailedToGetServiceProviderByServiceUUID   = "1100029"
+	FailedToPerformRefundCustomerIfRefundable = "1100030"
+	FailedToSendServiceCancelledFCM           = "1100031"
+	FailedToSendRefundedFCM                   = "1100032"
 )
 
 var ServiceErrorMessageMap = map[string]string{

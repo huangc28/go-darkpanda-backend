@@ -1,0 +1,8 @@
+BEGIN;
+
+ALTER TABLE payments
+DROP COLUMN IF EXISTS cause;
+
+DROP TYPE IF EXISTS cause;
+
+COMMIT;

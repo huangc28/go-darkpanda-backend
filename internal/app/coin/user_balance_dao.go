@@ -165,3 +165,19 @@ func (s *UserBalanceDAO) HasEnoughBalanceToCharge(userID int, cost decimal.Decim
 	return nil
 
 }
+
+func (dao *UserBalanceDAO) AddBalance(userID int, amount decimal.Decimal) error {
+	query := `
+UPDATE user_balance
+SET balance = balance + $1
+WHERE user_id = $2
+RETURNING *;
+	`
+	amountF, _ := amount.Float64()
+
+	if _, err := dao.db.Exec(query, amountF, userID); err != nil {
+		return err
+	}
+
+	return nil
+}
