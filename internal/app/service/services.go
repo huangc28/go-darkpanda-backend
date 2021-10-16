@@ -38,9 +38,13 @@ func (r *RefundService) RefundCustomerIfRefundable(srv *models.Service, cancelle
 		return models.CauseNone, fmt.Errorf("corrupted service data, service should have price")
 	}
 
+	if !p.PaymentID.Valid {
+		return models.CauseNone, fmt.Errorf("corrupted service data, service should payment ID")
+	}
+
 	cause = getCause(srv.AppointmentTime.Time, canceller.Gender)
 
-	if err := r.paymentDao.SetRefundCause(p.PaymentID, cause); err != nil {
+	if err := r.paymentDao.SetRefundCause(int(p.PaymentID.Int64), cause); err != nil {
 		return models.CauseNone, err
 	}
 
