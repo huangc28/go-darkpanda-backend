@@ -21,54 +21,51 @@ func NewRefundService(pd contracts.PaymentDAOer, ub contracts.UserBalancer) *Ref
 	}
 }
 
-func (r *RefundService) RefundCustomerIfRefundable(srv *models.Service, canceller *models.User) (models.Cause, error) {
-	cause := models.CauseNone
-
-	if !srv.AppointmentTime.Valid {
-		return models.CauseNone, fmt.Errorf("corrupted service data, service should have appointment")
-	}
+func (r *RefundService) RefundCustomerIfRefundable(srv *models.Service, canceller *models.User) (bool, error) {
+	refunded := false
 
 	p, err := r.paymentDao.GetPaymentByServiceUuid(srv.Uuid.String)
 
 	if err != nil {
-		return models.CauseNone, err
+		return refunded, err
 	}
 
 	if !p.Price.Valid {
-		return models.CauseNone, fmt.Errorf("corrupted service data, service should have price")
+		return refunded, fmt.Errorf("corrupted service data, service should have price")
 	}
 
 	if !p.PaymentID.Valid {
-		return models.CauseNone, fmt.Errorf("corrupted service data, service should payment ID")
+		return refunded, fmt.Errorf("corrupted service data, service should payment ID")
 	}
 
-	cause = getCause(srv.AppointmentTime.Time, canceller.Gender)
-
-	if err := r.paymentDao.SetRefundCause(int(p.PaymentID.Int64), cause); err != nil {
-		return models.CauseNone, err
+	if !srv.AppointmentTime.Valid {
+		return refunded, fmt.Errorf("corrupted service data, service should have appointment")
 	}
 
 	if isInAppointmentTimeBufferRange(srv.AppointmentTime.Time) {
 		if canceller.Gender == models.GenderFemale {
 			// Add amount back to the user balance and set payment refunded to be true.
 			if err := r.refund(
+				int(p.PaymentID.Int64),
 				int(srv.CustomerID.Int32),
 				decimal.NewFromFloat(p.Price.Float64),
 			); err != nil {
-				return cause, err
+				return refunded, err
 			}
 
-			return cause, nil
+			refunded = true
 		}
-
-		return cause, nil
 	}
 
-	return cause, nil
+	return refunded, nil
 }
 
 // The below action should be atomic. The better way is to check if
-func (r *RefundService) refund(userID int, amount decimal.Decimal) error {
+func (r *RefundService) refund(paymentID, userID int, amount decimal.Decimal) error {
+	if err := r.paymentDao.SetRefunded(paymentID); err != nil {
+		return err
+	}
+
 	if err := r.userBalanceDao.AddBalance(userID, amount); err != nil {
 		return err
 	}
@@ -76,20 +73,20 @@ func (r *RefundService) refund(userID int, amount decimal.Decimal) error {
 	return nil
 }
 
-func getCause(apt time.Time, gender models.Gender) models.Cause {
+func GetCancelCause(apt time.Time, gender models.Gender) models.CancelCause {
 	if isInAppointmentTimeBufferRange(apt) {
 		if gender == models.GenderFemale {
-			return models.CauseGirlCancelAfterAppointmentTime
+			return models.CancelCauseGirlCancelAfterAppointmentTime
 		}
 
-		return models.CauseGirlCancelAfterAppointmentTime
+		return models.CancelCauseGirlCancelAfterAppointmentTime
 	}
 
 	if gender == models.GenderFemale {
-		return models.CauseGirlCancelBeforeAppointmentTime
+		return models.CancelCauseGirlCancelBeforeAppointmentTime
 	}
 
-	return models.CauseGuyCancelBeforeAppointmentTime
+	return models.CancelCauseGuyCancelBeforeAppointmentTime
 }
 
 func isInAppointmentTimeBufferRange(apt time.Time) bool {

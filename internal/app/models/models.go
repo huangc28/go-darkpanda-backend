@@ -8,24 +8,24 @@ import (
 	"time"
 )
 
-type Cause string
+type CancelCause string
 
 const (
-	CauseNone                            Cause = "none"
-	CauseGirlCancelBeforeAppointmentTime Cause = "girl_cancel_before_appointment_time"
-	CauseGirlCancelAfterAppointmentTime  Cause = "girl_cancel_after_appointment_time"
-	CauseGuyCancelBeforeAppointmentTime  Cause = "guy_cancel_before_appointment_time"
-	CauseGuyCancelAfterAppointmentTime   Cause = "guy_cancel_after_appointment_time"
+	CancelCauseNone                            CancelCause = "none"
+	CancelCauseGirlCancelBeforeAppointmentTime CancelCause = "girl_cancel_before_appointment_time"
+	CancelCauseGirlCancelAfterAppointmentTime  CancelCause = "girl_cancel_after_appointment_time"
+	CancelCauseGuyCancelBeforeAppointmentTime  CancelCause = "guy_cancel_before_appointment_time"
+	CancelCauseGuyCancelAfterAppointmentTime   CancelCause = "guy_cancel_after_appointment_time"
 )
 
-func (e *Cause) Scan(src interface{}) error {
+func (e *CancelCause) Scan(src interface{}) error {
 	switch s := src.(type) {
 	case []byte:
-		*e = Cause(s)
+		*e = CancelCause(s)
 	case string:
-		*e = Cause(s)
+		*e = CancelCause(s)
 	default:
-		return fmt.Errorf("unsupported scan type for Cause: %T", src)
+		return fmt.Errorf("unsupported scan type for CancelCause: %T", src)
 	}
 	return nil
 }
@@ -353,8 +353,7 @@ type Payment struct {
 	CreatedAt time.Time    `json:"created_at"`
 	UpdatedAt sql.NullTime `json:"updated_at"`
 	DeletedAt sql.NullTime `json:"deleted_at"`
-	// cause states the intention of cancelling a payment.
-	Cause Cause `json:"cause"`
+	Refunded  sql.NullBool `json:"refunded"`
 }
 
 type Service struct {
@@ -376,6 +375,8 @@ type Service struct {
 	StartTime         sql.NullTime   `json:"start_time"`
 	EndTime           sql.NullTime   `json:"end_time"`
 	CancellerID       sql.NullInt32  `json:"canceller_id"`
+	// cause states the intention of cancelling a service.
+	CancelCause CancelCause `json:"cancel_cause"`
 }
 
 type ServiceInquiry struct {

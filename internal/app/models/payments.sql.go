@@ -13,7 +13,7 @@ INSERT INTO payments (
 	service_id,
 	price
 ) VALUES ($1, $2, $3)
-RETURNING id, payer_id, service_id, price, created_at, updated_at, deleted_at, cause
+RETURNING id, payer_id, service_id, price, created_at, updated_at, deleted_at, refunded
 `
 
 type CreatePaymentParams struct {
@@ -33,7 +33,7 @@ func (q *Queries) CreatePayment(ctx context.Context, arg CreatePaymentParams) (P
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.DeletedAt,
-		&i.Cause,
+		&i.Refunded,
 	)
 	return i, err
 }

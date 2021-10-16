@@ -10,5 +10,4 @@ type PaymentDAOer interface {
 	GetPaymentsByUuid(uuid string) ([]models.PaymentInfo, error)
 	GetPaymentByServiceUuid(srvUuid string) (*models.ServicePaymentDetail, error)
 	SetRefunded(paymentID int) error
-	SetRefundCause(paymentID int, cause models.Cause) error
 }

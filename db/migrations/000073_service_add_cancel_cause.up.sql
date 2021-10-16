@@ -1,5 +1,5 @@
 BEGIN;
-    CREATE TYPE cause AS ENUM (
+    CREATE TYPE cancel_cause AS ENUM (
         'none',
         'girl_cancel_before_appointment_time',
         'girl_cancel_after_appointment_time',
@@ -7,8 +7,8 @@ BEGIN;
         'guy_cancel_after_appointment_time'
     );
     
-    ALTER TABLE payments
-    ADD COLUMN cause cause DEFAULT 'none';
+    ALTER TABLE services
+    ADD COLUMN cancel_cause cancel_cause DEFAULT 'none';
     
-    COMMENT ON COLUMN payments.cause IS 'cause states the intention of cancelling a payment.';
+    COMMENT ON COLUMN services.cancel_cause IS 'cause states the intention of cancelling a service.';
 COMMIT;

@@ -146,24 +146,10 @@ func (dao *PaymentDAO) SetRefunded(paymentID int) error {
 	query := `
 UPDATE payments
 SET refunded = true
-WHERE id = $2
+WHERE id = $1
 RETURNING *;
 	`
 	if _, err := dao.DB.Exec(query, paymentID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (dao *PaymentDAO) SetRefundCause(paymentID int, cause models.Cause) error {
-	query := `
-UPDATE payments
-SET cause = $1
-WHERE id = $2
-RETURNING *;
-	`
-	if _, err := dao.DB.Exec(query, cause, paymentID); err != nil {
 		return err
 	}
 

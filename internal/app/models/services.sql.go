@@ -24,7 +24,7 @@ INSERT INTO services(
 	start_time,
 	end_time
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
-RETURNING id, uuid, customer_id, service_provider_id, price, duration, appointment_time, service_type, created_at, updated_at, deleted_at, budget, inquiry_id, service_status, address, start_time, end_time, canceller_id
+RETURNING id, uuid, customer_id, service_provider_id, price, duration, appointment_time, service_type, created_at, updated_at, deleted_at, budget, inquiry_id, service_status, address, start_time, end_time, canceller_id, cancel_cause
 `
 
 type CreateServiceParams struct {
@@ -79,6 +79,7 @@ func (q *Queries) CreateService(ctx context.Context, arg CreateServiceParams) (S
 		&i.StartTime,
 		&i.EndTime,
 		&i.CancellerID,
+		&i.CancelCause,
 	)
 	return i, err
 }

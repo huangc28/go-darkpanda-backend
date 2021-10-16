@@ -1,7 +1,6 @@
--- Deprecated
--- BEGIN;
+BEGIN;
 
--- ALTER TABLE payments
--- ADD COLUMN  refunded boolean default false;
+ALTER TABLE payments
+ADD COLUMN  refunded boolean default false;
 
--- COMMIT;
+COMMIT;

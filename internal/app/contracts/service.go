@@ -20,6 +20,7 @@ type UpdateServiceByIDParams struct {
 	Address       *string
 
 	CancellerId *int64
+	CancelCause *models.CancelCause
 }
 
 type CreateServiceQRCodeParams struct {
