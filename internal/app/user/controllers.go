@@ -637,6 +637,8 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	// GetGirls still needs service uuid (if a service has ever established) and channel_uuid
+
 	girls, err := userDao.GetGirls(contracts.GetGirlsParams{
 		InquirerID: int(me.ID),
 		Limit:      body.PerPage,

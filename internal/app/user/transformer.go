@@ -362,6 +362,10 @@ type TrfedRandomGirl struct {
 	HasInquiry    bool              `json:"has_inquiry"`
 	InquiryUUID   *string           `json:"inquiry_uuid"`
 	InquiryStatus *string           `json:"inquiry_status"`
+
+	HasService  bool    `json:"has_service"`
+	ChannelUUID *string `json:"channel_uuid"`
+	ServiceUUID *string `json:"service_uuid"`
 }
 
 type TrfedRandomGirls struct {
@@ -397,6 +401,9 @@ func TrfRandomGirls(rgs []*models.RandomGirl) (*TrfedRandomGirls, error) {
 			HasInquiry:    rg.HasInquiry,
 			InquiryUUID:   rg.InquiryUUID,
 			InquiryStatus: rg.InquiryStatus,
+			HasService:    rg.HasService,
+			ChannelUUID:   rg.ChannelUUID,
+			ServiceUUID:   rg.ServiceUUID,
 		}
 
 		trfgs = append(trfgs, trfg)

@@ -362,8 +362,16 @@ SELECT
     	THEN true
     	ELSE false
     	END has_inquiry,
+
+    CASE WHEN services.uuid IS NOT NULL
+    	THEN true
+    	ELSE false
+    	END has_service,
+
 	si.uuid AS inquiry_uuid,
-	si.inquiry_status
+	si.inquiry_status,
+	chatrooms.channel_uuid,
+	services.uuid AS service_uuid
 FROM users
 LEFT JOIN service_inquiries si ON users.id = si.picker_id
 	AND si.inquirer_id=$1 
@@ -373,6 +381,8 @@ LEFT JOIN service_inquiries si ON users.id = si.picker_id
         WHERE inquirer_id=$1
         AND picker_id = users.id
 	)
+LEFT JOIN chatrooms ON chatrooms.inquiry_id = si.id
+LEFT JOIN services ON services.inquiry_id = si.id
 WHERE
 	gender='female'
 ORDER BY random()
