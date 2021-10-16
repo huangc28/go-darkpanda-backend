@@ -40,7 +40,7 @@ type ActiveInquiry struct {
 }
 
 type ServicePaymentDetail struct {
-	PaymentID int             `json:"payment_id"`
+	PaymentID sql.NullInt64   `json:"payment_id"`
 	Price     sql.NullFloat64 `json:"price"`
 
 	Address         string        `json:"address"`
