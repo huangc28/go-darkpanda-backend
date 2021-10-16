@@ -19,6 +19,7 @@ import (
 	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
+	log "github.com/sirupsen/logrus"
 )
 
 // GetListOfCurrentServicesHandler retrieve those service of the following status:
@@ -1029,6 +1030,8 @@ func CancelService(c *gin.Context, depCon container.Container) {
 		func(tx *sqlx.Tx) db.FormatResp {
 			refunded := false
 			cancelCause := GetCancelCause(srv.AppointmentTime.Time, user.Gender)
+
+			log.Infof("%s cancel cause: %s", user.Uuid, string(cancelCause))
 
 			// Change service status to cancel.
 			srvStatus := models.ServiceStatus(srvFsm.Current())
