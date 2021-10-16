@@ -682,4 +682,4 @@ COMMIT;BEGIN;
     ADD COLUMN cancel_cause cancel_cause DEFAULT 'none';
     
     COMMENT ON COLUMN services.cancel_cause IS 'cause states the intention of cancelling a service.';
-COMMIT;
+COMMIT;ALTER TYPE cancel_cause ADD VALUE 'payment_failed';

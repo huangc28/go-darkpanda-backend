@@ -1031,6 +1031,10 @@ func CancelService(c *gin.Context, depCon container.Container) {
 			refunded := false
 			cancelCause := GetCancelCause(srv.AppointmentTime.Time, user.Gender)
 
+			if srv.ServiceStatus == models.ServiceStatusPaymentFailed {
+				cancelCause = models.CancelCausePaymentFailed
+			}
+
 			log.Infof("%s cancel cause: %s", user.Uuid, string(cancelCause))
 
 			// Change service status to cancel.

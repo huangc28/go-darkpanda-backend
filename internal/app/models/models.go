@@ -16,6 +16,7 @@ const (
 	CancelCauseGirlCancelAfterAppointmentTime  CancelCause = "girl_cancel_after_appointment_time"
 	CancelCauseGuyCancelBeforeAppointmentTime  CancelCause = "guy_cancel_before_appointment_time"
 	CancelCauseGuyCancelAfterAppointmentTime   CancelCause = "guy_cancel_after_appointment_time"
+	CancelCausePaymentFailed                   CancelCause = "payment_failed"
 )
 
 func (e *CancelCause) Scan(src interface{}) error {

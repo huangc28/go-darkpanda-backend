@@ -112,11 +112,20 @@ func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServiceP
 		-- Retrieve payment info
 		payments.id AS payment_id,
 	 	payments.price,
+		(
+			CASE WHEN payments.refunded IS NULL 
+			THEN
+				false
+			ELSE
+				payments.refunded::BOOLEAN
+			END
+		) AS refunded,
 
 	 	-- Retrieve service info
 	 	services.address,
 	 	services.appointment_time,
 	 	services.duration,
+		services.cancel_cause,
 
 	  	-- Retrieve picker info
 	  	pickers.uuid AS picker_uuid,

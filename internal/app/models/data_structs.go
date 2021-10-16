@@ -42,10 +42,12 @@ type ActiveInquiry struct {
 type ServicePaymentDetail struct {
 	PaymentID sql.NullInt64   `json:"payment_id"`
 	Price     sql.NullFloat64 `json:"price"`
+	Refunded  bool            `json:"refunded"`
 
 	Address         string        `json:"address"`
 	AppointmentTime sql.NullTime  `json:"appointment_time"`
 	Duration        sql.NullInt64 `json:"duration"`
+	CancelCause     string        `json:"cancel_cause"`
 
 	PickerUuid      string         `json:"picker_uuid"`
 	PickerUsername  string         `json:"picker_username"`

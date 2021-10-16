@@ -148,10 +148,12 @@ type TrfedPaymentDetail struct {
 	Address   string     `json:"address"`
 	StartTime *time.Time `json:"start_time"`
 	Duration  *int64     `json:"duration"`
+	Refunded  bool       `json:"refunded"`
 
 	PickerUuid      string  `json:"picker_uuid"`
 	PickerUsername  string  `json:"picker_username"`
 	PickerAvatarUrl *string `json:"picker_avatar_url"`
+	CancelCause     string  `json:"cancel_cause"`
 
 	HasCommented bool `json:"has_commented"`
 	HasBlocked   bool `json:"has_blocked"`
@@ -167,10 +169,12 @@ type TrfPaymentDetailParams struct {
 
 func TrfPaymentDetail(p TrfPaymentDetailParams) TrfedPaymentDetail {
 	trf := TrfedPaymentDetail{
-		Address: p.PaymentDetail.Address,
+		Address:  p.PaymentDetail.Address,
+		Refunded: p.PaymentDetail.Refunded,
 
 		PickerUuid:     p.PaymentDetail.PickerUuid,
 		PickerUsername: p.PaymentDetail.PickerUsername,
+		CancelCause:    p.PaymentDetail.CancelCause,
 
 		HasCommented: p.HasCommented,
 		HasBlocked:   p.HasBlocked,
