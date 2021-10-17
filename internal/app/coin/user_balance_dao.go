@@ -99,7 +99,15 @@ RETURNING *;
 }
 
 func (dao *UserBalanceDAO) DeductUserPackageCostFromBalance(userID int, pkg *models.CoinPackage) (*models.UserBalance, error) {
-	return dao.deductCostFromBalance(userID, float64(pkg.Cost.Int32))
+	cDeci, err := decimal.NewFromString(pkg.Cost.String)
+
+	if err != nil {
+		return nil, err
+	}
+
+	cF, _ := cDeci.Float64()
+
+	return dao.deductCostFromBalance(userID, cF)
 }
 
 func (s *UserBalanceDAO) DeductMachingFee(userID int, matchingFee decimal.Decimal) (*models.UserBalance, error) {
@@ -121,7 +129,11 @@ func (s *UserBalanceDAO) HasEnoughBalanceToChargePackage(userID int, pkg *models
 		return err
 	}
 
-	pkgCost := decimal.NewFromInt32(pkg.Cost.Int32)
+	pkgCost, err := decimal.NewFromString(pkg.Cost.String)
+
+	if err != nil {
+		return err
+	}
 
 	hasEnough := balanceDeci.GreaterThan(pkgCost) || balanceDeci.Equal(pkgCost)
 

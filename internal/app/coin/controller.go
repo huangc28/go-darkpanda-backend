@@ -331,7 +331,19 @@ func GetCoinPackages(c *gin.Context) {
 
 	}
 
-	trfPkgs := TransformCoinPakcages(pkgs)
+	trfPkgs, err := TransformCoinPakcages(pkgs)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToTransformCoinPackage,
+				err.Error(),
+			),
+		)
+
+		return
+	}
 
 	c.JSON(http.StatusOK, trfPkgs)
 }
