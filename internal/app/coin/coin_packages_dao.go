@@ -45,7 +45,8 @@ SELECT
 FROM
 	coin_packages
 WHERE
-	name <> $1;
+	name <> $1 AND 
+	name <> $2;
 	`
 
 	rows, err := dao.
@@ -53,6 +54,7 @@ WHERE
 		Queryx(
 			query,
 			MatchingFee,
+			MatchingFeeRate,
 		)
 
 	if err != nil {

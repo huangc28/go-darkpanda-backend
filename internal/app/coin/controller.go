@@ -3,7 +3,6 @@ package coin
 import (
 	"database/sql"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/golobby/container/pkg/container"
@@ -15,6 +14,7 @@ import (
 	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/pkg/requestbinder"
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 )
 
 type PaymentResponse struct {
@@ -87,6 +87,22 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 	}
 
 	// Insert into coin_orders with order_status "ordering".
+	costDeci, err := decimal.NewFromString(pkg.Cost.String)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToInitStringToDeci,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	costF, _ := costDeci.Float64()
+
 	coinDao := NewCoinDAO(db.GetDB())
 	coinOrder, err := coinDao.OrderCoin(
 		contracts.OrderCoinParams{
@@ -94,7 +110,7 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 			PackageId:   int(pkg.ID),
 			Quantity:    1,
 			OrderStatus: models.OrderStatusOrdering,
-			Cost:        int(pkg.Cost.Int32),
+			Cost:        costF,
 		},
 	)
 
@@ -110,7 +126,6 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	//tpCred := config.GetAppConf().TapPayCredential
 	appConf := config.GetAppConf()
 
 	tpayer := NewTapPayer(
@@ -125,7 +140,7 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 		PayByPrimeParams{
 			Prime:    body.Prime,
 			Details:  "Tappay test",
-			Amount:   strconv.Itoa(int(pkg.Cost.Int32)),
+			Amount:   pkg.Cost.String,
 			Currency: "TWD",
 			Cardholder: CardHolderParams{
 				PhoneNumber: user.Mobile.String,
@@ -194,10 +209,11 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 		}
 
 		userBalDao := NewUserBalanceDAO(tx)
+		// costDeci, _, := decimal.NewFromString(pkg.Cost.String)
 		userBal, err := userBalDao.CreateOrTopUpBalance(
 			contracts.CreateOrTopUpBalanceParams{
-				UserID:      int(user.ID),
-				TopupAmount: float64(pkg.Cost.Int32),
+				UserID: int(user.ID),
+				// TopupAmount: float64(pkg.Cost.Int32),
 			},
 		)
 

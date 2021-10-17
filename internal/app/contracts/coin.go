@@ -9,7 +9,7 @@ type OrderCoinParams struct {
 	BuyerID     int
 	PackageId   int
 	Quantity    int
-	Cost        int
+	Cost        float64
 	OrderStatus models.OrderStatus
 }
 
