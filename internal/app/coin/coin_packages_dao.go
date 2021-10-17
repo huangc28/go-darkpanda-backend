@@ -10,11 +10,12 @@ import (
 type PackageName string
 
 const (
-	DpCoin200   PackageName = "dp_coin_200"
-	DpCoin500   PackageName = "dp_coin_500"
-	DpCoin1000  PackageName = "dp_coin_1000"
-	DpCoin2000  PackageName = "dp_coin_2000"
-	MatchingFee PackageName = "matching_fee"
+	DpCoin200       PackageName = "dp_coin_200"
+	DpCoin500       PackageName = "dp_coin_500"
+	DpCoin1000      PackageName = "dp_coin_1000"
+	DpCoin2000      PackageName = "dp_coin_2000"
+	MatchingFee     PackageName = "matching_fee"
+	MatchingFeeRate PackageName = "matching_fee_rate"
 )
 
 type CoinPackagesDAO struct {
@@ -91,7 +92,7 @@ WHERE coin_packages.id = $1;
 	return &pkg, nil
 }
 
-func (dao *CoinPackagesDAO) GetMatchingFee() (*models.CoinPackage, error) {
+func (dao *CoinPackagesDAO) getCoinPackage(name PackageName) (*models.CoinPackage, error) {
 	query := `
 SELECT *
 FROM coin_packages
@@ -100,9 +101,17 @@ WHERE name = $1;
 
 	var m models.CoinPackage
 
-	if err := dao.db.QueryRowx(query, MatchingFee).StructScan(&m); err != nil {
+	if err := dao.db.QueryRowx(query, string(name)).StructScan(&m); err != nil {
 		return nil, err
 	}
 
 	return &m, nil
+}
+
+func (dao *CoinPackagesDAO) GetMatchingFee() (*models.CoinPackage, error) {
+	return dao.getCoinPackage(MatchingFee)
+}
+
+func (dao *CoinPackagesDAO) GetMatchingFeeRate() (*models.CoinPackage, error) {
+	return dao.getCoinPackage(MatchingFeeRate)
 }

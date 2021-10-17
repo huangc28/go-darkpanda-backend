@@ -25,4 +25,5 @@ type CoinDAOer interface {
 
 type CoinPackageDAOer interface {
 	GetMatchingFee() (*models.CoinPackage, error)
+	GetMatchingFeeRate() (*models.CoinPackage, error)
 }

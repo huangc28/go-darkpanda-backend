@@ -682,4 +682,14 @@ COMMIT;BEGIN;
     ADD COLUMN cancel_cause cancel_cause DEFAULT 'none';
     
     COMMENT ON COLUMN services.cancel_cause IS 'cause states the intention of cancelling a service.';
-COMMIT;ALTER TYPE cancel_cause ADD VALUE 'payment_failed';
+COMMIT;ALTER TYPE cancel_cause ADD VALUE 'payment_failed';BEGIN; 
+
+ALTER TABLE coin_packages
+ALTER COLUMN cost TYPE NUMERIC(12, 2);
+
+COMMIT;BEGIN;
+
+ALTER TABLE services
+ADD COLUMN IF NOT EXISTS matching_fee numeric(12, 2) default 0;
+
+COMMIT;

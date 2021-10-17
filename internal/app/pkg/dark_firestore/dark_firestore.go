@@ -199,7 +199,7 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 type ServiceDetailMessage struct {
 	ChatMessage
 	Price       float64 `firestore:"price,omitempty" json:"price"`
-	MatchingFee int     `firestore:"matching_fee" json:"matching_fee"`
+	MatchingFee float64 `firestore:"matching_fee" json:"matching_fee"`
 	Duration    int     `firestore:"duration,omitempty" json:"duration"`
 	ServiceUUID string  `firestore:"service_uuid" json:"service_uuid"`
 	ServiceTime int64   `firestore:"service_time,omitempty" json:"service_time"`
@@ -236,10 +236,11 @@ func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, ch
 	quitChan := make(chan struct{})
 	dataChan := make(chan []map[string]interface{})
 
+OuterLoop:
 	for _, channelUUID := range channelUUIDs {
 		select {
 		case <-quitChan:
-			break
+			break OuterLoop
 		default:
 			go func(channelUUID string) {
 				// What happens if channelUUID does not exists in firestore?
@@ -364,7 +365,7 @@ func (df *DarkFirestore) GetHistoricalMessages(ctx context.Context, params GetHi
 type InquiryDetailMessage struct {
 	ChatMessage
 	Price           float64 `firestore:"price,omitempty" json:"price"`
-	MatchingFee     int     `firestore:"matching_fee,omitempty" json:"matching_fee"`
+	MatchingFee     float64 `firestore:"matching_fee,omitempty" json:"matching_fee"`
 	Duration        int     `firestore:"duration,omitempty" json:"duration"`
 	InquiryUuid     string  `firestore:"inquiry_uuid" json:"inquiry_uuid"`
 	AppointmentTime int64   `firestore:"appointment_time,omitempty" json:"appointment_time"`

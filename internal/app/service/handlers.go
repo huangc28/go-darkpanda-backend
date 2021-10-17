@@ -633,7 +633,7 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	matchingFee, err := coinPkgDaoer.GetMatchingFee()
+	matchingFeeRate, err := coinPkgDaoer.GetMatchingFeeRate()
 
 	if err != nil {
 		c.AbortWithError(
@@ -646,12 +646,26 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	matchingFee, err := matchingFeeRate.CalcMatchingFeeFromString(srv.Price.String)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCalcServiceMatchingFee,
+				err.Error(),
+			),
+		)
+	}
+
+	return
+
 	c.JSON(http.StatusOK, TrfPaymentDetail(
 		TrfPaymentDetailParams{
 			PaymentDetail: p,
 			HasCommented:  hasCommented,
 			HasBlocked:    hasBlocked,
-			MatchingFee:   int(matchingFee.Cost.Int32),
+			MatchingFee:   matchingFee,
 		},
 	))
 }
@@ -680,7 +694,7 @@ func GetServiceDetailHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	matchingFee, err := coinDao.GetMatchingFee()
+	matchingFeeRate, err := coinDao.GetMatchingFeeRate()
 
 	if err != nil {
 		c.AbortWithError(
@@ -694,7 +708,22 @@ func GetServiceDetailHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	trfed, err := TrfServiceDetail(*srv, int(matchingFee.Cost.Int32))
+	matchingFee, err := matchingFeeRate.CalcMatchingFeeFromString(srv.Price.String)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCalcServiceMatchingFee,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
+	trfed, err := TrfServiceDetail(*srv, matchingFee)
 
 	if err != nil {
 		c.AbortWithError(

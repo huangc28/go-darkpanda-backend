@@ -1,0 +1,1 @@
+ALTER TYPE cancel_cause ADD VALUE 'payment_failed';

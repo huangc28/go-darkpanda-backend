@@ -38,6 +38,7 @@ const (
 	FailedToSendCompletePaymentMessage = "7000032"
 	FailedToGetInquiryByServiceUuid    = "7000033"
 	ServiceEditorIsNotServiceProvider  = "7000034"
+	FailedToCalcInquiryMatchingFee     = "7000035"
 )
 
 var ChatErrorMessageMap = map[string]string{

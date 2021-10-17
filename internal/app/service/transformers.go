@@ -155,14 +155,14 @@ type TrfedPaymentDetail struct {
 	PickerAvatarUrl *string `json:"picker_avatar_url"`
 	CancelCause     string  `json:"cancel_cause"`
 
-	HasCommented bool `json:"has_commented"`
-	HasBlocked   bool `json:"has_blocked"`
-	MatchingFee  int  `json:"matching_fee"`
+	HasCommented bool    `json:"has_commented"`
+	HasBlocked   bool    `json:"has_blocked"`
+	MatchingFee  float64 `json:"matching_fee"`
 }
 
 type TrfPaymentDetailParams struct {
 	PaymentDetail *models.ServicePaymentDetail
-	MatchingFee   int
+	MatchingFee   float64
 	HasCommented  bool
 	HasBlocked    bool
 }
@@ -200,7 +200,7 @@ func TrfPaymentDetail(p TrfPaymentDetailParams) TrfedPaymentDetail {
 	return trf
 }
 
-func TrfServiceDetail(srv models.Service, matchingFee int) (interface{}, error) {
+func TrfServiceDetail(srv models.Service, matchingFee float64) (interface{}, error) {
 	decPrice, err := decimal.NewFromString(srv.Price.String)
 
 	if err != nil {
@@ -233,7 +233,7 @@ func TrfServiceDetail(srv models.Service, matchingFee int) (interface{}, error) 
 		Address       string     `json:"address"`
 		StartTime     *time.Time `json:"start_time"`
 		EndTime       *time.Time `json:"end_time"`
-		MatchingFee   int        `json:"matching_fee"`
+		MatchingFee   float64    `json:"matching_fee"`
 		CreatedAt     time.Time  `json:"created_at"`
 	}{
 		srv.Uuid.String,

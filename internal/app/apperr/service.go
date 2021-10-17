@@ -36,6 +36,7 @@ const (
 	FailedToPerformRefundCustomerIfRefundable = "1100030"
 	FailedToSendServiceCancelledFCM           = "1100031"
 	FailedToSendRefundedFCM                   = "1100032"
+	FailedToCalcServiceMatchingFee            = "1100033"
 )
 
 var ServiceErrorMessageMap = map[string]string{

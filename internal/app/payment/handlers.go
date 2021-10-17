@@ -118,7 +118,6 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// @TODO 0.2 should be extracted to DB instead of hardcoded here.
 	matchingFee := priceDeci.Mul(decimal.NewFromFloat(MatchingFeeRate))
 
 	// Check if the payer has enough balance.
@@ -139,14 +138,25 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 	// Charge user, change the service status to `to_be_fulfilled` and create a payment record.
 	ctx := context.Background()
 	trxResp := db.TransactWithFormatStruct(
+
 		db.GetDB(),
 		func(tx *sqlx.Tx) db.FormatResp {
+			srvPrice, err := decimal.NewFromString(srv.Price.String)
+
+			if err != nil {
+				return db.FormatResp{
+					Err:            err,
+					ErrCode:        apperr.FailedToInitStringToDeci,
+					HttpStatusCode: http.StatusInternalServerError,
+				}
+			}
+
 			// Deduct user balance by cost.
 			newBal, err := userBalanceDao.
 				WithTx(tx).
 				DeductMachingFee(
 					int(user.ID),
-					matchingFee,
+					srvPrice,
 				)
 
 			if err != nil {

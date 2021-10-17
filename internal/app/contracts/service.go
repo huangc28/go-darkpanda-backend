@@ -11,6 +11,7 @@ type UpdateServiceByIDParams struct {
 	ID int64
 
 	Price         *float64
+	MatchingFee   *float64
 	Duration      *int
 	Appointment   *time.Time
 	ServiceType   *models.ServiceType

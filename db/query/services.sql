@@ -12,6 +12,7 @@ INSERT INTO services(
 	service_type,
 	address,
 	start_time,
-	end_time
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	end_time,
+	matching_fee	
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 RETURNING *;

@@ -42,22 +42,20 @@ func (r *RefundService) RefundCustomerIfRefundable(srv *models.Service, cancelle
 		return refunded, fmt.Errorf("corrupted service data, service should have appointment")
 	}
 
-	if isInAppointmentTimeBufferRange(srv.AppointmentTime.Time) {
-		if canceller.Gender == models.GenderFemale {
-			// Add amount back to the user balance and set payment refunded to be true.
-			if err := r.refund(
-				int(p.PaymentID.Int64),
-				int(srv.CustomerID.Int32),
-				decimal.NewFromFloat(p.Price.Float64),
-			); err != nil {
-				return refunded, err
-			}
-
-			refunded = true
-		}
+	if isInAppointmentTimeBufferRange(srv.AppointmentTime.Time) && canceller.Gender == models.GenderMale {
+		return false, nil
 	}
 
-	return refunded, nil
+	// Add amount back to the user balance and set payment refunded to be true.
+	if err := r.refund(
+		int(p.PaymentID.Int64),
+		int(srv.CustomerID.Int32),
+		decimal.NewFromFloat(p.Price.Float64),
+	); err != nil {
+		return refunded, err
+	}
+
+	return true, nil
 }
 
 // The below action should be atomic. The better way is to check if

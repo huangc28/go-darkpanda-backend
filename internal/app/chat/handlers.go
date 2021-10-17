@@ -12,6 +12,7 @@ import (
 
 	"github.com/golobby/container/pkg/container"
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
 	"github.com/skip2/go-qrcode"
 	"github.com/teris-io/shortid"
 
@@ -180,6 +181,27 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 		return
 	}
 
+	// Emit service setting message to chatroom.
+	var coinPkgDao contracts.CoinPackageDAOer
+	depCon.Make(&coinPkgDao)
+
+	matchingFeeRate, err := coinPkgDao.GetMatchingFeeRate()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMatchingFee,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	priceF, _ := service.PriceFloat()
+	matchingFee, err := matchingFeeRate.CalcMatchingFee(priceF)
+
 	ctx := context.Background()
 
 	if errors.Is(err, sql.ErrNoRows) {
@@ -213,6 +235,10 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 			InquiryID:     int32(inquiry.ID),
 			ServiceStatus: models.ServiceStatusUnpaid,
 			ServiceType:   models.ServiceType(body.ServiceType),
+			MatchingFee: sql.NullString{
+				Valid:  true,
+				String: decimal.NewFromFloat(matchingFee).String(),
+			},
 		})
 
 		if err != nil {
@@ -262,17 +288,13 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 		return
 	}
 
-	// Emit service setting message to chatroom.
-	var coinPkgDao contracts.CoinPackageDAOer
-	depCon.Make(&coinPkgDao)
-
-	matchingFee, err := coinPkgDao.GetMatchingFee()
+	df := darkfirestore.Get()
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetMatchingFee,
+				apperr.FailedToCalcServiceMatchingFee,
 				err.Error(),
 			),
 		)
@@ -280,7 +302,6 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 		return
 	}
 
-	df := darkfirestore.Get()
 	message, err := df.SendServiceDetailMessageToChatroom(ctx, darkfirestore.SendServiceDetailMessageParams{
 		ChannelUuid: body.ChannelUUID,
 		Data: darkfirestore.ServiceDetailMessage{
@@ -294,7 +315,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 			ServiceTime: service.AppointmentTime.Time.UnixNano() / int64(time.Microsecond),
 			ServiceType: body.ServiceType,
 			ServiceUUID: service.Uuid.String,
-			MatchingFee: int(matchingFee.Cost.Int32),
+			MatchingFee: matchingFee,
 		},
 	})
 
@@ -659,7 +680,7 @@ func EmitServiceUpdateMessage(c *gin.Context, depCon container.Container) {
 
 	}
 
-	matchingFee, err := coinPkgDao.GetMatchingFee()
+	matchingFeeRate, err := coinPkgDao.GetMatchingFeeRate()
 
 	if err != nil {
 		c.AbortWithError(
@@ -670,6 +691,21 @@ func EmitServiceUpdateMessage(c *gin.Context, depCon container.Container) {
 			),
 		)
 		return
+	}
+
+	matchingFee, err := matchingFeeRate.CalcMatchingFeeFromString(srv.Price.String)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCalcServiceMatchingFee,
+				err.Error(),
+			),
+		)
+
+		return
+
 	}
 
 	// Update service detail by service ID.
@@ -684,6 +720,7 @@ func EmitServiceUpdateMessage(c *gin.Context, depCon container.Container) {
 			Appointment:   &body.AppointmentTime,
 			Duration:      &body.Duration,
 			Address:       &body.Address,
+			MatchingFee:   &matchingFee,
 		})
 
 		if err != nil {
@@ -744,7 +781,7 @@ func EmitServiceUpdateMessage(c *gin.Context, depCon container.Container) {
 				AppointmentTime: body.AppointmentTime.UnixNano() / int64(time.Microsecond),
 				ServiceType:     body.ServiceType,
 				Address:         body.Address,
-				MatchingFee:     int(matchingFee.Cost.Int32),
+				MatchingFee:     matchingFee,
 				InquiryUuid:     iq.Uuid,
 			},
 		},
@@ -823,19 +860,6 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	matchingFee, err := coinPkgDao.GetMatchingFee()
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetMatchingFee,
-				err.Error(),
-			),
-		)
-		return
-	}
-
 	if err := iqDao.PatchInquiryStatusByUUID(
 		contracts.PatchInquiryStatusByUUIDParams{
 			InquiryStatus: models.InquiryStatusWaitForInquirerApprove,
@@ -868,6 +892,33 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	matchingFeeRate, err := coinPkgDao.GetMatchingFeeRate()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetMatchingFee,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	matchingFee, err := matchingFeeRate.CalcMatchingFeeFromString(iq.Budget)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCalcInquiryMatchingFee,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
 	msg, err := df.UpdateInquiryDetail(
 		ctx,
 		darkfirestore.UpdateInquiryDetailParams{
@@ -885,7 +936,7 @@ func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 				AppointmentTime: body.AppointmentTime.UnixNano() / int64(time.Microsecond),
 				ServiceType:     body.ServiceType,
 				Address:         body.Address,
-				MatchingFee:     int(matchingFee.Cost.Int32),
+				MatchingFee:     matchingFee,
 			},
 		},
 	)

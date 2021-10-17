@@ -321,7 +321,7 @@ type CoinOrder struct {
 type CoinPackage struct {
 	ID       int64          `json:"id"`
 	DbCoins  sql.NullInt32  `json:"db_coins"`
-	Cost     sql.NullInt32  `json:"cost"`
+	Cost     sql.NullString `json:"cost"`
 	Currency sql.NullString `json:"currency"`
 	Name     sql.NullString `json:"name"`
 }
@@ -377,7 +377,8 @@ type Service struct {
 	EndTime           sql.NullTime   `json:"end_time"`
 	CancellerID       sql.NullInt32  `json:"canceller_id"`
 	// cause states the intention of cancelling a service.
-	CancelCause CancelCause `json:"cancel_cause"`
+	CancelCause CancelCause    `json:"cancel_cause"`
+	MatchingFee sql.NullString `json:"matching_fee"`
 }
 
 type ServiceInquiry struct {
