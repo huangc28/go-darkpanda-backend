@@ -656,9 +656,9 @@ func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {
 				err.Error(),
 			),
 		)
-	}
 
-	return
+		return
+	}
 
 	c.JSON(http.StatusOK, TrfPaymentDetail(
 		TrfPaymentDetailParams{
