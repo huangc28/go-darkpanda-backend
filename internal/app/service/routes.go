@@ -99,4 +99,12 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			CancelService(c, container)
 		},
 	)
+
+	// Determine what will be the cause when user decide to cancel service.
+	g.GET(
+		"/:seg/cause-when-cancel",
+		func(c *gin.Context) {
+			GetCauseWhenCancel(c, container)
+		},
+	)
 }

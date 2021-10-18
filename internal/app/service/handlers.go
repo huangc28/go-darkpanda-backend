@@ -1247,3 +1247,81 @@ func CancelService(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, struct{}{})
 }
+
+func GetCauseWhenCancel(c *gin.Context, depCon container.Container) {
+	// Check if the user is the participant of the service.
+	var (
+		serviceUUID string = c.Param("seg")
+		userUUID    string = c.Param("uuid")
+
+		rateDao contracts.RateDAOer
+		userDao contracts.UserDAOer
+	)
+
+	depCon.Make(&rateDao)
+	depCon.Make(&userDao)
+
+	user, err := userDao.GetUserByUuid(userUUID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	isParticipant, err := rateDao.IsServiceParticipant(int(user.ID), serviceUUID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckIsParticipant,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if !isParticipant {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.UserNotServiceParticipant,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var srvDao contracts.ServiceDAOer
+	depCon.Make(&srvDao)
+
+	srv, err := srvDao.GetServiceByUuid(serviceUUID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetServiceByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	cancelCause := GetCancelCause(srv.AppointmentTime.Time, user.Gender)
+
+	c.JSON(http.StatusOK, struct {
+		CancelCause string `json:"cancel_cause"`
+	}{
+		CancelCause: string(cancelCause),
+	})
+}
