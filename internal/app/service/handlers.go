@@ -1252,7 +1252,7 @@ func GetCauseWhenCancel(c *gin.Context, depCon container.Container) {
 	// Check if the user is the participant of the service.
 	var (
 		serviceUUID string = c.Param("seg")
-		userUUID    string = c.Param("uuid")
+		userUUID    string = c.GetString("uuid")
 
 		rateDao contracts.RateDAOer
 		userDao contracts.UserDAOer
