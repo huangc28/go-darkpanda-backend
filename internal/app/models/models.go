@@ -410,6 +410,16 @@ type ServiceName struct {
 	DeletedAt   sql.NullTime `json:"deleted_at"`
 }
 
+type ServiceOption struct {
+	ID          int64          `json:"id"`
+	Name        string         `json:"name"`
+	Description sql.NullString `json:"description"`
+	Price       sql.NullString `json:"price"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   sql.NullTime   `json:"updated_at"`
+	DeletedAt   sql.NullTime   `json:"deleted_at"`
+}
+
 type ServiceQrcode struct {
 	ID        int64          `json:"id"`
 	ServiceID int32          `json:"service_id"`
@@ -474,4 +484,13 @@ type UserRefcode struct {
 	DeletedAt   sql.NullTime  `json:"deleted_at"`
 	// Time that this referral code will be invalid.
 	ExpiredAt sql.NullTime `json:"expired_at"`
+}
+
+type UserServiceOption struct {
+	ID              int64         `json:"id"`
+	UsersID         sql.NullInt32 `json:"users_id"`
+	ServiceOptionID sql.NullInt32 `json:"service_option_id"`
+	CreatedAt       time.Time     `json:"created_at"`
+	UpdatedAt       sql.NullTime  `json:"updated_at"`
+	DeletedAt       sql.NullTime  `json:"deleted_at"`
 }
