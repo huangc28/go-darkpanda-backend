@@ -193,6 +193,25 @@ func (e *RefCodeType) Scan(src interface{}) error {
 	return nil
 }
 
+type ServiceOptionsType string
+
+const (
+	ServiceOptionsTypeDefault ServiceOptionsType = "default"
+	ServiceOptionsTypeCustom  ServiceOptionsType = "custom"
+)
+
+func (e *ServiceOptionsType) Scan(src interface{}) error {
+	switch s := src.(type) {
+	case []byte:
+		*e = ServiceOptionsType(s)
+	case string:
+		*e = ServiceOptionsType(s)
+	default:
+		return fmt.Errorf("unsupported scan type for ServiceOptionsType: %T", src)
+	}
+	return nil
+}
+
 type ServiceStatus string
 
 const (
@@ -411,13 +430,14 @@ type ServiceName struct {
 }
 
 type ServiceOption struct {
-	ID          int64          `json:"id"`
-	Name        string         `json:"name"`
-	Description sql.NullString `json:"description"`
-	Price       sql.NullString `json:"price"`
-	CreatedAt   time.Time      `json:"created_at"`
-	UpdatedAt   sql.NullTime   `json:"updated_at"`
-	DeletedAt   sql.NullTime   `json:"deleted_at"`
+	ID                 int64              `json:"id"`
+	Name               string             `json:"name"`
+	Description        sql.NullString     `json:"description"`
+	Price              sql.NullString     `json:"price"`
+	CreatedAt          time.Time          `json:"created_at"`
+	UpdatedAt          sql.NullTime       `json:"updated_at"`
+	DeletedAt          sql.NullTime       `json:"deleted_at"`
+	ServiceOptionsType ServiceOptionsType `json:"service_options_type"`
 }
 
 type ServiceQrcode struct {

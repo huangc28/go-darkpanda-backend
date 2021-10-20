@@ -501,7 +501,7 @@ func GetServiceQRCode(c *gin.Context, depCon container.Container) {
 func GetAvailableServices(c *gin.Context) {
 	srvDao := NewServiceDAO(db.GetDB())
 
-	srvNames, err := srvDao.GetServiceNames()
+	srvOptions, err := srvDao.GetServiceOptions()
 
 	if err != nil {
 		c.AbortWithError(
@@ -515,7 +515,7 @@ func GetAvailableServices(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, TransformServiceName(srvNames))
+	c.JSON(http.StatusOK, TransformServiceOptions(srvOptions))
 }
 
 func GetServicePaymentDetails(c *gin.Context, depCon container.Container) {

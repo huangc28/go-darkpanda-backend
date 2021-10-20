@@ -445,11 +445,14 @@ INNER JOIN services
 	return &m, nil
 }
 
-func (dao *ServiceDAO) GetServiceNames() ([]*models.ServiceName, error) {
+func (dao *ServiceDAO) GetServiceOptions() ([]*models.ServiceOption, error) {
 	query := `
 SELECT
-	service_names.*
-FROM service_names;
+	service_options.*
+FROM 
+	service_options
+WHERE
+	service_options_type='default';
 `
 
 	rows, err := dao.DB.Queryx(query)
@@ -460,19 +463,19 @@ FROM service_names;
 
 	defer rows.Close()
 
-	srvNames := make([]*models.ServiceName, 0)
+	srvOptions := make([]*models.ServiceOption, 0)
 
 	for rows.Next() {
-		srvName := models.ServiceName{}
+		srvOption := models.ServiceOption{}
 
-		if err := rows.StructScan(&srvName); err != nil {
+		if err := rows.StructScan(&srvOption); err != nil {
 			return nil, err
 		}
 
-		srvNames = append(srvNames, &srvName)
+		srvOptions = append(srvOptions, &srvOption)
 	}
 
-	return srvNames, nil
+	return srvOptions, nil
 }
 
 func (dao *ServiceDAO) GetServiceByUuid(srvUuid string, fields ...string) (*models.Service, error) {

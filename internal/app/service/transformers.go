@@ -117,29 +117,28 @@ func TransformScanServiceQrCode(srv *models.Service) *TransformedScanServiceQrCo
 	}
 }
 
-type TrfmedServiceName struct {
-	ServiceName string `json:"name"`
+type TrfmedServiceOption struct {
+	ServiceOption string `json:"name"`
 }
 
-type TrfmedServiceNames struct {
-	ServiceNames []TrfmedServiceName `json:"service_names"`
+type TrfmedServiceOptions struct {
+	ServiceNames []TrfmedServiceOption `json:"service_names"`
 }
 
-func TransformServiceName(serviceNames []*models.ServiceName) TrfmedServiceNames {
-	ns := make([]TrfmedServiceName, 0)
+func TransformServiceOptions(serviceOptions []*models.ServiceOption) TrfmedServiceOptions {
+	os := make([]TrfmedServiceOption, 0)
 
-	for _, name := range serviceNames {
-		n := TrfmedServiceName{
-			ServiceName: string(name.ServiceName),
+	for _, option := range serviceOptions {
+		o := TrfmedServiceOption{
+			ServiceOption: option.Name,
 		}
 
-		ns = append(ns, n)
+		os = append(os, o)
 	}
 
-	return TrfmedServiceNames{
-		ServiceNames: ns,
+	return TrfmedServiceOptions{
+		ServiceNames: os,
 	}
-
 }
 
 type TrfedPaymentDetail struct {
