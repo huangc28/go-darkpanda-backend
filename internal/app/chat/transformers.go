@@ -29,7 +29,7 @@ type TransformedInquiryChat struct {
 	ServiceUuid   string               `json:"service_uuid"`
 	ServiceType   models.InquiryStatus `json:"service_type"`
 	Username      string               `json:"username"`
-	AvatarURL     *string              `json:"avatar_url"`
+	AvatarURL     string               `json:"avatar_url"`
 	ChannelUUID   string               `json:"channel_uuid"`
 	ExpiredAt     time.Time            `json:"expired_at"`
 	CreatedAt     time.Time            `json:"created_at"`
@@ -72,7 +72,7 @@ func (t *ChatTransformer) TransformInquiryChats(chatModels []models.InquiryChatR
 		}
 
 		if m.AvatarURL.Valid {
-			trfm.AvatarURL = &m.AvatarURL.String
+			trfm.AvatarURL = m.AvatarURL.String
 		}
 
 		chats = append(chats, trfm)
