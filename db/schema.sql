@@ -839,4 +839,8 @@ CREATE TYPE service_options_type AS ENUM ('default', 'custom');
 ALTER TABLE service_options 
 ADD COLUMN service_options_type service_options_type DEFAULT 'default';
 
+COMMIT;BEGIN;
+
+DROP TABLE IF EXISTS service_names;
+
 COMMIT;
