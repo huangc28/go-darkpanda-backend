@@ -354,17 +354,6 @@ type Image struct {
 	DeletedAt sql.NullTime `json:"deleted_at"`
 }
 
-type LobbyUser struct {
-	ID          int64        `json:"id"`
-	ChannelUuid string       `json:"channel_uuid"`
-	InquiryID   int32        `json:"inquiry_id"`
-	CreatedAt   time.Time    `json:"created_at"`
-	UpdatedAt   sql.NullTime `json:"updated_at"`
-	DeletedAt   sql.NullTime `json:"deleted_at"`
-	ExpiredAt   time.Time    `json:"expired_at"`
-	LobbyStatus LobbyStatus  `json:"lobby_status"`
-}
-
 type Payment struct {
 	ID        int64        `json:"id"`
 	PayerID   int32        `json:"payer_id"`
