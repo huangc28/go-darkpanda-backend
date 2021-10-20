@@ -690,7 +690,7 @@ type AgreeToChatParams struct {
 
 // AgreePickupInquiryHandler Male user agree to have a chat with the male user.
 // Perform following operations when male user agrees to chat.
-//   - Check inquiry status can be transitioned to `chatting`
+//   - Check if inquiry status can be transitioned to `chatting`
 //   - Change inquiry status to `chatting` on DB
 //   - Change inquiry status to `chatting` on firestore
 func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {

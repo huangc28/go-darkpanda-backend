@@ -725,4 +725,17 @@ CREATE TABLE IF NOT EXISTS user_service_options (
     REFERENCES service_options(id)
 );
 
-COMMIT;
+COMMIT;BEGIN;
+
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMIT;CREATE TRIGGER set_timestamp
+BEFORE UPDATE ON services
+FOR EACH ROW
+EXECUTE PROCEDURE trigger_set_timestamp();

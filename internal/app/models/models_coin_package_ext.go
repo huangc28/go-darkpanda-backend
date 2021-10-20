@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"math"
 
 	"github.com/shopspring/decimal"
 )
@@ -29,7 +30,8 @@ func (cp *CoinPackage) CalcMatchingFee(price float64) (float64, error) {
 		return 0, err
 	}
 
-	return mr * price, nil
+	// Round matching fee to nearest 2 precision.
+	return math.Round(mr*price*100) / 100, nil
 }
 
 func (cp *CoinPackage) CalcMatchingFeeFromString(price string) (float64, error) {
