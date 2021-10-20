@@ -1,0 +1,16 @@
+DROP TRIGGER bank_accounts_updated_at_set_timestamp ON bank_accounts;
+DROP TRIGGER block_list_updated_at_set_timestamp ON block_list;
+DROP TRIGGER chatroom_users_updated_at_set_timestamp ON chatroom_users;
+DROP TRIGGER chatrooms_updated_at_set_timestamp ON chatrooms;
+DROP TRIGGER coin_orders_updated_at_set_timestamp ON coin_orders;
+DROP TRIGGER images_updated_at_set_timestamp ON images;
+DROP TRIGGER payments_updated_at_set_timestamp ON payments;
+DROP TRIGGER service_inquiries_updated_at_set_timestamp ON service_inquiries;
+DROP TRIGGER service_options_updated_at_set_timestamp ON service_options;
+DROP TRIGGER service_qrcode_updated_at_set_timestamp ON service_qrcode;
+DROP TRIGGER service_ratings_updated_at_set_timestamp ON service_ratings;
+DROP TRIGGER services_updated_at_set_timestamp ON services;
+DROP TRIGGER user_balance_updated_at_set_timestamp ON user_balance;
+DROP TRIGGER user_refcodes_updated_at_set_timestamp ON user_refcodes;
+DROP TRIGGER user_service_options_updated_at_set_timestamp ON user_service_options;
+DROP TRIGGER users_updated_at_set_timestamp ON users;
