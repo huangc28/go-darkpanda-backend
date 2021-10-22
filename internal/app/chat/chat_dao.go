@@ -511,7 +511,7 @@ SELECT
 	pickers.username, 
 	pickers.uuid AS picker_uuid,
 	pickers.avatar_url,
-	si.service_type,
+	si.expect_service_type,
 	si.inquiry_status,
 	si.uuid AS inquiry_uuid,
 	si.inquiry_status,
