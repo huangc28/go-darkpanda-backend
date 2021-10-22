@@ -481,7 +481,7 @@ func CancelInquiryHandler(c *gin.Context, depCon container.Container) {
 			trxResp.HttpStatusCode,
 			apperr.NewErr(
 				trxResp.ErrCode,
-				err.Error(),
+				trxResp.Err.Error(),
 			),
 		)
 

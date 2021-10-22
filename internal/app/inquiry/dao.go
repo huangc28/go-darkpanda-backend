@@ -358,7 +358,7 @@ func (dao *InquiryDAO) PatchInquiryByInquiryUUID(params models.PatchInquiryParam
 	query := `
 UPDATE service_inquiries SET
 	appointment_time = COALESCE($1, appointment_time),
-	service_type = COALESCE($2, service_type),
+	expect_service_type = COALESCE($2, expect_service_type),
 	inquiry_status = COALESCE($3, inquiry_status),
 	budget = COALESCE($4, budget),
 	duration = COALESCE($5, duration),
@@ -369,7 +369,7 @@ RETURNING
 	id,
 	uuid,
 	appointment_time,
-	service_type,
+	expect_service_type,
 	budget,
 	duration,
 	address;
