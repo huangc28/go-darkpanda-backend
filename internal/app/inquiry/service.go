@@ -34,16 +34,26 @@ type CreateDirectInquiryParams struct {
 	InquirerUUID string
 	InquirerID   int32
 
-	PickerID        int32
-	Budget          float64
-	ServiceType     string
-	AppointmentTime time.Time
-	ServiceDuration int
-	Address         string
+	PickerID          int32
+	Budget            float64
+	ExpectServiceType *string
+	AppointmentTime   time.Time
+	ServiceDuration   int
+	Address           string
 }
 
 func (s *InquiryService) CreateDirectInquiry(ctx context.Context, p CreateDirectInquiryParams) (*models.ServiceInquiry, error) {
 	sid, _ := shortid.Generate()
+
+	expectServiceType := sql.NullString{
+		Valid: false,
+	}
+
+	if p.ExpectServiceType != nil {
+		expectServiceType.Valid = true
+		expectServiceType.String = *p.ExpectServiceType
+	}
+	// Expect service type can be nil
 
 	iq, err := s.q.CreateInquiry(ctx, models.CreateInquiryParams{
 		Uuid: sid,
@@ -56,9 +66,9 @@ func (s *InquiryService) CreateDirectInquiry(ctx context.Context, p CreateDirect
 			Int32: p.PickerID,
 		},
 
-		Budget:        decimal.NewFromFloat(p.Budget).String(),
-		ServiceType:   models.ServiceType(p.ServiceType),
-		InquiryStatus: models.InquiryStatusAsking,
+		Budget:            decimal.NewFromFloat(p.Budget).String(),
+		ExpectServiceType: expectServiceType,
+		InquiryStatus:     models.InquiryStatusAsking,
 		ExpiredAt: sql.NullTime{
 			Time:  time.Now().Add(InquiryDuration),
 			Valid: true,
@@ -105,15 +115,26 @@ type CreateRandomInquiryParams struct {
 	InquirerUUID string
 	InquirerID   int32
 
-	Budget          float64
-	ServiceType     string
-	AppointmentTime time.Time
-	ServiceDuration int
-	Address         string
+	Budget            float64
+	ExpectServiceType *string
+	AppointmentTime   time.Time
+	ServiceDuration   int
+	Address           string
 }
 
 func (s *InquiryService) CreateRandomInquiry(ctx context.Context, p CreateRandomInquiryParams) (*models.ServiceInquiry, error) {
 	sid, _ := shortid.Generate()
+
+	expectServiceType := sql.NullString{
+		Valid: false,
+	}
+
+	if p.ExpectServiceType != nil {
+		expectServiceType = sql.NullString{
+			Valid:  true,
+			String: *p.ExpectServiceType,
+		}
+	}
 
 	iq, err := s.q.CreateInquiry(
 		ctx,
@@ -123,9 +144,9 @@ func (s *InquiryService) CreateRandomInquiry(ctx context.Context, p CreateRandom
 				Int32: int32(p.InquirerID),
 				Valid: true,
 			},
-			Budget:        decimal.NewFromFloat(p.Budget).String(),
-			ServiceType:   models.ServiceType(p.ServiceType),
-			InquiryStatus: models.InquiryStatusInquiring,
+			Budget:            decimal.NewFromFloat(p.Budget).String(),
+			ExpectServiceType: expectServiceType,
+			InquiryStatus:     models.InquiryStatusInquiring,
 			ExpiredAt: sql.NullTime{
 				Time:  time.Now().Add(InquiryDuration),
 				Valid: true,

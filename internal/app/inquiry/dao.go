@@ -108,7 +108,7 @@ WITH blocked_users AS (
 	SELECT
 		si.uuid AS inquiry_uuid,
 		si.budget,
-		si.service_type,
+		si.expect_service_type,
 		si.duration,
 		si.appointment_time,
 		si.lng,
@@ -172,7 +172,7 @@ SELECT DISTINCT ON(inquiry_list.inquiry_uuid) * FROM inquiry_list;
 		err := rows.Scan(
 			&iq.Uuid,
 			&iq.Budget,
-			&iq.ServiceType,
+			&iq.ExpectServiceType,
 			&iq.Duration,
 			&iq.AppointmentTime,
 			&iq.Lng,

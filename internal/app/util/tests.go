@@ -167,18 +167,6 @@ func CreateTestService(ctx context.Context, q *models.Queries, hooks CreateTestS
 	}, nil
 }
 
-func randomServiceType() models.ServiceType {
-	gs := []models.ServiceType{
-		models.ServiceTypeChat,
-		models.ServiceTypeDiner,
-		models.ServiceTypeMovie,
-		models.ServiceTypeSex,
-		models.ServiceTypeShopping,
-	}
-
-	return gs[seededRand.Intn(len(gs))]
-}
-
 func randomSericeStatus() models.ServiceStatus {
 	gs := []models.ServiceStatus{
 		models.ServiceStatusUnpaid,
@@ -224,7 +212,10 @@ func GenTestInquiryParams(inquirerID int64) (*models.CreateInquiryParams, error)
 		Int32: int32(inquirerID),
 		Valid: true,
 	}
-	p.ServiceType = randomServiceType()
+	p.ExpectServiceType = sql.NullString{
+		Valid:  true,
+		String: faker.Word(),
+	}
 	p.InquiryStatus = randomInquiryStatus()
 	p.Budget = fmt.Sprintf("%.2f", randomFloats(1.00, 102.99, 1)[0])
 	p.Lat = sql.NullString{
@@ -280,7 +271,7 @@ func GenTestServiceParams(customerID int64, serviceProviderID int64, inquiryID i
 
 	p.ServiceStatus = randomSericeStatus()
 
-	p.ServiceType = randomServiceType()
+	p.ServiceType = faker.Word()
 
 	return p, nil
 }

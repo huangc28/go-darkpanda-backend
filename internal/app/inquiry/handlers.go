@@ -30,7 +30,7 @@ type EmitInquiryBody struct {
 	InquiryType     string    `form:"inquiry_type,default=random" uri:"inquiry_type,default=random" json:"inquiry_type"`
 	FemaleUUID      string    `form:"female_uuid" uri:"female_uuid" json:"female_uuid"`
 	Budget          float64   `form:"budget" uri:"budget" json:"budget" binding:"required"`
-	ServiceType     string    `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
+	ServiceType     *string   `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
 	AppointmentTime time.Time `form:"appointment_time" json:"appointment_time" binding:"required"`
 	ServiceDuration int       `form:"service_duration" json:"service_duration" binding:"required"`
 	Address         string    `form:"address" json:"address" binding:"required"`
@@ -86,14 +86,14 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		}
 
 		iq, err := iqSrv.CreateDirectInquiry(ctx, CreateDirectInquiryParams{
-			InquirerUUID:    usr.Uuid,
-			InquirerID:      int32(usr.ID),
-			PickerID:        int32(picker.ID),
-			Budget:          body.Budget,
-			ServiceType:     body.ServiceType,
-			AppointmentTime: body.AppointmentTime,
-			ServiceDuration: body.ServiceDuration,
-			Address:         body.Address,
+			InquirerUUID:      usr.Uuid,
+			InquirerID:        int32(usr.ID),
+			PickerID:          int32(picker.ID),
+			Budget:            body.Budget,
+			ExpectServiceType: body.ServiceType,
+			AppointmentTime:   body.AppointmentTime,
+			ServiceDuration:   body.ServiceDuration,
+			Address:           body.Address,
 		})
 
 		if err != nil {
@@ -190,13 +190,13 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	riq, err := iqSrv.CreateRandomInquiry(ctx, CreateRandomInquiryParams{
-		InquirerUUID:    usr.Uuid,
-		InquirerID:      int32(usr.ID),
-		Budget:          body.Budget,
-		ServiceType:     body.ServiceType,
-		AppointmentTime: body.AppointmentTime,
-		ServiceDuration: body.ServiceDuration,
-		Address:         body.Address,
+		InquirerUUID:      usr.Uuid,
+		InquirerID:        int32(usr.ID),
+		Budget:            body.Budget,
+		ExpectServiceType: body.ServiceType,
+		AppointmentTime:   body.AppointmentTime,
+		ServiceDuration:   body.ServiceDuration,
+		Address:           body.Address,
 	})
 
 	if err != nil {
@@ -838,8 +838,8 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 				AppointmentTime: iq.AppointmentTime,
 				InquiryID:       int32(iq.ID),
 				ServiceStatus:   models.ServiceStatusNegotiating,
-				ServiceType:     iq.ServiceType,
-				Address:         iq.Address,
+				// ServiceType:     sql.NullString{}iq.ExpectServiceType.String,
+				Address: iq.Address,
 			},
 		)
 

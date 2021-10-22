@@ -14,7 +14,7 @@ INSERT INTO service_inquiries(
 	picker_id,
 	budget,
 	address,
-	service_type,
+	expect_service_type,
 	inquiry_status,
 	duration,
 	appointment_time,

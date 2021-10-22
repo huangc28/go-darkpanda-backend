@@ -21,7 +21,7 @@ func NewTransform() *InquiryTransform {
 type TransformedInquiry struct {
 	Uuid            string             `json:"inquiry_uuid"`
 	Budget          float64            `json:"budget"`
-	ServiceType     string             `json:"service_type"`
+	ServiceType     *string            `json:"service_type"`
 	InquiryStatus   string             `json:"inquiry_status"`
 	AppointmentTime time.Time          `json:"appointment_time"`
 	Address         string             `json:"address"`
@@ -35,10 +35,15 @@ func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (Transf
 		return TransformedInquiry{}, err
 	}
 
+	var expectServiceType *string
+	if m.ExpectServiceType.Valid {
+		expectServiceType = &m.ExpectServiceType.String
+	}
+
 	tiq := TransformedInquiry{
 		Uuid:            m.Uuid,
 		Budget:          budget,
-		ServiceType:     string(m.ServiceType),
+		ServiceType:     expectServiceType,
 		InquiryStatus:   string(m.InquiryStatus),
 		AppointmentTime: m.AppointmentTime.Time,
 		Address:         m.Address.String,
@@ -56,10 +61,15 @@ func (t *InquiryTransform) TransformInquiry(m models.ServiceInquiry) (Transforme
 
 	}
 
+	var expectServiceType *string
+	if m.ExpectServiceType.Valid {
+		expectServiceType = &m.ExpectServiceType.String
+	}
+
 	tiq := TransformedInquiry{
 		Uuid:          m.Uuid,
 		Budget:        badget,
-		ServiceType:   string(m.ServiceType),
+		ServiceType:   expectServiceType,
 		InquiryStatus: string(m.InquiryStatus),
 	}
 
@@ -93,7 +103,7 @@ func (t *InquiryTransform) TransformService(m models.Service, iqer models.User) 
 }
 
 type TransformedPickupInquiry struct {
-	ServiceType   string    `json:"service_type"`
+	ServiceType   *string   `json:"service_type"`
 	InquiryUUID   string    `json:"inquiry_uuid"`
 	InquiryStatus string    `json:"inquiry_status"`
 	ExpiredAt     time.Time `json:"expired_at"`
@@ -101,8 +111,14 @@ type TransformedPickupInquiry struct {
 }
 
 func (t *InquiryTransform) TransformPickupInquiry(iq models.ServiceInquiry) TransformedPickupInquiry {
+
+	var expectServiceType *string
+	if iq.ExpectServiceType.Valid {
+		expectServiceType = &iq.ExpectServiceType.String
+	}
+
 	return TransformedPickupInquiry{
-		ServiceType:   iq.ServiceType.ToString(),
+		ServiceType:   expectServiceType,
 		InquiryStatus: iq.InquiryStatus.ToString(),
 		InquiryUUID:   iq.Uuid,
 		ExpiredAt:     iq.ExpiredAt.Time,
@@ -205,7 +221,7 @@ type TransformedGetInquiryInquirer struct {
 type TransformedGetInquiryWithInquirer struct {
 	Uuid          string                        `json:"uuid"`
 	Budget        float64                       `json:"budget"`
-	ServiceType   string                        `json:"service_type"`
+	ServiceType   *string                       `json:"service_type"`
 	Price         *float64                      `json:"price"`
 	Duration      int32                         `json:"duration"`
 	Appointment   time.Time                     `json:"appointment_time"`
@@ -223,8 +239,11 @@ type TransformedInquiries struct {
 
 func (t *InquiryTransform) TransformInquiryList(inquiryList []*models.InquiryInfo, hasMore bool) (TransformedInquiries, error) {
 	trfedIqs := make([]TransformedGetInquiryWithInquirer, 0)
-	for _, oi := range inquiryList {
-		var serviceUuid *string
+	for i, oi := range inquiryList {
+		var (
+			expectServiceType *string
+			serviceUuid       *string
+		)
 
 		budget, err := strconv.ParseFloat(oi.Budget, 64)
 
@@ -248,10 +267,14 @@ func (t *InquiryTransform) TransformInquiryList(inquiryList []*models.InquiryInf
 			serviceUuid = &oi.ServiceUuid.String
 		}
 
+		if oi.ExpectServiceType.Valid {
+			expectServiceType = &inquiryList[i].ExpectServiceType.String
+		}
+
 		trfedIq := TransformedGetInquiryWithInquirer{
 			Uuid:          oi.Uuid,
 			Budget:        budget,
-			ServiceType:   oi.ServiceType.ToString(),
+			ServiceType:   expectServiceType,
 			Duration:      oi.Duration.Int32,
 			Appointment:   oi.AppointmentTime.Time,
 			Lng:           lng,
@@ -284,7 +307,7 @@ type Inquirer struct {
 type TransformedGetInquiry struct {
 	Uuid          string    `json:"uuid"`
 	Budget        float64   `json:"budget"`
-	ServiceType   string    `json:"service_type"`
+	ServiceType   *string   `json:"service_type"`
 	InquiryStatus string    `json:"inquiry_status"`
 	Duration      int32     `json:"duration"`
 	Appointment   time.Time `json:"appointment_time"`
@@ -313,10 +336,15 @@ func (t *InquiryTransform) TransformGetInquiry(iq contracts.InquiryResult) (*Tra
 		return nil, err
 	}
 
+	var expectServiceType *string
+	if iq.ExpectServiceType.Valid {
+		expectServiceType = &iq.ExpectServiceType.String
+	}
+
 	return &TransformedGetInquiry{
 		iq.Uuid,
 		budget,
-		iq.ServiceType.ToString(),
+		expectServiceType,
 		iq.InquiryStatus.ToString(),
 		iq.Duration.Int32,
 		iq.AppointmentTime.Time,
@@ -389,7 +417,7 @@ func (t *InquiryTransform) TransformGetServiceByInquiryUUID(srv models.Service) 
 
 	return &TransformedGetServiceByInquiryUUID{
 		UUID:            srv.Uuid.String,
-		ServiceType:     srv.ServiceType.ToString(),
+		ServiceType:     srv.ServiceType,
 		Price:           price,
 		Duration:        srv.Duration.Int32,
 		AppointmentTime: srv.AppointmentTime.Time,
@@ -514,10 +542,11 @@ type TransformedUpdateInquiry struct {
 
 func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry) (*TransformedUpdateInquiry, error) {
 	var (
-		appointmentTime *time.Time
-		duration        *int32
-		address         *string
-		err             error
+		expectServicetype *string
+		appointmentTime   *time.Time
+		duration          *int32
+		address           *string
+		err               error
 	)
 
 	if inquiry.AppointmentTime.Valid {
@@ -540,11 +569,15 @@ func (t *InquiryTransform) TransformUpdateInquiry(inquiry *models.ServiceInquiry
 		address = &inquiry.Address.String
 	}
 
+	if inquiry.ExpectServiceType.Valid {
+		expectServicetype = &inquiry.ExpectServiceType.String
+	}
+
 	return &TransformedUpdateInquiry{
 		Uuid:            inquiry.Uuid,
 		AppointmentTime: appointmentTime,
 		InquiryStatus:   inquiry.InquiryStatus.ToString(),
-		ServiceType:     (*string)(&inquiry.ServiceType),
+		ServiceType:     expectServicetype,
 		Budget:          &budgetFloat,
 		Duration:        duration,
 		Address:         address,

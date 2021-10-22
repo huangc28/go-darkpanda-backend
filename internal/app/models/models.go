@@ -373,7 +373,7 @@ type Service struct {
 	Price             sql.NullString `json:"price"`
 	Duration          sql.NullInt32  `json:"duration"`
 	AppointmentTime   sql.NullTime   `json:"appointment_time"`
-	ServiceType       ServiceType    `json:"service_type"`
+	ServiceType       string         `json:"service_type"`
 	CreatedAt         time.Time      `json:"created_at"`
 	UpdatedAt         sql.NullTime   `json:"updated_at"`
 	DeletedAt         sql.NullTime   `json:"deleted_at"`
@@ -393,7 +393,6 @@ type ServiceInquiry struct {
 	ID              int64          `json:"id"`
 	InquirerID      sql.NullInt32  `json:"inquirer_id"`
 	Budget          string         `json:"budget"`
-	ServiceType     ServiceType    `json:"service_type"`
 	InquiryStatus   InquiryStatus  `json:"inquiry_status"`
 	CreatedAt       time.Time      `json:"created_at"`
 	UpdatedAt       sql.NullTime   `json:"updated_at"`
@@ -404,10 +403,11 @@ type ServiceInquiry struct {
 	Lng             sql.NullString `json:"lng"`
 	Lat             sql.NullString `json:"lat"`
 	// Time that this inquiry will be invalid.
-	ExpiredAt   sql.NullTime   `json:"expired_at"`
-	PickerID    sql.NullInt32  `json:"picker_id"`
-	Address     sql.NullString `json:"address"`
-	InquiryType InquiryType    `json:"inquiry_type"`
+	ExpiredAt         sql.NullTime   `json:"expired_at"`
+	PickerID          sql.NullInt32  `json:"picker_id"`
+	Address           sql.NullString `json:"address"`
+	InquiryType       InquiryType    `json:"inquiry_type"`
+	ExpectServiceType sql.NullString `json:"expect_service_type"`
 }
 
 type ServiceOption struct {

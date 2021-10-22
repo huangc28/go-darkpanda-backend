@@ -847,4 +847,15 @@ COMMIT;BEGIN;
 
 DROP TABLE IF EXISTS lobby_users;
 
+COMMIT;BEGIN;
+
+ALTER TABLE service_inquiries
+DROP COLUMN service_type,
+ADD COLUMN expect_service_type text;
+
+COMMIT;BEGIN;
+
+ALTER TABLE services
+ALTER COLUMN service_type TYPE text; 
+
 COMMIT;

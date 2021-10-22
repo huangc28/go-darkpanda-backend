@@ -239,7 +239,7 @@ func TrfServiceDetail(srv models.Service, matchingFee float64) (interface{}, err
 		floatPrice,
 		srv.Duration.Int32,
 		srv.AppointmentTime.Time,
-		srv.ServiceType.ToString(),
+		srv.ServiceType,
 		srv.ServiceStatus.ToString(),
 		srv.Address.String,
 		startTime,

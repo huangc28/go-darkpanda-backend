@@ -234,7 +234,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 			},
 			InquiryID:     int32(inquiry.ID),
 			ServiceStatus: models.ServiceStatusUnpaid,
-			ServiceType:   models.ServiceType(body.ServiceType),
+			ServiceType:   body.ServiceType,
 			MatchingFee: sql.NullString{
 				Valid:  true,
 				String: decimal.NewFromFloat(matchingFee).String(),
@@ -1285,7 +1285,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 				Price:       float64(*price),
 				Duration:    int(service.Duration.Int32),
 				ServiceUUID: service.Uuid.String,
-				ServiceType: service.ServiceType.ToString(),
+				ServiceType: service.ServiceType,
 
 				// Convert unix nano to unix micro so that the flutter can parse it using flutter DateTime.
 				ServiceTime: service.AppointmentTime.Time.UnixNano() / int64(time.Microsecond),

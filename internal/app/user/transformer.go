@@ -245,7 +245,7 @@ func (ut *UserTransform) TransformPaymentInfo(infos []models.PaymentInfo) (*Tran
 
 		trfmSrv := TransformedPaymentServiceInfo{
 			info.Service.Uuid.String,
-			info.Service.ServiceType.ToString(),
+			info.Service.ServiceType,
 		}
 
 		trfmUser := TransformedPaymentPayerInfo{
@@ -300,7 +300,7 @@ func (ut *UserTransform) TransformHistoricalServices(services []models.Service) 
 		trfmSrv := TransformedService{
 			Uuid:          srv.Uuid.String,
 			Price:         srvPrice,
-			ServiceType:   srv.ServiceType.ToString(),
+			ServiceType:   srv.ServiceType,
 			ServiceStatus: srv.ServiceStatus.ToString(),
 			CreatedAt:     srv.CreatedAt,
 		}

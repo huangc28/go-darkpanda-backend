@@ -38,7 +38,7 @@ type CreateServiceParams struct {
 	InquiryID         int32          `json:"inquiry_id"`
 	ServiceStatus     ServiceStatus  `json:"service_status"`
 	Budget            sql.NullString `json:"budget"`
-	ServiceType       ServiceType    `json:"service_type"`
+	ServiceType       string         `json:"service_type"`
 	Address           sql.NullString `json:"address"`
 	StartTime         sql.NullTime   `json:"start_time"`
 	EndTime           sql.NullTime   `json:"end_time"`

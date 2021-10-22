@@ -66,7 +66,7 @@ func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid strin
 			users.uuid,
 			users.gender,
 			si.budget,
-			si.service_type,
+			si.expect_service_type,
 			si.inquiry_status
 		FROM users
 		LEFT JOIN service_inquiries AS si
@@ -93,7 +93,7 @@ func (dao *UserDAO) GetUserInfoWithInquiryByUuid(ctx context.Context, uuid strin
 			&user.Uuid,
 			&user.Gender,
 			&inquiry.Budget,
-			&inquiry.ServiceType,
+			&inquiry.ExpectServiceType,
 			&inquiry.InquiryStatus,
 		); err != nil {
 			return nil, err
