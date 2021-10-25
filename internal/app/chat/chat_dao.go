@@ -272,7 +272,7 @@ WHERE
 func (dao *ChatDao) GetFemaleInquiryChatRooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error) {
 	query := `
 SELECT
-	si.service_type,
+	si.expect_service_type AS service_type,
 	si.inquiry_status,
 	si.uuid AS inquiry_uuid,
 	inquirer.username,
