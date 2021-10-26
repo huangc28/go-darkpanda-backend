@@ -838,8 +838,8 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 				AppointmentTime: iq.AppointmentTime,
 				InquiryID:       int32(iq.ID),
 				ServiceStatus:   models.ServiceStatusNegotiating,
-				// ServiceType:     sql.NullString{}iq.ExpectServiceType.String,
-				Address: iq.Address,
+				ServiceType:     iq.ExpectServiceType.String,
+				Address:         iq.Address,
 			},
 		)
 

@@ -401,7 +401,7 @@ WHERE c.channel_uuid = $1;
 func (dao *ChatDao) GetCompleteChatroomInfoById(id int) (*models.CompleteChatroomInfoModel, error) {
 	query := `
 SELECT
-	si.service_type,
+	si.expect_service_type AS service_type,
 	si.inquiry_status,
 	si.uuid AS inquiry_uuid,
 	si.inquirer_id,
