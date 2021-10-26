@@ -21,6 +21,11 @@ func (cp *CoinPackage) MatchingFeeRate() (float64, error) {
 
 	rateF, _ := rateDeci.Float64()
 
+	if rateF == 0.0 {
+		return 0, fmt.Errorf("matching fee rate can not be 0.0, makesure the value is properly set in db")
+
+	}
+
 	return rateF, nil
 }
 
