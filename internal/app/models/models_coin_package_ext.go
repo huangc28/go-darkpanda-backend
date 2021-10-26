@@ -3,6 +3,7 @@ package models
 import (
 	"fmt"
 	"math"
+	"strconv"
 
 	"github.com/shopspring/decimal"
 )
@@ -44,4 +45,14 @@ func (cp *CoinPackage) CalcMatchingFeeFromString(price string) (float64, error) 
 	pF, _ := pDeci.Float64()
 
 	return cp.CalcMatchingFee(pF)
+}
+
+func (cp *CoinPackage) IntCost() (int, error) {
+	fAmount, err := strconv.ParseFloat(cp.Cost.String, 64)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return int(fAmount), nil
 }

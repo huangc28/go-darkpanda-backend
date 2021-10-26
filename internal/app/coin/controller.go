@@ -136,11 +136,26 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 		},
 	)
 
+	intAmount, err := pkg.IntCost()
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToConvertCostToInt,
+				err.Error(),
+			),
+		)
+
+		return
+
+	}
+
 	tpResp, respRaw, err := tpayer.PayByPrime(
 		PayByPrimeParams{
 			Prime:    body.Prime,
 			Details:  "Tappay test",
-			Amount:   pkg.Cost.String,
+			Amount:   intAmount,
 			Currency: "TWD",
 			Cardholder: CardHolderParams{
 				PhoneNumber: user.Mobile.String,

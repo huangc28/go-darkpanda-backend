@@ -11,4 +11,5 @@ const (
 	FailedToCreateUserBalance     = "1200008"
 	FailedToGetCoinPackages       = "1200009"
 	FailedToTransformCoinPackage  = "1200010"
+	FailedToConvertCostToInt      = "1200011"
 )
