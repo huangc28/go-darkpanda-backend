@@ -224,11 +224,10 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 		}
 
 		userBalDao := NewUserBalanceDAO(tx)
-		// costDeci, _, := decimal.NewFromString(pkg.Cost.String)
 		userBal, err := userBalDao.CreateOrTopUpBalance(
 			contracts.CreateOrTopUpBalanceParams{
-				UserID: int(user.ID),
-				// TopupAmount: float64(pkg.Cost.Int32),
+				UserID:      int(user.ID),
+				TopupAmount: float64(intAmount),
 			},
 		)
 
