@@ -35,9 +35,8 @@ type CardHolderParams struct {
 
 type PayByPrimeParams struct {
 	TapPayerConf
-	Prime   string `json:"prime"`
-	Details string `json:"details"`
-	// Amount     string           `json:"amount"`
+	Prime      string           `json:"prime"`
+	Details    string           `json:"details"`
 	Amount     int              `json:"amount"`
 	Currency   string           `json:"currency"`
 	Cardholder CardHolderParams `json:"cardholder"`

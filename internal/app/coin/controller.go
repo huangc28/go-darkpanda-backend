@@ -64,7 +64,7 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
-			apperr.NewErr(apperr.FailedToGetUserByUuid),
+			apperr.NewErr(apperr.FailedToGetUserByUuid, err.Error()),
 		)
 
 		return
