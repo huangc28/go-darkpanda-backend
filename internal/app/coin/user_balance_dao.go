@@ -110,7 +110,7 @@ func (dao *UserBalanceDAO) DeductUserPackageCostFromBalance(userID int, pkg *mod
 	return dao.deductCostFromBalance(userID, cF)
 }
 
-func (s *UserBalanceDAO) DeductMachingFee(userID int, matchingFee decimal.Decimal) (*models.UserBalance, error) {
+func (s *UserBalanceDAO) DeductMatchingFee(userID int, matchingFee decimal.Decimal) (*models.UserBalance, error) {
 	mf, _ := matchingFee.Float64()
 
 	return s.deductCostFromBalance(userID, mf)

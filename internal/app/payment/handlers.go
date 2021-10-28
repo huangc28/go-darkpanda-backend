@@ -141,7 +141,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 
 		db.GetDB(),
 		func(tx *sqlx.Tx) db.FormatResp {
-			srvPrice, err := decimal.NewFromString(srv.Price.String)
+			srvPrice, err := decimal.NewFromString(srv.MatchingFee.String)
 
 			if err != nil {
 				return db.FormatResp{
@@ -154,7 +154,7 @@ func CreatePayment(c *gin.Context, depCon container.Container) {
 			// Deduct user balance by cost.
 			newBal, err := userBalanceDao.
 				WithTx(tx).
-				DeductMachingFee(
+				DeductMatchingFee(
 					int(user.ID),
 					srvPrice,
 				)

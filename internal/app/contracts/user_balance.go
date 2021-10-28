@@ -14,7 +14,7 @@ type UserBalancer interface {
 	WithTx(tx db.Conn) UserBalancer
 	GetCoinBalanceByUserId(userId int) (*models.UserBalance, error)
 	DeductUserPackageCostFromBalance(userId int, pkg *models.CoinPackage) (*models.UserBalance, error)
-	DeductMachingFee(userID int, matchingFee decimal.Decimal) (*models.UserBalance, error)
+	DeductMatchingFee(userID int, matchingFee decimal.Decimal) (*models.UserBalance, error)
 	HasEnoughBalanceToChargePackage(userId int, pkg *models.CoinPackage) error
 	HasEnoughBalanceToCharge(userID int, cost decimal.Decimal) error
 	CreateOrTopUpBalance(params CreateOrTopUpBalanceParams) (*models.UserBalance, error)
