@@ -8,7 +8,7 @@ import (
 
 type CreateOrTopUpBalanceParams struct {
 	UserID      int
-	TopupAmount float64
+	TopupAmount int
 }
 type UserBalancer interface {
 	WithTx(tx db.Conn) UserBalancer

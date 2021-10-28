@@ -227,7 +227,7 @@ func BuyCoin(c *gin.Context, depCon container.Container) {
 		userBal, err := userBalDao.CreateOrTopUpBalance(
 			contracts.CreateOrTopUpBalanceParams{
 				UserID:      int(user.ID),
-				TopupAmount: float64(intAmount),
+				TopupAmount: intAmount,
 			},
 		)
 
