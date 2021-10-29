@@ -77,7 +77,7 @@ func GetCancelCause(apt time.Time, gender models.Gender) models.CancelCause {
 			return models.CancelCauseGirlCancelAfterAppointmentTime
 		}
 
-		return models.CancelCauseGirlCancelAfterAppointmentTime
+		return models.CancelCauseGuyCancelAfterAppointmentTime
 	}
 
 	if gender == models.GenderFemale {
