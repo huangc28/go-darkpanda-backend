@@ -17,6 +17,7 @@ type DPFirebaseMessenger interface {
 	PublishUnpaidServiceExpiredNotification(ctx context.Context, m PublishUnpaidServiceExpiredMessage) error
 	PublishServiceCancelled(ctx context.Context, m PublishServiceCancelledMessage) error
 	PublishServiceRefunded(ctx context.Context, m PublishServiceRefundedMessage) error
+	PublishMaleSendDirectInquiryNotification(ctx context.Context, m PublishMaleSendDirectInquiryMessage) error
 }
 
 type DPFirebaseMessage struct {
@@ -45,12 +46,13 @@ func MakeTopicName(inquiryUUID string) string {
 type FCMType string
 
 var (
-	PickupInquiry        FCMType = "pickup_inquiry"
-	ServicePaid          FCMType = "service_paid"
-	UnpaidServiceExpired FCMType = "unpaid_service_expired"
-	AgreeToChat          FCMType = "agree_to_chat"
-	ServiceCancelled     FCMType = "service_cancelled"
-	Refunded             FCMType = "refunded"
+	PickupInquiry         FCMType = "pickup_inquiry"
+	ServicePaid           FCMType = "service_paid"
+	UnpaidServiceExpired  FCMType = "unpaid_service_expired"
+	AgreeToChat           FCMType = "agree_to_chat"
+	ServiceCancelled      FCMType = "service_cancelled"
+	Refunded              FCMType = "refunded"
+	MaleSendDirectInquiry FCMType = "male_send_direct_inquiry"
 )
 
 type Notification struct {
@@ -293,4 +295,41 @@ func (r *DPFirebaseMessage) PublishServiceRefunded(ctx context.Context, m Publis
 	log.Infof("cancel service FCM sent! %s", res)
 
 	return nil
+}
+
+type PublishMaleSendDirectInquiryMessage struct {
+	Topic          string `json:"-"`
+	InquiryUUID    string `json:"inquiry_uuid"`
+	MaleUsername   string `json:"male_username"`
+	Femaleusername string `json:"female_username"`
+}
+
+func (r *DPFirebaseMessage) PublishMaleSendDirectInquiryNotification(ctx context.Context, m PublishMaleSendDirectInquiryMessage) error {
+	n := Notification{
+		Type:    MaleSendDirectInquiry,
+		Content: m,
+	}
+
+	bb, err := json.Marshal(&n)
+
+	if err != nil {
+		return err
+	}
+
+	res, err := r.c.Send(ctx, &messaging.Message{
+		Topic: m.Topic,
+		Notification: &messaging.Notification{
+			Title:    fmt.Sprintf("%s 男生詢問", m.MaleUsername),
+			Body:     string(bb),
+			ImageURL: FCMImgUrl,
+		},
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Infof("[fcm_info] direct inquiry sent %s", res)
+
+	return err
 }

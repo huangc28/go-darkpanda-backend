@@ -108,6 +108,29 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 			return
 		}
 
+		var fcm dpfcm.DPFirebaseMessenger
+		depCon.Make(fcm)
+
+		// Send FCM message to potential service picker for notifying direct inquiry.
+		if err := fcm.PublishMaleSendDirectInquiryNotification(
+			ctx, dpfcm.PublishMaleSendDirectInquiryMessage{
+				Topic:          picker.FcmTopic.String,
+				InquiryUUID:    iq.Uuid,
+				MaleUsername:   usr.Username,
+				Femaleusername: picker.Username,
+			},
+		); err != nil {
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToSendDirectInquiryFCM,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
 		trfed, err := NewTransform().TransformInquiry(*iq)
 
 		if err != nil {

@@ -69,6 +69,7 @@ const (
 	FailedToCreateDirectInquiry              = "3000065"
 	FailedToGetDirectInquiryChatrooms        = "3000066"
 	FailedToGetInquiryRequest                = "3000067"
+	FailedToSendDirectInquiryFCM             = "3000068"
 )
 
 var InquiryErrCodeMsgMap = map[string]string{
