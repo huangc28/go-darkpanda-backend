@@ -109,7 +109,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		}
 
 		var fcm dpfcm.DPFirebaseMessenger
-		depCon.Make(fcm)
+		depCon.Make(&fcm)
 
 		// Send FCM message to potential service picker for notifying direct inquiry.
 		if err := fcm.PublishMaleSendDirectInquiryNotification(

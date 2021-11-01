@@ -67,10 +67,13 @@ func (t *InquiryTransform) TransformInquiry(m models.ServiceInquiry) (Transforme
 	}
 
 	tiq := TransformedInquiry{
-		Uuid:          m.Uuid,
-		Budget:        badget,
-		ServiceType:   expectServiceType,
-		InquiryStatus: string(m.InquiryStatus),
+		Uuid:            m.Uuid,
+		Budget:          badget,
+		ServiceType:     expectServiceType,
+		AppointmentTime: m.AppointmentTime.Time,
+		InquiryStatus:   string(m.InquiryStatus),
+		Address:         m.Address.String,
+		InquiryType:     m.InquiryType,
 	}
 
 	return tiq, nil

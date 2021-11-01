@@ -45,7 +45,7 @@ func GenJwtTokenByUuidFunc(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Printf("generated token %s", jwtToken)
+	fmt.Printf("generated token %s \n", jwtToken)
 
 	return nil
 }

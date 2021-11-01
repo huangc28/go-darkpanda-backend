@@ -573,7 +573,7 @@ func GetHistoricalMessages(c *gin.Context) {
 
 type EmitServiceUpdateMessageBody struct {
 	ServiceUuid     string    `json:"service_uuid" form:"service_uuid" binding:"required"`
-	ServiceType     string    `json:"service_type" form:"service_type" binding:"required"`
+	ServiceType     string    `json:"service_type" form:"service_type"`
 	Price           float64   `json:"price" form:"price" binding:"required"`
 	AppointmentTime time.Time `json:"appointment_time" form:"appointment_time" binding:"required"`
 	Duration        int       `json:"duration" form:"duration" binding:"required"`
