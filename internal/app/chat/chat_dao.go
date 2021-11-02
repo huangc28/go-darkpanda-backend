@@ -528,16 +528,20 @@ INNER JOIN users AS pickers
 	ON pickers.id = si.picker_id
 WHERE
 	si.inquirer_id = $1
-AND si.inquiry_status = $2
+AND 
+	si.inquiry_status = $2
+AND 
+	si.inquiry_status = $3
 ORDER BY si.created_at DESC
-OFFSET $3
-LIMIT $4;
+OFFSET $4
+LIMIT $5;
 	`
 
 	rows, err := dao.DB.Queryx(
 		query,
 		p.InquirerID,
 		models.InquiryStatusChatting,
+		models.InquiryStatusWaitForInquirerApprove,
 		p.Offset,
 		p.PerPage,
 	)
