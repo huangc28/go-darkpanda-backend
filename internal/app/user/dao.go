@@ -558,7 +558,8 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 	from user_service_options uso 
 	inner join service_options so 
 	on uso.service_option_id = so.id
-	where uso.users_id=$1 AND uso.deleted_at IS null`
+	where uso.users_id=$1 AND uso.deleted_at IS null
+	order by so.created_at`
 
 	services := make([]models.UserServiceOptionData, 0)
 
