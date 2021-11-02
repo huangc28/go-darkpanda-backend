@@ -52,6 +52,11 @@ type UpdateServiceByInquiryIdParams struct {
 	CancellerId *int64
 }
 
+type CreateUserServiceOptionParams struct {
+	UserID          int
+	ServiceOptionID int
+}
+
 type ServiceDAOer interface {
 	GetUserHistoricalServicesByUuid(uuid string, perPage, offset int) ([]models.Service, error)
 	GetServiceByInquiryUUID(string, ...string) (*models.Service, error)

@@ -23,6 +23,9 @@ const (
 	FailedToGetUserProfiles                 = "5000020"
 	FailedToTransformGirlProfile            = "5000021"
 	FailedToGetGirlIDOfDirectInquiry        = "5000022"
+	FailedToCreateUserServiceOption         = "5000023"
+	FailedToCreateServiceOption             = "5000024"
+	FailedToGetUserServiceOption            = "5000025"
 )
 
 var userErrorCodeMsgMap = map[string]string{

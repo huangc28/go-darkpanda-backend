@@ -27,6 +27,23 @@ type GetGirlsParams struct {
 	Limit      int
 	Offset     int
 }
+
+type GetServiceOptionParams struct {
+	UserID int
+}
+
+type CreateServiceOptionParams struct {
+	UserID          int
+	ServiceOptionID int
+}
+
+type CreateServiceOptionsParams struct {
+	Name               string
+	Description        string
+	Price              float64
+	ServiceOptionsType string
+}
+
 type UserDAOer interface {
 	GetUserInfoWithInquiryByUuid(ctx context.Context, uuid string, inquiryStatus models.InquiryStatus) (*models.UserWithInquiries, error)
 	GetUserByUsername(username string, fields ...string) (*models.User, error)
@@ -40,4 +57,8 @@ type UserDAOer interface {
 	DeleteUserImages(url string) error
 	GetGirls(p GetGirlsParams) ([]*models.RandomGirl, error)
 	WithTx(tx *sqlx.Tx) UserDAOer
+	GetUserServiceOption(userID int) ([]models.UserServiceOptionData, error)
+	CreateServiceOption(p CreateServiceOptionsParams) (*models.ServiceOption, error)
+	CreateUserServiceOption(p CreateServiceOptionParams) (*models.UserServiceOption, error)
+	DeleteUserServiceOption(userID int, serviceOptionID int) error
 }

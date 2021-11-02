@@ -125,3 +125,11 @@ type InquiryRequest struct {
 	AvatarURL     string    `json:"avatar_url"`
 	InquiryStatus string    `json:"inquiry_status"`
 }
+
+type UserServiceOptionData struct {
+	ServiceName  string  `json:"service_name"`
+	Price        float32 `json:"price"`
+	OptionType   string  `json:"option_type"`
+	Description  string  `json:"description"`
+	UserOptionID int     `json:"user_option_id"`
+}

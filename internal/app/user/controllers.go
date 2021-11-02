@@ -674,3 +674,179 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, trf)
 }
+
+func (h *UserHandlers) GetUserServiceOption(c *gin.Context, depCon container.Container) {
+	userUuid := c.GetString("uuid")
+	userDao := NewUserDAO(db.GetDB())
+
+	targetUser, err := userDao.GetUserByUuid(userUuid, "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	userDAOer := NewUserDAO(db.GetDB())
+	depCon.Make(&userDao)
+
+	service, err := userDAOer.GetUserServiceOption(int(targetUser.ID))
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserServiceOption,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		UserService []TrfedUserOption `json:"user_service"`
+	}{
+		UserService: TransformViewableUserServiceOption(service),
+	})
+
+}
+
+type CreateServiceOptionParams struct {
+	// UserUuid          string  `json:"user_uuid" form:"user_uuid" binding:"required"`
+	// ServiceOptionID   int     `json:"service_option_id" form:"service_option_id" binding:"required"`
+	Name              string  `json:"name" form:"name" binding:"required"`
+	Description       string  `json:"description" form:"description" binding:"required"`
+	Price             float64 `json:"price" form:"price" binding:"required"`
+	ServiceOptionType string  `json:"service_option_type" form:"service_option_type,default=default"`
+}
+
+func CreateServiceService(c *gin.Context, depCon container.Container) {
+	body := CreateServiceOptionParams{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDAOer contracts.UserDAOer
+	depCon.Make(&userDAOer)
+
+	usr, err := userDAOer.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Create service option
+	serviceOption, err := userDAOer.CreateServiceOption(
+		contracts.CreateServiceOptionsParams{
+			Name:               body.Name,
+			Description:        body.Description,
+			Price:              body.Price,
+			ServiceOptionsType: body.ServiceOptionType,
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateServiceOption,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Create user service option record.
+	srvOption, err := userDAOer.CreateUserServiceOption(
+		contracts.CreateServiceOptionParams{
+			UserID:          int(usr.ID),
+			ServiceOptionID: int(serviceOption.ID),
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateUserServiceOption,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		ServiceOptionID int `json:"service_option_id"`
+	}{
+		int(srvOption.ServiceOptionID.Int32),
+	})
+}
+
+type DeleteServiceOptionParams struct {
+	ServiceOptionID int `json:"service_option_id" form:"service_option_id" binding:"required,gt=0"`
+}
+
+func DeleteUserServiceOption(c *gin.Context, depCon container.Container) {
+	body := DeleteServiceOptionParams{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDAOer contracts.UserDAOer
+	depCon.Make(&userDAOer)
+
+	usr, err := userDAOer.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if err := userDAOer.DeleteUserServiceOption(int(usr.ID), body.ServiceOptionID); err != nil {
+		log.Fatalf("Failed to remove service option %s", err.Error())
+	}
+
+	c.JSON(http.StatusOK, struct{}{})
+}
