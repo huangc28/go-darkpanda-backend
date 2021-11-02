@@ -46,6 +46,7 @@ const (
 	FailedToParseJwtToken                    = "1000043"
 	FailedToValidateToken                    = "1000044"
 	TokenIsInvalidated                       = "1000045"
+	FailedToGetServiceOption                 = "1000046"
 )
 
 var AuthErrCodeMsgMap = map[string]string{

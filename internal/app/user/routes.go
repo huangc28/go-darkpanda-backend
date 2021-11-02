@@ -41,6 +41,18 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		handlers.GetUserRatings(c, depCon)
 	})
 
+	g.GET("/:uuid/service-option", func(c *gin.Context) {
+		handlers.GetUserServiceOption(c, depCon)
+	})
+
+	g.POST("/service-option", func(c *gin.Context) {
+		CreateServiceService(c, depCon)
+	})
+
+	g.POST("/delete-service-option", func(c *gin.Context) {
+		DeleteUserServiceOption(c, depCon)
+	})
+
 	// issue: https://github.com/gin-gonic/gin/issues/205
 	// issue: https://github.com/julienschmidt/httprouter/issues/12
 	g.GET("/:uuid", func(c *gin.Context) {

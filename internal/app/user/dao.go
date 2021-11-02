@@ -546,3 +546,77 @@ func GetChangeMobileVerifyCode(ctx context.Context, p GetChangeMobileVerifyCodeP
 
 	return m, nil
 }
+
+func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOptionData, error) {
+	query := `
+	select
+		so."name" ,
+		so.price ,
+		so."service_options_type" ,
+		so.description,
+		uso.id user_option_id
+	from user_service_options uso 
+	inner join service_options so 
+	on uso.service_option_id = so.id
+	where uso.users_id=$1`
+
+	services := make([]models.UserServiceOptionData, 0)
+
+	rows, err := dao.db.Queryx(query, userID)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		var service models.UserServiceOptionData
+
+		if err := rows.Scan(&service.ServiceName); err != nil {
+			return nil, err
+		}
+
+		services = append(services, service)
+	}
+
+	return services, nil
+}
+
+func (dao *UserDAO) CreateUserServiceOption(params contracts.CreateServiceOptionParams) (*models.UserServiceOption, error) {
+	query := `
+	INSERT INTO user_service_options (
+		users_id,
+		service_option_id
+	) VALUES ($1, $2)
+	RETURNING *;
+	`
+	var m models.UserServiceOption
+
+	if err := dao.db.QueryRowx(
+		query,
+		params.UserID,
+		params.ServiceOptionID,
+	).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+
+func (dao *UserDAO) DeleteUserServiceOption(userID int, serviceOptionID int) error {
+	query := `
+		DELETE FROM user_service_option
+		WHERE users_id=$1 and service_option_id=$2
+	`
+
+	_, err := dao.db.Exec(
+		query,
+		userID,
+		serviceOptionID,
+	)
+
+	if err != nil {
+		return err
+	}
+
+	return err
+}

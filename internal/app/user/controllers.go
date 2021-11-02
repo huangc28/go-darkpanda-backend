@@ -674,3 +674,192 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 
 	c.JSON(http.StatusOK, trf)
 }
+
+type GetUserServiceOptionBody struct {
+	Offset  int `form:"offset,default=0"`
+	PerPage int `form:"per_page,default=5"`
+}
+
+func (h *UserHandlers) GetUserServiceOption(c *gin.Context, depCon container.Container) {
+	// body := GetUserServiceOptionBody{}
+
+	// if err := requestbinder.Bind(c, &body); err != nil {
+	// 	c.AbortWithError(
+	// 		http.StatusBadRequest,
+	// 		apperr.NewErr(
+	// 			apperr.FailedToBindBodyParams,
+	// 			err.Error(),
+	// 		),
+	// 	)
+
+	// 	return
+
+	// }
+
+	userUuid := c.GetString("uuid")
+	userDao := NewUserDAO(db.GetDB())
+	targetUser, err := userDao.GetUserByUuid(userUuid, "id")
+
+	if err != nil {
+
+		if err == sql.ErrNoRows {
+			c.AbortWithError(
+				http.StatusBadRequest,
+				apperr.NewErr(
+					apperr.FailedToGetUserByUuid,
+					err.Error(),
+				),
+			)
+
+			return
+		}
+
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Retrieve all rating of services that I have participated in.
+	// var userDAOer contracts.UserDAOer
+	userDAOer := NewUserDAO(db.GetDB())
+	depCon.Make(&userDao)
+	var userID int = int(targetUser.ID)
+
+	// service, err := userDAOer.GetUserServiceOption(int(targetUser.ID))
+
+	service, err := userDAOer.GetUserServiceOption(userID)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserRating,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		Service []TrfedUserOption `json:"service"`
+	}{
+		Service: TransformViewableUserServiceOption(service),
+	})
+
+}
+
+type CreateServiceOptionParams struct {
+	UserUuid        string `json:"user_uuid" form:"user_uuid" binding:"required,gt=0"`
+	ServiceOptionID int    `json:"service_option_id" form:"service_option_id" binding:"required,gt=0"`
+}
+
+func CreateServiceService(c *gin.Context, depCon container.Container) {
+	body := CreateServiceOptionParams{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDAOer contracts.UserDAOer
+	depCon.Make(&userDAOer)
+
+	usr, err := userDAOer.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Create user service option record.
+	srvOption, err := userDAOer.CreateUserServiceOption(
+		contracts.CreateServiceOptionParams{
+			UserID:          int(usr.ID),
+			ServiceOptionID: body.ServiceOptionID,
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateServiceRating,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct {
+		UserID          int `json:"user_id"`
+		ServiceOptionID int `json:"service_option_id"`
+	}{
+		int(srvOption.UsersID.Int32),
+		int(srvOption.ServiceOptionID.Int32),
+	})
+	// c.JSON(http.StatusOK, struct{}{})
+}
+
+type DeleteServiceOptionParams struct {
+	UserUuid        string `json:"user_uuid" form:"user_uuid" binding:"required,gt=0"`
+	ServiceOptionID int    `json:"service_option_id" form:"service_option_id" binding:"required,gt=0"`
+}
+
+func DeleteUserServiceOption(c *gin.Context, depCon container.Container) {
+	body := DeleteServiceOptionParams{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var userDAOer contracts.UserDAOer
+	depCon.Make(&userDAOer)
+
+	usr, err := userDAOer.GetUserByUuid(c.GetString("uuid"), "id")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if err := userDAOer.DeleteUserServiceOption(int(usr.ID), body.ServiceOptionID); err != nil {
+		log.Fatalf("Failed to remove service option %s", err.Error())
+	}
+}
