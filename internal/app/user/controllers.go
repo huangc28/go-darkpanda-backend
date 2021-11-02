@@ -675,45 +675,13 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 	c.JSON(http.StatusOK, trf)
 }
 
-type GetUserServiceOptionBody struct {
-	Offset  int `form:"offset,default=0"`
-	PerPage int `form:"per_page,default=5"`
-}
-
 func (h *UserHandlers) GetUserServiceOption(c *gin.Context, depCon container.Container) {
-	// body := GetUserServiceOptionBody{}
-
-	// if err := requestbinder.Bind(c, &body); err != nil {
-	// 	c.AbortWithError(
-	// 		http.StatusBadRequest,
-	// 		apperr.NewErr(
-	// 			apperr.FailedToBindBodyParams,
-	// 			err.Error(),
-	// 		),
-	// 	)
-
-	// 	return
-
-	// }
-
 	userUuid := c.GetString("uuid")
 	userDao := NewUserDAO(db.GetDB())
+
 	targetUser, err := userDao.GetUserByUuid(userUuid, "id")
 
 	if err != nil {
-
-		if err == sql.ErrNoRows {
-			c.AbortWithError(
-				http.StatusBadRequest,
-				apperr.NewErr(
-					apperr.FailedToGetUserByUuid,
-					err.Error(),
-				),
-			)
-
-			return
-		}
-
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
@@ -725,21 +693,16 @@ func (h *UserHandlers) GetUserServiceOption(c *gin.Context, depCon container.Con
 		return
 	}
 
-	// Retrieve all rating of services that I have participated in.
-	// var userDAOer contracts.UserDAOer
 	userDAOer := NewUserDAO(db.GetDB())
 	depCon.Make(&userDao)
-	var userID int = int(targetUser.ID)
 
-	// service, err := userDAOer.GetUserServiceOption(int(targetUser.ID))
-
-	service, err := userDAOer.GetUserServiceOption(userID)
+	service, err := userDAOer.GetUserServiceOption(int(targetUser.ID))
 
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetUserRating,
+				apperr.FailedToGetUserServiceOption,
 				err.Error(),
 			),
 		)
@@ -748,16 +711,20 @@ func (h *UserHandlers) GetUserServiceOption(c *gin.Context, depCon container.Con
 	}
 
 	c.JSON(http.StatusOK, struct {
-		Service []TrfedUserOption `json:"service"`
+		UserService []TrfedUserOption `json:"user_service"`
 	}{
-		Service: TransformViewableUserServiceOption(service),
+		UserService: TransformViewableUserServiceOption(service),
 	})
 
 }
 
 type CreateServiceOptionParams struct {
-	UserUuid        string `json:"user_uuid" form:"user_uuid" binding:"required,gt=0"`
-	ServiceOptionID int    `json:"service_option_id" form:"service_option_id" binding:"required,gt=0"`
+	// UserUuid          string  `json:"user_uuid" form:"user_uuid" binding:"required"`
+	// ServiceOptionID   int     `json:"service_option_id" form:"service_option_id" binding:"required"`
+	Name              string  `json:"name" form:"name" binding:"required"`
+	Description       string  `json:"description" form:"description" binding:"required"`
+	Price             float64 `json:"price" form:"price" binding:"required"`
+	ServiceOptionType string  `json:"service_option_type" form:"service_option_type,default=default"`
 }
 
 func CreateServiceService(c *gin.Context, depCon container.Container) {
@@ -792,11 +759,13 @@ func CreateServiceService(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Create user service option record.
-	srvOption, err := userDAOer.CreateUserServiceOption(
-		contracts.CreateServiceOptionParams{
-			UserID:          int(usr.ID),
-			ServiceOptionID: body.ServiceOptionID,
+	// Create service option
+	serviceOption, err := userDAOer.CreateServiceOption(
+		contracts.CreateServiceOptionsParams{
+			Name:               body.Name,
+			Description:        body.Description,
+			Price:              body.Price,
+			ServiceOptionsType: body.ServiceOptionType,
 		},
 	)
 
@@ -804,7 +773,27 @@ func CreateServiceService(c *gin.Context, depCon container.Container) {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToCreateServiceRating,
+				apperr.FailedToCreateServiceOption,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	// Create user service option record.
+	srvOption, err := userDAOer.CreateUserServiceOption(
+		contracts.CreateServiceOptionParams{
+			UserID:          int(usr.ID),
+			ServiceOptionID: int(serviceOption.ID),
+		},
+	)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCreateUserServiceOption,
 				err.Error(),
 			),
 		)
@@ -813,18 +802,14 @@ func CreateServiceService(c *gin.Context, depCon container.Container) {
 	}
 
 	c.JSON(http.StatusOK, struct {
-		UserID          int `json:"user_id"`
 		ServiceOptionID int `json:"service_option_id"`
 	}{
-		int(srvOption.UsersID.Int32),
 		int(srvOption.ServiceOptionID.Int32),
 	})
-	// c.JSON(http.StatusOK, struct{}{})
 }
 
 type DeleteServiceOptionParams struct {
-	UserUuid        string `json:"user_uuid" form:"user_uuid" binding:"required,gt=0"`
-	ServiceOptionID int    `json:"service_option_id" form:"service_option_id" binding:"required,gt=0"`
+	ServiceOptionID int `json:"service_option_id" form:"service_option_id" binding:"required,gt=0"`
 }
 
 func DeleteUserServiceOption(c *gin.Context, depCon container.Container) {
@@ -862,4 +847,6 @@ func DeleteUserServiceOption(c *gin.Context, depCon container.Container) {
 	if err := userDAOer.DeleteUserServiceOption(int(usr.ID), body.ServiceOptionID); err != nil {
 		log.Fatalf("Failed to remove service option %s", err.Error())
 	}
+
+	c.JSON(http.StatusOK, struct{}{})
 }

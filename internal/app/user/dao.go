@@ -558,7 +558,7 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 	from user_service_options uso 
 	inner join service_options so 
 	on uso.service_option_id = so.id
-	where uso.users_id=$1`
+	where uso.users_id=$1 AND uso.deleted_at IS null`
 
 	services := make([]models.UserServiceOptionData, 0)
 
@@ -571,7 +571,12 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 	for rows.Next() {
 		var service models.UserServiceOptionData
 
-		if err := rows.Scan(&service.ServiceName); err != nil {
+		if err := rows.Scan(
+			&service.ServiceName,
+			&service.Price, &service.OptionType,
+			&service.Description,
+			&service.UserOptionID,
+		); err != nil {
 			return nil, err
 		}
 
@@ -579,6 +584,31 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 	}
 
 	return services, nil
+}
+
+func (dao *UserDAO) CreateServiceOption(params contracts.CreateServiceOptionsParams) (*models.ServiceOption, error) {
+	query := `
+	INSERT INTO service_options (
+		name,
+		description,
+		price,
+		service_options_type
+	) VALUES ($1, $2, $3, $4)
+	RETURNING *;
+	`
+	var m models.ServiceOption
+
+	if err := dao.db.QueryRowx(
+		query,
+		params.Name,
+		params.Description,
+		params.Price,
+		params.ServiceOptionsType,
+	).StructScan(&m); err != nil {
+		return nil, err
+	}
+
+	return &m, nil
 }
 
 func (dao *UserDAO) CreateUserServiceOption(params contracts.CreateServiceOptionParams) (*models.UserServiceOption, error) {
@@ -604,8 +634,9 @@ func (dao *UserDAO) CreateUserServiceOption(params contracts.CreateServiceOption
 
 func (dao *UserDAO) DeleteUserServiceOption(userID int, serviceOptionID int) error {
 	query := `
-		DELETE FROM user_service_option
-		WHERE users_id=$1 and service_option_id=$2
+		UPDATE user_service_options
+		SET deleted_at = now()
+		WHERE users_id = $1 AND service_option_id = $2
 	`
 
 	_, err := dao.db.Exec(
