@@ -676,7 +676,7 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 }
 
 func (h *UserHandlers) GetUserServiceOption(c *gin.Context, depCon container.Container) {
-	userUuid := c.GetString("uuid")
+	userUuid := c.Param("uuid")
 	userDao := NewUserDAO(db.GetDB())
 
 	targetUser, err := userDao.GetUserByUuid(userUuid, "id")
