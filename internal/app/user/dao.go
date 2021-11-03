@@ -554,7 +554,7 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 		so.price ,
 		so."service_options_type" ,
 		so.description,
-		uso.id user_option_id
+		so.id service_option_id
 	from user_service_options uso 
 	inner join service_options so 
 	on uso.service_option_id = so.id
