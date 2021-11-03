@@ -576,7 +576,7 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 			&service.ServiceName,
 			&service.Price, &service.OptionType,
 			&service.Description,
-			&service.UserOptionID,
+			&service.ServiceOptionID,
 		); err != nil {
 			return nil, err
 		}

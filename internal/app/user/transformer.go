@@ -415,11 +415,11 @@ func TrfRandomGirls(rgs []*models.RandomGirl) (*TrfedRandomGirls, error) {
 }
 
 type TrfedUserOption struct {
-	ServiceName  string  `json:"service_name"`
-	Price        float32 `json:"price"`
-	OptionType   string  `json:"option_type"`
-	Description  string  `json:"description"`
-	UserOptionID int     `json:"user_option_id"`
+	ServiceName     string  `json:"service_name"`
+	Price           float32 `json:"price"`
+	OptionType      string  `json:"option_type"`
+	Description     string  `json:"description"`
+	ServiceOptionID int     `json:"service_option_id"`
 }
 
 func TransformViewableUserServiceOption(so []models.UserServiceOptionData) []TrfedUserOption {
@@ -431,7 +431,7 @@ func TransformViewableUserServiceOption(so []models.UserServiceOptionData) []Trf
 			s.Price,
 			s.OptionType,
 			s.Description,
-			s.UserOptionID,
+			s.ServiceOptionID,
 		}
 
 		trfsos = append(trfsos, trfso)

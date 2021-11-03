@@ -127,9 +127,9 @@ type InquiryRequest struct {
 }
 
 type UserServiceOptionData struct {
-	ServiceName  string  `json:"service_name"`
-	Price        float32 `json:"price"`
-	OptionType   string  `json:"option_type"`
-	Description  string  `json:"description"`
-	UserOptionID int     `json:"user_option_id"`
+	ServiceName     string  `json:"service_name"`
+	Price           float32 `json:"price"`
+	OptionType      string  `json:"option_type"`
+	Description     string  `json:"description"`
+	ServiceOptionID int     `json:"service_option_id"`
 }
