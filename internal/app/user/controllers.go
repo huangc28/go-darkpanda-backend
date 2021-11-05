@@ -722,6 +722,7 @@ type CreateServiceOptionParams struct {
 	Name              string  `json:"name" form:"name" binding:"required"`
 	Description       string  `json:"description" form:"description" binding:"required"`
 	Price             float64 `json:"price" form:"price" binding:"required"`
+	Duration          int     `json:"duration" form:"duration" binding:"required"`
 	ServiceOptionType string  `json:"service_option_type" form:"service_option_type,default=default"`
 }
 
@@ -763,6 +764,7 @@ func CreateServiceService(c *gin.Context, depCon container.Container) {
 			Name:               body.Name,
 			Description:        body.Description,
 			Price:              body.Price,
+			Duration:           body.Duration,
 			ServiceOptionsType: body.ServiceOptionType,
 		},
 	)

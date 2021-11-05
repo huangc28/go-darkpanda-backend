@@ -554,6 +554,7 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 		so.price ,
 		so."service_options_type" ,
 		so.description,
+		so.duration,
 		so.id service_option_id
 	from user_service_options uso 
 	inner join service_options so 
@@ -576,6 +577,7 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 			&service.ServiceName,
 			&service.Price, &service.OptionType,
 			&service.Description,
+			&service.Duration,
 			&service.ServiceOptionID,
 		); err != nil {
 			return nil, err
@@ -593,8 +595,9 @@ func (dao *UserDAO) CreateServiceOption(params contracts.CreateServiceOptionsPar
 		name,
 		description,
 		price,
-		service_options_type
-	) VALUES ($1, $2, $3, $4)
+		service_options_type,
+		duration
+	) VALUES ($1, $2, $3, $4, $5)
 	RETURNING *;
 	`
 	var m models.ServiceOption
@@ -605,6 +608,7 @@ func (dao *UserDAO) CreateServiceOption(params contracts.CreateServiceOptionsPar
 		params.Description,
 		params.Price,
 		params.ServiceOptionsType,
+		params.Duration,
 	).StructScan(&m); err != nil {
 		return nil, err
 	}

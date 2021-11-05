@@ -41,6 +41,7 @@ type CreateServiceOptionsParams struct {
 	Name               string
 	Description        string
 	Price              float64
+	Duration           int
 	ServiceOptionsType string
 }
 

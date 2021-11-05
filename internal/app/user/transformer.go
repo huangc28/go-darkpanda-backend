@@ -419,6 +419,7 @@ type TrfedUserOption struct {
 	Price           float32 `json:"price"`
 	OptionType      string  `json:"option_type"`
 	Description     string  `json:"description"`
+	Duration        int     `json:"duration"`
 	ServiceOptionID int     `json:"service_option_id"`
 }
 
@@ -431,6 +432,7 @@ func TransformViewableUserServiceOption(so []models.UserServiceOptionData) []Trf
 			s.Price,
 			s.OptionType,
 			s.Description,
+			s.Duration,
 			s.ServiceOptionID,
 		}
 

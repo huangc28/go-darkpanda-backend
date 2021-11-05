@@ -131,5 +131,6 @@ type UserServiceOptionData struct {
 	Price           float32 `json:"price"`
 	OptionType      string  `json:"option_type"`
 	Description     string  `json:"description"`
+	Duration        int     `json:"duration"`
 	ServiceOptionID int     `json:"service_option_id"`
 }
