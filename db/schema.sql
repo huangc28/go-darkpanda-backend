@@ -858,4 +858,9 @@ COMMIT;BEGIN;
 ALTER TABLE services
 ALTER COLUMN service_type TYPE text; 
 
+COMMIT;BEGIN;
+
+ALTER TABLE service_options 
+ADD COLUMN duration INT;
+
 COMMIT;

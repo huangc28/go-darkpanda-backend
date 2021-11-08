@@ -419,6 +419,7 @@ type ServiceOption struct {
 	UpdatedAt          sql.NullTime       `json:"updated_at"`
 	DeletedAt          sql.NullTime       `json:"deleted_at"`
 	ServiceOptionsType ServiceOptionsType `json:"service_options_type"`
+	Duration           sql.NullInt32      `json:"duration"`
 }
 
 type ServiceQrcode struct {

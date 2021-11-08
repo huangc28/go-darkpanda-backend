@@ -362,7 +362,7 @@ SELECT
     	THEN true
     	ELSE false
     	END has_inquiry,
-
+	
     CASE WHEN services.uuid IS NOT NULL
     	THEN true
     	ELSE false
@@ -370,6 +370,7 @@ SELECT
 
 	si.uuid AS inquiry_uuid,
 	si.inquiry_status,
+	si.expect_service_type,
 	chatrooms.channel_uuid,
 	services.uuid AS service_uuid
 FROM users

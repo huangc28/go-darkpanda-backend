@@ -110,9 +110,10 @@ type RandomGirl struct {
 	// InquiryStatus is the latest inquiry status that the male
 	InquiryStatus *string `json:"inquiry_status"`
 
-	HasService  bool    `json:"has_service"`
-	ChannelUUID *string `json:"channel_uuid"`
-	ServiceUUID *string `json:"service_uuid"`
+	HasService        bool    `json:"has_service"`
+	ExpectServiceType *string `json:"expect_service_type"`
+	ChannelUUID       *string `json:"channel_uuid"`
+	ServiceUUID       *string `json:"service_uuid"`
 
 	Rating UserRating
 }

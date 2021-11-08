@@ -363,9 +363,10 @@ type TrfedRandomGirl struct {
 	InquiryUUID   *string           `json:"inquiry_uuid"`
 	InquiryStatus *string           `json:"inquiry_status"`
 
-	HasService  bool    `json:"has_service"`
-	ChannelUUID *string `json:"channel_uuid"`
-	ServiceUUID *string `json:"service_uuid"`
+	HasService        bool    `json:"has_service"`
+	ExpectServiceType *string `json:"expect_service_type"`
+	ChannelUUID       *string `json:"channel_uuid"`
+	ServiceUUID       *string `json:"service_uuid"`
 }
 
 type TrfedRandomGirls struct {
@@ -389,21 +390,22 @@ func TrfRandomGirls(rgs []*models.RandomGirl) (*TrfedRandomGirls, error) {
 		}
 
 		trfg := &TrfedRandomGirl{
-			Uuid:          rg.Uuid,
-			Username:      rg.Username,
-			AvatarURL:     rg.AvatarUrl.String,
-			Age:           &rg.Age.Int32,
-			Height:        height,
-			Weight:        weight,
-			BreastSize:    rg.BreastSize.String,
-			Rating:        rg.Rating,
-			Description:   rg.Description.String,
-			HasInquiry:    rg.HasInquiry,
-			InquiryUUID:   rg.InquiryUUID,
-			InquiryStatus: rg.InquiryStatus,
-			HasService:    rg.HasService,
-			ChannelUUID:   rg.ChannelUUID,
-			ServiceUUID:   rg.ServiceUUID,
+			Uuid:              rg.Uuid,
+			Username:          rg.Username,
+			AvatarURL:         rg.AvatarUrl.String,
+			Age:               &rg.Age.Int32,
+			Height:            height,
+			Weight:            weight,
+			BreastSize:        rg.BreastSize.String,
+			Rating:            rg.Rating,
+			Description:       rg.Description.String,
+			HasInquiry:        rg.HasInquiry,
+			InquiryUUID:       rg.InquiryUUID,
+			InquiryStatus:     rg.InquiryStatus,
+			HasService:        rg.HasService,
+			ExpectServiceType: rg.ExpectServiceType,
+			ChannelUUID:       rg.ChannelUUID,
+			ServiceUUID:       rg.ServiceUUID,
 		}
 
 		trfgs = append(trfgs, trfg)

@@ -638,14 +638,13 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 	}
 
 	// GetGirls still needs service uuid (if a service has ever established) and channel_uuid
-
+	// Retrieve any relation via inquiry of current male user with list of girls.
 	girls, err := userDao.GetGirls(contracts.GetGirlsParams{
 		InquirerID: int(me.ID),
 		Limit:      body.PerPage,
 		Offset:     body.Offset,
 	})
 
-	// Retrieve any relation track record via inquiry of current male user with list of girls.
 	if err != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
