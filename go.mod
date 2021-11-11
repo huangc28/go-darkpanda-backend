@@ -22,6 +22,7 @@ require (
 	github.com/go-playground/validator/v10 v10.4.1 // indirect
 	github.com/go-redis/redis/v8 v8.0.0-beta.7
 	github.com/go-sql-driver/mysql v1.5.1-0.20200311113236-681ffa848bae // indirect
+	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/mock v1.6.0
 	github.com/golobby/container v1.3.0
@@ -37,6 +38,7 @@ require (
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/peterhellberg/lossypng v0.0.0-20170130154930-375570b0d75a
+	github.com/prometheus/common v0.4.0
 	github.com/pubnub/go v4.9.1+incompatible
 	github.com/shopspring/decimal v1.2.0
 	github.com/sirupsen/logrus v1.6.0

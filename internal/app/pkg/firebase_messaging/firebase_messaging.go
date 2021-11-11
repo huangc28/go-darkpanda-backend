@@ -2,7 +2,6 @@ package dpfcm
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -19,6 +18,8 @@ type DPFirebaseMessenger interface {
 	PublishServiceRefunded(ctx context.Context, m PublishServiceRefundedMessage) error
 	PublishMaleSendDirectInquiryNotification(ctx context.Context, m PublishMaleSendDirectInquiryMessage) error
 }
+
+const FCMTypeFieldName = "fcm_type"
 
 type DPFirebaseMessage struct {
 	c *messaging.Client
@@ -70,24 +71,19 @@ type PublishPickupInquiryNotificationMessage struct {
 }
 
 func (r *DPFirebaseMessage) PublishPickupInquiryNotification(ctx context.Context, m PublishPickupInquiryNotificationMessage) error {
-	n := Notification{
-		Type:    PickupInquiry,
-		Content: fmt.Sprintf("%s 已回覆詢問", m.PickerName),
-	}
-
-	bb, err := json.Marshal(&n)
-
-	if err != nil {
-		return err
-	}
+	data := make(map[string]string)
+	data[FCMTypeFieldName] = string(PickupInquiry)
+	data["picker_name"] = m.PickerName
+	data["picker_uuid"] = m.PickerUUID
 
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
 			Title:    fmt.Sprintf("%s 回覆詢問", m.PickerName),
-			Body:     string(bb),
+			Body:     fmt.Sprintf("%s 已回覆詢問", m.PickerName),
 			ImageURL: FCMImgUrl,
 		},
+		Data: data,
 	})
 
 	if err != nil {
@@ -100,33 +96,25 @@ func (r *DPFirebaseMessage) PublishPickupInquiryNotification(ctx context.Context
 }
 
 type PublishServicePaidNotificationMessage struct {
-	Topic     string `json:"-"`
-	PayerName string `json:"payer_name"`
-
-	// Deprecated
+	Topic       string `json:"-"`
+	PayerName   string `json:"payer_name"`
 	ServiceUUID string `json:"service_uuid"`
 }
 
 func (r *DPFirebaseMessage) PublishServicePaidNotification(ctx context.Context, m PublishServicePaidNotificationMessage) error {
-	n := Notification{
-		Type:     ServicePaid,
-		Content:  fmt.Sprintf("%s 完成付款", m.PayerName),
-		DeepLink: "",
-	}
-
-	bd, err := json.Marshal(&n)
-
-	if err != nil {
-		return err
-	}
+	data := make(map[string]string)
+	data[FCMTypeFieldName] = string(ServicePaid)
+	data["payer_name"] = m.PayerName
+	data["service_uuid"] = m.ServiceUUID
 
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
 			Title:    "服務付款完成",
-			Body:     string(bd),
+			Body:     fmt.Sprintf("%s 服務付款完成", m.PayerName),
 			ImageURL: FCMImgUrl,
 		},
+		Data: data,
 	})
 
 	if err != nil {
@@ -139,36 +127,27 @@ func (r *DPFirebaseMessage) PublishServicePaidNotification(ctx context.Context, 
 }
 
 type PublishUnpaidServiceExpiredMessage struct {
-	Topic string `json:"-"`
-
-	// Deprecate
-	ServiceUUID string `json:"service_uuid"`
-
-	// Deprecate
+	Topic               string `json:"-"`
+	ServiceUUID         string `json:"service_uuid"`
 	CustomerName        string `json:"customer_name"`
 	ServiceProviderName string `json:"service_provider_name"`
 }
 
 func (r *DPFirebaseMessage) PublishUnpaidServiceExpiredNotification(ctx context.Context, m PublishUnpaidServiceExpiredMessage) error {
-	n := Notification{
-		Type:     UnpaidServiceExpired,
-		Content:  fmt.Sprintf("與 %s 未付款服務已過期", m.CustomerName),
-		DeepLink: "",
-	}
-
-	bd, err := json.Marshal(&n)
-
-	if err != nil {
-		return err
-	}
+	data := make(map[string]string)
+	data[FCMTypeFieldName] = string(UnpaidServiceExpired)
+	data["service_uuid"] = m.ServiceUUID
+	data["customer_name"] = m.CustomerName
+	data["service_provider_name"] = m.ServiceProviderName
 
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
 			Title:    "未付款服務已過期",
-			Body:     string(bd),
+			Body:     fmt.Sprintf("與 %s 的未付款服務已過期", m.ServiceProviderName),
 			ImageURL: FCMImgUrl,
 		},
+		Data: data,
 	})
 
 	if err != nil {
@@ -181,38 +160,27 @@ func (r *DPFirebaseMessage) PublishUnpaidServiceExpiredNotification(ctx context.
 }
 
 type PublishMaleAgreeToChatMessage struct {
-	Topic string `json:"-"`
-
-	// Deprecate
-	InquiryUuid string `json:"inquiry_uuid"`
-
-	// Name of the male user that agrees to chat with the female.
-	MaleUsername string `json:"male_username"`
-
-	// Deprecate: Female that wants to chat with male user.
+	Topic          string `json:"-"`
+	InquiryUuid    string `json:"inquiry_uuid"`
+	MaleUsername   string `json:"male_username"`
 	FemaleUsername string `json:"female_username"`
 }
 
 func (r *DPFirebaseMessage) PublishMaleAgreeToChat(ctx context.Context, m PublishMaleAgreeToChatMessage) error {
-	n := Notification{
-		Type:     AgreeToChat,
-		Content:  fmt.Sprintf("%s 接受聊天", m.MaleUsername),
-		DeepLink: "",
-	}
-
-	bd, err := json.Marshal(&n)
-
-	if err != nil {
-		return err
-	}
+	data := make(map[string]string)
+	data[FCMTypeFieldName] = string(AgreeToChat)
+	data["inquiry_uuid"] = m.InquiryUuid
+	data["male_username"] = m.MaleUsername
+	data["female_username"] = m.FemaleUsername
 
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
 			Title:    fmt.Sprintf("%s 接受聊天", m.MaleUsername),
-			Body:     string(bd),
+			Body:     fmt.Sprintf("開始與 %s 聊聊吧", m.MaleUsername),
 			ImageURL: FCMImgUrl,
 		},
+		Data: data,
 	})
 
 	if err != nil {
@@ -238,25 +206,21 @@ type PublishServiceCancelledMessage struct {
 // PublishServiceCancelled emits service cancelled message to both parties of the service.
 func (r *DPFirebaseMessage) PublishServiceCancelled(ctx context.Context, m PublishServiceCancelledMessage) error {
 	// Publish a message to customer
-	n := Notification{
-		Type:    ServiceCancelled,
-		Content: fmt.Sprintf("%s 取消服務", m.CancellerUsername),
-	}
-
-	bb, err := json.Marshal(&n)
-
-	if err != nil {
-		return err
-	}
+	data := make(map[string]string)
+	data[FCMTypeFieldName] = string(ServiceCancelled)
+	data["service_uuid"] = m.ServiceUUID
+	data["canceller_uuid"] = m.CancellerUUID
+	data["canceller_username"] = m.CancellerUsername
 
 	for _, topic := range m.Topics {
 		res, err := r.c.Send(ctx, &messaging.Message{
 			Topic: topic,
 			Notification: &messaging.Notification{
 				Title:    fmt.Sprintf("%s 取消服務", m.CancellerUsername),
-				Body:     string(bb),
+				Body:     fmt.Sprintf("%s 已取消服務", m.CancellerUsername),
 				ImageURL: FCMImgUrl,
 			},
+			Data: data,
 		})
 
 		if err != nil {
@@ -266,35 +230,28 @@ func (r *DPFirebaseMessage) PublishServiceCancelled(ctx context.Context, m Publi
 		log.Infof("cancel service FCM sent! %s", res)
 	}
 
-	return err
+	return nil
 }
 
 type PublishServiceRefundedMessage struct {
-	Topic string `json:"-"`
-
-	// Deprecated
+	Topic       string `json:"-"`
 	ServiceUUID string `json:"service_uuid"`
 }
 
 func (r *DPFirebaseMessage) PublishServiceRefunded(ctx context.Context, m PublishServiceRefundedMessage) error {
-	n := Notification{
-		Type:    Refunded,
-		Content: "服務退款通知",
-	}
-
-	bb, err := json.Marshal(&n)
-
-	if err != nil {
-		return err
-	}
+	data := make(map[string]string)
+	data[FCMTypeFieldName] = string(Refunded)
+	data["service_uuid"] = m.ServiceUUID
 
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
 			Title:    "服務退款通知",
-			Body:     string(bb),
+			Body:     "服務退款通知",
 			ImageURL: FCMImgUrl,
 		},
+
+		Data: data,
 	})
 
 	if err != nil {
@@ -307,36 +264,27 @@ func (r *DPFirebaseMessage) PublishServiceRefunded(ctx context.Context, m Publis
 }
 
 type PublishMaleSendDirectInquiryMessage struct {
-	Topic string `json:"-"`
-
-	// Deprecate
-	InquiryUUID string `json:"inquiry_uuid"`
-
-	// Deprecate
+	Topic          string `json:"-"`
+	InquiryUUID    string `json:"inquiry_uuid"`
 	Femaleusername string `json:"female_username"`
-
-	MaleUsername string `json:"male_username"`
+	MaleUsername   string `json:"male_username"`
 }
 
 func (r *DPFirebaseMessage) PublishMaleSendDirectInquiryNotification(ctx context.Context, m PublishMaleSendDirectInquiryMessage) error {
-	n := Notification{
-		Type:    MaleSendDirectInquiry,
-		Content: fmt.Sprintf("%s 詢問", m.MaleUsername),
-	}
-
-	bb, err := json.Marshal(&n)
-
-	if err != nil {
-		return err
-	}
+	data := make(map[string]string)
+	data[FCMTypeFieldName] = string(MaleSendDirectInquiry)
+	data["inquiry_uuid"] = m.InquiryUUID
+	data["female_username"] = m.Femaleusername
+	data["male_username"] = m.MaleUsername
 
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
-			Title:    fmt.Sprintf("男生詢問 %s ", m.MaleUsername),
-			Body:     string(bb),
+			Title:    "男生詢問 ",
+			Body:     fmt.Sprintf("%s 男生向您提出詢問", m.MaleUsername),
 			ImageURL: FCMImgUrl,
 		},
+		Data: data,
 	})
 
 	if err != nil {
