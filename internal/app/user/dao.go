@@ -323,9 +323,9 @@ func (dao *UserDAO) DeleteUserImages(url string) error {
 // GetRating calculates the average rating that the user has participated in.
 func (dao *UserDAO) GetRating(userID int) (*models.UserRating, error) {
 	query := `
-SELECT 	
+SELECT
 	AVG(rating)::numeric(10,2) AS score,
-	count(DISTINCT service_id) AS number_of_services 
+	count(DISTINCT service_id) AS number_of_services
 FROM service_ratings
 WHERE ratee_id = $1;
 	`
@@ -345,8 +345,8 @@ WHERE ratee_id = $1;
 func (dao *UserDAO) GetGirls(p contracts.GetGirlsParams) ([]*models.RandomGirl, error) {
 	ranSeed := 0.1
 
-	query := fmt.Sprintf(` 
-SELECT 
+	query := fmt.Sprintf(`
+SELECT
 	setseed(%f),
 	users.id,
 	username,
@@ -357,12 +357,12 @@ SELECT
 	weight,
 	breast_size,
 	description,
-	
+
 	CASE WHEN si.id IS NOT NULL
     	THEN true
     	ELSE false
     	END has_inquiry,
-	
+
     CASE WHEN services.uuid IS NOT NULL
     	THEN true
     	ELSE false
@@ -372,13 +372,14 @@ SELECT
 	si.inquiry_status,
 	si.expect_service_type,
 	chatrooms.channel_uuid,
-	services.uuid AS service_uuid
+	services.uuid AS service_uuid,
+	services.service_status
 FROM users
 LEFT JOIN service_inquiries si ON users.id = si.picker_id
-	AND si.inquirer_id=$1 
+	AND si.inquirer_id=$1
 	AND si.created_at=(
 	 	SELECT max(created_at)
-        FROM service_inquiries 
+        FROM service_inquiries
         WHERE inquirer_id=$1
         AND picker_id = users.id
 	)
@@ -389,7 +390,7 @@ WHERE
 ORDER BY random()
 LIMIT $2
 OFFSET $3;
-	
+
 	`, ranSeed)
 
 	gs := make([]*models.RandomGirl, 0)
@@ -422,11 +423,11 @@ OFFSET $3;
 	girlIDsStr := strings.Trim(strings.Join(strings.Fields(fmt.Sprint(girlIDs)), ","), "[]")
 
 	ratingQuery := fmt.Sprintf(`
-SELECT 
-	ratee_id, 
-	ROUND(AVG(rating), 2) AS score, 
+SELECT
+	ratee_id,
+	ROUND(AVG(rating), 2) AS score,
 	COUNT(1) AS number_of_services
-FROM 
+FROM
 	service_ratings
 INNER JOIN users ON ratee_id = users.id
 WHERE
@@ -557,8 +558,8 @@ func (dao *UserDAO) GetUserServiceOption(userID int) ([]models.UserServiceOption
 		so.description,
 		so.duration,
 		so.id service_option_id
-	from user_service_options uso 
-	inner join service_options so 
+	from user_service_options uso
+	inner join service_options so
 	on uso.service_option_id = so.id
 	where uso.users_id=$1 AND uso.deleted_at IS null
 	order by so.created_at`

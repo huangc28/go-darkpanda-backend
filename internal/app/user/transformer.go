@@ -367,6 +367,7 @@ type TrfedRandomGirl struct {
 	ExpectServiceType *string `json:"expect_service_type"`
 	ChannelUUID       *string `json:"channel_uuid"`
 	ServiceUUID       *string `json:"service_uuid"`
+	ServiceStatus     *string `json:"service_status"`
 }
 
 type TrfedRandomGirls struct {
@@ -406,6 +407,7 @@ func TrfRandomGirls(rgs []*models.RandomGirl) (*TrfedRandomGirls, error) {
 			ExpectServiceType: rg.ExpectServiceType,
 			ChannelUUID:       rg.ChannelUUID,
 			ServiceUUID:       rg.ServiceUUID,
+			ServiceStatus:     rg.ServiceStatus,
 		}
 
 		trfgs = append(trfgs, trfg)

@@ -114,6 +114,7 @@ type RandomGirl struct {
 	ExpectServiceType *string `json:"expect_service_type"`
 	ChannelUUID       *string `json:"channel_uuid"`
 	ServiceUUID       *string `json:"service_uuid"`
+	ServiceStatus     *string `json:"service_status"`
 
 	Rating UserRating
 }
