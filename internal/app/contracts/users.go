@@ -59,6 +59,7 @@ type UserDAOer interface {
 	GetGirls(p GetGirlsParams) ([]*models.RandomGirl, error)
 	WithTx(tx *sqlx.Tx) UserDAOer
 	GetUserServiceOption(userID int) ([]models.UserServiceOptionData, error)
+	CheckServiceOptionExists(userID int, serviceName string) (bool, error)
 	CreateServiceOption(p CreateServiceOptionsParams) (*models.ServiceOption, error)
 	CreateUserServiceOption(p CreateServiceOptionParams) (*models.UserServiceOption, error)
 	DeleteUserServiceOption(userID int, serviceOptionID int) error

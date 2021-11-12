@@ -757,6 +757,30 @@ func CreateServiceService(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	// Check service option exists
+	exists, err := userDAOer.CheckServiceOptionExists(int(usr.ID), body.Name)
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToCheckServiceOptionExistence,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	if exists {
+		c.AbortWithError(
+			http.StatusBadRequest,
+			apperr.NewErr(apperr.ServiceOptionNotAvailable),
+		)
+
+		return
+	}
+
 	// Create service option
 	serviceOption, err := userDAOer.CreateServiceOption(
 		contracts.CreateServiceOptionsParams{

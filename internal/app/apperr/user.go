@@ -26,10 +26,13 @@ const (
 	FailedToCreateUserServiceOption         = "5000023"
 	FailedToCreateServiceOption             = "5000024"
 	FailedToGetUserServiceOption            = "5000025"
+	FailedToCheckServiceOptionExistence     = "5000026"
+	ServiceOptionNotAvailable               = "5000027"
 )
 
 var userErrorCodeMsgMap = map[string]string{
 	ChangeMobileVerifyCodeNotExists:     "verify code does not exist, please send verify code via mobile again",
 	ChangeMobileVerifyCodeNotMatching:   "verify code does not match",
 	FailedToGetRegisterMobileVerifyCode: "verify code not found, please resend verify code again",
+	ServiceOptionNotAvailable:           "Service option exists",
 }
