@@ -79,7 +79,7 @@ test_migrate_down:
 # List of systemctl service name to host up worker.
 APP_SERVICE_NAME                    = darkpanda.service
 SERVICE_STATUS_SCANNER_SERVICE_NAME = darkpanda_service_status_scanner.service
-SERVICE_PAYMENT_CHECKER             = darkpanda_service_payment_checker.service 
+SERVICE_PAYMENT_CHECKER             = darkpanda_service_payment_checker.service
 
 deploy: build
 	ssh -t root@api.darkpanda.love 'cd ~/darkpanda/go-darkpanda-backend && \

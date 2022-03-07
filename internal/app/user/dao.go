@@ -661,9 +661,9 @@ func (dao *UserDAO) DeleteUserServiceOption(userID int, serviceOptionID int) err
 
 func (dao *UserDAO) CheckServiceOptionExists(userID int, username string) (bool, error) {
 	query := `SELECT EXISTS(
-				SELECT 1 
-				FROM service_options so 
-				INNER JOIN user_service_options uso on so.id = uso.service_option_id 
+				SELECT 1
+				FROM service_options so
+				INNER JOIN user_service_options uso on so.id = uso.service_option_id
 				WHERE so."name" = $1 and uso.users_id = $2 and uso.deleted_at IS NULL
 			) AS "exists"`
 	var exists bool
