@@ -134,7 +134,6 @@ func JwtValidator(opt JwtMiddlewareOptions, authDaoer contracts.AuthDaoer) gin.H
 				http.StatusForbidden,
 				apperr.NewErr(
 					apperr.TokenIsInvalidated,
-					err.Error(),
 				),
 			)
 

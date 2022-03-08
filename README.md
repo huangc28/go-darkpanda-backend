@@ -108,7 +108,7 @@ The content in `db/migrations/schema.sql` will be truncated everytime running th
 
 ## Supported Languages
 
-The app currently supports: 
+The app currently supports:
 - zh
 - en
 

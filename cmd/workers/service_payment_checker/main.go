@@ -22,6 +22,8 @@ import (
 )
 
 // This worker checks if service is paid within 30 minutes from the time being booked.
+// Note 2022/03/08: Since we remove DP point deposit, we will only retrieve service.
+// This worker is no longer in used at the moment.
 func init() {
 	ctx := context.Background()
 	manager.NewDefaultManager(ctx).Run(func() {
@@ -48,6 +50,7 @@ func main() {
 			tickSec = tickSecEnvInt
 		}
 	}
+
 	// Retrieve all services with status "unpaid"
 	ticker := time.NewTicker(time.Duration(tickSec))
 

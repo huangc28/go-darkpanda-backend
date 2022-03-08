@@ -58,7 +58,9 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
-	// Deprecated
+	// EmitInquiryUpdatedMessage emits message about service detail to the chatroom.
+	// This message notifies the male user to confirm the inquiry detail by clicking
+	// on the message bubble.
 	g.POST(
 		"/emit-inquiry-updated-message",
 		func(c *gin.Context) {

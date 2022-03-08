@@ -34,8 +34,10 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 			// User can retrieve a list of all `unpaid` and `to_be_fulfilled` services.
 			// If the gender of the requester is `male`, use `customer_id` as the matching
 			// criteria. If is `female`, use `service_provider_id` as the matching criteria.
+			//
+			// Note 2022/03/08: Since we remove DP point deposit, we will only retrieve service
+			// with status `to_be_fulfilled`
 			GetIncomingServicesHandler(c, container)
-
 		case "overdue":
 
 			// List of all overdued services whether they are failed or completed

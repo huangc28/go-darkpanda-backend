@@ -233,7 +233,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 				Valid: true,
 			},
 			InquiryID:     int32(inquiry.ID),
-			ServiceStatus: models.ServiceStatusUnpaid,
+			ServiceStatus: models.ServiceStatusNegotiating,
 			ServiceType:   body.ServiceType,
 			MatchingFee: sql.NullString{
 				Valid:  true,
@@ -1081,9 +1081,10 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Change inquiry status from `chatting` to `booked` and create a new service with status `unpaid`
+	// Note 2022/03/08: we are removing DP point deposit here. Once male user agrees on the payment detail the service
+	// state will become service `ServiceStatusToBeFulfilled`
 	transResp := db.TransactWithFormatStruct(db.GetDB(), func(tx *sqlx.Tx) db.FormatResp {
-		statusUnpaid := models.ServiceStatusUnpaid
+		statusToBeFulfilled := models.ServiceStatusToBeFulfilled
 
 		if err != nil {
 			return db.FormatResp{
@@ -1096,7 +1097,7 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 		srvModel, err := serviceDao.UpdateServiceByID(
 			contracts.UpdateServiceByIDParams{
 				ID:            srv.ID,
-				ServiceStatus: &statusUnpaid,
+				ServiceStatus: &statusToBeFulfilled,
 			},
 		)
 
@@ -1108,11 +1109,11 @@ func EmitServiceConfirmedMessage(c *gin.Context, depCon container.Container) {
 			}
 		}
 
-		// Update service status from `negotiating` to `unpaid`
+		// Update service status from `negotiating` to `toBeFulfilled`
 		df := darkfirestore.Get()
 		if err := df.UpdateService(ctx, darkfirestore.UpdateServiceParams{
 			ServiceUuid:   srvModel.Uuid.String,
-			ServiceStatus: statusUnpaid.ToString(),
+			ServiceStatus: statusToBeFulfilled.ToString(),
 		}); err != nil {
 			return db.FormatResp{
 				Err:            err,

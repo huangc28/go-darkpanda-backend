@@ -62,4 +62,5 @@ var AuthErrCodeMsgMap = map[string]string{
 	ExceedingLoginRetryLimit:                "attempt login too many times. Please retry login later",
 	VerifyCodeUnmatched:                     "mobile verify code not matched",
 	LoginVerifyCodeNotFound:                 "login verify code not found for the authenticator, please send a new sms login code again",
+	TokenIsInvalidated:                      "jwt token is invalid",
 }

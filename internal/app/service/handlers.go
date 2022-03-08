@@ -25,6 +25,8 @@ import (
 // GetListOfCurrentServicesHandler retrieve those service of the following status:
 //   - unpaid
 //   - to_be_fulfilled
+//
+// Note 2022/03/08: we are removing DP point deposit here. We are not retrieving unpaid services
 type GetListOfCurrentServicesBody struct {
 	Offset  int `form:"offset,default=0"`
 	PerPage int `form:"perpage,default=5"`
@@ -74,12 +76,13 @@ func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 
 	srvDao := NewServiceDAO(db.GetDB())
 
+	// Note 2022/03/08: Since we remove DP point deposit, we will only retrieve service
+	// with status `to_be_fulfilled`
 	srvs, err = srvDao.GetServicesByStatus(
 		int(user.ID),
 		user.Gender,
 		body.Offset,
 		body.PerPage,
-		models.ServiceStatusUnpaid,
 		models.ServiceStatusToBeFulfilled,
 		models.ServiceStatusFulfilling,
 	)
