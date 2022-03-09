@@ -923,7 +923,7 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 	})
 }
 
-// CancelService allows either female and male user can cancel the service before
+// CancelService allows both female and male user to cancel the service before
 // service happening. Check the following conditions before
 // canceling.
 //   - Is a service participant.
@@ -1011,8 +1011,7 @@ func CancelService(c *gin.Context, depCon container.Container) {
 	}
 
 	if srv.ServiceStatus != models.ServiceStatusToBeFulfilled &&
-		srv.ServiceStatus != models.ServiceStatusCanceled &&
-		srv.ServiceStatus != models.ServiceStatusUnpaid {
+		srv.ServiceStatus != models.ServiceStatusNegotiating {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.ServiceStatusNotValidToCancel),
@@ -1096,30 +1095,33 @@ func CancelService(c *gin.Context, depCon container.Container) {
 
 			// Only perform refund operation when service status is `to_be_fulfilled`. This means that the service
 			// is paid, male might need to refund their matching fee.
-			if srv.ServiceStatus == models.ServiceStatusToBeFulfilled {
-				var (
-					userBalDao contracts.UserBalancer
-					paymentDao contracts.PaymentDAOer
-				)
+			// 2022/03/09 Note: Since DarkPanda does not charge matching fee. We don't need to perform refund anymore.
+			/*
+				if srv.ServiceStatus == models.ServiceStatusToBeFulfilled {
+					var (
+						userBalDao contracts.UserBalancer
+						paymentDao contracts.PaymentDAOer
+					)
 
-				depCon.Make(&userBalDao)
-				depCon.Make(&paymentDao)
+					depCon.Make(&userBalDao)
+					depCon.Make(&paymentDao)
 
-				userBalDao.WithTx(tx)
-				paymentDao.WithTx(tx)
+					userBalDao.WithTx(tx)
+					paymentDao.WithTx(tx)
 
-				rs := NewRefundService(paymentDao, userBalDao)
+					rs := NewRefundService(paymentDao, userBalDao)
 
-				refunded, err = rs.RefundCustomerIfRefundable(srv, user)
+					refunded, err = rs.RefundCustomerIfRefundable(srv, user)
 
-				if err != nil {
-					return db.FormatResp{
-						Err:            err,
-						ErrCode:        apperr.FailedToPerformRefundCustomerIfRefundable,
-						HttpStatusCode: http.StatusInternalServerError,
+					if err != nil {
+						return db.FormatResp{
+							Err:            err,
+							ErrCode:        apperr.FailedToPerformRefundCustomerIfRefundable,
+							HttpStatusCode: http.StatusInternalServerError,
+						}
 					}
 				}
-			}
+			*/
 
 			return db.FormatResp{
 				Response: &TxResp{
