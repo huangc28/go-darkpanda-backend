@@ -183,7 +183,7 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 }
 
 func main() {
-	tickSec := 5
+	tickSec := 60
 	tickSecEnv := os.Getenv("TICK_INTERVAL_IN_SECOND")
 
 	if len(tickSecEnv) > 0 {
