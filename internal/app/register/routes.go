@@ -17,10 +17,11 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		VerifyUsernameHandler(c, depCon)
 	})
 
-	// Check referral code availabiity.
-	g.POST("/verify-referral-code", func(c *gin.Context) {
-		VerifyReferralCodeHandler(c, depCon)
-	})
+	// Deprecated Check referral code availabiity.
+	//
+	//g.POST("/verify-referral-code", func(c *gin.Context) {
+	//VerifyReferralCodeHandler(c, depCon)
+	//})
 
 	g.POST("/send-mobile-verify-code", func(c *gin.Context) {
 		SendMobileVerifyCodeHandler(c, depCon)

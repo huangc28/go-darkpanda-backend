@@ -27,9 +27,8 @@ import (
 )
 
 type RegisterBody struct {
-	Username  string `form:"username" uri:"username" json:"username" binding:"required"`
-	Gender    string `form:"gender" uri:"gender" json:"gender" binding:"oneof='male' 'female'"`
-	ReferCode string `form:"refer_code" uri:"refer_code" json:"refer_code" binding:"required"`
+	Username string `form:"username" uri:"username" json:"username" binding:"required"`
+	Gender   string `form:"gender" uri:"gender" json:"gender" binding:"oneof='male' 'female'"`
 }
 
 func RegisterHandler(c *gin.Context, depCon container.Container) {
@@ -50,7 +49,6 @@ func RegisterHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// ------------------- check if username has been registered -------------------
 	dao := NewRegisterDAO(db.GetDB())
 	exists, err := dao.CheckUsernameExists(ctx, body.Username)
 
@@ -75,43 +73,7 @@ func RegisterHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// ------------------- check if referral code exists -------------------
-	regSrv := NewRegisterService(NewRegisterDAO(db.GetDB()))
-
-	if err := regSrv.ValidateReferralCode(ctx, body.ReferCode); err != nil {
-		rcErr := err.(*ValidateReferralCodeError)
-
-		var (
-			errCode    string
-			httpStatus int = http.StatusBadRequest
-		)
-
-		switch rcErr.ErrCode {
-		case ReferralCodeNotExists:
-			errCode = apperr.FailedToRetrieveReferCodeInfo
-		case ReferralCodeExpired:
-			errCode = apperr.ReferralCodeExpired
-		case ReferralCodeOccupied:
-			errCode = apperr.ReferCodeOccupied
-		default:
-			errCode = apperr.FailedToValidateReferralCode
-			httpStatus = http.StatusInternalServerError
-		}
-
-		c.AbortWithError(
-			httpStatus,
-			apperr.NewErr(
-				errCode,
-				rcErr.Error(),
-			),
-		)
-
-		return
-
-	}
-
-	// If refer code and username are all valid, create a new user.
-	// generates uuid for new user.
+	// If username is valid create a new user. Generates uuid for new user.
 	uuid, err := shortid.Generate()
 
 	if err != nil {
@@ -147,24 +109,6 @@ func RegisterHandler(c *gin.Context, depCon container.Container) {
 				ErrCode:        apperr.FailedToCreateUser,
 				HttpStatusCode: http.StatusInternalServerError,
 			}
-		}
-
-		if err = q.UpdateInviteeIDByRefCode(
-			ctx,
-			models.UpdateInviteeIDByRefCodeParams{
-				InviteeID: sql.NullInt32{
-					Int32: int32(newUser.ID),
-					Valid: true,
-				},
-				RefCode: body.ReferCode,
-			},
-		); err != nil {
-			return db.FormatResp{
-				Err:            err,
-				ErrCode:        apperr.FailedToUpdateInviteeIdByRefCode,
-				HttpStatusCode: http.StatusInternalServerError,
-			}
-
 		}
 
 		return db.FormatResp{
@@ -231,59 +175,6 @@ func VerifyUsernameHandler(c *gin.Context, depCon container.Container) {
 		c.AbortWithError(
 			http.StatusBadRequest,
 			apperr.NewErr(apperr.UsernameNotAvailable),
-		)
-
-		return
-	}
-
-	c.JSON(http.StatusOK, struct{}{})
-}
-
-type VerifyReferralCodeBody struct {
-	ReferralCode string `form:"referral_code" json:"referral_code" binding:"required,gt=0"`
-}
-
-func VerifyReferralCodeHandler(c *gin.Context, depCon container.Container) {
-	var body VerifyReferralCodeBody
-
-	if err := requestbinder.Bind(c, &body); err != nil {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(
-				apperr.FailedToVerifyReferralCode,
-				err.Error(),
-			),
-		)
-	}
-
-	ctx := context.Background()
-	srv := NewRegisterService(NewRegisterDAO(db.GetDB()))
-
-	if err := srv.ValidateReferralCode(ctx, body.ReferralCode); err != nil {
-		rcErr := err.(*ValidateReferralCodeError)
-		var (
-			errCode    string
-			httpStatus int = http.StatusBadRequest
-		)
-
-		switch rcErr.ErrCode {
-		case ReferralCodeNotExists:
-			errCode = apperr.FailedToRetrieveReferCodeInfo
-		case ReferralCodeExpired:
-			errCode = apperr.ReferralCodeExpired
-		case ReferralCodeOccupied:
-			errCode = apperr.ReferCodeOccupied
-		default:
-			errCode = apperr.FailedToValidateReferralCode
-			httpStatus = http.StatusInternalServerError
-		}
-
-		c.AbortWithError(
-			httpStatus,
-			apperr.NewErr(
-				errCode,
-				rcErr.Error(),
-			),
 		)
 
 		return
