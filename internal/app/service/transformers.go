@@ -144,10 +144,11 @@ func TransformServiceOptions(serviceOptions []*models.ServiceOption) TrfmedServi
 type TrfedPaymentDetail struct {
 	Price *float64 `json:"price"`
 
-	Address   string     `json:"address"`
-	StartTime *time.Time `json:"start_time"`
-	Duration  *int64     `json:"duration"`
-	Refunded  bool       `json:"refunded"`
+	ServiceType string     `json:"service_type"`
+	Address     string     `json:"address"`
+	StartTime   *time.Time `json:"start_time"`
+	Duration    *int64     `json:"duration"`
+	Refunded    bool       `json:"refunded"`
 
 	PickerUuid      string  `json:"picker_uuid"`
 	PickerUsername  string  `json:"picker_username"`
@@ -168,8 +169,9 @@ type TrfPaymentDetailParams struct {
 
 func TrfPaymentDetail(p TrfPaymentDetailParams) TrfedPaymentDetail {
 	trf := TrfedPaymentDetail{
-		Address:  p.PaymentDetail.Address,
-		Refunded: p.PaymentDetail.Refunded,
+		ServiceType: p.PaymentDetail.ServiceType,
+		Address:     p.PaymentDetail.Address,
+		Refunded:    p.PaymentDetail.Refunded,
 
 		PickerUuid:     p.PaymentDetail.PickerUuid,
 		PickerUsername: p.PaymentDetail.PickerUsername,

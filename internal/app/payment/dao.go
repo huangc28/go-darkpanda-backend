@@ -108,12 +108,12 @@ INNER JOIN users AS payer ON payer.id = payment.payer_id;
 
 func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServicePaymentDetail, error) {
 	query := `
-	SELECT 
+	SELECT
 		-- Retrieve payment info
 		payments.id AS payment_id,
 	 	payments.price,
 		(
-			CASE WHEN payments.refunded IS NULL 
+			CASE WHEN payments.refunded IS NULL
 			THEN
 				false
 			ELSE
@@ -122,6 +122,7 @@ func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServiceP
 		) AS refunded,
 
 	 	-- Retrieve service info
+		services.service_type,
 	 	services.address,
 	 	services.appointment_time,
 	 	services.duration,
@@ -131,11 +132,11 @@ func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServiceP
 	  	pickers.uuid AS picker_uuid,
 	  	pickers.username AS picker_username,
 	  	pickers.avatar_url AS picker_avatar_url
-	FROM 
-		services 
-	LEFT JOIN payments ON payments.service_id = services.id 
+	FROM
+		services
+	LEFT JOIN payments ON payments.service_id = services.id
 	INNER JOIN users AS pickers ON pickers.id = services.service_provider_id
-	WHERE 
+	WHERE
 		services.uuid = $1
 `
 
