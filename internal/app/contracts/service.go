@@ -64,8 +64,8 @@ type ServiceDAOer interface {
 	UpdateServiceByInquiryId(UpdateServiceByInquiryIdParams) (*models.Service, error)
 	CreateServiceQRCode(CreateServiceQRCodeParams) (*models.ServiceQrcode, error)
 	WithTx(db.Conn) ServiceDAOer
-	ScanExpiredServices() ([]*models.Service, error)
-	ScanCompletedServices() ([]*models.Service, error)
+	ScanExpiredServices() ([]*models.ServiceScannerData, error)
+	ScanCompletedServices() ([]*models.ServiceScannerData, error)
 	GetServiceByUuid(string, ...string) (*models.Service, error)
 	GetOverlappedServices(GetOverlappedServicesParams) ([]models.Service, error)
 	GetInquiryByServiceUuid(srvUuid string) (*models.ServiceInquiry, error)

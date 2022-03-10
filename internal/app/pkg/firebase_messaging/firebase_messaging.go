@@ -17,6 +17,7 @@ type DPFirebaseMessenger interface {
 	PublishServiceCancelled(ctx context.Context, m PublishServiceCancelledMessage) error
 	PublishServiceRefunded(ctx context.Context, m PublishServiceRefundedMessage) error
 	PublishMaleSendDirectInquiryNotification(ctx context.Context, m PublishMaleSendDirectInquiryMessage) error
+	PublishServiceCompletedNotification(ctx context.Context, m ServiceCompletedMessage) error
 }
 
 const FCMTypeFieldName = "fcm_type"
@@ -54,6 +55,7 @@ var (
 	ServiceCancelled      FCMType = "service_cancelled"
 	Refunded              FCMType = "refunded"
 	MaleSendDirectInquiry FCMType = "male_send_direct_inquiry"
+	ServiceEnded          FCMType = "service_ended"
 )
 
 type Notification struct {
@@ -294,4 +296,37 @@ func (r *DPFirebaseMessage) PublishMaleSendDirectInquiryNotification(ctx context
 	log.Infof("[fcm_info] direct inquiry sent %s", res)
 
 	return err
+}
+
+type ServiceCompletedMessage struct {
+	// Contains topics for both male and female.
+	Topic               string
+	CounterPartUsername string
+	ServiceUUID         string
+}
+
+// PublishServiceEndedNotification notifies both customer and service provider that the
+// service has ended.
+func (r *DPFirebaseMessage) PublishServiceCompletedNotification(ctx context.Context, m ServiceCompletedMessage) error {
+	data := make(map[string]string)
+	data[FCMTypeFieldName] = string(ServiceEnded)
+	data["service_uuid"] = m.ServiceUUID
+
+	res, err := r.c.Send(ctx, &messaging.Message{
+		Topic: m.Topic,
+		Notification: &messaging.Notification{
+			Title:    "服務結束",
+			Body:     fmt.Sprintf("您與 %s 的服務已經結束", m.CounterPartUsername),
+			ImageURL: FCMImgUrl,
+		},
+		Data: data,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Infof("[fcm_info] direct inquiry sent %s", res)
+
+	return nil
 }

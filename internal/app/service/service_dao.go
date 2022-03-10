@@ -102,7 +102,7 @@ func (dao *ServiceDAO) GetServicesByStatus(providerID int, gender models.Gender,
 		`
 SELECT * FROM (
 	SELECT * FROM (
-		SELECT distinct ON(services.id)	
+		SELECT distinct ON(services.id)
 			services.uuid as service_uuid,
 			services.service_status,
 			services.appointment_time,
@@ -114,7 +114,7 @@ SELECT * FROM (
 			chatrooms.channel_uuid,
 			service_inquiries.uuid as inquiry_uuid,
 			(
-				CASE WHEN payments.refunded IS NULL 
+				CASE WHEN payments.refunded IS NULL
 				THEN
 					false
 				ELSE
@@ -132,8 +132,8 @@ SELECT * FROM (
 		WHERE %s
 		AND %s
 	) a ORDER BY created_at DESC
-) b 
-	LIMIT $2 
+) b
+	LIMIT $2
 	OFFSET $3;
 	`,
 		joinTargetPersonClause,
@@ -349,7 +349,7 @@ WHERE
 
 // ScanExpiredServices scan services with service status `to_be_fulfilled`.
 // If current time is later than the service end_time, we set the service status to be `expired`
-func (dao *ServiceDAO) ScanExpiredServices() ([]*models.Service, error) {
+func (dao *ServiceDAO) ScanExpiredServices() ([]*models.ServiceScannerData, error) {
 	return dao.ScanAndUpdateServiceStatusIfNeeded(
 		ScanAndUpdateServiceStatusIfNeededParams{
 			ScanStatus:     string(models.ServiceStatusToBeFulfilled),
@@ -360,7 +360,7 @@ func (dao *ServiceDAO) ScanExpiredServices() ([]*models.Service, error) {
 
 // ScanCompletedServices scan those services with status `fulfilling`. If current time
 // is greater than `end_time`, update the status to `completed`
-func (dao *ServiceDAO) ScanCompletedServices() ([]*models.Service, error) {
+func (dao *ServiceDAO) ScanCompletedServices() ([]*models.ServiceScannerData, error) {
 	return dao.ScanAndUpdateServiceStatusIfNeeded(
 		ScanAndUpdateServiceStatusIfNeededParams{
 			ScanStatus:     string(models.ServiceStatusFulfilling),
@@ -374,16 +374,22 @@ type ScanAndUpdateServiceStatusIfNeededParams struct {
 	UpdateToStatus string
 }
 
-func (dao *ServiceDAO) ScanAndUpdateServiceStatusIfNeeded(params ScanAndUpdateServiceStatusIfNeededParams) ([]*models.Service, error) {
+func (dao *ServiceDAO) ScanAndUpdateServiceStatusIfNeeded(params ScanAndUpdateServiceStatusIfNeededParams) ([]*models.ServiceScannerData, error) {
 	query := `
 WITH found_services AS (
 	SELECT
-		id,
-		uuid
+		services.id,
+		services.uuid,
+		customers.username AS customer_username,
+		customers.fcm_topic AS customer_fcm_topic,
+		service_providers.username AS service_providers_username,
+		service_providers.fcm_topic AS service_providers_fcm_topic
 	FROM
 		services
+	INNER JOIN users AS customers ON services.customer_id = customers.id
+	INNER JOIN users AS service_providers ON services.service_provider_id = service_providers.id
 	WHERE
-		service_status = $1 AND
+		services.service_status = $1 AND
 		now() >= end_time
 ), updated AS (
 	UPDATE
@@ -395,7 +401,15 @@ WITH found_services AS (
 	WHERE
 		found_services.id = services.id
 )
-SELECT id, uuid FROM found_services;
+SELECT
+	id,
+	uuid,
+	customer_username,
+	customer_fcm_topic,
+	service_providers_username,
+	service_providers_fcm_topic
+FROM
+	found_services;
 `
 	rows, err := dao.DB.Queryx(
 		query,
@@ -409,10 +423,10 @@ SELECT id, uuid FROM found_services;
 
 	defer rows.Close()
 
-	srvs := make([]*models.Service, 0)
+	srvs := make([]*models.ServiceScannerData, 0)
 
 	for rows.Next() {
-		srv := models.Service{}
+		srv := models.ServiceScannerData{}
 
 		if err := rows.StructScan(&srv); err != nil {
 			return nil, err
@@ -449,7 +463,7 @@ func (dao *ServiceDAO) GetServiceOptions() ([]*models.ServiceOption, error) {
 	query := `
 SELECT
 	service_options.*
-FROM 
+FROM
 	service_options
 WHERE
 	service_options_type='default';
@@ -570,11 +584,11 @@ WHERE
 
 func (dao *ServiceDAO) GetInquiryByServiceUuid(srvUuid string) (*models.ServiceInquiry, error) {
 	query := `
-SELECT service_inquiries.* 
+SELECT service_inquiries.*
 FROM service_inquiries
 INNER JOIN services ON services.inquiry_id = service_inquiries.id
-WHERE 
-	services.uuid = $1	
+WHERE
+	services.uuid = $1
 ORDER BY service_inquiries.created_at DESC
 LIMIT 1;
 `
@@ -626,7 +640,7 @@ SELECT
 		services
 	SET
 		service_status = $2
-	FROM 	
+	FROM
 		found_services
 	WHERE
 		found_services.id = services.id

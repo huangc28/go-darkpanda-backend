@@ -121,7 +121,7 @@ func (s *ServiceStatusScannerTestSuite) TestScanExpiredServices() {
 
 	// assert that there are 3 expired services
 	for _, esrv := range esrvs {
-		_, ok := srvUuidMap[esrv.Uuid.String]
+		_, ok := srvUuidMap[esrv.Uuid]
 
 		s.Assert().True(ok, fmt.Sprintf("%s is expired", esrv.Uuid.String))
 	}

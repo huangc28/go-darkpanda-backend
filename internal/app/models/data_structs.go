@@ -136,3 +136,13 @@ type UserServiceOptionData struct {
 	Duration        int     `json:"duration"`
 	ServiceOptionID int     `json:"service_option_id"`
 }
+
+// Used by service status scanner worker.
+type ServiceScannerData struct {
+	ID                       string `json:"id"`
+	UUID                     string `json:"uuid"`
+	CustomerUsername         string `json:"customer_username"`
+	CustomerFCMTopic         string `json:"customer_fcm_topic"`
+	ServiceProviderUsername  string `json:"service_providers_username"`
+	ServiceProvidersFCMTopic string `json:"service_providers_fcm_topic"`
+}

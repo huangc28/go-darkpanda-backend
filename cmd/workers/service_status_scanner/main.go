@@ -15,6 +15,7 @@ import (
 	"github.com/huangc28/go-darkpanda-backend/internal/app/deps"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/models"
 	darkfirestore "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/dark_firestore"
+	dpfcm "github.com/huangc28/go-darkpanda-backend/internal/app/pkg/firebase_messaging"
 	"github.com/huangc28/go-darkpanda-backend/manager"
 	log "github.com/sirupsen/logrus"
 
@@ -64,7 +65,7 @@ func ScanCompletedServices(srvDao contracts.ServiceDAOer) error {
 		srvUuids := make([]string, 0)
 
 		for _, srv := range cplSrvs {
-			srvUuids = append(srvUuids, srv.Uuid.String)
+			srvUuids = append(srvUuids, srv.UUID)
 		}
 
 		df := darkfirestore.Get()
@@ -79,9 +80,41 @@ func ScanCompletedServices(srvDao contracts.ServiceDAOer) error {
 		if err != nil {
 			return fmt.Errorf("failed to scan completed services %s", err.Error())
 		}
-	}
 
-	infoLogger.Info("Done update service status to completed")
+		// Emit FCM message to notify both parties that the service has completed
+		// Retrieve username of both parties of a service.
+		var dpfcmer dpfcm.DPFirebaseMessenger
+		depCon := deps.Get().Container
+		depCon.Make(&dpfcmer)
+
+		for _, cplSrv := range cplSrvs {
+			// Send FCM to service provider
+			if err := dpfcmer.PublishServiceCompletedNotification(
+				ctx,
+				dpfcm.ServiceCompletedMessage{
+					Topic:               cplSrv.ServiceProvidersFCMTopic,
+					CounterPartUsername: cplSrv.CustomerUsername,
+					ServiceUUID:         cplSrv.UUID,
+				},
+			); err != nil {
+				return err
+			}
+
+			// Send FCM to customer
+			if err := dpfcmer.PublishServiceCompletedNotification(
+				ctx,
+				dpfcm.ServiceCompletedMessage{
+					Topic:               cplSrv.CustomerFCMTopic,
+					CounterPartUsername: cplSrv.ServiceProviderUsername,
+					ServiceUUID:         cplSrv.UUID,
+				},
+			); err != nil {
+				return err
+			}
+		}
+
+		log.Printf("completed services %v", cplSrvs)
+	}
 
 	return nil
 }
@@ -99,7 +132,7 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 	if len(expSrvs) > 0 {
 		srvUuids := make([]string, 0)
 		for _, srv := range expSrvs {
-			srvUuids = append(srvUuids, srv.Uuid.String)
+			srvUuids = append(srvUuids, srv.UUID)
 		}
 
 		df := darkfirestore.Get()
@@ -117,12 +150,8 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 
 	}
 
-	infoLogger.Info("Done update service status to expired")
-
 	return nil
 }
-
-const TickInterval = 60
 
 func main() {
 	tickSec := 60
