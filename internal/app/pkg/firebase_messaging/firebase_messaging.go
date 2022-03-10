@@ -18,6 +18,7 @@ type DPFirebaseMessenger interface {
 	PublishServiceRefunded(ctx context.Context, m PublishServiceRefundedMessage) error
 	PublishMaleSendDirectInquiryNotification(ctx context.Context, m PublishMaleSendDirectInquiryMessage) error
 	PublishServiceCompletedNotification(ctx context.Context, m ServiceCompletedMessage) error
+	PublishServiceExpiredNotification(ctx context.Context, m ServiceExpiredMessage) error
 }
 
 const FCMTypeFieldName = "fcm_type"
@@ -299,7 +300,6 @@ func (r *DPFirebaseMessage) PublishMaleSendDirectInquiryNotification(ctx context
 }
 
 type ServiceCompletedMessage struct {
-	// Contains topics for both male and female.
 	Topic               string
 	CounterPartUsername string
 	ServiceUUID         string
@@ -308,6 +308,52 @@ type ServiceCompletedMessage struct {
 // PublishServiceEndedNotification notifies both customer and service provider that the
 // service has ended.
 func (r *DPFirebaseMessage) PublishServiceCompletedNotification(ctx context.Context, m ServiceCompletedMessage) error {
+	res, err := r.publishServiceScannedNotification(ctx, serviceScannedMessage{
+		Topic:       m.Topic,
+		Title:       "服務結束",
+		Body:        fmt.Sprintf("您與 %s 的服務已經結束", m.CounterPartUsername),
+		ServiceUUID: m.ServiceUUID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Infof("[fcm_info] service completed message sent %s", res)
+	return nil
+}
+
+type ServiceExpiredMessage struct {
+	Topic               string
+	CounterPartUsername string
+	ServiceUUID         string
+}
+
+func (r *DPFirebaseMessage) PublishServiceExpiredNotification(ctx context.Context, m ServiceExpiredMessage) error {
+	res, err := r.publishServiceScannedNotification(ctx, serviceScannedMessage{
+		Topic:       m.Topic,
+		Title:       "服務過期",
+		Body:        fmt.Sprintf("您與 %s 的服務已經過期", m.CounterPartUsername),
+		ServiceUUID: m.ServiceUUID,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	log.Infof("[fcm_info] service expired message sent %s", res)
+
+	return nil
+}
+
+type serviceScannedMessage struct {
+	Topic       string
+	Title       string
+	Body        string
+	ServiceUUID string
+}
+
+func (r *DPFirebaseMessage) publishServiceScannedNotification(ctx context.Context, m serviceScannedMessage) (string, error) {
 	data := make(map[string]string)
 	data[FCMTypeFieldName] = string(ServiceEnded)
 	data["service_uuid"] = m.ServiceUUID
@@ -315,18 +361,16 @@ func (r *DPFirebaseMessage) PublishServiceCompletedNotification(ctx context.Cont
 	res, err := r.c.Send(ctx, &messaging.Message{
 		Topic: m.Topic,
 		Notification: &messaging.Notification{
-			Title:    "服務結束",
-			Body:     fmt.Sprintf("您與 %s 的服務已經結束", m.CounterPartUsername),
+			Title:    m.Title,
+			Body:     m.Body,
 			ImageURL: FCMImgUrl,
 		},
 		Data: data,
 	})
 
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	log.Infof("[fcm_info] direct inquiry sent %s", res)
-
-	return nil
+	return res, nil
 }

@@ -82,7 +82,6 @@ func ScanCompletedServices(srvDao contracts.ServiceDAOer) error {
 		}
 
 		// Emit FCM message to notify both parties that the service has completed
-		// Retrieve username of both parties of a service.
 		var dpfcmer dpfcm.DPFirebaseMessenger
 		depCon := deps.Get().Container
 		depCon.Make(&dpfcmer)
@@ -148,13 +147,43 @@ func ScanExpiredServices(srvDao contracts.ServiceDAOer) error {
 			return errors.New(fmt.Sprintf("Failed to update service status to expired in firestore %s", err.Error()))
 		}
 
+		var dpfcmer dpfcm.DPFirebaseMessenger
+		depCon := deps.Get().Container
+		depCon.Make(&dpfcmer)
+
+		for _, expSrv := range expSrvs {
+			// Send to service provider
+			if err := dpfcmer.PublishServiceExpiredNotification(
+				ctx,
+				dpfcm.ServiceExpiredMessage{
+					Topic:               expSrv.ServiceProvidersFCMTopic,
+					CounterPartUsername: expSrv.CustomerUsername,
+					ServiceUUID:         expSrv.UUID,
+				},
+			); err != nil {
+				return err
+			}
+
+			// Send to customer
+			if err := dpfcmer.PublishServiceExpiredNotification(
+				ctx,
+				dpfcm.ServiceExpiredMessage{
+					Topic:               expSrv.CustomerFCMTopic,
+					CounterPartUsername: expSrv.ServiceProviderUsername,
+					ServiceUUID:         expSrv.UUID,
+				},
+			); err != nil {
+				return err
+			}
+
+		}
 	}
 
 	return nil
 }
 
 func main() {
-	tickSec := 60
+	tickSec := 5
 	tickSecEnv := os.Getenv("TICK_INTERVAL_IN_SECOND")
 
 	if len(tickSecEnv) > 0 {
