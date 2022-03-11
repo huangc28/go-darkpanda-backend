@@ -26,6 +26,7 @@ type TransformedInquiry struct {
 	AppointmentTime time.Time          `json:"appointment_time"`
 	Address         string             `json:"address"`
 	InquiryType     models.InquiryType `json:"inquiry_type"`
+	Currency        string             `json:"currency"`
 }
 
 func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (TransformedInquiry, error) {
@@ -47,6 +48,7 @@ func (t *InquiryTransform) TransformEmitInquiry(m models.ServiceInquiry) (Transf
 		InquiryStatus:   string(m.InquiryStatus),
 		AppointmentTime: m.AppointmentTime.Time,
 		Address:         m.Address.String,
+		Currency:        m.Currency.String,
 	}
 
 	return tiq, nil

@@ -863,4 +863,10 @@ COMMIT;BEGIN;
 ALTER TABLE service_options 
 ADD COLUMN duration INT;
 
+COMMIT;BEGIN;
+
+ALTER TABLE service_inquiries
+ADD COLUMN currency TEXT;
+
 COMMIT;
+

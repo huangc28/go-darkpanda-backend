@@ -408,6 +408,7 @@ type ServiceInquiry struct {
 	Address           sql.NullString `json:"address"`
 	InquiryType       InquiryType    `json:"inquiry_type"`
 	ExpectServiceType sql.NullString `json:"expect_service_type"`
+	Currency          sql.NullString `json:"currency"`
 }
 
 type ServiceOption struct {

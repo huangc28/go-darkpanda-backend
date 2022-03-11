@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/golobby/container/pkg/container"
+	"github.com/huangc28/go-darkpanda-backend/config"
 	"github.com/huangc28/go-darkpanda-backend/db"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/apperr"
 	"github.com/huangc28/go-darkpanda-backend/internal/app/contracts"
@@ -94,6 +95,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 			AppointmentTime:   body.AppointmentTime,
 			ServiceDuration:   body.ServiceDuration,
 			Address:           body.Address,
+			Currency:          config.GetAppConf().Currency,
 		})
 
 		if err != nil {
@@ -220,6 +222,7 @@ func EmitInquiryHandler(c *gin.Context, depCon container.Container) {
 		AppointmentTime:   body.AppointmentTime,
 		ServiceDuration:   body.ServiceDuration,
 		Address:           body.Address,
+		Currency:          config.GetAppConf().Currency,
 	})
 
 	if err != nil {

@@ -814,7 +814,9 @@ type EmitInquiryUpdateMessage struct {
 // EmitInquiryUpdatedMessage emits inquiry updated message to the chatroom.
 // This message notifies the male user to confirm the inquiry detail by clicking
 // on the message bubble.
-// @TODO extract firestore message emission away from transaction.
+//
+// TODO extract firestore message emission away from transaction.
+// TODO Add currency to table
 func EmitInquiryUpdatedMessage(c *gin.Context, depCon container.Container) {
 	body := EmitInquiryUpdateMessage{}
 

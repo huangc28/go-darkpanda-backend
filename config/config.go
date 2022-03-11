@@ -61,6 +61,9 @@ type AppConf struct {
 
 	AppcenterAppSecret                 string `mapstructure:"APPCENTER_APP_SECRET"`
 	AppcenterPublicDistributionGroupId string `mapstructure:"APPCENTER_PUBLIC_DISTRIBUTION_GROUP_ID"`
+
+	// Note: We are hardcoding app currency here. Since this app only operates in Taiwan for now.
+	Currency string `mapstructure:"CURRENCY"`
 }
 
 var appConf AppConf

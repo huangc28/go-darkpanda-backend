@@ -40,6 +40,7 @@ type CreateDirectInquiryParams struct {
 	AppointmentTime   time.Time
 	ServiceDuration   int
 	Address           string
+	Currency          string
 }
 
 func (s *InquiryService) CreateDirectInquiry(ctx context.Context, p CreateDirectInquiryParams) (*models.ServiceInquiry, error) {
@@ -53,9 +54,12 @@ func (s *InquiryService) CreateDirectInquiry(ctx context.Context, p CreateDirect
 		expectServiceType.Valid = true
 		expectServiceType.String = *p.ExpectServiceType
 	}
-	// Expect service type can be nil
 
 	iq, err := s.q.CreateInquiry(ctx, models.CreateInquiryParams{
+		Currency: sql.NullString{
+			Valid:  true,
+			String: p.Currency,
+		},
 		Uuid: sid,
 		InquirerID: sql.NullInt32{
 			Valid: true,
@@ -65,7 +69,6 @@ func (s *InquiryService) CreateDirectInquiry(ctx context.Context, p CreateDirect
 			Valid: true,
 			Int32: p.PickerID,
 		},
-
 		Budget:            decimal.NewFromFloat(p.Budget).String(),
 		ExpectServiceType: expectServiceType,
 		InquiryStatus:     models.InquiryStatusAsking,
@@ -120,6 +123,7 @@ type CreateRandomInquiryParams struct {
 	AppointmentTime   time.Time
 	ServiceDuration   int
 	Address           string
+	Currency          string
 }
 
 func (s *InquiryService) CreateRandomInquiry(ctx context.Context, p CreateRandomInquiryParams) (*models.ServiceInquiry, error) {
@@ -166,6 +170,10 @@ func (s *InquiryService) CreateRandomInquiry(ctx context.Context, p CreateRandom
 				String: p.Address,
 			},
 			InquiryType: models.InquiryTypeRandom,
+			Currency: sql.NullString{
+				Valid:  true,
+				String: p.Currency,
+			},
 		},
 	)
 

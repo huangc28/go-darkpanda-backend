@@ -51,6 +51,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
+	// Deprecated, not used in frontend anymore
 	g.POST(
 		"/emit-update-service-message",
 		func(c *gin.Context) {
@@ -68,7 +69,7 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
-	// The female user edited service details and hit save on the service settings, the chatroom would emit a service setting message.
+	// Deprecated The female user edited service details and hit save on the service settings, the chatroom would emit a service setting message.
 	// Male user would be notified with the service message.  Male user sees the popup contains service detail set by the female user.
 	g.POST(
 		"/emit-service-message",
