@@ -44,12 +44,12 @@ type ServicePaymentDetail struct {
 	Price     sql.NullFloat64 `json:"price"`
 	Refunded  bool            `json:"refunded"`
 
-	ServiceType     string        `json:"service_type"`
-	Address         string        `json:"address"`
-	AppointmentTime sql.NullTime  `json:"appointment_time"`
-	Duration        sql.NullInt64 `json:"duration"`
-	CancelCause     string        `json:"cancel_cause"`
-	Currency        string        `json:"currency"`
+	ServiceType     string         `json:"service_type"`
+	Address         string         `json:"address"`
+	AppointmentTime sql.NullTime   `json:"appointment_time"`
+	Duration        sql.NullInt64  `json:"duration"`
+	CancelCause     string         `json:"cancel_cause"`
+	Currency        sql.NullString `json:"currency"`
 
 	PickerUuid      string         `json:"picker_uuid"`
 	PickerUsername  string         `json:"picker_username"`

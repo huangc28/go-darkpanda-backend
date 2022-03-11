@@ -177,7 +177,6 @@ func TrfPaymentDetail(p TrfPaymentDetailParams) TrfedPaymentDetail {
 		PickerUuid:     p.PaymentDetail.PickerUuid,
 		PickerUsername: p.PaymentDetail.PickerUsername,
 		CancelCause:    p.PaymentDetail.CancelCause,
-		Currency:       p.PaymentDetail.Currency,
 
 		HasCommented: p.HasCommented,
 		HasBlocked:   p.HasBlocked,
@@ -198,6 +197,10 @@ func TrfPaymentDetail(p TrfPaymentDetailParams) TrfedPaymentDetail {
 
 	if p.PaymentDetail.Price.Valid {
 		trf.Price = &p.PaymentDetail.Price.Float64
+	}
+
+	if p.PaymentDetail.Currency.Valid {
+		trf.Currency = p.PaymentDetail.Currency.String
 	}
 
 	return trf
