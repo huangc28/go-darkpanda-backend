@@ -49,6 +49,7 @@ type ServicePaymentDetail struct {
 	AppointmentTime sql.NullTime  `json:"appointment_time"`
 	Duration        sql.NullInt64 `json:"duration"`
 	CancelCause     string        `json:"cancel_cause"`
+	Currency        string        `json:"currency"`
 
 	PickerUuid      string         `json:"picker_uuid"`
 	PickerUsername  string         `json:"picker_username"`

@@ -127,6 +127,7 @@ func (dao *PaymentDAO) GetPaymentByServiceUuid(srvUuid string) (*models.ServiceP
 	 	services.appointment_time,
 	 	services.duration,
 		services.cancel_cause,
+		services.currency,
 
 	  	-- Retrieve picker info
 	  	pickers.uuid AS picker_uuid,

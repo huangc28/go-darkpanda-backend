@@ -154,6 +154,7 @@ type TrfedPaymentDetail struct {
 	PickerUsername  string  `json:"picker_username"`
 	PickerAvatarUrl *string `json:"picker_avatar_url"`
 	CancelCause     string  `json:"cancel_cause"`
+	Currency        string  `json:"currency"`
 
 	HasCommented bool    `json:"has_commented"`
 	HasBlocked   bool    `json:"has_blocked"`
@@ -176,6 +177,7 @@ func TrfPaymentDetail(p TrfPaymentDetailParams) TrfedPaymentDetail {
 		PickerUuid:     p.PaymentDetail.PickerUuid,
 		PickerUsername: p.PaymentDetail.PickerUsername,
 		CancelCause:    p.PaymentDetail.CancelCause,
+		Currency:       p.PaymentDetail.Currency,
 
 		HasCommented: p.HasCommented,
 		HasBlocked:   p.HasBlocked,
