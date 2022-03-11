@@ -387,6 +387,7 @@ type Service struct {
 	// cause states the intention of cancelling a service.
 	CancelCause CancelCause    `json:"cancel_cause"`
 	MatchingFee sql.NullString `json:"matching_fee"`
+	Currency    sql.NullString `json:"currency"`
 }
 
 type ServiceInquiry struct {

@@ -59,6 +59,15 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
+	// Deprecated The female user edited service details and hit save on the service settings, the chatroom would emit a service setting message.
+	// Male user would be notified with the service message.  Male user sees the popup contains service detail set by the female user.
+	g.POST(
+		"/emit-service-message",
+		func(c *gin.Context) {
+			EmitServiceSettingMessageHandler(c, depCon)
+		},
+	)
+
 	// EmitInquiryUpdatedMessage emits message about service detail to the chatroom.
 	// This message notifies the male user to confirm the inquiry detail by clicking
 	// on the message bubble.
@@ -66,15 +75,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		"/emit-inquiry-updated-message",
 		func(c *gin.Context) {
 			EmitInquiryUpdatedMessage(c, depCon)
-		},
-	)
-
-	// Deprecated The female user edited service details and hit save on the service settings, the chatroom would emit a service setting message.
-	// Male user would be notified with the service message.  Male user sees the popup contains service detail set by the female user.
-	g.POST(
-		"/emit-service-message",
-		func(c *gin.Context) {
-			EmitServiceSettingMessageHandler(c, depCon)
 		},
 	)
 

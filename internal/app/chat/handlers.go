@@ -239,6 +239,7 @@ func EmitServiceSettingMessageHandler(c *gin.Context, depCon container.Container
 				Valid:  true,
 				String: decimal.NewFromFloat(matchingFee).String(),
 			},
+			Currency: inquiry.Currency,
 		})
 
 		if err != nil {
