@@ -135,3 +135,7 @@ postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable
 ```
 https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-20-04
 ```
+
+## TODO
+
+- [] Remove budget column from services table.

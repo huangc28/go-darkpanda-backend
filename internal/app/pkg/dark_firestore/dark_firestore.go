@@ -23,16 +23,17 @@ var _darkFirestore *DarkFirestore
 type MessageType string
 
 const (
-	Text                MessageType = "text"
-	UpdateInquiryDetail MessageType = "update_inquiry_detail"
-	ServiceDetail       MessageType = "service_detail"
-	ConfirmedService    MessageType = "confirmed_service"
-	DisagreeInquiry     MessageType = "disagree_inquiry"
-	QuitChatroom        MessageType = "quit_chatroom"
-	CompletePayment     MessageType = "complete_payment"
-	CancelService       MessageType = "cancel_service"
-	StartService        MessageType = "start_service"
-	Images              MessageType = "images"
+	Text                  MessageType = "text"
+	BotInvitationChatText MessageType = "bot_invitation_chat_text"
+	UpdateInquiryDetail   MessageType = "update_inquiry_detail"
+	ServiceDetail         MessageType = "service_detail"
+	ConfirmedService      MessageType = "confirmed_service"
+	DisagreeInquiry       MessageType = "disagree_inquiry"
+	QuitChatroom          MessageType = "quit_chatroom"
+	CompletePayment       MessageType = "complete_payment"
+	CancelService         MessageType = "cancel_service"
+	StartService          MessageType = "start_service"
+	Images                MessageType = "images"
 )
 
 const (
@@ -62,7 +63,7 @@ const (
 	MessageSubCollectionName = "messages"
 
 	// Message content template when inquiry is created
-	CreatePrivateChatBotContent = "Welcome! %s has picked up your inquiry."
+	BotInvitationChatContent = "Welcome! %s has picked up your inquiry."
 
 	// Message content template when female user has updated the service detail.
 	ServiceDetailMessageContent = "Service updated:\n"
@@ -125,7 +126,6 @@ func (df *DarkFirestore) GetClient() *firestore.Client {
 	return _darkFirestore.Client
 }
 
-// @TODO remove `To` column.
 type ChatMessage struct {
 	Type      MessageType `firestore:"type,omitempty" json:"type"`
 	Content   interface{} `firestore:"content,omitempty" json:"content"`
@@ -881,6 +881,11 @@ type PrepareToStartInquiryChatParams struct {
 	ServiceUuid    string
 }
 
+type StartInquiryChatMessage struct {
+	ChatMessage
+	CounterPartUsername string `firestore:"counter_part_username,omitempty" json:"counter_part_username"`
+}
+
 func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p PrepareToStartInquiryChatParams) error {
 	iqRef := df.getInquiryRef(p.InquiryUuid)
 	chatRef := df.getChatroomRef(p.ChannelUuid)
@@ -916,11 +921,15 @@ func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p Prepar
 			return err
 		}
 
-		msg := ChatMessage{
-			Content:   fmt.Sprintf(CreatePrivateChatBotContent, p.PickerUsername),
-			From:      p.InquirierUuid,
-			Type:      Text,
-			CreatedAt: time.Now(),
+		msg := StartInquiryChatMessage{
+			ChatMessage: ChatMessage{
+				Content:   fmt.Sprintf(BotInvitationChatContent, p.PickerUsername),
+				From:      p.InquirierUuid,
+				Type:      BotInvitationChatText,
+				CreatedAt: time.Now(),
+			},
+
+			CounterPartUsername: p.PickerUsername,
 		}
 
 		if err := tx.Set(

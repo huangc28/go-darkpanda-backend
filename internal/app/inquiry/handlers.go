@@ -850,6 +850,7 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		service, err := q.CreateService(
 			ctx,
 			models.CreateServiceParams{
+				Currency: iq.Currency,
 				Uuid: sql.NullString{
 					Valid:  true,
 					String: sid,
