@@ -288,7 +288,7 @@ INNER JOIN chatrooms
 	AND chatrooms.deleted_at IS NULL
 INNER JOIN users AS inquirer
 	ON inquirer.id = si.inquirer_id
-INNER JOIN services 
+INNER JOIN services
 	ON si.id = services.inquiry_id
 WHERE
 	services.service_status = $1
@@ -508,7 +508,7 @@ WHERE
 func (dao *ChatDao) GetDirectInquiryChatrooms(p contracts.GetDirectInquiryChatroomsParams) ([]models.InquiryChatRoom, error) {
 	query := `
 SELECT
-	pickers.username, 
+	pickers.username,
 	pickers.uuid AS picker_uuid,
 	pickers.avatar_url,
 	si.expect_service_type AS service_type,
@@ -531,8 +531,8 @@ WHERE
 AND (
 	si.inquiry_status = $2 OR
 	si.inquiry_status = $3
-) 
-AND 
+)
+AND
 	si.inquiry_type = $4
 ORDER BY si.created_at DESC
 OFFSET $5

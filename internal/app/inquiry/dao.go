@@ -3,6 +3,7 @@ package inquiry
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -124,9 +125,9 @@ WITH blocked_users AS (
 	FROM service_inquiries AS si
 	INNER JOIN users
 		ON si.inquirer_id = users.id
-	LEFT JOIN services ON services.inquiry_id = si.id 
+	LEFT JOIN services ON services.inquiry_id = si.id
 	WHERE (%s)
-	AND inquiry_type=$2 
+	AND inquiry_type=$2
 	AND si.inquirer_id NOT IN (
 		SELECT
 			blocked_user_id
@@ -148,6 +149,8 @@ SELECT DISTINCT ON(inquiry_list.inquiry_uuid) * FROM inquiry_list;
 `,
 		statusQuery,
 	)
+
+	log.Printf("get inquiry query %v", query)
 
 	inquiries := make([]*models.InquiryInfo, 0)
 	rows, err := dao.db.Queryx(
@@ -441,7 +444,7 @@ INNER JOIN
 
 func (dao *InquiryDAO) GetInquiryRequests(p contracts.GetInquiryRequestsParams) ([]models.InquiryRequest, error) {
 	query := `
-SELECT	
+SELECT
 	si.uuid AS inquiry_uuid,
 	si.created_at,
 	si.inquiry_status,
@@ -451,9 +454,9 @@ SELECT
 FROM
 	service_inquiries AS si
 INNER JOIN users ON users.id = si.inquirer_id
-WHERE 
+WHERE
 	inquiry_type=$1
-AND 
+AND
 	inquiry_status=$2
 AND
 	picker_id=$3

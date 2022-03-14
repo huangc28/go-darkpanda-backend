@@ -339,6 +339,68 @@ WHERE ratee_id = $1;
 	return &rating, nil
 }
 
+func (dao *UserDAO) attachOngoingGirlsChannelUUID(girls []*models.RandomGirl) error {
+	inquiryUUIDs := make([]string, 0)
+	inquiryAndGirlMatch := make(map[string]*models.RandomGirl)
+
+	// Get inquiry uuids for those girl that has ongoing girl or service with me.
+	// Those inquiry uuids are used to retrieve channel uuids.
+	for _, g := range girls {
+		if g.HasInquiry || g.HasService {
+			inquiryUUIDs = append(inquiryUUIDs, *g.InquiryUUID)
+			inquiryAndGirlMatch[*g.InquiryUUID] = g
+		}
+	}
+
+	if len(inquiryUUIDs) <= 0 {
+		return nil
+	}
+
+	inquiryUUIDsStr := db.ComposeStringList(inquiryUUIDs...)
+
+	query := fmt.Sprintf(
+		`
+SELECT
+	DISTINCT ON (service_inquiries.uuid) uuid, chatrooms.created_at, chatrooms.channel_uuid
+FROM
+	chatrooms
+INNER JOIN service_inquiries
+	ON chatrooms.inquiry_id = service_inquiries.id
+WHERE
+	service_inquiries.uuid IN (%s)
+ORDER BY service_inquiries.uuid, chatrooms.created_at DESC;
+
+`, inquiryUUIDsStr)
+
+	log.Printf("DEBUG*** %v", query)
+
+	rows, err := dao.db.Queryx(query)
+
+	if err != nil {
+		return err
+	}
+
+	for rows.Next() {
+		onGoingChatUUID := struct {
+			InquiryUUID string    `json:"uuid"`
+			CreatedAt   time.Time `json:"created_at"`
+			ChannelUUID string    `json:"channel_uuid"`
+		}{}
+
+		if err := rows.StructScan(&onGoingChatUUID); err != nil {
+			return err
+		}
+
+		if g, exists := inquiryAndGirlMatch[onGoingChatUUID.InquiryUUID]; exists {
+			g.ChannelUUID = &onGoingChatUUID.ChannelUUID
+
+		}
+
+	}
+
+	return nil
+}
+
 // GetGirls retrieve list of girl profile who wants their profile to be viewed publically.
 // It also retrieve latest inquiry made between each girl with the male user. If no inquiry
 // has ever existed,
@@ -346,47 +408,61 @@ func (dao *UserDAO) GetGirls(p contracts.GetGirlsParams) ([]*models.RandomGirl, 
 	ranSeed := 0.1
 
 	query := fmt.Sprintf(`
-SELECT
-	setseed(%f),
-	users.id,
-	username,
-	users.uuid,
-	avatar_url,
-	age,
-	height,
-	weight,
-	breast_size,
-	description,
+SELECT setseed(%f), * FROM (
+	SELECT
+		DISTINCT users.id, si.id AS inquiry_id,
+		username,
+		users.uuid,
+		avatar_url,
+		age,
+		height,
+		weight,
+		breast_size,
+		description,
+		CASE WHEN si.id IS NOT NULL
+	    THEN true
+	    ELSE false
+	    END has_inquiry,
 
-	CASE WHEN si.id IS NOT NULL
-    	THEN true
-    	ELSE false
-    	END has_inquiry,
+	    CASE WHEN services.uuid IS NOT NULL
+	    THEN true
+	    ELSE false
+	    END has_service,
 
-    CASE WHEN services.uuid IS NOT NULL
-    	THEN true
-    	ELSE false
-    	END has_service,
+	    si.uuid AS inquiry_uuid,
+		si.inquiry_status,
+		si.expect_service_type,
 
-	si.uuid AS inquiry_uuid,
-	si.inquiry_status,
-	si.expect_service_type,
-	chatrooms.channel_uuid,
-	services.uuid AS service_uuid,
-	services.service_status
-FROM users
-LEFT JOIN service_inquiries si ON users.id = si.picker_id
-	AND si.inquirer_id=$1
-	AND si.created_at=(
-	 	SELECT max(created_at)
-        FROM service_inquiries
-        WHERE inquirer_id=$1
-        AND picker_id = users.id
-	)
-LEFT JOIN chatrooms ON chatrooms.inquiry_id = si.id
-LEFT JOIN services ON services.inquiry_id = si.id
-WHERE
-	gender='female'
+		services.uuid AS service_uuid,
+		services.service_status
+	FROM users
+
+	-- Retrieve related inquiries if any
+	LEFT JOIN service_inquiries AS si
+		ON si.inquirer_id = $1
+		AND si.picker_id = users.id
+		AND si.inquiry_status NOT IN (
+			'canceled',
+			'booked'
+		)
+		AND si.created_at=(
+		 	SELECT max(created_at)
+			FROM service_inquiries
+	        	WHERE inquirer_id=5
+	        	AND picker_id = users.id
+		)
+
+	-- Retrieve related services if any
+	LEFT JOIN services
+		ON services.inquiry_id = si.id
+		AND services.service_status NOT IN (
+			'canceled',
+			'completed',
+			'expired'
+		)
+	WHERE
+		gender='female'
+) AS t
 ORDER BY random()
 LIMIT $2
 OFFSET $3;
@@ -445,7 +521,7 @@ GROUP BY ratee_id;
 	// using this data structure to find appropriate female
 	// rating and assign it to "gs (slice of girls)".
 	// ex:
-	// 	[1] => UserRating for girl ID 1
+	//  [1] => UserRating for girl ID 1
 	//  [2] => UserRating for girl ID 2
 	//  [3] => UserRating for girl ID 3
 	//  ...
@@ -465,6 +541,13 @@ GROUP BY ratee_id;
 		if r, ok := ratingGirlIDMap[g.ID]; ok {
 			g.Rating = *r
 		}
+	}
+
+	// Compose a query to retrieve chatroom uuid for those inquiry and service that are still ongoing.
+	// Iterate through all girls, collect those girls that has ongoing inquiry or service with me. Retrieve channel uuid of those.
+
+	if err := dao.attachOngoingGirlsChannelUUID(gs); err != nil {
+		return nil, err
 	}
 
 	return gs, nil

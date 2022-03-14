@@ -103,6 +103,8 @@ type RandomGirl struct {
 	Setseed *string `json:"setseed"`
 	User
 
+	InquiryID sql.NullInt64 `json:"inquiry_id"`
+
 	// HasInquiry indicates whether male has had any inquiry with the girl.
 	HasInquiry bool `json:"has_inquiry"`
 

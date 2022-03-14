@@ -3,6 +3,7 @@ package inquiry
 import (
 	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"time"
 
@@ -308,6 +309,8 @@ func GetInquiriesHandler(c *gin.Context, depCon container.Container) {
 			},
 		},
 	)
+
+	log.Printf("inquiries: %v", inquiries)
 
 	if err != nil {
 		c.AbortWithError(
