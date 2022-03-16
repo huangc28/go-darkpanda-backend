@@ -405,69 +405,63 @@ ORDER BY service_inquiries.uuid, chatrooms.created_at DESC;
 // It also retrieve latest inquiry made between each girl with the male user. If no inquiry
 // has ever existed,
 func (dao *UserDAO) GetGirls(p contracts.GetGirlsParams) ([]*models.RandomGirl, error) {
-	ranSeed := 0.1
+	query := `
+SELECT
+	username,
+	users.uuid,
+	avatar_url,
+	age,
+	height,
+	weight,
+	breast_size,
+	description,
+	CASE WHEN si.id IS NOT NULL
+    THEN true
+    ELSE false
+    END has_inquiry,
 
-	query := fmt.Sprintf(`
-SELECT setseed(%f), * FROM (
-	SELECT
-		DISTINCT users.id, si.id AS inquiry_id,
-		username,
-		users.uuid,
-		avatar_url,
-		age,
-		height,
-		weight,
-		breast_size,
-		description,
-		CASE WHEN si.id IS NOT NULL
-	    THEN true
-	    ELSE false
-	    END has_inquiry,
+    CASE WHEN services.uuid IS NOT NULL
+    THEN true
+    ELSE false
+    END has_service,
 
-	    CASE WHEN services.uuid IS NOT NULL
-	    THEN true
-	    ELSE false
-	    END has_service,
+    si.uuid AS inquiry_uuid,
+	si.inquiry_status,
+	si.expect_service_type,
 
-	    si.uuid AS inquiry_uuid,
-		si.inquiry_status,
-		si.expect_service_type,
+	services.uuid AS service_uuid,
+	services.service_status
+FROM users
 
-		services.uuid AS service_uuid,
-		services.service_status
-	FROM users
+-- Retrieve related inquiries if any
+LEFT JOIN service_inquiries AS si
+	ON si.inquirer_id = $1
+	AND si.picker_id = users.id
+	AND si.inquiry_status NOT IN (
+		'canceled',
+		'booked'
+	)
+	AND si.created_at=(
+	 	SELECT max(created_at)
+		FROM service_inquiries
+        	WHERE inquirer_id=5
+        	AND picker_id = users.id
+	)
 
-	-- Retrieve related inquiries if any
-	LEFT JOIN service_inquiries AS si
-		ON si.inquirer_id = $1
-		AND si.picker_id = users.id
-		AND si.inquiry_status NOT IN (
-			'canceled',
-			'booked'
-		)
-		AND si.created_at=(
-		 	SELECT max(created_at)
-			FROM service_inquiries
-	        	WHERE inquirer_id=5
-	        	AND picker_id = users.id
-		)
-
-	-- Retrieve related services if any
-	LEFT JOIN services
-		ON services.inquiry_id = si.id
-		AND services.service_status NOT IN (
-			'canceled',
-			'completed',
-			'expired'
-		)
-	WHERE
-		gender='female'
-) AS t
-ORDER BY random()
+-- Retrieve related services if any
+LEFT JOIN services
+	ON services.inquiry_id = si.id
+	AND services.service_status NOT IN (
+		'canceled',
+		'completed',
+		'expired'
+	)
+WHERE
+	gender='female'
+ORDER BY users.id % 11, users.id
 LIMIT $2
 OFFSET $3;
-
-	`, ranSeed)
+	`
 
 	gs := make([]*models.RandomGirl, 0)
 

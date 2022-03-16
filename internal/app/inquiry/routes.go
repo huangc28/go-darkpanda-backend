@@ -1,6 +1,8 @@
 package inquiry
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	cintrnal "github.com/golobby/container/pkg/container"
 	"github.com/huangc28/go-darkpanda-backend/config"
@@ -30,6 +32,7 @@ func Routes(r *gin.RouterGroup, container cintrnal.Container) {
 		"",
 		middlewares.IsFemale(userDAO),
 		func(ctx *gin.Context) {
+			log.Println("wrong API !!!!")
 			GetInquiriesHandler(ctx, container)
 		},
 	)
