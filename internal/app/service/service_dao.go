@@ -350,31 +350,83 @@ WHERE
 // ScanExpiredServices scan services with service status `to_be_fulfilled`.
 // If current time is later than the service end_time, we set the service status to be `expired`
 func (dao *ServiceDAO) ScanExpiredServices() ([]*models.ServiceScannerData, error) {
-	return dao.ScanAndUpdateServiceStatusIfNeeded(
-		ScanAndUpdateServiceStatusIfNeededParams{
-			ScanStatus:     string(models.ServiceStatusToBeFulfilled),
-			UpdateToStatus: string(models.ServiceStatusExpired),
-		},
+	//return dao.ScanAndUpdateServiceStatusIfNeeded(
+	//ScanAndUpdateServiceStatusIfNeededParams{
+	//ScanStatus:     string(models.ServiceStatusToBeFulfilled),
+	//UpdateToStatus: string(models.ServiceStatusExpired),
+	//},
+	//)
+	query := fmt.Sprintf(
+		`
+WITH found_services AS (
+	SELECT
+		services.id,
+		services.uuid,
+		customers.username AS customer_username,
+		customers.fcm_topic AS customer_fcm_topic,
+		service_providers.username AS service_providers_username,
+		service_providers.fcm_topic AS service_providers_fcm_topic
+	FROM
+		services
+	INNER JOIN users AS customers ON services.customer_id = customers.id
+	INNER JOIN users AS service_providers ON services.service_provider_id = service_providers.id
+	WHERE
+		services.service_status = $1 AND
+
+		-- Allow 30 minutes buffer after appointment_time.
+		now() >= appointment_time + (%d * interval '1 minute')
+), updated AS (
+	UPDATE
+		services
+	SET
+		service_status = $2
+	FROM
+		 found_services
+	WHERE
+		found_services.id = services.id
+)
+SELECT
+	id,
+	uuid,
+	customer_username,
+	customer_fcm_topic,
+	service_providers_username,
+	service_providers_fcm_topic
+FROM
+	found_services;
+	`, 30,
 	)
+
+	rows, err := dao.DB.Queryx(
+		query,
+		string(models.ServiceStatusToBeFulfilled),
+		string(models.ServiceStatusExpired),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	srvs := make([]*models.ServiceScannerData, 0)
+
+	for rows.Next() {
+		srv := models.ServiceScannerData{}
+
+		if err := rows.StructScan(&srv); err != nil {
+			return nil, err
+		}
+
+		srvs = append(srvs, &srv)
+	}
+
+	return srvs, nil
 }
 
 // ScanCompletedServices scan those services with status `fulfilling`. If current time
 // is greater than `end_time`, update the status to `completed`
 func (dao *ServiceDAO) ScanCompletedServices() ([]*models.ServiceScannerData, error) {
-	return dao.ScanAndUpdateServiceStatusIfNeeded(
-		ScanAndUpdateServiceStatusIfNeededParams{
-			ScanStatus:     string(models.ServiceStatusFulfilling),
-			UpdateToStatus: string(models.ServiceStatusCompleted),
-		},
-	)
-}
-
-type ScanAndUpdateServiceStatusIfNeededParams struct {
-	ScanStatus     string
-	UpdateToStatus string
-}
-
-func (dao *ServiceDAO) ScanAndUpdateServiceStatusIfNeeded(params ScanAndUpdateServiceStatusIfNeededParams) ([]*models.ServiceScannerData, error) {
 	query := `
 WITH found_services AS (
 	SELECT
@@ -413,8 +465,8 @@ FROM
 `
 	rows, err := dao.DB.Queryx(
 		query,
-		params.ScanStatus,
-		params.UpdateToStatus,
+		string(models.ServiceStatusFulfilling),
+		string(models.ServiceStatusCompleted),
 	)
 
 	if err != nil {
