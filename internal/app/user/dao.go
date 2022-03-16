@@ -458,7 +458,7 @@ LEFT JOIN services
 	)
 WHERE
 	gender='female'
-ORDER BY users.id % 11, users.id
+ORDER BY users.id % 4, users.id
 LIMIT $2
 OFFSET $3;
 	`
