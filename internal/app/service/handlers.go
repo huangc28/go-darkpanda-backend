@@ -931,6 +931,7 @@ func CreateServiceRating(c *gin.Context, depCon container.Container) {
 //   - Service does not have a canceler.
 // Remember to emit service canceled message to firestore.
 //
+// Deprecated:
 // Refund mechanism:
 //	 Before appointment time, both male and female can cancel the service. Male user we get full refund of matching fee.
 // 	 If male cancels the service within the buffer time, darkpanda will not refund male user matching fee.
@@ -1170,7 +1171,7 @@ func CancelService(c *gin.Context, depCon container.Container) {
 			ChannelUuid: chatroom.ChannelUuid.String,
 			ServiceUuid: usrvInfo.Uuid.String,
 			Data: darkfirestore.ChatMessage{
-				From: usrvInfo.Uuid.String,
+				From: user.Uuid,
 			},
 		},
 	); err != nil {
