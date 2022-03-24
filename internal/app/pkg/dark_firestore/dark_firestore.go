@@ -874,16 +874,18 @@ type CreateServiceParams struct {
 	ServiceStatus string `firestore:"status,omitempty" json:"status"`
 }
 type PrepareToStartInquiryChatParams struct {
-	InquiryUuid    string
-	PickerUsername string
-	InquirierUuid  string
-	ChannelUuid    string
-	ServiceUuid    string
+	InquiryUuid      string
+	PickerUsername   string
+	InquirerUsername string
+	InquirierUuid    string
+	ChannelUuid      string
+	ServiceUuid      string
 }
 
 type StartInquiryChatMessage struct {
 	ChatMessage
-	CounterPartUsername string `firestore:"counter_part_username,omitempty" json:"counter_part_username"`
+	PickerUsername   string `firestore:"picker_username,omitempty" json:"picker_username"`
+	InquirerUsername string `firestore:"inquirer_username,omitempty" json:"inquirer_username"`
 }
 
 func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p PrepareToStartInquiryChatParams) error {
@@ -928,9 +930,11 @@ func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p Prepar
 				Type:      BotInvitationChatText,
 				CreatedAt: time.Now(),
 			},
-
-			CounterPartUsername: p.PickerUsername,
+			InquirerUsername: p.InquirerUsername,
+			PickerUsername:   p.PickerUsername,
 		}
+
+		log.Printf("DEBUG names: %v", p.InquirerUsername, p.PickerUsername)
 
 		if err := tx.Set(
 			chatMsgRef, msg,

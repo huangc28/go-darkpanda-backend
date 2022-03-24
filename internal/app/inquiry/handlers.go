@@ -769,6 +769,17 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
+	inquirer, err := userDao.GetUserByID(int64(iq.InquirerID.Int32), "username")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(apperr.FailedToGetInquiererByID),
+		)
+
+		return
+	}
+
 	fsm, err := NewInquiryFSM(iq.InquiryStatus)
 
 	if err != nil {
@@ -907,11 +918,12 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 	if err := df.PrepareToStartInquiryChat(
 		ctx,
 		darkfirestore.PrepareToStartInquiryChatParams{
-			InquiryUuid:    iq.Uuid,
-			PickerUsername: picker.Username,
-			InquirierUuid:  c.GetString("uuid"),
-			ChannelUuid:    tr.Chatroom.ChannelUuid.String,
-			ServiceUuid:    tr.Service.Uuid.String,
+			InquiryUuid:      iq.Uuid,
+			PickerUsername:   picker.Username,
+			InquirerUsername: inquirer.Username,
+			InquirierUuid:    c.GetString("uuid"),
+			ChannelUuid:      tr.Chatroom.ChannelUuid.String,
+			ServiceUuid:      tr.Service.Uuid.String,
 		},
 	); err != nil {
 		c.AbortWithError(
@@ -936,20 +948,6 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 			http.StatusInternalServerError,
 			apperr.NewErr(
 				apperr.FailedToGetChatroomById,
-				err.Error(),
-			),
-		)
-
-		return
-	}
-
-	inquirer, err := userDao.GetUserByID(int64(iq.InquirerID.Int32))
-
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByID,
 				err.Error(),
 			),
 		)
