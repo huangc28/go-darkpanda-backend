@@ -769,7 +769,7 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	inquirer, err := userDao.GetUserByID(int64(iq.InquirerID.Int32), "username")
+	inquirer, err := userDao.GetUserByID(int64(iq.InquirerID.Int32))
 
 	if err != nil {
 		c.AbortWithError(
