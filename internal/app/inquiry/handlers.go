@@ -914,14 +914,24 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 
 	tr := tranResp.Response.(*TransResp)
 
+	// If "I"(the requester) am the inquirer, the person that I'm sending message to will be picker.Username.
+	// If "I"(the requester) am not the inquirer implies I am a picker, the person that I'm sending message to will be the inquirer.Username.
+	sendToUsername := inquirer.Username
+	if inquirer.Uuid == c.GetString("uuid") {
+		sendToUsername = picker.Username
+	}
+
+	log.Printf("DEBUG* what is %v", sendToUsername)
+
 	df := darkfirestore.Get()
 	if err := df.PrepareToStartInquiryChat(
 		ctx,
 		darkfirestore.PrepareToStartInquiryChatParams{
+			SendToUsername:   sendToUsername,
 			InquiryUuid:      iq.Uuid,
 			PickerUsername:   picker.Username,
 			InquirerUsername: inquirer.Username,
-			InquirierUuid:    c.GetString("uuid"),
+			SenderUUID:       c.GetString("uuid"),
 			ChannelUuid:      tr.Chatroom.ChannelUuid.String,
 			ServiceUuid:      tr.Service.Uuid.String,
 		},
