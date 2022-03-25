@@ -66,7 +66,7 @@ const (
 	BotInvitationChatContent = "Welcome! %s has picked up your inquiry"
 
 	// Message content template when inquiry chatroom is created in Chinese.
-	BotInvitationChatContentInZH = "開始跟 %s 聊聊吧!"
+	BotInvitationChatContentInZH = "開始聊聊吧!"
 
 	// Message content template when female user has updated the service detail.
 	ServiceDetailMessageContent = "Service updated:\n"
@@ -877,8 +877,6 @@ type CreateServiceParams struct {
 	ServiceStatus string `firestore:"status,omitempty" json:"status"`
 }
 type PrepareToStartInquiryChatParams struct {
-	// SendToUsername is used to compose bot message in inquiry chatroom.
-	SendToUsername   string
 	InquiryUuid      string
 	PickerUsername   string
 	InquirerUsername string
@@ -894,8 +892,6 @@ type StartInquiryChatMessage struct {
 	PickerUsername   string `firestore:"picker_username,omitempty" json:"picker_username"`
 	InquirerUsername string `firestore:"inquirer_username,omitempty" json:"inquirer_username"`
 }
-
-//func ()
 
 func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p PrepareToStartInquiryChatParams) error {
 	iqRef := df.getInquiryRef(p.InquiryUuid)
@@ -934,7 +930,7 @@ func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p Prepar
 
 		msg := StartInquiryChatMessage{
 			ChatMessage: ChatMessage{
-				Content:   fmt.Sprintf(BotInvitationChatContentInZH, p.SendToUsername),
+				Content:   BotInvitationChatContentInZH,
 				From:      p.SenderUUID,
 				Type:      BotInvitationChatText,
 				CreatedAt: time.Now(),
