@@ -1328,7 +1328,7 @@ type QuitChatroomBody struct {
 	ChannelUuid string `json:"channel_uuid" form:"channel_uuid" binding:"required,gt=0"`
 }
 
-// QuitChatroomHandler either party can choose to euit the chatroom.
+// QuitChatroomHandler either party can choose to quit the chatroom.
 // Both parties will notified. The inquiry status will be changed to
 // "inquiring".
 func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
@@ -1437,6 +1437,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			}
 
 			// Change inquiry status to `inquiring`
+			// Set pickerID to be null
 			var iqDao contracts.InquiryDAOer
 			depCon.Make(&iqDao)
 
@@ -1444,6 +1445,9 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 			uiq, err := iqDao.PatchInquiryByInquiryUUID(models.PatchInquiryParams{
 				Uuid:          iq.Uuid,
 				InquiryStatus: &newStatus,
+				PickerID: sql.NullInt64{
+					Valid: false,
+				},
 			})
 
 			if err != nil {
@@ -1541,6 +1545,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	transResult := transResp.Response.(*TransResult)
+	// TODO send FCM message to notify both parties.
 
 	c.JSON(http.StatusOK, TransformRevertChatting(
 		transResult.RemovedUsers,

@@ -79,6 +79,7 @@ type PatchInquiryParams struct {
 	InquiryStatus   *InquiryStatus `json:"inquiry_status"`
 	Address         *string        `json:"address"`
 	FcmTopic        *string        `json:"fcm_topic"`
+	PickerID        sql.NullInt64  `json:"picker_id"`
 }
 
 type CancelUnpaidServices struct {

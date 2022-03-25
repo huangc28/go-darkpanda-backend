@@ -316,8 +316,10 @@ RETURNING *;
 
 func (dao *InquiryDAO) PatchInquiryStatusByUUID(params contracts.PatchInquiryStatusByUUIDParams) error {
 	sql := `
-UPDATE service_inquiries
-SET inquiry_status = $1
+UPDATE
+	service_inquiries
+SET
+	inquiry_status = $1
 WHERE uuid = $2
 `
 	_, err := dao.db.Exec(sql, params.InquiryStatus, params.UUID)
@@ -365,9 +367,10 @@ UPDATE service_inquiries SET
 	inquiry_status = COALESCE($3, inquiry_status),
 	budget = COALESCE($4, budget),
 	duration = COALESCE($5, duration),
-	address = COALESCE($6, address)
+	address = COALESCE($6, address),
+	picker_id = $7
 WHERE
-	uuid = $7
+	uuid = $8
 RETURNING
 	id,
 	uuid,
@@ -387,6 +390,7 @@ RETURNING
 		params.Budget,
 		params.Duration,
 		params.Address,
+		params.PickerID,
 		params.Uuid,
 	).StructScan(&inquiry)
 
