@@ -113,14 +113,10 @@ The app currently supports:
 - en
 
 You can lookup languages here: www.science.co.il/language/Locale-codes.php
-## Geo Location APIs
-
-- [] Use google map API to retrieve all location suggestion based on inputs
-- [] Retrieve longtitude and latitude of a given address.
-
-## Notification
+## TODOs
 
 - [] Notify male user when is at service appointment time.
+- [] Remove budget column from services table.
 
 # Miscellaneous
 
@@ -136,6 +132,5 @@ postgres://postgres:1234@127.0.0.1:5432/darkpanda?sslmode=disable
 https://www.digitalocean.com/community/tutorials/how-to-secure-nginx-with-let-s-encrypt-on-ubuntu-20-04
 ```
 
-## TODO
+## Github Actions
 
-- [] Remove budget column from services table.
