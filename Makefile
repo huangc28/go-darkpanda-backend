@@ -83,7 +83,16 @@ SERVICE_STATUS_SCANNER_SERVICE_NAME = darkpanda_service_status_scanner.service
 # Deprecated
 # SERVICE_PAYMENT_CHECKER             = darkpanda_service_payment_checker.service
 
-deploy_prod: build
+deploy_staging:
+	ssh -t root@159.65.131.163 'cd ~/darkpanda/go-darkpanda-backend && \
+		git pull https://$(GITHUB_USER):$(GITHUB_ACCESS_TOKEN)@github.com/huangc28/go-darkpanda-backend.git staging && \
+		make build && \
+		sudo systemctl stop $(APP_SERVICE_NAME) && \
+		sudo systemctl start $(APP_SERVICE_NAME) && \
+		sudo systemctl stop $(SERVICE_STATUS_SCANNER_SERVICE_NAME) && \
+		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)'
+
+deploy_prod:
 	ssh -t root@api.darkpanda.love 'cd ~/darkpanda/go-darkpanda-backend && \
 		git pull https://$(GITHUB_USER):$(GITHUB_ACCESS_TOKEN)@github.com/huangc28/go-darkpanda-backend.git && \
 		make build && \

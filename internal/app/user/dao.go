@@ -457,6 +457,12 @@ LEFT JOIN services
 		'completed',
 		'expired'
 	)
+	AND services.created_at=(
+	 	SELECT max(services.created_at)
+		FROM services
+        	WHERE services.customer_id=$1
+        	AND services.service_provider_id = users.id
+	)
 WHERE
 	gender='female'
 ORDER BY users.id % 4, users.id
