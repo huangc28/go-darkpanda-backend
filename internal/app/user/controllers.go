@@ -637,16 +637,6 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Retrieve all girls.
-
-	// Filter those girls that has ongoing inquiry with me.
-
-	// Filter those girls that has ongoing service with me.
-
-	// Result girls should not have any inquiry or service with me.
-
-	// GetGirls still needs service uuid (if a service has ever established) and channel_uuid
-	// Retrieve any relation via inquiry of current male user with list of girls.
 	girls, err := userDao.GetGirls(contracts.GetGirlsParams{
 		InquirerID: int(me.ID),
 		Limit:      body.PerPage,

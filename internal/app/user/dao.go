@@ -450,7 +450,8 @@ LEFT JOIN service_inquiries AS si
 
 -- Retrieve related services if any
 LEFT JOIN services
-	ON services.inquiry_id = si.id
+	ON services.customer_id = $1 
+	AND services.service_provider_id = users.id
 	AND services.service_status NOT IN (
 		'canceled',
 		'completed',
