@@ -15,7 +15,7 @@ run_local_backend: run_local_docker
 	go mod tidy && go run cmd/app/main.go
 
 run_local_docker:
-	docker-compose \
+	docker compose \
 		-f build/package/docker-compose.yaml \
 		--env-file build/package/.env.dev up \
 		-d
@@ -83,7 +83,7 @@ SERVICE_STATUS_SCANNER_SERVICE_NAME = darkpanda_service_status_scanner.service
 # Deprecated
 # SERVICE_PAYMENT_CHECKER             = darkpanda_service_payment_checker.service
 
-deploy: build
+deploy_prod: build
 	ssh -t root@api.darkpanda.love 'cd ~/darkpanda/go-darkpanda-backend && \
 		git pull https://$(GITHUB_USER):$(GITHUB_ACCESS_TOKEN)@github.com/huangc28/go-darkpanda-backend.git && \
 		make build && \
