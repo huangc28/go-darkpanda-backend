@@ -339,66 +339,142 @@ WHERE ratee_id = $1;
 	return &rating, nil
 }
 
+// TODO If inquiry status is "booked", we are not able to see inquiry uuid in "models.RandomGirl".
+// Thus, we need to collect service uuid for those girl with `HasInquiry = false` but `HasService = true`.
+// We will use those service uuid to retrieve corresponding channel uuid.
 func (dao *UserDAO) attachOngoingGirlsChannelUUID(girls []*models.RandomGirl) error {
 	inquiryUUIDs := make([]string, 0)
+	serviceUUIDs := make([]string, 0)
+
 	inquiryAndGirlMatch := make(map[string]*models.RandomGirl)
 
 	// Get inquiry uuids for those girl that has ongoing girl or service with me.
 	// Those inquiry uuids are used to retrieve channel uuids.
 	for _, g := range girls {
-		if g.HasInquiry || g.HasService {
+		if g.HasInquiry {
 			inquiryUUIDs = append(inquiryUUIDs, *g.InquiryUUID)
-			inquiryAndGirlMatch[*g.InquiryUUID] = g
+			inquiryAndGirlMatch[g.Uuid] = g
+		}
+
+		if g.HasService {
+			serviceUUIDs = append(serviceUUIDs, *g.ServiceUUID)
+			inquiryAndGirlMatch[g.Uuid] = g
 		}
 	}
 
-	if len(inquiryUUIDs) <= 0 {
+	if len(inquiryUUIDs) <= 0 && len(serviceUUIDs) <= 0 {
 		return nil
 	}
 
-	inquiryUUIDsStr := db.ComposeStringList(inquiryUUIDs...)
-
-	query := fmt.Sprintf(
-		`
-SELECT
-	DISTINCT ON (service_inquiries.uuid) uuid, chatrooms.created_at, chatrooms.channel_uuid
-FROM
-	chatrooms
-INNER JOIN service_inquiries
-	ON chatrooms.inquiry_id = service_inquiries.id
-WHERE
-	service_inquiries.uuid IN (%s)
-ORDER BY service_inquiries.uuid, chatrooms.created_at DESC;
-
-`, inquiryUUIDsStr)
-
-	log.Printf("DEBUG*** %v", query)
-
-	rows, err := dao.db.Queryx(query)
+	serviceChannelResults, err := dao.getChannelsByServiceUUID(serviceUUIDs)
 
 	if err != nil {
 		return err
 	}
 
-	for rows.Next() {
-		onGoingChatUUID := struct {
-			InquiryUUID string    `json:"uuid"`
-			CreatedAt   time.Time `json:"created_at"`
-			ChannelUUID string    `json:"channel_uuid"`
-		}{}
-
-		if err := rows.StructScan(&onGoingChatUUID); err != nil {
-			return err
+	for _, serviceChannelResult := range serviceChannelResults {
+		if g, exists := inquiryAndGirlMatch[serviceChannelResult.GirlUUID]; exists {
+			g.ChannelUUID = &serviceChannelResult.ChannelUUID
 		}
+	}
 
-		if g, exists := inquiryAndGirlMatch[onGoingChatUUID.InquiryUUID]; exists {
-			g.ChannelUUID = &onGoingChatUUID.ChannelUUID
+	inquiryChannelResults, err := dao.getChannelsByInquiryUUID(inquiryUUIDs)
 
+	if err != nil {
+		return err
+	}
+
+	for _, inquiryChannelResult := range inquiryChannelResults {
+		if g, exists := inquiryAndGirlMatch[inquiryChannelResult.GirlUUID]; exists {
+			g.ChannelUUID = &inquiryChannelResult.ChannelUUID
 		}
-
 	}
 
 	return nil
+}
+
+type ChannelResult struct {
+	GirlUUID    string    `json:"girl_uuid"`
+	CreatedAt   time.Time `json:"created_at"`
+	ChannelUUID string    `json:"channel_uuid"`
+}
+
+func (dao *UserDAO) getChannelsByServiceUUID(serviceUUIDs []string) ([]ChannelResult, error) {
+	serviceUUIDstr := db.ComposeStringList(serviceUUIDs...)
+
+	query := fmt.Sprintf(
+		`
+SELECT 	
+	DISTINCT ON(users.uuid) users.uuid AS girl_uuid,
+	chatrooms.created_at,
+	chatrooms.channel_uuid
+FROM 
+	chatrooms
+INNER JOIN service_inquiries 
+	ON chatrooms.inquiry_id = service_inquiries.id
+INNER JOIN services
+	ON services.inquiry_id = service_inquiries.id
+	AND services.uuid IN (%s)
+INNER JOIN users
+	ON services.service_provider_id = users.id
+ORDER BY users.uuid, chatrooms.created_at DESC;
+	`, serviceUUIDstr,
+	)
+
+	rows, err := dao.db.Queryx(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	channelResults := make([]ChannelResult, 0)
+	for rows.Next() {
+		channelResult := &ChannelResult{}
+
+		if err := rows.StructScan(channelResult); err != nil {
+			return nil, err
+		}
+	}
+
+	return channelResults, nil
+}
+
+func (dao *UserDAO) getChannelsByInquiryUUID(inquiryUUIDs []string) ([]ChannelResult, error) {
+	inquiryUUIDStr := db.ComposeStringList(inquiryUUIDs...)
+	query := fmt.Sprintf(
+		`
+SELECT
+	DISTINCT ON (users.uuid) users.uuid AS girl_uuid, chatrooms.created_at, chatrooms.channel_uuid
+FROM
+	chatrooms
+INNER JOIN service_inquiries
+	ON chatrooms.inquiry_id = service_inquiries.id
+INNER JOIN users 
+	ON service_inquiries.picker_id = users.id
+WHERE
+	service_inquiries.uuid IN (%s)
+ORDER BY users.uuid, chatrooms.created_at DESC;
+	`,
+		inquiryUUIDStr,
+	)
+
+	rows, err := dao.db.Queryx(query)
+
+	if err != nil {
+		return nil, err
+	}
+
+	channelResults := make([]ChannelResult, 0)
+
+	for rows.Next() {
+		channelResult := &ChannelResult{}
+
+		if err := rows.StructScan(channelResult); err != nil {
+			return nil, err
+		}
+	}
+
+	return channelResults, nil
 }
 
 // GetGirls retrieve list of girl profile who wants their profile to be viewed publically.
