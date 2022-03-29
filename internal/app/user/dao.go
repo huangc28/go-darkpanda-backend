@@ -415,7 +415,7 @@ SELECT
 	weight,
 	breast_size,
 	description,
-	CASE WHEN si.id IS NOT NULL
+    CASE WHEN si.id IS NOT NULL
     THEN true
     ELSE false
     END has_inquiry,
@@ -444,7 +444,7 @@ LEFT JOIN service_inquiries AS si
 	AND si.created_at=(
 	 	SELECT max(created_at)
 		FROM service_inquiries
-        	WHERE inquirer_id=5
+        	WHERE inquirer_id = $1
         	AND picker_id = users.id
 	)
 
