@@ -378,7 +378,8 @@ RETURNING
 	expect_service_type,
 	budget,
 	duration,
-	address;
+	address
+	inquiry_type;
 `
 	inquiry := models.ServiceInquiry{}
 

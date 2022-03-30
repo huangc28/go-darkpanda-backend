@@ -1436,19 +1436,27 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 				}
 			}
 
-			// Change inquiry status to `inquiring`
-			// Set pickerID to be null
+			// If user cancels the inquiry in the direct inquiry chatroom,
+			// change inquiry status to "canceled"
+
+			newStatus := models.InquiryStatusInquiring
+
+			if iq.InquiryStatus == models.InquiryStatus(models.InquiryTypeDirect) {
+				newStatus = models.InquiryStatusCanceled
+			}
+
 			var iqDao contracts.InquiryDAOer
 			depCon.Make(&iqDao)
 
-			newStatus := models.InquiryStatusInquiring
-			uiq, err := iqDao.PatchInquiryByInquiryUUID(models.PatchInquiryParams{
-				Uuid:          iq.Uuid,
-				InquiryStatus: &newStatus,
-				PickerID: sql.NullInt64{
-					Valid: false,
-				},
-			})
+			uiq, err := iqDao.
+				WithTx(tx).
+				PatchInquiryByInquiryUUID(models.PatchInquiryParams{
+					Uuid:          iq.Uuid,
+					InquiryStatus: &newStatus,
+					PickerID: sql.NullInt64{
+						Valid: false,
+					},
+				})
 
 			if err != nil {
 				return db.FormatResp{
