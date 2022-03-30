@@ -1441,7 +1441,7 @@ func QuitChatroomHandler(c *gin.Context, depCon container.Container) {
 
 			newStatus := models.InquiryStatusInquiring
 
-			if iq.InquiryStatus == models.InquiryStatus(models.InquiryTypeDirect) {
+			if models.InquiryStatus(iq.InquiryType) == models.InquiryStatus(models.InquiryTypeDirect) {
 				newStatus = models.InquiryStatusCanceled
 			}
 
