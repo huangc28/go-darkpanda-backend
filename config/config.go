@@ -140,6 +140,7 @@ func InitConfig() {
 	// Setup DEV usernames
 	appConf.DevUsernames = []string{
 		"tester",
+		"arthur",
 	}
 }
 
