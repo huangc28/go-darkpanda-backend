@@ -64,6 +64,19 @@ type AppConf struct {
 
 	// Note: We are hardcoding app currency here. Since this app only operates in Taiwan for now.
 	Currency string `mapstructure:"CURRENCY"`
+
+	// DEV usernames, login via DEV usernames receive 1234 for otp code.
+	DevUsernames []string
+}
+
+func (ac *AppConf) IsDevUser(username string) bool {
+	for _, devUser := range ac.DevUsernames {
+		if username == devUser {
+			return true
+		}
+	}
+
+	return false
 }
 
 var appConf AppConf
@@ -122,6 +135,11 @@ func InitConfig() {
 
 	if err = viper.Unmarshal(&appConf); err != nil {
 		log.Fatalf("failed to unmarshal app config to struct %s", err.Error())
+	}
+
+	// Setup DEV usernames
+	appConf.DevUsernames = []string{
+		"tester",
 	}
 }
 

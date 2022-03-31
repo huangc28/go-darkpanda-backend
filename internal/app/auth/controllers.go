@@ -76,6 +76,7 @@ type SendLoginVerifyCodeBody struct {
 	Username string `form:"username" json:"username" binding:"required,gt=0"`
 }
 
+// TODO add a dev username that always give 1234 as mobile verify code
 func (ac *AuthController) SendVerifyCodeHandler(c *gin.Context, depCon container.Container) {
 	var (
 		body SendLoginVerifyCodeBody
@@ -347,39 +348,42 @@ func (ac *AuthController) VerifyLoginCode(c *gin.Context, depCon container.Conta
 		return
 	}
 
-	// Retrieve auth record from redis
-	authDao := NewAuthDao(db.GetRedis())
-	authRecord, err := authDao.GetLoginRecord(ctx, user.Uuid)
+	// By pass verification code checking if is dev user.
+	if !config.GetAppConf().IsDevUser(user.Username) {
+		// Retrieve auth record from redis
+		authDao := NewAuthDao(db.GetRedis())
+		authRecord, err := authDao.GetLoginRecord(ctx, user.Uuid)
 
-	if err != nil {
-		if err == redis.Nil {
+		if err != nil {
+			if err == redis.Nil {
+				c.AbortWithError(
+					http.StatusBadRequest,
+					apperr.NewErr(apperr.LoginVerifyCodeNotFound),
+				)
+
+				return
+			}
+
+			c.AbortWithError(
+				http.StatusInternalServerError,
+				apperr.NewErr(
+					apperr.FailedToGetAuthenticatorRecord,
+					err.Error(),
+				),
+			)
+
+			return
+
+		}
+
+		if authRecord.VerifyCode != fmt.Sprintf("%s-%d", body.VerifyChar, body.VerifyDig) {
 			c.AbortWithError(
 				http.StatusBadRequest,
-				apperr.NewErr(apperr.LoginVerifyCodeNotFound),
+				apperr.NewErr(apperr.VerifyCodeUnmatched),
 			)
 
 			return
 		}
-
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetAuthenticatorRecord,
-				err.Error(),
-			),
-		)
-
-		return
-
-	}
-
-	if authRecord.VerifyCode != fmt.Sprintf("%s-%d", body.VerifyChar, body.VerifyDig) {
-		c.AbortWithError(
-			http.StatusBadRequest,
-			apperr.NewErr(apperr.VerifyCodeUnmatched),
-		)
-
-		return
 	}
 
 	// Verify code matches, generate jwt token.
