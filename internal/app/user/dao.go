@@ -362,31 +362,33 @@ func (dao *UserDAO) attachOngoingGirlsChannelUUID(girls []*models.RandomGirl) er
 		}
 	}
 
-	if len(inquiryUUIDs) <= 0 && len(serviceUUIDs) <= 0 {
-		return nil
-	}
+	// If there aren't any ongoing services with the inquirer, we don't need to perform this query.
+	if len(serviceUUIDs) > 0 {
+		serviceChannelResults, err := dao.getChannelsByServiceUUID(serviceUUIDs)
 
-	serviceChannelResults, err := dao.getChannelsByServiceUUID(serviceUUIDs)
+		if err != nil {
+			return err
+		}
 
-	if err != nil {
-		return err
-	}
-
-	for _, serviceChannelResult := range serviceChannelResults {
-		if g, exists := inquiryAndGirlMatch[serviceChannelResult.GirlUUID]; exists {
-			g.ChannelUUID = &serviceChannelResult.ChannelUUID
+		for _, serviceChannelResult := range serviceChannelResults {
+			if g, exists := inquiryAndGirlMatch[serviceChannelResult.GirlUUID]; exists {
+				g.ChannelUUID = &serviceChannelResult.ChannelUUID
+			}
 		}
 	}
 
-	inquiryChannelResults, err := dao.getChannelsByInquiryUUID(inquiryUUIDs)
+	// If there aren't any ongoing inquiry with the inquirer, we don't need to perform this query
+	if len(inquiryUUIDs) > 0 {
+		inquiryChannelResults, err := dao.getChannelsByInquiryUUID(inquiryUUIDs)
 
-	if err != nil {
-		return err
-	}
+		if err != nil {
+			return err
+		}
 
-	for _, inquiryChannelResult := range inquiryChannelResults {
-		if g, exists := inquiryAndGirlMatch[inquiryChannelResult.GirlUUID]; exists {
-			g.ChannelUUID = &inquiryChannelResult.ChannelUUID
+		for _, inquiryChannelResult := range inquiryChannelResults {
+			if g, exists := inquiryAndGirlMatch[inquiryChannelResult.GirlUUID]; exists {
+				g.ChannelUUID = &inquiryChannelResult.ChannelUUID
+			}
 		}
 	}
 
@@ -404,13 +406,13 @@ func (dao *UserDAO) getChannelsByServiceUUID(serviceUUIDs []string) ([]ChannelRe
 
 	query := fmt.Sprintf(
 		`
-SELECT 	
+SELECT
 	DISTINCT ON(users.uuid) users.uuid AS girl_uuid,
 	chatrooms.created_at,
 	chatrooms.channel_uuid
-FROM 
+FROM
 	chatrooms
-INNER JOIN service_inquiries 
+INNER JOIN service_inquiries
 	ON chatrooms.inquiry_id = service_inquiries.id
 INNER JOIN services
 	ON services.inquiry_id = service_inquiries.id
@@ -449,7 +451,7 @@ FROM
 	chatrooms
 INNER JOIN service_inquiries
 	ON chatrooms.inquiry_id = service_inquiries.id
-INNER JOIN users 
+INNER JOIN users
 	ON service_inquiries.picker_id = users.id
 WHERE
 	service_inquiries.uuid IN (%s)
@@ -526,7 +528,7 @@ LEFT JOIN service_inquiries AS si
 
 -- Retrieve related services if any
 LEFT JOIN services
-	ON services.customer_id = $1 
+	ON services.customer_id = $1
 	AND services.service_provider_id = users.id
 	AND services.service_status NOT IN (
 		'canceled',

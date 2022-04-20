@@ -28,6 +28,7 @@ const (
 	FailedToGetUserServiceOption            = "5000025"
 	FailedToCheckServiceOptionExistence     = "5000026"
 	ServiceOptionNotAvailable               = "5000027"
+	FailedToGetGirlsInfo                    = "5000028"
 )
 
 var userErrorCodeMsgMap = map[string]string{

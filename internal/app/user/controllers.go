@@ -647,7 +647,7 @@ func GetGirls(c *gin.Context, depCon container.Container) {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetUserProfiles,
+				apperr.FailedToGetGirlsInfo,
 				err.Error(),
 			),
 		)
