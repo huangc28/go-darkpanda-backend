@@ -340,10 +340,9 @@ type GetChatroomsBody struct {
 	PerPage int `form:"per_page,default=7"`
 }
 
-// If the requester is female find all chatrooms that qualify the following conditions:
-//   - Chatrooms related inquiry status is chatting
-//   - Chatrooms related inquiry picker_id equals requester's id
-func GetChatrooms(c *gin.Context, depCon container.Container) {
+// Both male and female can retrieve inquiry / service chatrooms from this API.
+// Retrieve 'chatroom_type' first
+func GetInquiryChatrooms(c *gin.Context, depCon container.Container) {
 	body := GetChatroomsBody{}
 
 	if err := requestbinder.Bind(c, &body); err != nil {
@@ -358,7 +357,6 @@ func GetChatrooms(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	// Recognize the gender of the requester
 	var (
 		userDao  contracts.UserDAOer
 		chatDao  contracts.ChatDaoer
@@ -381,20 +379,33 @@ func GetChatrooms(c *gin.Context, depCon container.Container) {
 		return
 	}
 
-	var chatrooms []models.InquiryChatRoom
-
-	chatrooms, err = chatDao.GetFemaleInquiryChatRooms(
-		user.ID,
-		int64(body.Offset),
-		int64(body.PerPage),
+	var (
+		queryChatroomError error
+		chatrooms          []models.InquiryChatRoom
 	)
 
-	if err != nil {
+	// We use different methods to get chatrooms based on gender.
+	// This way the SQL statement is more simple.
+	if user.Gender == models.GenderFemale {
+		chatrooms, queryChatroomError = chatDao.GetFemaleInquiryChatrooms(
+			user.ID,
+			int64(body.Offset),
+			int64(body.PerPage),
+		)
+	} else {
+		chatrooms, queryChatroomError = chatDao.GetMaleInquiryChatrooms(
+			user.ID,
+			int64(body.Offset),
+			int64(body.PerPage),
+		)
+	}
+
+	if queryChatroomError != nil {
 		c.AbortWithError(
 			http.StatusInternalServerError,
 			apperr.NewErr(
-				apperr.FailedToGetFemaleChatRooms,
-				err.Error(),
+				apperr.FailedToGetInquiryChatrooms,
+				queryChatroomError.Error(),
 			),
 		)
 
@@ -434,86 +445,89 @@ func GetChatrooms(c *gin.Context, depCon container.Container) {
 }
 
 // Retrieve list of direct chatrooms for the male users.
-type GetDirectInquiryChatroomBody struct {
-	Offset  int `form:"offset,default=0"`
-	PerPage int `form:"per_page,default=6"`
+type GetOngoingChatroomsBody struct {
+	Offset      int    `form:"offset,default=0"`
+	PerPage     int    `form:"per_page,default=6"`
+	InquiryType string `form:"inquiry_type"`
 }
 
-func GetDirectInquiryChatroom(c *gin.Context, depCon container.Container) {
-	body := GetDirectInquiryChatroomBody{}
+// TODO change this API to retrieve chatrooms by inquiry type
+// No inquiry type specified, retrieve all ongoing chatrooms disregard "random" or "direct"
+//func GetOngoingChatrooms(c *gin.Context, depCon container.Container) {
+//body := GetOngoingChatroomsBody{}
 
-	if err := requestbinder.Bind(c, &body); err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToBindBodyParams,
-				err.Error(),
-			),
-		)
+//if err := requestbinder.Bind(c, &body); err != nil {
+//c.AbortWithError(
+//http.StatusInternalServerError,
+//apperr.NewErr(
+//apperr.FailedToBindBodyParams,
+//err.Error(),
+//),
+//)
 
-		return
-	}
+//return
+//}
 
-	var userDao contracts.UserDAOer
-	depCon.Make(&userDao)
+//var userDao contracts.UserDAOer
+//depCon.Make(&userDao)
 
-	inquirer, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
+//inquirer, err := userDao.GetUserByUuid(c.GetString("uuid"), "id")
 
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetUserByUuid,
-				err.Error(),
-			),
-		)
+//if err != nil {
+//c.AbortWithError(
+//http.StatusInternalServerError,
+//apperr.NewErr(
+//apperr.FailedToGetUserByUuid,
+//err.Error(),
+//),
+//)
 
-		return
-	}
+//return
+//}
 
-	chatDao := NewChatDao(db.GetDB())
-	chatrooms, err := chatDao.GetDirectInquiryChatrooms(contracts.GetDirectInquiryChatroomsParams{
-		InquirerID: int(inquirer.ID),
-		Offset:     body.Offset,
-		PerPage:    body.PerPage,
-	})
+//chatDao := NewChatDao(db.GetDB())
+//chatrooms, err := chatDao.GetDirectInquiryChatrooms(contracts.GetDirectInquiryChatroomsParams{
+//InquirerID: int(inquirer.ID),
+//Offset:     body.Offset,
+//PerPage:    body.PerPage,
+//})
 
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetDirectInquiryChatrooms,
-				err.Error(),
-			),
-		)
+//if err != nil {
+//c.AbortWithError(
+//http.StatusInternalServerError,
+//apperr.NewErr(
+//apperr.FailedToGetDirectInquiryChatrooms,
+//err.Error(),
+//),
+//)
 
-		return
-	}
+//return
+//}
 
-	// Retrieve latest message of each chatroom.
-	ctx := context.Background()
-	channelUUIDs := make([]string, 0)
-	for _, chatroom := range chatrooms {
-		channelUUIDs = append(channelUUIDs, chatroom.ChannelUUID)
-	}
+//// Retrieve latest message of each chatroom.
+//ctx := context.Background()
+//channelUUIDs := make([]string, 0)
+//for _, chatroom := range chatrooms {
+//channelUUIDs = append(channelUUIDs, chatroom.ChannelUUID)
+//}
 
-	df := darkfirestore.Get()
-	msgs, err := df.GetLatestMessageForEachChatroom(ctx, channelUUIDs)
+//df := darkfirestore.Get()
+//msgs, err := df.GetLatestMessageForEachChatroom(ctx, channelUUIDs)
 
-	if err != nil {
-		c.AbortWithError(
-			http.StatusInternalServerError,
-			apperr.NewErr(
-				apperr.FailedToGetMessageFromFireStore,
-				err.Error(),
-			),
-		)
+//if err != nil {
+//c.AbortWithError(
+//http.StatusInternalServerError,
+//apperr.NewErr(
+//apperr.FailedToGetMessageFromFireStore,
+//err.Error(),
+//),
+//)
 
-		return
-	}
+//return
+//}
 
-	c.JSON(http.StatusOK, NewTransformer().TransformInquiryChats(chatrooms, msgs))
-}
+//c.JSON(http.StatusOK, NewTransformer().TransformInquiryChats(chatrooms, msgs))
+//}
 
 // Add pagination for firestore. We have to get `page` and `limit` from client.
 //   - page

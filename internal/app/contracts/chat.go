@@ -20,11 +20,11 @@ type UpdateChatByUuidParams struct {
 	ChannelUuid  string
 }
 
-type GetDirectInquiryChatroomsParams struct {
-	InquirerID int
-	Offset     int
-	PerPage    int
-}
+//type GetDirectInquiryChatroomsParams struct {
+//InquirerID int
+//Offset     int
+//PerPage    int
+//}
 
 type ChatDaoer interface {
 	WithTx(tx *sqlx.Tx) ChatDaoer
@@ -36,7 +36,10 @@ type ChatDaoer interface {
 	GetChatRoomByChannelUUID(chanelUUID string, fields ...string) (*models.Chatroom, error)
 	GetChatRoomByInquiryID(inquiryID int64, fields ...string) (*models.Chatroom, error)
 	DeleteChatRoom(ID int64) error
-	GetFemaleInquiryChatRooms(userID int64, offset int64, perPage int64) ([]models.InquiryChatRoom, error)
+
+	GetFemaleInquiryChatrooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error)
+	GetMaleInquiryChatrooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error)
+
 	UpdateChatByUuid(params UpdateChatByUuidParams) (*models.Chatroom, error)
 	IsUserInChatroom(userUuid string, chatroomUuid string) (bool, error)
 	GetInquiryByChannelUuid(channelUuid string) (*models.ServiceInquiry, error)
@@ -44,5 +47,5 @@ type ChatDaoer interface {
 	GetChatroomByServiceId(srvId int) (*models.Chatroom, error)
 	DeleteChatroomByServiceId(srvId int) error
 	DeleteChatroomByInquiryId(iqId int) error
-	GetDirectInquiryChatrooms(p GetDirectInquiryChatroomsParams) ([]models.InquiryChatRoom, error)
+	//GetDirectInquiryChatrooms(p GetDirectInquiryChatroomsParams) ([]models.InquiryChatRoom, error)
 }

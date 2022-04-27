@@ -13,7 +13,7 @@ type UserWithInquiries struct {
 // InquiryChatRooms data models to be returned for method `GetFemaleInquiryChatRooms`.
 type InquiryChatRoom struct {
 	ServiceUuid   string         `json:"service_uuid"`
-	ServiceType   InquiryStatus  `json:"service_type"`
+	ServiceType   sql.NullString `json:"service_type"`
 	InquiryStatus string         `json:"inquiry_status"`
 	InquiryUUID   string         `json:"inquiry_uuid"`
 	InquirerUUID  string         `json:"inquirer_uuid"`

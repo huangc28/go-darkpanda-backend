@@ -269,15 +269,15 @@ WHERE
 // inquirer avatar
 // chatroom channel uuid
 // chatroom created_at
-func (dao *ChatDao) GetFemaleInquiryChatRooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error) {
+func (dao *ChatDao) GetFemaleInquiryChatrooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error) {
 	query := `
 SELECT
-	si.expect_service_type AS service_type,
-	si.inquiry_status,
-	si.uuid AS inquiry_uuid,
 	inquirer.username,
 	inquirer.uuid AS inquirer_uuid,
 	inquirer.avatar_url,
+	si.expect_service_type AS service_type,
+	si.inquiry_status,
+	si.uuid AS inquiry_uuid,
 	chatrooms.channel_uuid,
 	chatrooms.expired_at,
 	chatrooms.created_at,
@@ -312,6 +312,60 @@ LIMIT $4;
 	defer rows.Close()
 
 	chatrooms := make([]models.InquiryChatRoom, 0)
+
+	for rows.Next() {
+		cr := models.InquiryChatRoom{}
+		if err := rows.StructScan(&cr); err != nil {
+			return nil, err
+		}
+
+		chatrooms = append(chatrooms, cr)
+	}
+
+	return chatrooms, nil
+}
+
+func (dao *ChatDao) GetMaleInquiryChatrooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error) {
+	query := `
+SELECT
+	pickers.username,
+	pickers.uuid AS picker_uuid,
+	pickers.avatar_url,
+	si.expect_service_type AS service_type,
+	si.inquiry_status,
+	si.uuid AS inquiry_uuid,
+	si.created_at,
+	chatrooms.channel_uuid,
+	services.uuid AS service_uuid
+FROM service_inquiries AS si
+INNER JOIN services ON si.id = services.inquiry_id
+INNER JOIN chatrooms
+	ON chatrooms.inquiry_id = si.id
+	AND chatrooms.deleted_at IS NULL
+INNER JOIN users AS pickers
+	ON pickers.id = si.picker_id
+WHERE
+	services.service_status =$1
+AND
+	si.inquirer_id = $2
+ORDER BY si.created_at DESC
+OFFSET $3
+LIMIT $4;
+	`
+	rows, err := dao.DB.Queryx(
+		query,
+		models.ServiceStatusNegotiating,
+		userID,
+		offset,
+		perPage,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	chatrooms := make([]models.InquiryChatRoom, 0)
+
 	for rows.Next() {
 		cr := models.InquiryChatRoom{}
 		if err := rows.StructScan(&cr); err != nil {
@@ -505,65 +559,63 @@ WHERE
 	return err
 }
 
-func (dao *ChatDao) GetDirectInquiryChatrooms(p contracts.GetDirectInquiryChatroomsParams) ([]models.InquiryChatRoom, error) {
-	query := `
-SELECT
-	pickers.username,
-	pickers.uuid AS picker_uuid,
-	pickers.avatar_url,
-	si.expect_service_type AS service_type,
-	si.inquiry_status,
-	si.uuid AS inquiry_uuid,
-	si.inquiry_status,
-	si.created_at,
-	chatrooms.channel_uuid,
-	services.uuid AS service_uuid
-FROM service_inquiries AS si
-INNER JOIN services ON si.id = services.inquiry_id
-INNER JOIN chatrooms
-	ON chatrooms.inquiry_id = si.id
-	AND chatrooms.deleted_at IS NULL
-	AND inquiry_type='direct'
-INNER JOIN users AS pickers
-	ON pickers.id = si.picker_id
-WHERE
-	si.inquirer_id = $1
-AND (
-	si.inquiry_status = $2 OR
-	si.inquiry_status = $3
-)
-AND
-	si.inquiry_type = $4
-ORDER BY si.created_at DESC
-OFFSET $5
-LIMIT $6;
-	`
+//func (dao *ChatDao) GetOngoingChatroomsParam(p contracts.GetOngoingChatroomsParam) ([]models.InquiryChatRoom, error) {
+//query := `
+//SELECT
+//pickers.username,
+//pickers.uuid AS picker_uuid,
+//pickers.avatar_url,
+//si.expect_service_type AS service_type,
+//si.inquiry_status,
+//si.uuid AS inquiry_uuid,
+//si.created_at,
+//chatrooms.channel_uuid,
+//services.uuid AS service_uuid
+//FROM service_inquiries AS si
+//INNER JOIN services ON si.id = services.inquiry_id
+//INNER JOIN chatrooms
+//ON chatrooms.inquiry_id = si.id
+//AND chatrooms.deleted_at IS NULL
+//INNER JOIN users AS pickers
+//ON pickers.id = si.picker_id
+//WHERE
+//si.inquirer_id = $1
+//AND (
+//si.inquiry_status = $2 OR
+//si.inquiry_status = $3
+//)
+//AND
+//si.inquiry_type = $4
+//ORDER BY si.created_at DESC
+//OFFSET $5
+//LIMIT $6;
+//`
 
-	rows, err := dao.DB.Queryx(
-		query,
-		p.InquirerID,
-		models.InquiryStatusChatting,
-		models.InquiryStatusWaitForInquirerApprove,
-		models.InquiryTypeDirect,
-		p.Offset,
-		p.PerPage,
-	)
+//rows, err := dao.DB.Queryx(
+//query,
+//p.InquirerID,
+//models.InquiryStatusChatting,
+//models.InquiryStatusWaitForInquirerApprove,
+//models.InquiryTypeDirect,
+//p.Offset,
+//p.PerPage,
+//)
 
-	if err != nil {
-		return nil, err
-	}
+//if err != nil {
+//return nil, err
+//}
 
-	dics := make([]models.InquiryChatRoom, 0)
+//dics := make([]models.InquiryChatRoom, 0)
 
-	for rows.Next() {
-		dic := models.InquiryChatRoom{}
+//for rows.Next() {
+//dic := models.InquiryChatRoom{}
 
-		if err := rows.StructScan(&dic); err != nil {
-			return nil, err
-		}
+//if err := rows.StructScan(&dic); err != nil {
+//return nil, err
+//}
 
-		dics = append(dics, dic)
-	}
+//dics = append(dics, dic)
+//}
 
-	return dics, nil
-}
+//return dics, nil
+//}

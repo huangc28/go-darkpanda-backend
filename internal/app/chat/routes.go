@@ -33,9 +33,24 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		}, authDao),
 	)
 
-	g.GET("", func(c *gin.Context) {
-		GetChatrooms(c, depCon)
+	g.GET("/:channel_uuid", func(c *gin.Context) {
+		seg := c.Param("channel_uuid")
+		switch seg {
+
+		case "inquiry":
+			GetInquiryChatrooms(c, depCon)
+		case "service":
+			c.JSON(http.StatusOK, struct{}{})
+		default:
+			c.JSON(http.StatusOK, struct{}{})
+		}
 	})
+
+	// Get historical messages of a specific chatroom.
+	g.GET(
+		"/:channel_uuid/messages",
+		GetHistoricalMessages,
+	)
 
 	g.POST(
 		"/emit-text-message",
@@ -86,25 +101,6 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		func(c *gin.Context) {
 			EmitServiceConfirmedMessage(c, depCon)
 		},
-	)
-
-	g.GET("/:channel_uuid", func(c *gin.Context) {
-		seg := c.Param("channel_uuid")
-
-		switch seg {
-		// Retrieve direct inquiry chatrooms approved by females.
-		case "direct-inquiry-chatrooms":
-			middlewares.IsMale(userDao)(c)
-			GetDirectInquiryChatroom(c, depCon)
-		default:
-			c.JSON(http.StatusOK, struct{}{})
-		}
-	})
-
-	// Get historical messages of a specific chatroom.
-	g.GET(
-		"/:channel_uuid/messages",
-		GetHistoricalMessages,
 	)
 
 	// If male user disagree with the inquiry detail set by the female user in the inquiry chatroom.

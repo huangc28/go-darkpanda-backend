@@ -11,7 +11,7 @@ const (
 	FailedToDeleteChat                                    = "7000008"
 	FailedToLeaveAllMembers                               = "7000009"
 	FailedToCreatePrivateChatRoom                         = "7000010"
-	FailedToGetFemaleChatRooms                            = "7000011"
+	FailedToGetInquiryChatrooms                           = "7000011"
 	FailedToGetMessageFromFireStore                       = "7000012"
 	FailedGetHistoricalMessagesFromFireStore              = "7000013"
 	FailedToValidateGetChatroomsParams                    = "7000014"
