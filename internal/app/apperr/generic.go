@@ -14,9 +14,11 @@ const (
 	FailedToGenerateShortId             = "0000011"
 	DBConnectionError                   = "0000012"
 	RedisConnectionError                = "0000013"
+	APINotFound                         = "0000014"
 )
 
 var GeneralErrorMessageMap = map[string]string{
 	MissingAuthToken: "missing auth token",
 	AssetNotFound:    "query results no asset found",
+	APINotFound:      "the api you are looking for is not found",
 }

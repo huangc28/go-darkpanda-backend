@@ -136,5 +136,11 @@ func StartApp(e *gin.Engine) *gin.Engine {
 		rv1,
 	)
 
+	e.NoRoute(func(c *gin.Context) {
+		c.AbortWithError(http.StatusNotFound, apperr.NewErr(apperr.APINotFound))
+
+		return
+	})
+
 	return e
 }
