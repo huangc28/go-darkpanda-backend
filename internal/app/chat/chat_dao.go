@@ -2,6 +2,7 @@ package chat
 
 import (
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -263,14 +264,16 @@ WHERE
 // GetFemaleInquiryChatRooms retrieve all inquiry chatrooms for a female user.
 //   - Those chatrooms's related inquiry status is chatting, wait_for_inquirer_approve
 //   - Those chatrooms's related inquiry picker_id equals requester's id
-// Inquiry title --- not exists yet
-// Inquiry type
-// inquirer name
-// inquirer avatar
-// chatroom channel uuid
-// chatroom created_at
-func (dao *ChatDao) GetFemaleInquiryChatrooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error) {
-	query := `
+func (dao *ChatDao) GetFemaleInquiryChatrooms(params contracts.GetFemaleInquiryChatrooms) ([]models.InquiryChatRoom, error) {
+	// Retrieve all matching inquiry chatrooms
+	inquiryUUIDQueryClause := "1 = 1"
+
+	// Retrieve one inquiry chatroom that matches uuid = params.InquiryUUID
+	if len(params.InquiryUUID) > 0 {
+		inquiryUUIDQueryClause = fmt.Sprintf("si.uuid = '%s'", params.InquiryUUID)
+	}
+
+	query := fmt.Sprintf(`
 SELECT
 	inquirer.username,
 	inquirer.uuid AS inquirer_uuid,
@@ -292,17 +295,20 @@ INNER JOIN services
 	ON si.id = services.inquiry_id
 WHERE
 	services.service_status = $1
-AND picker_id = $2
+AND
+	picker_id = $2
+AND
+	%s
 OFFSET $3
 LIMIT $4;
-	`
-
+	`, inquiryUUIDQueryClause)
+	log.Printf("DEBUG query clause %v", query)
 	rows, err := dao.DB.Queryx(
 		query,
 		models.ServiceStatusNegotiating,
-		userID,
-		offset,
-		perPage,
+		params.UserID,
+		params.Offset,
+		params.PerPage,
 	)
 
 	if err != nil {
@@ -325,8 +331,14 @@ LIMIT $4;
 	return chatrooms, nil
 }
 
-func (dao *ChatDao) GetMaleInquiryChatrooms(userID, offset, perPage int64) ([]models.InquiryChatRoom, error) {
-	query := `
+func (dao *ChatDao) GetMaleInquiryChatrooms(params contracts.GetMaleInquiryChatrooms) ([]models.InquiryChatRoom, error) {
+	inquiryUUIDQueryClause := "1 = 1"
+
+	if len(params.InquiryUUID) > 0 {
+		inquiryUUIDQueryClause = fmt.Sprintf("si.uuid = '%s'", params.InquiryUUID)
+	}
+
+	query := fmt.Sprintf(`
 SELECT
 	pickers.username,
 	pickers.uuid AS picker_uuid,
@@ -345,19 +357,26 @@ INNER JOIN chatrooms
 INNER JOIN users AS pickers
 	ON pickers.id = si.picker_id
 WHERE
-	services.service_status =$1
+	services.service_status = $1
 AND
 	si.inquirer_id = $2
+AND
+	%s
 ORDER BY si.created_at DESC
 OFFSET $3
 LIMIT $4;
-	`
+`,
+		inquiryUUIDQueryClause,
+	)
+
+	log.Printf("DEBUG query clause %v", query)
+
 	rows, err := dao.DB.Queryx(
 		query,
 		models.ServiceStatusNegotiating,
-		userID,
-		offset,
-		perPage,
+		params.UserID,
+		params.Offset,
+		params.PerPage,
 	)
 
 	if err != nil {

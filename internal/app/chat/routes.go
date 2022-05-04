@@ -37,14 +37,21 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		seg := c.Param("channel_uuid")
 		switch seg {
 
+		// Get all inquiry chatroom if `inquiry_uuid` is not specified
 		case "inquiry":
 			GetInquiryChatrooms(c, depCon)
+
 		case "service":
 			c.JSON(http.StatusOK, struct{}{})
 		default:
 			c.JSON(http.StatusOK, struct{}{})
 		}
 	})
+
+	// Get single inquiry chatroom.
+	//g.GET("/inquiry_chatroom", func(c *gin.Context) {
+	//GetInquiryChatroom(c, depCon)
+	//})
 
 	// Get historical messages of a specific chatroom.
 	g.GET(
