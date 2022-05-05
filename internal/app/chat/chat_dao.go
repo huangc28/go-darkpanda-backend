@@ -2,7 +2,6 @@ package chat
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -281,6 +280,7 @@ SELECT
 	si.expect_service_type AS service_type,
 	si.inquiry_status,
 	si.uuid AS inquiry_uuid,
+	inquirer.uuid AS inquirer_uuid,
 	chatrooms.channel_uuid,
 	chatrooms.expired_at,
 	chatrooms.created_at,
@@ -302,7 +302,6 @@ AND
 OFFSET $3
 LIMIT $4;
 	`, inquiryUUIDQueryClause)
-	log.Printf("DEBUG query clause %v", query)
 	rows, err := dao.DB.Queryx(
 		query,
 		models.ServiceStatusNegotiating,
@@ -368,8 +367,6 @@ LIMIT $4;
 `,
 		inquiryUUIDQueryClause,
 	)
-
-	log.Printf("DEBUG query clause %v", query)
 
 	rows, err := dao.DB.Queryx(
 		query,

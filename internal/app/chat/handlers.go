@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -391,7 +390,6 @@ func GetInquiryChatrooms(c *gin.Context, depCon container.Container) {
 	// We use different methods to get chatrooms based on gender.
 	// This way the SQL statement is more simple.
 	if user.Gender == models.GenderFemale {
-		log.Println("i'm female")
 		chatrooms, queryChatroomError = chatDao.GetFemaleInquiryChatrooms(
 			contracts.GetFemaleInquiryChatrooms{
 				UserID:      user.ID,
@@ -402,7 +400,6 @@ func GetInquiryChatrooms(c *gin.Context, depCon container.Container) {
 		)
 	} else {
 
-		log.Println("i'm male")
 		chatrooms, queryChatroomError = chatDao.GetMaleInquiryChatrooms(
 			contracts.GetMaleInquiryChatrooms{
 				UserID:      user.ID,
