@@ -207,10 +207,9 @@ func main() {
 
 				depCon.Make(&serviceDao)
 
-				// Deprecated, disable expring services.
-				//if err := ScanExpiredServices(serviceDao); err != nil {
-				//errLogger.Error(err)
-				//}
+				if err := ScanExpiredServices(serviceDao); err != nil {
+					errLogger.Error(err)
+				}
 
 				if err := ScanCompletedServices(serviceDao); err != nil {
 					errLogger.Error(err)
