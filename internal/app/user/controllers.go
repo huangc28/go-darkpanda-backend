@@ -718,7 +718,7 @@ func (h *UserHandlers) GetUserServiceOption(c *gin.Context, depCon container.Con
 type CreateServiceOptionParams struct {
 	Name              string  `json:"name" form:"name" binding:"required"`
 	Description       string  `json:"description" form:"description" binding:"required"`
-	Price             float64 `json:"price" form:"price" binding:"required"`
+	Price             float64 `json:"price" form:"price"`
 	Duration          int     `json:"duration" form:"duration" binding:"required"`
 	ServiceOptionType string  `json:"service_option_type" form:"service_option_type,default=default"`
 }
