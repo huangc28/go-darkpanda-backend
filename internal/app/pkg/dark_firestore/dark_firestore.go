@@ -620,6 +620,28 @@ func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquir
 	return rw, err
 }
 
+type UpdateMultipleInquiryStatusParams struct {
+	InquiryUuids []string
+	Status       string
+}
+
+func (df *DarkFirestore) UpdateMultipleInquiryStatus(ctx context.Context, params UpdateMultipleInquiryStatusParams) error {
+	batch := df.Client.Batch()
+
+	for _, sUuid := range params.InquiryUuids {
+		iqRef := df.getInquiryRef(sUuid)
+
+		batch.Set(iqRef, map[string]interface {
+		}{
+			ServiceStatusFieldName: params.Status,
+		}, firestore.MergeAll)
+	}
+
+	_, err := batch.Commit(ctx)
+
+	return err
+}
+
 type UpdateInquiryDetailParams struct {
 	InquiryUuid string
 	ChannelUuid string
