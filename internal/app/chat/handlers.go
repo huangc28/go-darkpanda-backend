@@ -431,7 +431,7 @@ func GetInquiryChatrooms(c *gin.Context, depCon container.Container) {
 	ctx := context.Background()
 	channelUUIDMessageMap, err := darkfirestore.
 		Get().
-		GetLatestMessageForEachChatroom(ctx, channelUUIDs)
+		GetLatestMessageForEachChatroom(ctx, channelUUIDs, userUUID)
 
 	if err != nil {
 		c.AbortWithError(
@@ -1726,6 +1726,67 @@ func EmitImageMessage(c *gin.Context, depCon container.Container) {
 			http.StatusInternalServerError,
 			apperr.NewErr(
 				apperr.FailedToSendImageMessage,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	c.JSON(http.StatusOK, struct{}{})
+}
+
+type EmitUpdateIsReadBody struct {
+	ChannelUuid string `json:"channel_uuid" form:"channel_uuid" binding:"required,gt=0"`
+}
+
+func EmitUpdateIsRead(c *gin.Context, depCon container.Container) {
+	body := EmitUpdateIsReadBody{}
+
+	if err := requestbinder.Bind(c, &body); err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToBindApiBodyParams,
+				err.Error(),
+			),
+		)
+
+		return
+	}
+
+	var (
+		userDao  contracts.UserDAOer
+		userUUID string = c.GetString("uuid")
+	)
+
+	depCon.Make(&userDao)
+
+	_, err := userDao.GetUserByUuid(userUUID, "id", "gender")
+
+	if err != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToGetUserByUuid,
+				err.Error(),
+			),
+		)
+		return
+	}
+
+	ctx := context.Background()
+	df := darkfirestore.Get()
+	updateErr := df.UpdateIsReadToTrue(ctx, darkfirestore.UpdateIsReadParams{
+		ChannelUuid: body.ChannelUuid,
+		UserUuid:    userUUID,
+	})
+
+	if updateErr != nil {
+		c.AbortWithError(
+			http.StatusInternalServerError,
+			apperr.NewErr(
+				apperr.FailedToUpdateIsRead,
 				err.Error(),
 			),
 		)

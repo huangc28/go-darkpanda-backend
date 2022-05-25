@@ -108,7 +108,7 @@ func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 	}
 
 	df := darkfirestore.Get()
-	msgs, err := df.GetLatestMessageForEachChatroom(ctx, channelUuids)
+	msgs, err := df.GetLatestMessageForEachChatroom(ctx, channelUuids, userUuid)
 
 	if err != nil {
 		c.AbortWithError(
