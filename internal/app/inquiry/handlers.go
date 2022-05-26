@@ -923,6 +923,8 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 			InquiryUuid:      iq.Uuid,
 			PickerUsername:   picker.Username,
 			InquirerUsername: inquirer.Username,
+			PickerUuid:       picker.Uuid,
+			InquirerUuid:     inquirer.Uuid,
 			SenderUUID:       c.GetString("uuid"),
 			ChannelUuid:      tr.Chatroom.ChannelUuid.String,
 			ServiceUuid:      tr.Service.Uuid.String,

@@ -1024,6 +1024,8 @@ type PrepareToStartInquiryChatParams struct {
 	InquiryUuid      string
 	PickerUsername   string
 	InquirerUsername string
+	PickerUuid       string
+	InquirerUuid     string
 
 	// Message sender's uuid
 	SenderUUID  string
@@ -1065,13 +1067,11 @@ func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p Prepar
 			return err
 		}
 
-		iq, _ := iqRef.Get(ctx)
-
 		// Create chatroom & send first message
 		if err := tx.Set(chatRef, map[string]interface{}{
 			"last_touch":       time.Now(),
-			"inquirer_uuid":    iq.Data()["inquirer_uuid"],
-			"picker_uuid":      iq.Data()["picker_uuid"],
+			"inquirer_uuid":    p.InquirerUuid,
+			"picker_uuid":      p.PickerUuid,
 			"inquirer_is_read": true,
 			"picker_is_read":   true,
 		}); err != nil {
