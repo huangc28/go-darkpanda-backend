@@ -73,6 +73,13 @@ func Routes(r *gin.RouterGroup, depCon container.Container) {
 		},
 	)
 
+	g.POST(
+		"/emit-update-is-read",
+		func(c *gin.Context) {
+			EmitUpdateIsRead(c, depCon)
+		},
+	)
+
 	// Deprecated, not used in frontend anymore
 	g.POST(
 		"/emit-update-service-message",

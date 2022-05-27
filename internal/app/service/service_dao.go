@@ -490,6 +490,64 @@ FROM
 	return srvs, nil
 }
 
+// ScanInquiringServiceInquiries scan those service_inquiries with status `inquiring`.
+// If created_at exceed 5 hour, update the status to `canceled`
+func (dao *ServiceDAO) ScanInquiringServiceInquiries() ([]*models.ServiceScannerData, error) {
+	query := `
+WITH found_services AS (
+	SELECT
+		service_inquiries.id,
+		service_inquiries.uuid
+	FROM
+		service_inquiries
+	WHERE
+		service_inquiries.inquiry_status = $1 AND
+		
+		-- Allow 5 hours buffer after created_at.
+		now() >= created_at + interval '5 hour'
+), updated AS (
+	UPDATE
+		service_inquiries
+	SET
+		inquiry_status = $2
+	FROM
+		 found_services
+	WHERE
+		found_services.id = service_inquiries.id
+)
+SELECT
+	id,
+	uuid
+FROM
+	found_services;
+`
+	rows, err := dao.DB.Queryx(
+		query,
+		string(models.InquiryStatusInquiring),
+		string(models.InquiryStatusCanceled),
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	srvs := make([]*models.ServiceScannerData, 0)
+
+	for rows.Next() {
+		srv := models.ServiceScannerData{}
+
+		if err := rows.StructScan(&srv); err != nil {
+			return nil, err
+		}
+
+		srvs = append(srvs, &srv)
+	}
+
+	return srvs, nil
+}
+
 func (dao *ServiceDAO) GetQrcodeByServiceUuid(srvUuid string) (*models.ServiceQrcode, error) {
 	query := `
 SELECT

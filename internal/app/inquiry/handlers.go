@@ -31,7 +31,7 @@ import (
 type EmitInquiryBody struct {
 	InquiryType     string    `form:"inquiry_type,default=random" uri:"inquiry_type,default=random" json:"inquiry_type"`
 	FemaleUUID      string    `form:"female_uuid" uri:"female_uuid" json:"female_uuid"`
-	Budget          float64   `form:"budget" uri:"budget" json:"budget" binding:"required"`
+	Budget          float64   `form:"budget" uri:"budget" json:"budget"`
 	ServiceType     *string   `form:"service_type" uri:"service_type" json:"service_type" binding:"required"`
 	AppointmentTime time.Time `form:"appointment_time" json:"appointment_time" binding:"required"`
 	ServiceDuration int       `form:"service_duration" json:"service_duration" binding:"required"`
@@ -923,6 +923,8 @@ func AgreeToChatInquiryHandler(c *gin.Context, depCon container.Container) {
 			InquiryUuid:      iq.Uuid,
 			PickerUsername:   picker.Username,
 			InquirerUsername: inquirer.Username,
+			PickerUuid:       picker.Uuid,
+			InquirerUuid:     inquirer.Uuid,
 			SenderUUID:       c.GetString("uuid"),
 			ChannelUuid:      tr.Chatroom.ChannelUuid.String,
 			ServiceUuid:      tr.Service.Uuid.String,

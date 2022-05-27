@@ -79,7 +79,7 @@ type DarkFireStorer interface {
 	SendServiceDetailMessageToChatroom(ctx context.Context, params SendServiceDetailMessageParams) (ServiceDetailMessage, error)
 	SendServiceConfirmedMessage(ctx context.Context, params SendServiceConfirmedMessageParams) (*firestore.DocumentRef, ServiceDetailMessage, error)
 
-	GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string][]*ChatMessage, error)
+	GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string, userUUID string) (map[string][]*ChatMessage, error)
 	GetHistoricalMessages(ctx context.Context, params GetHistoricalMessagesParams) ([]interface{}, error)
 
 	CreateInquiringUser(ctx context.Context, params CreateInquiringUserParams) (*firestore.WriteResult, InquiringUserInfo, error)
@@ -90,6 +90,8 @@ type DarkFireStorer interface {
 
 	UpdateService(ctx context.Context, params UpdateServiceParams) error
 	CancelService(ctx context.Context, p CancelServiceParams) error
+
+	UpdateIsReadToTrue(ctx context.Context, p UpdateIsReadParams) error
 }
 
 type DarkFirestore struct {
@@ -135,6 +137,7 @@ type ChatMessage struct {
 	From      string      `firestore:"from,omitempty" json:"from"`
 	Username  string      `firestore:"username,omitempty" json:"username"`
 	CreatedAt time.Time   `firestore:"created_at,omitempty" json:"created_at"`
+	IsRead    bool        `firestore:"is_read,omitempty" json:"is_read"`
 }
 
 func StructToMap(data interface{}) (map[string]interface{}, error) {
@@ -173,17 +176,10 @@ func (df *DarkFirestore) SendTextMessageToChatroom(ctx context.Context, params S
 
 	params.Data.CreatedAt = time.Now()
 
-	// Create private chatroom by adding a dummy field "last_touched".
-	_, err := df.Client.
-		Collection(PrivateChatsCollectionName).
-		Doc(params.ChannelUuid).
-		Set(ctx, map[string]interface{}{
-			"last_touched": time.Now(),
-		})
-
-	if err != nil {
-		return params.Data, err
-	}
+	df.UpdateIsReadToFalse(ctx, UpdateIsReadParams{
+		ChannelUuid: params.ChannelUuid,
+		UserUuid:    params.Data.From,
+	})
 
 	msgDoc := df.
 		Client.
@@ -230,7 +226,128 @@ func (df *DarkFirestore) SendServiceDetailMessageToChatroom(ctx context.Context,
 	return params.Data, nil
 }
 
-func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string) (map[string][]*ChatMessage, error) {
+func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string, userUUID string) (map[string][]*ChatMessage, error) {
+	privateChatCollection := df.
+		Client.
+		Collection(PrivateChatsCollectionName)
+
+	errChan := make(chan error)
+	quitChan := make(chan struct{})
+	dataChan := make(chan []map[string]interface{})
+
+OuterLoop:
+	for _, channelUUID := range channelUUIDs {
+		select {
+		case <-quitChan:
+			break OuterLoop
+		default:
+			go func(channelUUID string) {
+				// What happens if channelUUID does not exists in firestore?
+				_, err := privateChatCollection.Doc(channelUUID).Get(ctx)
+
+				if status.Code(err) == codes.NotFound {
+					errChan <- fmt.Errorf("error chatroom channel: %s not found", channelUUID)
+
+					return
+				}
+
+				iter := privateChatCollection.
+					Doc(channelUUID).
+					Collection(MessageSubCollectionName).
+					OrderBy("created_at", firestore.Desc).
+					Limit(1).
+					Documents(ctx)
+
+				messagesArr := make([]map[string]interface{}, 0)
+
+				for {
+					doc, err := iter.Next()
+
+					if err == iterator.Done {
+						empty := make(map[string]interface{})
+						empty["channel_uuid"] = channelUUID
+						empty["empty"] = true
+
+						messagesArr = append(messagesArr, empty)
+
+						break
+					}
+
+					if err != nil {
+						errChan <- err
+
+						break
+					}
+
+					data := doc.Data()
+					parentDoc, err := doc.Ref.Parent.Parent.Get(ctx)
+
+					if err != nil {
+						errChan <- err
+
+						break
+					}
+					parentData := parentDoc.Data()
+
+					data["channel_uuid"] = channelUUID
+					data["empty"] = false
+
+					// check which inquirer or picker is me,
+					// get the is read
+					if parentData["inquirer_uuid"] == userUUID {
+						data["is_read"] = parentData["inquirer_is_read"]
+					}
+
+					if parentData["picker_uuid"] == userUUID {
+						data["is_read"] = parentData["picker_is_read"]
+					}
+
+					messagesArr = append(messagesArr, data)
+
+				}
+
+				dataChan <- messagesArr
+
+			}(channelUUID)
+		}
+	}
+
+	channelMessageMap := make(map[string][]*ChatMessage)
+
+	for range channelUUIDs {
+		select {
+		case err := <-errChan:
+			close(quitChan)
+
+			if err == iterator.Done {
+				return nil, errors.New("")
+			}
+
+			return nil, err
+		case data := <-dataChan:
+			msgArr := make([]*ChatMessage, 0)
+
+			firstMsg := data[0]
+			m := &ChatMessage{}
+
+			if firstMsg["empty"] == false {
+				if err := MapToStruct(firstMsg, m); err != nil {
+					close(quitChan)
+
+					return nil, err
+				}
+
+				msgArr = append(msgArr, m)
+			}
+
+			channelMessageMap[fmt.Sprintf("%s", firstMsg["channel_uuid"])] = msgArr
+		}
+	}
+
+	return channelMessageMap, nil
+}
+
+func (df *DarkFirestore) GetEachChatroom(ctx context.Context, channelUUIDs []string) (map[string][]*ChatMessage, error) {
 	privateChatCollection := df.
 		Client.
 		Collection(PrivateChatsCollectionName)
@@ -620,6 +737,28 @@ func (df *DarkFirestore) UpdateInquiryStatus(ctx context.Context, p UpdateInquir
 	return rw, err
 }
 
+type UpdateMultipleInquiryStatusParams struct {
+	InquiryUuids []string
+	Status       string
+}
+
+func (df *DarkFirestore) UpdateMultipleInquiryStatus(ctx context.Context, params UpdateMultipleInquiryStatusParams) error {
+	batch := df.Client.Batch()
+
+	for _, sUuid := range params.InquiryUuids {
+		iqRef := df.getInquiryRef(sUuid)
+
+		batch.Set(iqRef, map[string]interface {
+		}{
+			ServiceStatusFieldName: params.Status,
+		}, firestore.MergeAll)
+	}
+
+	_, err := batch.Commit(ctx)
+
+	return err
+}
+
 type UpdateInquiryDetailParams struct {
 	InquiryUuid string
 	ChannelUuid string
@@ -855,6 +994,11 @@ type SendImageMessageParams struct {
 func (df *DarkFirestore) SendImageMessage(ctx context.Context, p SendImageMessageParams) error {
 	chatRef := df.getNewChatroomMsgRef(p.ChannelUuid)
 
+	df.UpdateIsReadToFalse(ctx, UpdateIsReadParams{
+		ChannelUuid: p.ChannelUuid,
+		UserUuid:    p.From,
+	})
+
 	msg := ImageMessage{
 		ChatMessage{
 			Type:      Images,
@@ -880,6 +1024,8 @@ type PrepareToStartInquiryChatParams struct {
 	InquiryUuid      string
 	PickerUsername   string
 	InquirerUsername string
+	PickerUuid       string
+	InquirerUuid     string
 
 	// Message sender's uuid
 	SenderUUID  string
@@ -923,7 +1069,11 @@ func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p Prepar
 
 		// Create chatroom & send first message
 		if err := tx.Set(chatRef, map[string]interface{}{
-			"last_touch": time.Now(),
+			"last_touch":       time.Now(),
+			"inquirer_uuid":    p.InquirerUuid,
+			"picker_uuid":      p.PickerUuid,
+			"inquirer_is_read": true,
+			"picker_is_read":   true,
 		}); err != nil {
 			return err
 		}
@@ -962,4 +1112,97 @@ func (df *DarkFirestore) PrepareToStartInquiryChat(ctx context.Context, p Prepar
 	})
 
 	return err
+}
+
+type UpdateIsReadParams struct {
+	ChannelUuid string
+	UserUuid    string
+}
+
+func (df *DarkFirestore) UpdateIsReadToTrue(ctx context.Context, p UpdateIsReadParams) error {
+
+	// Check whether inquirer or picker is me
+	// if inquirer is me then set inquirer_is_read to true
+	// if picker is me then set picker_is_read to true
+	chatroomRef := df.getChatroomRef(p.ChannelUuid)
+	chatroom, chatErr := chatroomRef.Get(ctx)
+	if chatErr != nil {
+		return nil
+	}
+	chatroomData := chatroom.Data()
+	if chatroomData["inquirer_uuid"] == p.UserUuid {
+
+		//  private chatroom update field "inquirer_is_read".
+		_, err := chatroomRef.Update(ctx, []firestore.Update{
+			{
+				Path:  "inquirer_is_read",
+				Value: true,
+			},
+		})
+
+		if err != nil {
+			return nil
+		}
+	}
+	if chatroomData["picker_uuid"] == p.UserUuid {
+
+		//  private chatroom update field "picker_is_read".
+		_, err := chatroomRef.Update(ctx, []firestore.Update{
+			{
+				Path:  "picker_is_read",
+				Value: true,
+			},
+		})
+
+		if err != nil {
+			return nil
+		}
+	}
+
+	return nil
+}
+
+func (df *DarkFirestore) UpdateIsReadToFalse(ctx context.Context, p UpdateIsReadParams) error {
+
+	// Check whether inquirer or picker is me
+	// if inquirer is me then set picker_is_read to false
+	// if picker is me then set inquirer_is_read to false
+	senderUuid := p.UserUuid
+	chatroomRef := df.getChatroomRef(p.ChannelUuid)
+	chatroom, chatroomErr := chatroomRef.Get(ctx)
+	if chatroomErr != nil {
+		return nil
+	}
+
+	chatroomData := chatroom.Data()
+	if chatroomData["inquirer_uuid"] == senderUuid {
+
+		//  private chatroom update field "picker_is_read".
+		_, err := chatroomRef.Update(ctx, []firestore.Update{
+			{
+				Path:  "picker_is_read",
+				Value: false,
+			},
+		})
+
+		if err != nil {
+			return nil
+		}
+	}
+	if chatroomData["picker_uuid"] == senderUuid {
+
+		//  private chatroom update field "inquirer_is_read".
+		_, err := chatroomRef.Update(ctx, []firestore.Update{
+			{
+				Path:  "inquirer_is_read",
+				Value: false,
+			},
+		})
+
+		if err != nil {
+			return nil
+		}
+	}
+
+	return nil
 }

@@ -66,6 +66,7 @@ type ServiceDAOer interface {
 	WithTx(db.Conn) ServiceDAOer
 	ScanExpiredServices() ([]*models.ServiceScannerData, error)
 	ScanCompletedServices() ([]*models.ServiceScannerData, error)
+	ScanInquiringServiceInquiries() ([]*models.ServiceScannerData, error)
 	GetServiceByUuid(string, ...string) (*models.Service, error)
 	GetOverlappedServices(GetOverlappedServicesParams) ([]models.Service, error)
 	GetInquiryByServiceUuid(srvUuid string) (*models.ServiceInquiry, error)
