@@ -50,17 +50,17 @@ const (
 )
 
 var AuthErrCodeMsgMap = map[string]string{
-	ReferCodeOccupied:                       "refer code already occupied",
-	UsernameNotAvailable:                    "username is not available",
-	ReferCodeNotExist:                       "refer code does't exist",
-	UserHasPhoneVerified:                    "user is phone verified",
-	UserNotFoundByVerifyCode:                "user not found by the given verify code",
+	ReferCodeOccupied:                       "參考代碼已被佔用",
+	UsernameNotAvailable:                    "用戶名不可用",
+	ReferCodeNotExist:                       "參考代碼不存在",
+	UserHasPhoneVerified:                    "用戶已通過電話驗證",
+	UserNotFoundByVerifyCode:                "給定的驗證碼找不到用戶資料",
 	JWTNotProvided:                          "JWT token not exists",
-	FailedToFindInquiryByInquiererID:        "failed to find inquiry by inquirer ID",
-	FailedToCheckSendLoginVerifyCodeParams:  "failed to find username to send verify code",
-	UnableToSendVerifyCodeToUnverfiedNumber: "can not send login code to an unverified mobile number. Please contact customer service",
-	ExceedingLoginRetryLimit:                "attempt login too many times. Please retry login later",
-	VerifyCodeUnmatched:                     "mobile verify code not matched",
-	LoginVerifyCodeNotFound:                 "login verify code not found for the authenticator, please send a new sms login code again",
+	FailedToFindInquiryByInquiererID:        "查詢ID失敗",
+	FailedToCheckSendLoginVerifyCodeParams:  "找不到用戶名發送驗證碼",
+	UnableToSendVerifyCodeToUnverfiedNumber: "無法將登錄代碼發送到未經驗證的手機號碼。請聯繫客服",
+	ExceedingLoginRetryLimit:                "嘗試登錄太多次。請稍後重試登錄",
+	VerifyCodeUnmatched:                     "手機驗證碼不匹配",
+	LoginVerifyCodeNotFound:                 "未找到驗證器的登錄驗證碼，請重新發送新的短信登錄碼",
 	TokenIsInvalidated:                      "jwt token is invalid",
 }
