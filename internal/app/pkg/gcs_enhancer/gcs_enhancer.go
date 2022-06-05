@@ -88,7 +88,7 @@ func (e *GCSEnhancer) Upload(ctx context.Context, file io.Reader, uploadFilename
 	return e.ObjectLink(attr), nil
 }
 
-func appendUnixTimeStampToFilename(filename string) string {
+func AppendUnixTimeStampToFilename(filename string) string {
 	secs := strings.Split(filename, ".")
 	timeFactor := time.Now().Format("20060102150405")
 
@@ -118,8 +118,8 @@ func (e *GCSEnhancer) UploadImages(ctx context.Context, imgs []Images) (SortedLi
 
 	for _, img := range imgs {
 		// Upload both orginal / thumbnail images.
-		origName := appendUnixTimeStampToFilename(filepath.Base(img.Name))
-		thumbnailName := appendUnixTimeStampToFilename(appendThumbnailStamp(filepath.Base(img.Name)))
+		origName := AppendUnixTimeStampToFilename(filepath.Base(img.Name))
+		thumbnailName := AppendUnixTimeStampToFilename(appendThumbnailStamp(filepath.Base(img.Name)))
 
 		origBuf := new(bytes.Buffer)
 		thumbBuf := new(bytes.Buffer)
