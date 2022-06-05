@@ -79,10 +79,10 @@ test_migrate_down:
 # List of systemctl service name to host up worker.
 APP_SERVICE_NAME                    = darkpanda.service
 SERVICE_STATUS_SCANNER_SERVICE_NAME = darkpanda_service_status_scanner.service
-SERVICE_INQUIRIES_STATUS_SCANNER_SERVICE_NAME = darkpanda_service_inquiries_status_scanner.service
 
 # Deprecated
 # SERVICE_PAYMENT_CHECKER             = darkpanda_service_payment_checker.service
+# SERVICE_INQUIRIES_STATUS_SCANNER_SERVICE_NAME = darkpanda_service_inquiries_status_scanner.service
 
 deploy_prod:
 	ssh -t root@api.darkpanda.love 'cd ~/darkpanda/go-darkpanda-backend && \
@@ -92,8 +92,6 @@ deploy_prod:
 		sudo systemctl start $(APP_SERVICE_NAME) && \
 		sudo systemctl stop $(SERVICE_STATUS_SCANNER_SERVICE_NAME) && \
 		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)'
-		sudo systemctl stop $(SERVICE_INQUIRIES_STATUS_SCANNER_SERVICE_NAME) && \
-		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_INQUIRIES_STATUS_SCANNER_SERVICE_NAME)'
 
 deploy_staging:
 	ssh -t root@staging-api.darkpanda.love 'cd ~/darkpanda/go-darkpanda-backend && \
@@ -102,9 +100,7 @@ deploy_staging:
 		sudo systemctl stop $(APP_SERVICE_NAME) && \
 		sudo systemctl start $(APP_SERVICE_NAME) && \
 		sudo systemctl stop $(SERVICE_STATUS_SCANNER_SERVICE_NAME) && \
-		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)'
-		sudo systemctl stop $(SERVICE_INQUIRIES_STATUS_SCANNER_SERVICE_NAME) && \
-		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_INQUIRIES_STATUS_SCANNER_SERVICE_NAME)'		
+		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)' 
 
 build: build_service_status_scanner
 	echo 'building production binary...'
