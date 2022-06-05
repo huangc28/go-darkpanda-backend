@@ -3,6 +3,7 @@ bin/*
 build/package/db-volume/*
 build/package/redis-data/*
 build/package/.env.dev
+.vscode/
 
 dark-panda-gcp-service-account.json
 google-service-account.json
