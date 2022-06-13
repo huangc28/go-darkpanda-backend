@@ -3,12 +3,14 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	lumberjack "github.com/natefinch/lumberjack"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +22,15 @@ import (
 
 func main() {
 	iniCtx := context.Background()
+
+	ljack := &lumberjack.Logger{
+		Filename:   "/var/log/syslog",
+		MaxSize:    10, // megabytes
+		MaxBackups: 3,
+		MaxAge:     7, //days
+	}
+	mWriter := io.MultiWriter(os.Stderr, ljack)
+	log.SetOutput(mWriter)
 
 	manager.
 		NewDefaultManager(iniCtx).

@@ -35,6 +35,7 @@ require (
 	github.com/lib/pq v1.10.0
 	github.com/looplab/fsm v0.1.0
 	github.com/mattn/go-sqlite3 v1.10.0 // indirect
+	github.com/natefinch/lumberjack v2.0.0+incompatible // indirect
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/peterhellberg/lossypng v0.0.0-20170130154930-375570b0d75a
