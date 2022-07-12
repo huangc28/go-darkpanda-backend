@@ -127,7 +127,7 @@ SELECT * FROM (
 			ON services.inquiry_id = service_inquiries.id
 		INNER JOIN chatrooms
 			ON services.inquiry_id = chatrooms.inquiry_id AND
-					services.deleted_at IS null
+				chatrooms.deleted_at IS null
 		LEFT JOIN payments ON payments.service_id = services.id
 		WHERE %s
 		AND %s
