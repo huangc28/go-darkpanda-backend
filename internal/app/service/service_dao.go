@@ -62,7 +62,7 @@ type ServiceResult struct {
 //   - customer uuid
 //   - customer avatar
 //   - chatroom channel uuid to subscribe to chatroom
-func (dao *ServiceDAO) GetServicesByStatus(providerID int, gender models.Gender, offset, perPage int, slist ...models.ServiceStatus) ([]ServiceResult, error) {
+func (dao *ServiceDAO) GetServicesByStatus(providerID int, gender models.Gender, offset, perPage int, serviceType string, slist ...models.ServiceStatus) ([]ServiceResult, error) {
 	// Default to have 10 records perpage
 	if perPage == 0 {
 		perPage = 10
@@ -98,6 +98,15 @@ func (dao *ServiceDAO) GetServicesByStatus(providerID int, gender models.Gender,
 		joinTargetPersonClause += "services.service_provider_id = users.id"
 	}
 
+	// Incoming inquiries have to filter by chatroom deleted_at is null
+	// Overdue inquiries no need filter by chatroom deleted_at is null
+	joinChatroomClause := ""
+	if serviceType == "incoming" {
+		joinChatroomClause = "chatrooms.deleted_at IS null"
+	} else {
+		joinChatroomClause = "services.deleted_at IS null"
+	}
+
 	query := fmt.Sprintf(
 		`
 SELECT * FROM (
@@ -127,7 +136,7 @@ SELECT * FROM (
 			ON services.inquiry_id = service_inquiries.id
 		INNER JOIN chatrooms
 			ON services.inquiry_id = chatrooms.inquiry_id AND
-				chatrooms.deleted_at IS null
+				%s
 		LEFT JOIN payments ON payments.service_id = services.id
 		WHERE %s
 		AND %s
@@ -137,6 +146,7 @@ SELECT * FROM (
 	OFFSET $3;
 	`,
 		joinTargetPersonClause,
+		joinChatroomClause,
 		whereClause,
 		sCondStr,
 	)

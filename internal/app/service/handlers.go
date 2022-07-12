@@ -83,6 +83,7 @@ func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 		user.Gender,
 		body.Offset,
 		body.PerPage,
+		"incoming",
 		models.ServiceStatusToBeFulfilled,
 		models.ServiceStatusFulfilling,
 	)
@@ -189,6 +190,7 @@ func GetOverduedServicesHandlers(c *gin.Context, depCon container.Container) {
 		user.Gender,
 		body.Offset,
 		body.PerPage,
+		"overdue",
 		models.ServiceStatusCanceled,
 		models.ServiceStatusCompleted,
 		models.ServiceStatusExpired,
