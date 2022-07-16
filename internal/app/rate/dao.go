@@ -295,7 +295,7 @@ FROM
 INNER JOIN users AS raters ON raters.id = service_ratings.rater_id
 WHERE
 	service_ratings.ratee_id = $1
-ORDER BY service_ratings.created_at
+ORDER BY service_ratings.created_at desc
 LIMIT $2
 OFFSET $3;
 `
