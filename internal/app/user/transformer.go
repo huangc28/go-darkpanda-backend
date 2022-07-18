@@ -314,7 +314,7 @@ func (ut *UserTransform) TransformHistoricalServices(services []models.Service) 
 }
 
 type TrfmedUserRating struct {
-	Comments       *string   `json:"comments"`
+	Comment        *string   `json:"comment"`
 	Rating         int32     `json:"rating"`
 	RaterUsername  string    `json:"rater_username"`
 	RaterUuid      string    `json:"rater_uuid"`
@@ -336,7 +336,7 @@ func TrfGetUserRatings(ms []models.UserRatings) []TrfmedUserRating {
 		}
 
 		if m.Comments.Valid {
-			trfm.Comments = &m.Comments.String
+			trfm.Comment = &m.Comments.String
 		}
 
 		if m.RaterAvatarUrl.Valid {
