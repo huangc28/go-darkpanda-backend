@@ -100,7 +100,7 @@ deploy_staging:
 		sudo systemctl stop $(APP_SERVICE_NAME) && \
 		sudo systemctl start $(APP_SERVICE_NAME) && \
 		sudo systemctl stop $(SERVICE_STATUS_SCANNER_SERVICE_NAME) && \
-		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)' 
+		TICK_INTERVAL_IN_SECOND=60 sudo systemctl start $(SERVICE_STATUS_SCANNER_SERVICE_NAME)'
 
 build: build_service_status_scanner
 	echo 'building production binary...'
