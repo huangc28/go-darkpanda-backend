@@ -69,8 +69,9 @@ func EmitTextMessage(c *gin.Context, depCon container.Container) {
 	message, err := df.SendTextMessageToChatroom(ctx, darkfirestore.SendTextMessageParams{
 		ChannelUuid: body.ChannelUUID,
 		Data: darkfirestore.ChatMessage{
-			Content: body.Content,
-			From:    c.GetString("uuid"),
+			ChannelUUID: body.ChannelUUID,
+			Content:     body.Content,
+			From:        c.GetString("uuid"),
 		},
 	})
 

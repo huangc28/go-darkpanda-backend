@@ -122,7 +122,6 @@ func GetIncomingServicesHandler(c *gin.Context, depCon container.Container) {
 
 		return
 	}
-
 	// Retrieve service provider uuid
 	c.JSON(
 		http.StatusOK,

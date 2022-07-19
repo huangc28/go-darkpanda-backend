@@ -132,12 +132,13 @@ func (df *DarkFirestore) GetClient() *firestore.Client {
 }
 
 type ChatMessage struct {
-	Type      MessageType `firestore:"type,omitempty" json:"type"`
-	Content   interface{} `firestore:"content,omitempty" json:"content"`
-	From      string      `firestore:"from,omitempty" json:"from"`
-	Username  string      `firestore:"username,omitempty" json:"username"`
-	CreatedAt time.Time   `firestore:"created_at,omitempty" json:"created_at"`
-	IsRead    bool        `firestore:"is_read,omitempty" json:"is_read"`
+	Type        MessageType `firestore:"type,omitempty" json:"type"`
+	Content     interface{} `firestore:"content,omitempty" json:"content"`
+	From        string      `firestore:"from,omitempty" json:"from"`
+	Username    string      `firestore:"username,omitempty" json:"username"`
+	CreatedAt   time.Time   `firestore:"created_at,omitempty" json:"created_at"`
+	IsRead      bool        `firestore:"is_read,omitempty" json:"is_read"`
+	ChannelUUID string      `firestore:"channel_uuid" json:"channel_uuid"`
 }
 
 func StructToMap(data interface{}) (map[string]interface{}, error) {
@@ -226,121 +227,65 @@ func (df *DarkFirestore) SendServiceDetailMessageToChatroom(ctx context.Context,
 	return params.Data, nil
 }
 
+// https://stackoverflow.com/questions/68433976/firestore-collection-group-query-on-document-id
+// The only way to constaint CollectionGroup to target only those channels with specified `channel_uuids` is to
+// store channel uuid in each private_chat document
 func (df *DarkFirestore) GetLatestMessageForEachChatroom(ctx context.Context, channelUUIDs []string, userUUID string) (map[string][]*ChatMessage, error) {
 	privateChatCollection := df.
 		Client.
 		Collection(PrivateChatsCollectionName)
 
-	errChan := make(chan error)
-	quitChan := make(chan struct{})
-	dataChan := make(chan []map[string]interface{})
-
-OuterLoop:
-	for _, channelUUID := range channelUUIDs {
-		select {
-		case <-quitChan:
-			break OuterLoop
-		default:
-			go func(channelUUID string) {
-				// What happens if channelUUID does not exists in firestore?
-				_, err := privateChatCollection.Doc(channelUUID).Get(ctx)
-
-				if status.Code(err) == codes.NotFound {
-					errChan <- fmt.Errorf("error chatroom channel: %s not found", channelUUID)
-
-					return
-				}
-
-				iter := privateChatCollection.
-					Doc(channelUUID).
-					Collection(MessageSubCollectionName).
-					OrderBy("created_at", firestore.Desc).
-					Limit(1).
-					Documents(ctx)
-
-				messagesArr := make([]map[string]interface{}, 0)
-
-				for {
-					doc, err := iter.Next()
-
-					if err == iterator.Done {
-						empty := make(map[string]interface{})
-						empty["channel_uuid"] = channelUUID
-						empty["empty"] = true
-
-						messagesArr = append(messagesArr, empty)
-
-						break
-					}
-
-					if err != nil {
-						errChan <- err
-
-						break
-					}
-
-					data := doc.Data()
-					parentDoc, err := doc.Ref.Parent.Parent.Get(ctx)
-
-					if err != nil {
-						errChan <- err
-
-						break
-					}
-					parentData := parentDoc.Data()
-
-					data["channel_uuid"] = channelUUID
-					data["empty"] = false
-
-					// check which inquirer or picker is me,
-					// get the is read
-					if parentData["inquirer_uuid"] == userUUID {
-						data["is_read"] = parentData["inquirer_is_read"]
-					}
-
-					if parentData["picker_uuid"] == userUUID {
-						data["is_read"] = parentData["picker_is_read"]
-					}
-
-					messagesArr = append(messagesArr, data)
-
-				}
-
-				dataChan <- messagesArr
-
-			}(channelUUID)
-		}
+	var chatroomDocRefs []*firestore.DocumentRef
+	for i := range channelUUIDs {
+		chatroomDocRefs = append(chatroomDocRefs, privateChatCollection.Doc(channelUUIDs[i]))
 	}
 
-	channelMessageMap := make(map[string][]*ChatMessage)
+	chatroomDocs, err := df.Client.GetAll(ctx, chatroomDocRefs)
 
-	for range channelUUIDs {
-		select {
-		case err := <-errChan:
-			close(quitChan)
+	if err != nil {
+		return nil, err
+	}
 
+	channelMessageMap := make(map[string][]*ChatMessage, 0)
+	for i := range chatroomDocs {
+		chatroomDoc := chatroomDocs[i]
+		chatroomDocData := chatroomDoc.Data()
+
+		channelMessageMap[chatroomDoc.Ref.ID] = make([]*ChatMessage, 0)
+
+		iter := privateChatCollection.
+			Doc(chatroomDoc.Ref.ID).
+			Collection(MessageSubCollectionName).
+			OrderBy("created_at", firestore.Desc).
+			Limit(1).
+			Documents(ctx)
+
+		for {
+			doc, err := iter.Next()
 			if err == iterator.Done {
-				return nil, errors.New("")
+				break
 			}
 
-			return nil, err
-		case data := <-dataChan:
-			msgArr := make([]*ChatMessage, 0)
-
-			firstMsg := data[0]
-			m := &ChatMessage{}
-
-			if firstMsg["empty"] == false {
-				if err := MapToStruct(firstMsg, m); err != nil {
-					close(quitChan)
-
-					return nil, err
-				}
-
-				msgArr = append(msgArr, m)
+			if err != nil {
+				return nil, err
 			}
 
-			channelMessageMap[fmt.Sprintf("%s", firstMsg["channel_uuid"])] = msgArr
+			data := doc.Data()
+			data["channel_uuid"] = chatroomDoc.Ref.ID
+			data["empty"] = false
+
+			// check which is me inquirer or picker?
+			if chatroomDocData["inquirer_uuid"] == userUUID {
+				data["is_read"] = chatroomDocData["inquirer_is_read"]
+			}
+
+			if chatroomDocData["picker_uuid"] == userUUID {
+				data["is_read"] = chatroomDocData["picker_is_read"]
+			}
+
+			dataMsg := &ChatMessage{}
+			MapToStruct(data, dataMsg)
+			channelMessageMap[chatroomDoc.Ref.ID] = append(channelMessageMap[chatroomDoc.Ref.ID], dataMsg)
 		}
 	}
 
