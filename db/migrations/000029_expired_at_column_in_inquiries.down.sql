@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE service_inquiries
+ALTER TABLE IF EXISTS service_inquiries
 DROP COLUMN expired_at;
 
 COMMIT;

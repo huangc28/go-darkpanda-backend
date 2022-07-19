@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE service_options 
-DROP COLUMN IF EXISTS duration INT;
+ALTER TABLE service_options
+DROP COLUMN IF EXISTS duration;
 
 COMMIT;

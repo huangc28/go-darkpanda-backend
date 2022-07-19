@@ -1,1 +1,1 @@
-ALTER TABLE block_list DROP CONSTRAINT idx_userid_blocked_userid;
+ALTER TABLE block_list DROP CONSTRAINT IF EXISTS idx_userid_blocked_userid;

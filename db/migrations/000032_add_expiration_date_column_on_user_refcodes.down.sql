@@ -1,6 +1,6 @@
 BEGIN;
 
-ALTER TABLE user_refcodes
+ALTER TABLE IF EXISTS user_refcodes
 DROP COLUMN expired_at;
 
 COMMIT;
