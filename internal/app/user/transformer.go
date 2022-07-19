@@ -325,7 +325,8 @@ type TrfmedUserRating struct {
 func TrfGetUserRatings(ms []models.UserRatings) []TrfmedUserRating {
 	trfms := make([]TrfmedUserRating, 0)
 
-	for _, m := range ms {
+	for i := range ms {
+		m := ms[i]
 		trfm := TrfmedUserRating{
 			nil,
 			m.Rating.Int32,
